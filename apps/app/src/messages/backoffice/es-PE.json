@@ -1542,7 +1542,18 @@
       "turned_on": "Funcionalidad encendida.",
       "turned_off": "Funcionalidad apagada.",
       "reset_done": "Vuelve a valer lo que dice el código.",
-      "write_failed": "No se pudo guardar el cambio."
+      "write_failed": "No se pudo guardar el cambio.",
+      "confirm_off_title": "¿Apagar {surface}?",
+      "confirm_off_body": "Toda dirección bajo {surface} va a responder 404 para todos menos para nosotros en cuanto confirmes — {count, plural, =0 {nada más depende de ella} one {la # sección de abajo incluida} other {las # secciones de abajo incluidas}}.",
+      "confirm_off_confirm": "Apagar",
+      "confirm_off_pending": "Apagando…",
+      "confirm_off_cancel": "Cancelar",
+      "confirm_off_close": "Cerrar"
+    },
+    "not_found": {
+      "title": "Acá no hay nada",
+      "body": "O esta sección está apagada en producción ahora mismo, o el enlace es viejo, o lo que señalaba ya no existe.",
+      "back": "Volver al panel"
     }
   }
 }

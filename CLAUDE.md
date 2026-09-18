@@ -266,7 +266,7 @@ interface NotificationProvider {
 
 Templates versionados no repositório, não desenhados só no painel do Brevo.
 
-### Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026)
+### Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026; recuperação da tela 17/09/2026)
 
 **As três superfícies de `apps/app` são geridas por feature flag: portal do
 aluno, backoffice e painel do docente.** Uma flag ligada significa que a seção
@@ -315,7 +315,22 @@ que aquilo não está ativo para mais ninguém).
   (`apps/api`, `apps/app`), não só desligado — segredo de produção obrigatório
   que ninguém revisou uma vez já foi o suficiente.
 - **A tela de flags não tem flag própria**: seria a única da qual não se volta
-  pela tela que ela esconde.
+  pela tela que ela esconde. Até 17/09/2026 essa frase era só intenção: o
+  `layout.tsx` do painel checava `requireFeature('backoffice')` antes de
+  qualquer rota filha, `/backoffice/features` incluída — então desligar
+  `backoffice` (ou `portal`, que carrega a mesma armadilha do lado do aluno)
+  derrubava o painel inteiro **e** a tela que devolveria o flag, em produção,
+  para todo mundo. Foi o que aconteceu nesta data: alguém desligou o flag raiz
+  de uma superfície pelo card novo de Funcionalidades (`2ce11b6`, que põe esse
+  interruptor no topo do card, ao lado dos filhos) e não havia como religar
+  pela UI — só variável de ambiente na Vercel ou escrita direta na API. Fix em
+  duas partes: **(a)** `/backoffice/features` saiu do grupo de rota que checa
+  `requireFeature('backoffice')` (`(panel)/(gated)/layout.tsx` carrega o
+  portão agora; `(panel)/features` fica fora dele, protegida só pelo próprio
+  `canManageFeatureFlags` por e-mail, que já existia) — a frase acima passou a
+  ser verdade no código, não só no comentário; **(b)** o switch que desliga o
+  flag raiz de uma superfície pede confirmação antes de gravar (o resto dos
+  flags continua sem essa fricção — só esse switch derruba um card inteiro).
 - **Fora de produção toda flag está ligada**, sempre. E `APP_ENV` falha fechada:
   processo sem rótulo rodando build de produção conta como produção.
 - **Flag nova nasce desligada em produção** (`production: false`) e é ligada no

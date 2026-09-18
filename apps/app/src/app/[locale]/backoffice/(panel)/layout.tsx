@@ -18,7 +18,7 @@ import {
   getTeacher,
 } from '@/lib/backoffice/mock-data'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getFeatureFlags, requireFeature } from '@/lib/feature-flags/server'
+import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { initials } from '@/lib/format'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
 import { BoUserMenu } from '@/components/backoffice/bo-user-menu'
@@ -54,10 +54,10 @@ export default async function BackofficePanelLayout({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  // The panel as a whole, before anything is read: off, the backoffice is not
-  // on the air and no URL under it answers (CLAUDE.md §5).
-  await requireFeature('backoffice')
-
+  // Whether the panel as a whole is on the air lives in `(gated)/layout.tsx`,
+  // not here: this shell renders for `../features` too, off included — that
+  // is the one screen the `backoffice` flag must never be able to hide
+  // (CLAUDE.md §5).
   const staff = await getStaffSession()
   const { pendingReview } = getDashboardMetrics()
   const { expiringSoon: expiringReservations } = getEnrollmentMetrics()
@@ -78,12 +78,6 @@ export default async function BackofficePanelLayout({
    * `apps/api` (CLAUDE.md §8).
    */
   const restricted = isRestrictedToOwnClassGroups(staff.role)
-
-  /* The docente panel is a surface of its own — the same app with the rail
-     narrowed — and it can be off while the rest of the backoffice is on. A
-     teacher then meets a 404 like anyone reaching a section that does not
-     exist yet; every other cargo is untouched. */
-  if (restricted) await requireFeature('teacher')
 
   const flags = await getFeatureFlags()
 

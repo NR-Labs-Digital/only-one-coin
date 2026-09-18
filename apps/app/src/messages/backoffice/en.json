@@ -1542,7 +1542,18 @@
       "turned_on": "Feature turned on.",
       "turned_off": "Feature turned off.",
       "reset_done": "Back to what the code says.",
-      "write_failed": "The change could not be saved."
+      "write_failed": "The change could not be saved.",
+      "confirm_off_title": "Turn off {surface}?",
+      "confirm_off_body": "Every address under {surface} will answer 404 for everyone but us the moment you confirm — {count, plural, =0 {nothing else rides on it} one {the # section below included} other {all # sections below included}}.",
+      "confirm_off_confirm": "Turn off",
+      "confirm_off_pending": "Turning off…",
+      "confirm_off_cancel": "Cancel",
+      "confirm_off_close": "Close"
+    },
+    "not_found": {
+      "title": "Nothing here",
+      "body": "Either this section is off in production right now, the link is old, or whatever it pointed to no longer exists.",
+      "back": "Back to the panel"
     }
   }
 }

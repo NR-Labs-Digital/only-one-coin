@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
 import { apiFetch } from './api-client'
@@ -23,8 +24,12 @@ const DEMO_TEACHER_ID = 'tea_01'
  * `student`/`guardian` account has no business here): redirected to the
  * backoffice login rather than returned as null, so every call site below
  * can keep assuming a `StaffUser` exists, same as when this read a mock.
+ *
+ * Memoized per request (`cache`, same pattern as the feature-flag reads in
+ * `lib/feature-flags/server.ts`): the panel's shell and its gate both need
+ * it, on every screen, and that is one call to `/me` either way.
  */
-export async function getStaffSession(): Promise<StaffUser> {
+export const getStaffSession = cache(async (): Promise<StaffUser> => {
   const response = await apiFetch('/api/v1/me')
 
   if (!response.ok) {
@@ -39,4 +44,4 @@ export async function getStaffSession(): Promise<StaffUser> {
     return { ...staff, teacherId: DEMO_TEACHER_ID }
   }
   return staff
-}
+})

@@ -457,7 +457,7 @@ largura, então `sm:` quer dizer o que diz. Dentro de `portal/` e
 
 ---
 
-## 8. Feature flags — o que está no ar em produção (fechado 06/09/2026, interruptor no painel 08/09/2026, leitura pública 09/09/2026)
+## 8. Feature flags — o que está no ar em produção (fechado 06/09/2026, interruptor no painel 08/09/2026, leitura pública 09/09/2026, recuperação da tela 17/09/2026)
 
 As três superfícies de `apps/app` — **portal do aluno**, **backoffice** e o
 **painel do docente** — são geridas por feature flag. A semântica é uma só:
@@ -595,7 +595,11 @@ desligado não vai no bundle.
 
 - **Rota:** `layout.tsx` da seção chama `requireFeature('<chave>')`, que faz
   `notFound()`. Fica no layout, e não em cada página, para que uma tela nova
-  criada ali amanhã **herde** o portão em vez de precisar lembrar dele.
+  criada ali amanhã **herde** o portão em vez de precisar lembrar dele. No
+  backoffice isso é `(panel)/(gated)/layout.tsx` (desde 17/09/2026, §8.8) — um
+  layout aninhado dentro do `(panel)/layout.tsx` que desenha a casca (sidebar,
+  header); `(panel)/features` fica fora do grupo `(gated)`, e por isso nunca
+  herda o portão de `backoffice`.
 - **Navegação:** o item some do menu. Não vira cadeado — cadeado é o vocabulário
   de "anunciado, não construído" (a Área do aluno do portal), que é uma
   afirmação diferente e pública.
@@ -663,3 +667,57 @@ ligada, esses links dão 404 para quem trabalha no painel. As portas das telas d
 entrada (dashboard de coordenação e dashboard do docente) e **todo o portal do
 aluno** já respeitam a flag. Fechar o resto exige levar o booleano como prop até
 os componentes de cliente dessas telas — trabalho mecânico, ainda não feito.
+
+### 8.8 Incidente 17/09/2026 — backoffice e portal fora do ar
+
+**O que aconteceu.** Pelo card novo de Funcionalidades (`2ce11b6`, que põe o
+flag raiz da superfície como o primeiro interruptor do card, ao lado dos
+filhos), alguém desligou `backoffice` — e, pelo mesmo motivo, `portal` e os
+seis flags filhos dele também ficaram em `false`. `requireFeature('backoffice')`
+rodava no mesmo `layout.tsx` que desenha a casca do painel (sidebar, header) e
+que serve **toda** rota sob `/backoffice`, `/backoffice/features` incluída —
+então o 404 comeu o painel inteiro, e a única tela que devolveria o flag ficou
+atrás do próprio flag que ela devolve. `GET /feature-flags/state` (rota
+pública, §8.1) confirmou em produção: `{"backoffice": false, "portal": false,
+"portal.courses": false, ...}`. Sem sessão de dono para gravar de volta pela
+API e sem acesso à tela, a única saída documentada até então era variável de
+ambiente na Vercel (`OOC_FLAG_BACKOFFICE=on`) — o caminho de emergência, não a
+porta de todo dia.
+
+**A correção, em duas partes:**
+
+1. **Estrutural.** `apps/app/src/app/[locale]/backoffice/(panel)/` ganhou um
+   grupo de rota `(gated)/`: todo screen que antes vivia direto em `(panel)/`
+   (home, students, payments, enrollments, class-groups, courses, teachers,
+   emails, reports, team, settings, account) mudou para
+   `(panel)/(gated)/<seção>/` — mesma URL, route group não entra no caminho.
+   O `requireFeature('backoffice')` (e o `requireFeature('teacher')`
+   condicional do docente) saiu do `layout.tsx` da casca e foi para um
+   `(gated)/layout.tsx` novo, que só embrulha essas seções. `(panel)/features`
+   ficou fora do grupo — segue protegida como sempre foi, por
+   `canManageFeatureFlags(staff.email)` dentro da própria página — mas nunca
+   mais herda o portão de `backoffice`. Isso fecha, no código, o que o
+   comentário do registro já dizia por escrito desde 06/09 ("a tela de flags
+   não tem flag própria") e nunca tinha sido verdade na prática.
+   `getStaffSession` (`lib/backoffice/session.ts`) ganhou `cache()` no processo
+   — a casca e o portão agora leem `/me` no mesmo request, e memoizar evita
+   duplicar a chamada.
+2. **De interface.** O switch que desliga o flag raiz de uma superfície
+   (`SurfaceHeader` em `features-view.tsx`) passou a abrir um diálogo de
+   confirmação antes de gravar — dizendo quantas seções descem junto e que todo
+   endereço da superfície vira 404 para todo mundo menos para nós. É o único
+   switch da tela com essa fricção: os demais continuam desligando direto, como
+   sempre — só esse derruba um card inteiro de uma vez.
+
+**Detecção, pra quem passar por isto de novo:** `curl
+https://only-one-coin-api.fly.dev/feature-flags/state` (rota pública, sem
+sessão) mostra o override cru gravado no banco — se `backoffice` ou `portal`
+aparecem como `false` ali, é a mesma causa. O 404 do Next chega com HTTP 200
+quando pego por streaming (o cabeçalho já foi enviado antes de `notFound()`
+disparar), então o status HTTP sozinho engana; o corpo da resposta que carrega
+o marcador de "não encontrado" é a prova.
+
+**O que ficou de fora, de propósito:** a limitação de §8.7 (links profundos
+entre seções) é outro problema, não coberto por este fix — reduzir o alcance de
+um único clique errado não elimina outras formas de acabar num 404 dentro do
+painel.

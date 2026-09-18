@@ -1542,7 +1542,18 @@
       "turned_on": "Funcionalidade ligada.",
       "turned_off": "Funcionalidade desligada.",
       "reset_done": "Volta a valer o que o código diz.",
-      "write_failed": "Não foi possível salvar a mudança."
+      "write_failed": "Não foi possível salvar a mudança.",
+      "confirm_off_title": "Desligar {surface}?",
+      "confirm_off_body": "Todo endereço sob {surface} passa a responder 404 pra todo mundo menos pra gente assim que você confirmar — {count, plural, =0 {nada mais depende dela} one {a # seção abaixo incluída} other {as # seções abaixo incluídas}}.",
+      "confirm_off_confirm": "Desligar",
+      "confirm_off_pending": "Desligando…",
+      "confirm_off_cancel": "Cancelar",
+      "confirm_off_close": "Fechar"
+    },
+    "not_found": {
+      "title": "Não há nada aqui",
+      "body": "Ou esta seção está desligada em produção agora, ou o link é antigo, ou o que ele apontava não existe mais.",
+      "back": "Voltar ao painel"
     }
   }
 }
