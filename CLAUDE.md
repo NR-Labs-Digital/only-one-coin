@@ -290,11 +290,12 @@ que aquilo não está ativo para mais ninguém).
   adiamento era pior (só quem abre `registry.ts` sabia o que estava no ar, e
   desligar uma seção em produção era um deploy).
 - **Só os donos abrem a tela — e é o e-mail que decide, não o cargo.** Conta em
-  `@nrlabsdigital.com` (`isOwnerEmail`, o mesmo domínio do `master`): o que a
-  plataforma admite existir é decisão de quem opera a plataforma, não de quem
-  administra a escola. Na API é uma declaração de rota própria, `.owners()`, ao
-  lado de `.roles(...)` e `.public()` — deny-by-default continua valendo — e o
-  usecase repete a checagem antes de escrever.
+  `@nrlabsdigital.com` ou `@admin.com` (`isOwnerEmail`, os mesmos domínios do
+  `master` — o segundo entrou em 17/09/2026, §8 abaixo): o que a plataforma
+  admite existir é decisão de quem opera a plataforma, não de quem administra
+  a escola. Na API é uma declaração de rota própria, `.owners()`, ao lado de
+  `.roles(...)` e `.public()` — deny-by-default continua valendo — e o usecase
+  repete a checagem antes de escrever.
 - **Ordem de resolução:** `OOC_FLAG_<CHAVE>` (env, *scoped* por ambiente na
   Vercel) → interruptor do painel → fora de produção tudo ligado → padrão do
   registro → pai. A env **ganha do painel** de propósito: é o caminho de volta
@@ -589,11 +590,12 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 
 **Papéis (quadro redefinido pelo dono, 07/09/2026):** `master`, `admin`, `analyst`, `enrollment_supervisor`, `academic_supervisor`, `teacher`, `sales`, `support`, `billing`. Aluno e apoderado: `student`, `guardian`. Substituiu o quadro antigo (`coordinator`, `treasury`, `mass_approver` deixaram de existir; grosso modo: coordinator → enrollment_supervisor, treasury → billing, mass_approver extinto — aprovação é de admin/billing).
 
-- **`master`** é o cargo dos donos da plataforma: vê e faz tudo, e **só conta com e-mail `@nrlabsdigital.com`** pode carregá-lo (`canHoldMaster`, `apps/app/src/lib/backoffice/permissions.ts`). O mesmo domínio — e não o cargo — é o que abre a seção **Funcionalidades** (§5): lá quem decide é `isOwnerEmail`, então um `admin` da Asociación é recusado e um dono passa com qualquer cargo.
+- **`master`** é o cargo dos donos da plataforma: vê e faz tudo, e **só conta em `@nrlabsdigital.com` ou `@admin.com`** pode carregá-lo (`canHoldMaster`, `apps/app/src/lib/backoffice/permissions.ts`). Os mesmos domínios — e não o cargo — são o que abre a seção **Funcionalidades** (§5): lá quem decide é `isOwnerEmail`, então um `admin` da Asociación é recusado e um dono passa com qualquer cargo.
+  - **`admin.com` entrou na lista em 17/09/2026**, decisão do dono, junto do fix do incidente de Funcionalidades (§5): a conta que a equipe de fato usa como login de produção carrega esse domínio, não `nrlabsdigital.com`, e sem isso ela nunca teria como abrir Funcionalidades — nem pra reverter um flag que ela mesma derrubou. `MASTER_EMAIL_DOMAINS` (plural agora, `packages/domain/src/identity/Role.ts` e o espelho em `apps/app/src/lib/backoffice/permissions.ts`) é lista, não string única. Isso não reabre `docs/REGRAS-NEGOCIO.md`/seed: `admin@admin.com` **continua** sendo a credencial do script `seed-admin.ts` (§8, "Bootstrap"), que segue proibido apontar pra staging/produção — a conta em produção com esse domínio tem senha própria, gerada à parte, não a do seed.
 - **`admin`** vê tudo e autoriza. **`analyst`** (assistente/analista da administração) observa todas as áreas e propõe solução, mas **não aprova nem edita nada**.
 - **`enrollment_supervisor`** cuida do lado acadêmico das matrículas (alunos, matrículas manuais, cursos/turmas); **`academic_supervisor`** supervisiona os docentes.
 - **`sales`** (vendedor) e **`support`** (atenção ao cliente) leem alunos/matrículas; **`billing`** (facturación) liquida dinheiro e não vê dado acadêmico não financeiro.
-- A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts`. O backend já fala o quadro novo: `Role` em `packages/domain/src/identity/Role.ts` (com `MASTER_EMAIL_DOMAIN`/`canHoldMaster`), as rotas de `apps/api` declaram os cargos novos, e a migration `0009` troca os CHECKs de `user.role` e `staff_invites.role`. O convite recusa `master` fora do domínio dos donos na própria rota (`CreateStaffInviteRoute`). Pendente: a tabela RBAC de `docs/ARCHITECTURE.md` §3 ainda descreve o quadro antigo.
+- A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts`. O backend já fala o quadro novo: `Role` em `packages/domain/src/identity/Role.ts` (com `MASTER_EMAIL_DOMAINS`/`canHoldMaster`), as rotas de `apps/api` declaram os cargos novos, e a migration `0009` troca os CHECKs de `user.role` e `staff_invites.role`. O convite recusa `master` fora dos domínios dos donos na própria rota (`CreateStaffInviteRoute`). Pendente: a tabela RBAC de `docs/ARCHITECTURE.md` §3 ainda descreve o quadro antigo.
 
 Emitem documento (constancia, certificado) e disparam o lote de uma turma: `master`, `admin`, `enrollment_supervisor`, `academic_supervisor`, `teacher` — o docente **só nas próprias turmas**, checado no usecase. `billing` não emite. Toda emissão e todo reenvio de e-mail vão para o `audit_log`.
 

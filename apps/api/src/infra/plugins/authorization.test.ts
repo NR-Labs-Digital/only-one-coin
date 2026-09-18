@@ -161,6 +161,26 @@ describe("authorization plugin", () => {
     expect(response.statusCode).toBe(200);
   });
 
+  /* Second owners' domain, added 17/09/2026 (CLAUDE.md §8) because the
+     account actually used as the team's production login carries it. */
+  it("allows an .owners() route to the second owners' domain whatever the cargo", async () => {
+    const app = await buildTestApp();
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({
+      id: "u5",
+      email: "team@admin.com",
+      name: "Owner via admin.com",
+      role: "support",
+    } satisfies AuthenticatedUser);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/owners-only",
+      cookies: { [SESSION_COOKIE_NAME]: "some-valid-token" },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
   it("refuses an .owners() route with no session at all", async () => {
     const app = await buildTestApp();
     const response = await app.inject({ method: "GET", url: "/owners-only" });

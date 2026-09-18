@@ -36,3 +36,4 @@ coverage/
 # must never enter git history (CLAUDE.md §6, "PII em log").
 /tmp/
 /apps/api/legacy-import-reports/
+.vercel

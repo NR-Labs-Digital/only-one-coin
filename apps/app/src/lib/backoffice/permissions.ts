@@ -21,12 +21,17 @@ import type { StaffRole, StaffUser } from './types'
  * - `billing` — settles money; no academic data beyond what a receipt carries.
  */
 
-/** The owners' e-mail domain — the only accounts allowed to hold `master`. */
-export const MASTER_EMAIL_DOMAIN = 'nrlabsdigital.com'
+/**
+ * The owners' e-mail domains — the only accounts allowed to hold `master`.
+ * Mirrors `packages/domain/src/identity/Role.ts` (apps/app never imports that
+ * package, CLAUDE.md §3) — keep the two lists in sync by hand.
+ */
+export const MASTER_EMAIL_DOMAINS = ['nrlabsdigital.com', 'admin.com'] as const
 
 /** Whether this e-mail belongs to the platform owners. */
 export function isOwnerEmail(email: string): boolean {
-  return email.trim().toLowerCase().endsWith(`@${MASTER_EMAIL_DOMAIN}`)
+  const normalized = email.trim().toLowerCase()
+  return MASTER_EMAIL_DOMAINS.some((domain) => normalized.endsWith(`@${domain}`))
 }
 
 /** Whether this e-mail is allowed to carry the `master` cargo. */
