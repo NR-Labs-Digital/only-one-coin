@@ -499,14 +499,17 @@ adiamento cobrava em troca era pior: as duas pessoas que sabem abrir
 portal está no ar?", e desligar uma seção em produção era um deploy ou uma
 variável na Vercel.
 
-**Quem abre: só os donos da plataforma.** Não é cargo — é o domínio do e-mail
-(`isOwnerEmail`, `packages/domain/src/identity/Role.ts`, o mesmo
-`@nrlabsdigital.com` que já governa o `master`). O que a plataforma admite
-existir é decisão de quem opera a plataforma, não de quem administra a escola:
-um `admin` da Asociación autoriza tudo o que é acadêmico e nada disto. Na API
-isso é uma declaração de rota própria, `.owners()`, ao lado de `.roles(...)` e
-`.public()` — deny-by-default continua valendo, e o usecase repete a checagem
-antes de escrever, para que um segundo chamador não herde a escrita sem a regra.
+**Quem abre: só os donos da plataforma.** Não é cargo — são os domínios do
+e-mail (`isOwnerEmail`, `packages/domain/src/identity/Role.ts`,
+`MASTER_EMAIL_DOMAINS = ["nrlabsdigital.com", "admin.com"]` — o segundo entrou
+17/09/2026, junto do fix de §8.8, porque a conta que a equipe realmente usa
+como login de produção carrega esse domínio, não o outro). O que a plataforma
+admite existir é decisão de quem opera a plataforma, não de quem administra a
+escola: um `admin` da Asociación autoriza tudo o que é acadêmico e nada disto.
+Na API isso é uma declaração de rota própria, `.owners()`, ao lado de
+`.roles(...)` e `.public()` — deny-by-default continua valendo, e o usecase
+repete a checagem antes de escrever, para que um segundo chamador não herde a
+escrita sem a regra.
 
 **A leitura é pública, revertido 09/09/2026.** `GET /feature-flags/state`
 nasceu `.internal()` — segredo `INTERNAL_API_TOKEN`, obrigatório em produção

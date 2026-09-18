@@ -14,8 +14,13 @@ export type Role =
   | "student"
   | "guardian";
 
-/** The platform owners' e-mail domain — the only accounts allowed to hold `master`. */
-export const MASTER_EMAIL_DOMAIN = "nrlabsdigital.com";
+/**
+ * The platform owners' e-mail domains — the only accounts allowed to hold
+ * `master`. Two domains as of 17/09/2026: `admin.com` joined
+ * `nrlabsdigital.com` because the account actually used as the team's
+ * production login carries it — see `CLAUDE.md` §8 for the decision.
+ */
+export const MASTER_EMAIL_DOMAINS = ["nrlabsdigital.com", "admin.com"] as const;
 
 /**
  * Whether this e-mail belongs to the platform owners.
@@ -28,7 +33,8 @@ export const MASTER_EMAIL_DOMAIN = "nrlabsdigital.com";
  * is not an owner, and an owner is one whatever cargo their account carries.
  */
 export function isOwnerEmail(email: string): boolean {
-  return email.trim().toLowerCase().endsWith(`@${MASTER_EMAIL_DOMAIN}`);
+  const normalized = email.trim().toLowerCase();
+  return MASTER_EMAIL_DOMAINS.some((domain) => normalized.endsWith(`@${domain}`));
 }
 
 /** Whether this e-mail may carry the `master` cargo. */
