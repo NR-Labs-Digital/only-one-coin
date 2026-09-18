@@ -1,12 +1,19 @@
 'use client'
 
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Card, StatusBadge, type Tone } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 import { BoIcon, type BoIconName } from '@/components/backoffice/icons'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export interface FlagRow {
   key: string
@@ -116,6 +123,13 @@ export function FeaturesView({
   const [tab, setTab] = useState<Surface>(SURFACES[0])
   /** Which rows have their detail panel open. Several may be, at once. */
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
+  /**
+   * The surface a click just tried to turn off, held here instead of acted on
+   * right away. Every other switch on this screen governs one section; this
+   * one takes a whole card's worth of them down in production at once — so it
+   * is the one switch that asks first.
+   */
+  const [confirmOff, setConfirmOff] = useState<Group | null>(null)
 
   const groups: Group[] = useMemo(
     () =>
@@ -249,7 +263,7 @@ export function FeaturesView({
             disabled={pending !== null}
             detailsOpen={open.has(current.root.key)}
             onDetails={() => toggleDetails(current.root.key)}
-            onToggle={(next) => write(current.root.key, next)}
+            onToggle={(next) => (next ? write(current.root.key, next) : setConfirmOff(current))}
             onReset={() => write(current.root.key, null)}
           />
 
@@ -286,7 +300,98 @@ export function FeaturesView({
       </Card>
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
+
+      <ConfirmSurfaceOffDialog
+        group={confirmOff}
+        onClose={() => setConfirmOff(null)}
+        onConfirm={async (group) => {
+          await write(group.root.key, false)
+          setConfirmOff(null)
+        }}
+      />
     </div>
+  )
+}
+
+/**
+ * Stands between a click and the one switch on this screen that takes a whole
+ * card down at once. Turning a surface off is still one PUT, same as any
+ * other row — this only makes sure it was meant.
+ */
+function ConfirmSurfaceOffDialog({
+  group,
+  onClose,
+  onConfirm,
+}: {
+  group: Group | null
+  onClose: () => void
+  onConfirm: (group: Group) => Promise<void>
+}) {
+  const t = useTranslations('bo')
+  const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    if (group) setPending(false)
+  }, [group])
+
+  async function handleConfirm() {
+    if (!group || pending) return
+    setPending(true)
+    try {
+      await onConfirm(group)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const surface = group ? t(`features.surface.${group.surface}`) : ''
+
+  return (
+    <Dialog
+      open={group !== null}
+      onOpenChange={(next) => {
+        if (!next && !pending) onClose()
+      }}
+    >
+      <DialogContent closeLabel={t('features.confirm_off_close')} className="bg-white">
+        <DialogHeader className="gap-2 border-b border-line p-5 pr-14">
+          <DialogTitle className="text-base font-semibold text-ink">
+            {t('features.confirm_off_title', { surface })}
+          </DialogTitle>
+          <DialogDescription>
+            {group
+              ? t('features.confirm_off_body', {
+                  surface,
+                  count: group.children.length,
+                })
+              : ''}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-wrap items-center justify-end gap-2 p-5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={pending}
+            className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {t('features.confirm_off_cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={pending}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <BoIcon
+              name={pending ? 'spinner' : 'alert'}
+              size={16}
+              className={pending ? 'animate-spin' : undefined}
+            />
+            {pending ? t('features.confirm_off_pending') : t('features.confirm_off_confirm')}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
