@@ -595,9 +595,55 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 - **`admin`** vê tudo e autoriza. **`analyst`** (assistente/analista da administração) observa todas as áreas e propõe solução, mas **não aprova nem edita nada**.
 - **`enrollment_supervisor`** cuida do lado acadêmico das matrículas (alunos, matrículas manuais, cursos/turmas); **`academic_supervisor`** supervisiona os docentes.
 - **`sales`** (vendedor) e **`support`** (atenção ao cliente) leem alunos/matrículas; **`billing`** (facturación) liquida dinheiro e não vê dado acadêmico não financeiro.
-- A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts`. O backend já fala o quadro novo: `Role` em `packages/domain/src/identity/Role.ts` (com `MASTER_EMAIL_DOMAINS`/`canHoldMaster`), as rotas de `apps/api` declaram os cargos novos, e a migration `0009` troca os CHECKs de `user.role` e `staff_invites.role`. O convite recusa `master` fora dos domínios dos donos na própria rota (`CreateStaffInviteRoute`). Pendente: a tabela RBAC de `docs/ARCHITECTURE.md` §3 ainda descreve o quadro antigo.
+- A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts` — que desde 18/09/2026 é só o resolvedor: o catálogo do que existe está em `capabilities.ts` e **quem tem cada coisa é configurável no painel** (logo abaixo). O backend já fala o quadro novo: `Role` em `packages/domain/src/identity/Role.ts` (com `MASTER_EMAIL_DOMAINS`/`canHoldMaster`), as rotas de `apps/api` declaram os cargos novos, e a migration `0009` troca os CHECKs de `user.role` e `staff_invites.role`. O convite recusa `master` fora dos domínios dos donos na própria rota (`CreateStaffInviteRoute`). Pendente: a tabela RBAC de `docs/ARCHITECTURE.md` §3 ainda descreve o quadro antigo.
 
 Emitem documento (constancia, certificado) e disparam o lote de uma turma: `master`, `admin`, `enrollment_supervisor`, `academic_supervisor`, `teacher` — o docente **só nas próprias turmas**, checado no usecase. `billing` não emite. Toda emissão e todo reenvio de e-mail vão para o `audit_log`.
+
+### Permissões por cargo — configuráveis no painel (decisão 18/09/2026)
+
+**O que cada cargo abre deixou de ser lista escrita no código e virou tela:
+`/backoffice/team/permissions`, a outra metade da Equipe.** Antes, dar ao
+`sales` o direito de cadastrar aluno ou abrir matrícula era commit, review e
+deploy — dependência de engenharia para uma decisão que é da administração.
+Mesma separação que Funcionalidades fez (§5): o **catálogo vive em código**, o
+**interruptor vive no painel**.
+
+- **O catálogo é `apps/app/src/lib/backoffice/capabilities.ts`** — hoje 17
+  capacidades, agrupadas em Operação, Acadêmico e Administração, cada uma com o
+  cargo-padrão que a função de `permissions.ts` declarava antes. Uma capacidade
+  nasce no commit que cria a tela que ela governa: inventar uma pela tela seria
+  inventar uma seção que não existe.
+- **Quem tem cada uma vive em `role-permissions.ts`**, e é o que todo
+  `canX(role)` pergunta. Uma permissão aberta na tela abre junto a sidebar, o
+  gate da página e o botão — não existe lista paralela.
+- **Quem abre a tela é `master`/`admin`**, a mesma porta do diretório da
+  Equipe: quem mexe na matriz mexe no que qualquer conta alcança, e a regra
+  anti-escalada (§8) guarda isso no topo da casa.
+- **`master` e `admin` seguram tudo, sempre**, e a tela desenha isso travado —
+  um interruptor que tira `admin` da fila de pagamento é uma casa que se tranca
+  por dentro. **Equipe e permissões** (`team_manage`) é fixo para todo mundo
+  pelo mesmo motivo.
+- **Escopo não é permissão.** O docente vê as próprias turmas e nada mais; isso
+  é `teacher_id` comparado dentro do usecase e nenhum interruptor afrouxa. Por
+  isso `canRecordGrades` e `isRestrictedToOwnClassGroups` não estão no catálogo.
+- **Dependência anda junto**: liberar "Cadastrar um aluno" libera "Ver o
+  diretório"; tirar o diretório tira o cadastro. Meia porta é bug esperando
+  para ser aberto.
+- **Os cargos descritos acima viraram o padrão, não a lei.** `analyst` que "não
+  aprova nada" é o estado inicial da matriz — a administração pode mudar, e a
+  mudança fica visível na própria tela (badge "fora do padrão" + "Voltar ao
+  padrão").
+
+**Pendência de backend (a tela está pronta, o armazenamento não).** O store de
+hoje é memória do processo: a mudança vale para o deploy em pé e some no
+restart, e duas instâncias não se enxergam. Falta — e é do mesmo tamanho do que
+Funcionalidades já tem: tabela `role_permission_overrides`, `GET
+/api/v1/role-permissions` + `PUT /api/v1/role-permissions/:capability` com
+cargo declarado na rota e escrita no `audit_log`, e **a API lendo a mesma
+resolução ao autorizar**. Enquanto a API não ler, ampliar um cargo na tela
+abre a porta e o servidor recusa atrás dela — falha segura, mas não é o ponto
+da tela (verificado: docente com "Ver o diretório de alunos" liberado passa do
+gate e recebe erro de carga da lista).
 
 ### Pontos de entrada separados (portal ≠ backoffice)
 

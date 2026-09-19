@@ -1,9 +1,11 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
 import { listTeachers } from '@/lib/backoffice/mock-data'
 import { listStaff } from '@/lib/backoffice/staff'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageStaff } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
+import { BoIcon } from '@/components/backoffice/icons'
 import { TeamView } from './team-view'
 
 /**
@@ -58,7 +60,22 @@ export default async function TeamPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={t('team.title')} />
+      {/* The directory's other half: here an account is given a cargo, there a
+          cargo is given its doors. A link rather than a section tab because
+          this page already carries a tab strip of its own — two rows of the
+          same tabs read as two panels (`components/backoffice/tab-strip.tsx`). */}
+      <PageHeader
+        title={t('team.title')}
+        actions={
+          <Link
+            href="/backoffice/team/permissions"
+            className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+          >
+            <BoIcon name="shield" size={16} />
+            {t('permissions.title')}
+          </Link>
+        }
+      />
       <TeamView
         rows={rows}
         teachers={teachers}

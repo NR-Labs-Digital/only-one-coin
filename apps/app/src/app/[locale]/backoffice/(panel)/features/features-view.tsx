@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Card, StatusBadge, type Tone } from '@/components/backoffice/ui'
+import { Callout, Card, StatusBadge, type Tone } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 import { BoIcon, type BoIconName } from '@/components/backoffice/icons'
@@ -785,31 +785,3 @@ function Switch({
   )
 }
 
-/**
- * A note about where the reader is standing — not about a flag. Two tones,
- * because the two say different things: one is a warning that this is not
- * production, the other is a fact about this browser.
- */
-function Callout({
-  tone,
-  icon,
-  children,
-}: {
-  tone: 'warning' | 'info'
-  icon: BoIconName
-  children: React.ReactNode
-}) {
-  const skin =
-    tone === 'warning'
-      ? 'border-amber-600/20 bg-amber-50 text-amber-800'
-      : 'border-brand-blue/20 bg-sky text-brand-blue-deep'
-
-  return (
-    <p
-      className={`flex items-start gap-2 rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed ${skin}`}
-    >
-      <BoIcon name={icon} size={14} className="mt-0.5 shrink-0" />
-      {children}
-    </p>
-  )
-}
