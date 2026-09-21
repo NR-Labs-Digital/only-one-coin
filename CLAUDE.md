@@ -142,7 +142,7 @@ packages/
 | Camada | Idioma |
 | --- | --- |
 | Tabelas, colunas, enums, funções, variáveis, tipos | Inglês |
-| Branches, commits, comentários de código | Inglês |
+| Branches, commits, comentários de código | Inglês — **sem exceção** (ver §9) |
 | Chaves de i18n | Inglês (`payment.status.under_review`) |
 | **Todo texto visível ao usuário** | **Trilíngue**: `es-PE.json` (padrão) · `pt-BR.json` · `en.json` |
 | Templates de e-mail, PDFs, manual | **Trilíngue**, `es-PE` padrão |
@@ -634,7 +634,8 @@ O `role` **nunca** mora em lugar que o próprio usuário escreve. Regras duras:
 - **Não invente regra de negócio.** Se eu der um exemplo, é exemplo — não generalize para regra. Em dúvida, pergunte.
 - **Pergunte antes de assumir** volume, preço, nome de curso, quantidade de turmas.
 - Mudança de banco = migration versionada. Nunca `psql` direto em ambiente remoto.
-- Commits pequenos e em inglês, no formato convencional (`feat:`, `fix:`, `chore:`).
+- **Todo commit é em inglês. Sem exceção, e isso vale para a mensagem inteira** — título e corpo, não só o prefixo convencional. O mesmo para nome de branch, título e descrição de PR, e comentário de código. A regra já estava na tabela do §4; está repetida aqui porque é a que mais escapa na hora de escrever. Nossa conversa continua em português; o que vai pro Git, não.
+- Commits pequenos, no formato convencional (`feat:`, `fix:`, `chore:`).
 - Antes de escrever código novo, diga em uma linha o que vai fazer e onde.
 - Se um pedido meu contradisser este arquivo, **avise antes de executar**.
 - Prefira explicitar o trade-off a escolher em silêncio.
