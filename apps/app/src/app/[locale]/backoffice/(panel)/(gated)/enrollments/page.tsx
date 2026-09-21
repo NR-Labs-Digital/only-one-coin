@@ -1,8 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import {
-  getEnrollmentMetrics,
-  listEnrollments,
-} from '@/lib/backoffice/mock-data'
+import { listEnrollments } from '@/lib/backoffice/enrollments'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateEnrollment,
@@ -59,6 +56,24 @@ export default async function EnrollmentsPage({
     )
   }
 
+  /* The ledger comes from `apps/api` (GET /enrollments). A failure is shown as
+     a failure: an empty table would read as "nobody enrolled this ciclo",
+     which is the one thing this screen must never say by accident. */
+  const ledger = await listEnrollments()
+
+  if (!ledger) {
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={t('enrollments.title')} />
+        <EmptyState
+          icon="alert"
+          title={t('enrollments.load_error_title')}
+          body={t('enrollments.load_error_body')}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -78,8 +93,9 @@ export default async function EnrollmentsPage({
         ]}
       />
       <EnrollmentsView
-        rows={listEnrollments()}
-        metrics={getEnrollmentMetrics()}
+        rows={ledger.items}
+        metrics={ledger.metrics}
+        truncated={ledger.truncated}
         canCreate={canCreateEnrollment(staff.role)}
       />
     </div>

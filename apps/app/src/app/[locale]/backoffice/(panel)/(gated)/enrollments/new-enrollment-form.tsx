@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { EnrollmentRow, NationalIdType, PaymentMethod } from '@/lib/backoffice/types'
+import type { NationalIdType, PaymentMethod } from '@/lib/backoffice/types'
 import { formatMoney, type Locale } from '@/lib/format'
 import { formatPaymentMethod } from '@/lib/payment-method'
 import {
@@ -102,7 +102,8 @@ export function NewEnrollmentForm({
   onCreate,
 }: {
   onCancel: () => void
-  onCreate: (enrollment: EnrollmentRow) => void
+  /** The seat was written. The caller re-reads the ledger from the server. */
+  onCreate: () => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -214,46 +215,12 @@ export function NewEnrollmentForm({
         return
       }
 
-      const created = (await response.json()) as {
-        enrollment: { id: string; seatStatus: 'reserved' | 'confirmed' | 'released' }
-        payment: { status: 'pending' | 'under_review' | 'approved' | 'rejected' }
-      }
-      const now = new Date().toISOString()
-      onCreate({
-        id: created.enrollment.id,
-        // apps/api doesn't issue a tracking code yet — same digits-from-id
-        // formula the enrollments list's mock uses (mock-data.ts,
-        // enrollmentCode), so a row created here reads consistently with the
-        // rest of the list until the backend takes over issuing it.
-        code: `OOC-${now.slice(0, 4)}-${created.enrollment.id.replace(/\D/g, '').slice(-4).padStart(4, '0')}`,
-        studentId: selectedStudent.id,
-        studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-        courseName: group.courseName,
-        classGroupId: group.id,
-        classGroupName: group.schedule,
-        // No teachers bounded context yet (docs/ROADMAP.md Sessão 5 deferred
-        // it) — nothing honest to put here yet.
-        teacherName: '',
-        language: null,
-        // Always true today (CLAUDE.md §1, "toda aula é online") — not a
-        // guess, the one value the business rule allows.
-        modality: 'online',
-        academicPeriodName: group.academicPeriodName,
-        status: 'under_review',
-        seatStatus: created.enrollment.seatStatus,
-        planName: group.planName,
-        planPriceId: group.planPriceId,
-        amountCents: group.amountCents,
-        currency: 'PEN',
-        paymentStatus: created.payment.status,
-        paymentMethod: method,
-        // The rails name themselves; `other` is only ever as good as the text.
-        paymentMethodDetail: method === 'other' ? methodDetail.trim() : null,
-        operationNumber: operationNumber.trim(),
-        createdAt: now,
-        paidAt: null,
-        progressPct: null,
-      })
+      /* The seat is written; what it looks like on the ledger is the ledger's
+         answer, not this form's. It used to assemble the row here out of what
+         the picker happened to hold — which meant a fabricated code, an empty
+         teacher and a null language sitting next to rows read from Postgres,
+         and the whole thing gone on reload. The caller re-reads instead. */
+      onCreate()
     } catch {
       setSubmitError(true)
     } finally {

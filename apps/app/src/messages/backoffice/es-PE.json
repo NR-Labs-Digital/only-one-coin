@@ -414,6 +414,9 @@
       "other": "Otro motivo"
     },
     "enrollments": {
+      "truncated_notice": "Se muestran las {shown} matrículas más recientes de {total}. Las métricas de arriba cuentan el ciclo completo; el listado todavía no pagina desde el servidor.",
+      "load_error_title": "No se pudo cargar el listado de matrículas",
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "title": "Matrículas",
       "tab_ledger": "Listado",
       "tab_reservations": "Reservas",

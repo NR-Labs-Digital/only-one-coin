@@ -12,6 +12,7 @@ import { registerStudentRoute } from "@/http/student/RegisterStudentRoute.js";
 import { listStudentsRoute } from "@/http/student/ListStudentsRoute.js";
 import { getStudentRoute } from "@/http/student/GetStudentRoute.js";
 import { createManualEnrollmentRoute } from "@/http/enrollment/CreateManualEnrollmentRoute.js";
+import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
 import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { listOpenClassGroupsRoute } from "@/http/catalog/ListOpenClassGroupsRoute.js";
 import { getPublicCatalogRoute } from "@/http/catalog/GetPublicCatalogRoute.js";
@@ -73,6 +74,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listEnrollmentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOpenClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPublicCatalogRoute);

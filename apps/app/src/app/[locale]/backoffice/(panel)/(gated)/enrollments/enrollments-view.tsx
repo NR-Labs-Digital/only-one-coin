@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type MouseEvent, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type {
@@ -59,29 +60,38 @@ const PAGE_SIZE = 15
  * job — a confirmed seat with an unsettled payment is the case coordination
  * has to catch, and it is invisible on either screen alone.
  *
- * Search, filters and paging run in the browser only because the dataset is
- * mocked; with the real API this becomes a server query (up to 20k enrollments
- * a month in peak season, CLAUDE.md §1).
+ * The rows are the real ledger now (`GET /api/v1/enrollments`), but search,
+ * filters and paging still run in the browser over whatever the API sent. That
+ * holds while the response is capped at the newest few hundred and stops
+ * holding at peak season volume (up to 20k enrollments a month, CLAUDE.md §1):
+ * the next step is server-side paging, the way the student directory already
+ * does it with a cursor.
  */
 export function EnrollmentsView({
   rows,
   metrics,
+  truncated,
   canCreate,
 }: {
   rows: EnrollmentRow[]
   metrics: EnrollmentMetrics
+  /** The API capped the read: the ledger holds more than `rows` carries. */
+  truncated: boolean
   canCreate: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
 
   /**
-   * Enrollments opened from this screen are prepended locally. Screen-local on
-   * purpose: the real write is a usecase in `packages/domain` behind
-   * `apps/api`, with its own audit entry — the browser is never the authority
-   * on a seat (CLAUDE.md §8).
+   * A seat opened from this screen is re-read from the server, never drawn
+   * from what the form happened to know. The browser is not the authority on
+   * an enrollment (CLAUDE.md §8), and it does not hold the half the form never
+   * sees: the code, the teacher on the roster, the period, the price version
+   * the seat froze. This screen used to prepend a row it built itself, which
+   * is why a reload made the new enrollment "disappear" — it had never been
+   * read from Postgres in the first place.
    */
-  const [created, setCreated] = useState<EnrollmentRow[]>([])
+  const router = useRouter()
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -94,7 +104,7 @@ export function EnrollmentsView({
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest')
   const [page, setPage] = useState(0)
 
-  const all = useMemo(() => [...created, ...rows], [created, rows])
+  const all = useMemo(() => rows, [rows])
 
   /** Filter options come from the data, not from a list kept in sync by hand. */
   const languages = useMemo(() => {
@@ -175,7 +185,7 @@ export function EnrollmentsView({
           icon="enrollments"
           tone="info"
           label={t('enrollments.metric_total')}
-          value={String(metrics.total + created.length)}
+          value={String(metrics.total)}
           hint={t('enrollments.metric_total_hint', { period: metrics.periodName })}
         />
         <StatCard
@@ -325,13 +335,25 @@ export function EnrollmentsView({
       {creating && (
         <NewEnrollmentForm
           onCancel={() => setCreating(false)}
-          onCreate={(row) => {
-            setCreated((current) => [row, ...current])
+          onCreate={() => {
             setCreating(false)
             setPage(0)
             setToast(t('new_enrollment.created'))
+            /* Re-runs the server component, so the new seat arrives as the
+               ledger has it — with the student's real file behind it. */
+            router.refresh()
           }}
         />
+      )}
+
+      {/* The ledger is longer than what was read. Said out loud, because the
+          figures above count the whole thing while the table below shows the
+          newest slice — a reader comparing the two would otherwise conclude
+          that one of them is lying. */}
+      {truncated && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {t('enrollments.truncated_notice', { shown: rows.length, total: metrics.total })}
+        </p>
       )}
 
       {/* min-w-0: the row is wide enough to push a flex child past the page,
