@@ -1,5 +1,5 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
-import { GuardianRequiredForMinorError } from "./errors.js";
+import { GuardianRequiredForMinorError, StudentAlreadyRegisteredError } from "./errors.js";
 import { Guardian, type CreateGuardianDTO } from "./Guardian.js";
 import type { IGuardianRepository } from "./GuardianRepository.js";
 import { Student, type CreateStudentDTO } from "./Student.js";
@@ -36,6 +36,19 @@ export class RegisterStudentUseCase extends BaseUseCase<RegisterStudentInput, Re
 
     if (student.isMinor && !input.guardian) {
       throw new GuardianRequiredForMinorError();
+    }
+
+    /* One person, one record (CLAUDE.md §1). This is the check a reader sees;
+       the one that holds under two staff members saving the same document at
+       the same instant is the unique index on the column pair — this returns
+       the readable error, the database returns the guarantee. */
+    const alreadyOnFile = await this.studentRepository.findByNationalId({
+      nationalIdType: student.nationalIdType,
+      nationalId: student.nationalId,
+    });
+
+    if (alreadyOnFile) {
+      throw new StudentAlreadyRegisteredError();
     }
 
     const createdStudent = await this.studentRepository.create(student);

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { StudentRow, StudentStatus } from '@/lib/backoffice/types'
@@ -33,13 +33,23 @@ const STATUS_FILTERS: StatusFilter[] = ['all', 'active', 'under_review', 'inacti
 const PAGE_SIZE = 15
 
 /**
- * Student list with client-side search, status filter and paging, running
- * over whatever's currently loaded in `directory` — not the whole real
- * directory, which the server paginates (`ListStudentsQuery`, PAGE_SIZE=50)
- * rather than hand over in one query at 20k enrollments/month peak
- * (CLAUDE.md §1). "Carregar mais" fetches the next server page and appends
- * it to `directory`, so search/filter/counts below cover everything loaded
- * so far, growing as coordination scrolls — not the entire table at once.
+ * Student list. The server paginates the real directory (`ListStudentsQuery`,
+ * 50 rows a page) rather than hand it over in one query at 20k
+ * enrollments/month peak (CLAUDE.md §1); this table shows 15 at a time on top
+ * of that.
+ *
+ * Those two used to be separate mechanisms and it showed: the pager counted
+ * only the rows already loaded, so with 300 students in the table it offered
+ * four pages, and "next" on the fourth did nothing — the remaining 250 lived
+ * behind a "Carregar mais" button somewhere below the card. Now the pager owns
+ * it: `total` says how many pages exist, and turning to a page that has not
+ * been fetched pulls it from the cursor first. The button is gone.
+ *
+ * Search and the filters still run over what is loaded, which is the honest
+ * limit of this design: they cannot find a student on a page nobody has
+ * fetched. The directory's `q` search exists server-side but answers a capped
+ * match list built for the enrollment picker (SEARCH_LIMIT), so wiring it here
+ * is its own piece of work, not a line in this one.
  *
  * The row carries only what tells one student from another — name, document,
  * state, load, last activity. Contact, place, age and enrollment history live
@@ -49,10 +59,14 @@ const PAGE_SIZE = 15
 export function StudentsTable({
   rows,
   initialNextCursor,
+  total: serverTotal,
   canCreate,
 }: {
   rows: StudentRow[]
   initialNextCursor: string | null
+  /** Live students in total, from the server. Null only if the API could not
+   * say — the table then pages what it holds, as it used to. */
+  total: number | null
   canCreate: boolean
 }) {
   const t = useTranslations('bo')
@@ -73,24 +87,101 @@ export function StudentsTable({
   const [minorsOnly, setMinorsOnly] = useState(false)
   const [page, setPage] = useState(0)
 
-  async function loadMore() {
-    if (!nextCursor || loadingMore) return
+  /**
+   * Whether the reader is looking at a narrowed list. It decides which count
+   * the pager may trust: the server's total describes the whole directory, and
+   * says nothing about how many rows survive a filter applied here.
+   */
+  const filtering = query.trim() !== '' || status !== 'all' || minorsOnly
+
+  /**
+   * Brings the directory up to at least `rowsNeeded` rows, walking the cursor
+   * as many server pages as that takes — turning to page 12 of a 300-row
+   * directory is four fetches, and the reader should not have to make them one
+   * by one.
+   *
+   * The cursor is read from the response of each fetch rather than from state:
+   * inside one loop, state has not re-rendered yet, and reusing the stale
+   * cursor would fetch the same page over and over.
+   */
+  async function loadUpTo(rowsNeeded: number) {
+    if (loadingMore) return
     setLoadingMore(true)
+
+    let cursor = nextCursor
+    let loaded = directory.length
+
     try {
-      const response = await fetch(`/api/v1/students?cursor=${encodeURIComponent(nextCursor)}`)
-      if (!response.ok) {
-        setToast(t('students.load_more_error'))
-        return
+      while (cursor && loaded < rowsNeeded) {
+        const response = await fetch(`/api/v1/students?cursor=${encodeURIComponent(cursor)}`)
+        if (!response.ok) {
+          setToast(t('students.load_more_error'))
+          return
+        }
+
+        const nextPage = (await response.json()) as {
+          items: StudentRow[]
+          nextCursor: string | null
+        }
+
+        if (!Array.isArray(nextPage.items) || nextPage.items.length === 0) {
+          // Nothing came back: stop rather than spin on a cursor that is not
+          // advancing.
+          cursor = null
+          break
+        }
+
+        setDirectory((current) => [...current, ...nextPage.items])
+        loaded += nextPage.items.length
+        cursor = nextPage.nextCursor
       }
-      const nextPage = (await response.json()) as { items: StudentRow[]; nextCursor: string | null }
-      setDirectory((current) => [...current, ...nextPage.items])
-      setNextCursor(nextPage.nextCursor)
+
+      setNextCursor(cursor)
     } catch {
       setToast(t('students.load_more_error'))
     } finally {
       setLoadingMore(false)
     }
   }
+
+  /**
+   * Keeps the directory one page ahead of the reader.
+   *
+   * Two things at once, and deliberately: it fetches the rows the current page
+   * needs, and it keeps one page of slack beyond them. The slack is what makes
+   * paging feel instant — a query against a managed Postgres costs ~140ms of
+   * network before it does any work, so a fetch triggered by the click is a
+   * wait the reader sits through, while a fetch triggered by the previous
+   * click already finished by the time they press next.
+   *
+   * An effect rather than a line in the click handler because the handler only
+   * covers one way of arriving: two quick clicks on "next" and the second
+   * lands while a fetch is in flight, gets turned away by the in-flight guard,
+   * and leaves the reader on a page whose rows nobody ever asked for — an
+   * empty table that never fills. Stated as a condition of the rendered page,
+   * it settles itself: the fetch ends, this runs again, and it either fetches
+   * what is still missing or finds nothing to do.
+   */
+  useEffect(() => {
+    if (filtering || loadingMore || !nextCursor) return
+
+    // `page + 2`: the page being read, plus one held in reserve.
+    const rowsWanted = (page + 2) * PAGE_SIZE
+    if (directory.length >= rowsWanted) return
+
+    void loadUpTo(rowsWanted)
+    // `loadUpTo` is stable enough for this: it only reads state it re-reads
+    // itself at call time, and the guards above are what actually stop it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filtering, loadingMore, nextCursor, directory.length])
+
+  /**
+   * Whether the reader is actually waiting on rows, as opposed to a fetch
+   * running ahead of them. Only the first deserves to say so on screen — a
+   * prefetch that announces itself is a spinner for something nobody asked
+   * for.
+   */
+  const awaitingRows = loadingMore && directory.length < (page + 1) * PAGE_SIZE
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -126,8 +217,18 @@ export function StudentsTable({
   )
   const activeFilters = (status !== 'all' ? 1 : 0) + (minorsOnly ? 1 : 0)
 
-  /** A filter or a search that shrinks the list can leave the page behind it. */
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  /**
+   * How many pages there are.
+   *
+   * Unfiltered, that is the server's count — every page exists whether or not
+   * its rows have been fetched, which is the whole point: the reader asks for
+   * page 12 and the rows are fetched on the way. Filtered or searched, only
+   * the loaded rows can be counted, because a filter cannot see a page nobody
+   * has fetched.
+   */
+  const total = filtering ? filtered.length : (serverTotal ?? filtered.length)
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  /* A filter that shrinks the list can leave the page behind it. */
   const currentPage = Math.min(page, pageCount - 1)
   const pageRows = filtered.slice(
     currentPage * PAGE_SIZE,
@@ -345,11 +446,15 @@ export function StudentsTable({
               <Pager
                 page={currentPage}
                 pageCount={pageCount}
-                status={t('students.page_status', {
-                  from: currentPage * PAGE_SIZE + 1,
-                  to: currentPage * PAGE_SIZE + pageRows.length,
-                  total: filtered.length,
-                })}
+                status={
+                  awaitingRows
+                    ? t('students.loading_more')
+                    : t('students.page_status', {
+                        from: currentPage * PAGE_SIZE + 1,
+                        to: currentPage * PAGE_SIZE + pageRows.length,
+                        total,
+                      })
+                }
                 prevLabel={t('students.page_prev')}
                 nextLabel={t('students.page_next')}
                 onChange={setPage}
@@ -359,10 +464,16 @@ export function StudentsTable({
         )}
       </Card>
 
-      {nextCursor && (
+      {/* No "Carregar mais" button any more: turning the page is what loads
+          the next rows. A second control for the same thing was how the pager
+          came to stop at 50 while the table held 300. When the reader has
+          narrowed the list, though, paging cannot reach further — the filter
+          only sees loaded rows — so the button comes back for that case
+          alone. */}
+      {filtering && nextCursor && (
         <button
           type="button"
-          onClick={loadMore}
+          onClick={() => void loadUpTo(directory.length + 1)}
           disabled={loadingMore}
           className="self-center rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-cream disabled:opacity-50"
         >

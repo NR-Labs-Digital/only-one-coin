@@ -34,9 +34,34 @@ pnpm dev:web
 ```
 
 Sobe os dois de uma vez: a landing (Astro) em `localhost:4321` e o app
-(Next.js — matrícula, portal e backoffice) em `localhost:3000`. As telas do app
-são mockadas, então nada disso precisa de banco; `pnpm db:up` + `pnpm dev:api`
-só entram quando o trabalho for na API.
+(Next.js — matrícula, portal e backoffice) em `localhost:3000`. A maior parte
+das telas do app é mockada, então nada disso precisa de banco; `pnpm db:up` +
+`pnpm dev:api` entram quando o trabalho for na API ou nas telas já ligadas a
+ela (diretório e ficha de aluno, livro de matrículas).
+
+Para trabalhar nessas telas com uma lista de verdade — paginação, busca,
+filtro de menores — há um seed de gente inventada:
+
+```bash
+# contra Postgres local
+pnpm db:up && pnpm db:migrate
+pnpm seed:students                   # 300 alunos; --count=N para outro tamanho
+
+# contra um banco gerenciado (Neon), que exige nomear o destino
+pnpm seed:students -- --confirm-host=ep-xxx.sa-east-1.aws.neon.tech
+pnpm seed:students -- --confirm-host=ep-xxx... --undo   # desfaz
+```
+
+Banco local escreve sem cerimônia. **Qualquer outro host exige
+`--confirm-host=<hostname>` batendo com a `DATABASE_URL`** — digitar o destino
+é a trava: impede que o seed caia no que a `.env` estiver apontando naquele
+dia. Build de produção (`NODE_ENV=production`) é recusado sem flag nenhuma.
+
+Rodar de novo não duplica ninguém: as pessoas são determinísticas e o documento
+já cadastrado é pulado. **`--undo`** aposenta o que o seed criou com
+`deleted_at` — nunca DELETE, que não tem grant em `students` (§6) — e deixa em
+paz quem já tiver matrícula. É o que substitui o `pnpm db:reset` quando o banco
+não está na sua máquina.
 
 Os CTAs da landing (`/enrollment` e `/login`, nos três idiomas) são links
 relativos de propósito — para quem lê é tudo o mesmo site. Quem os atravessa
@@ -70,7 +95,14 @@ Domínio e fila já existem, independentes dessa escolha:
   JSON-LD de `EducationalOrganization`, `Course` e `FAQPage`. `/blog` e `/comunidad`
   seguem `noindex` enquanto forem placeholder.
 - `apps/app` — Next.js App Router: layout, roteamento, i18n trilíngue e as telas
-  em **mockup** (sem acesso a dados). As telas são **desenhadas para o celular**,
+  em **mockup** (sem acesso a dados), **com três exceções já ligadas ao banco
+  pela API**: o diretório de alunos (`GET /students`, com paginação por
+  cursor), a ficha do aluno (`GET /students/:id`, só a metade de identidade) e
+  o **livro de matrículas** (`GET /enrollments` — a lista, as métricas do ciclo
+  e a linha que aparece depois de abrir matrícula manual, que agora é relida do
+  servidor em vez de montada na tela). A aba de **Reservas** da mesma seção
+  continua em mockup: depende da tabela de parâmetros de `/backoffice/settings`
+  e da fila de revisão, que ainda não existem. As telas são **desenhadas para o celular**,
   não só encolhidas nele (`docs/ARCHITECTURE.md` §7.1): menu do portal numa
   barra de abas no rodapé, tabela densa do painel virando lista com o nome da
   coluna como etiqueta, modal virando folha de baixo, safe area do notch e da

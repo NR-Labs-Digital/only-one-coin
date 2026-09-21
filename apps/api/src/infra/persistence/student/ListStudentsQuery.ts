@@ -76,6 +76,18 @@ export function decodeStudentCursor(raw: string): StudentListCursor | null {
 export interface StudentListPage {
   items: StudentListRow[];
   nextCursor: string | null;
+  /**
+   * How many live students there are in total — counted on the first page of
+   * a directory browse only. Null for a `q` search (a capped match list with
+   * nothing to page) and null for any page reached by cursor, where recounting
+   * would buy a stale-proof number nobody asked for at the price of a second
+   * round trip per page.
+   *
+   * It is what lets the pager offer pages whose rows have not been fetched:
+   * without it the screen could only page what it already held, so "next" on
+   * the last of 50 rows did nothing with 250 more behind the cursor.
+   */
+  total: number | null;
 }
 
 /**
@@ -117,7 +129,20 @@ export class ListStudentsQuery {
         )
       : undefined;
 
-    const rows = await this.db
+    /* Counted on the first page of a browse, and nowhere else — see `total`
+       on StudentListPage. Started here rather than awaited after the rows,
+       because the two ask different questions of different indexes and
+       neither needs the other's answer: sequentially they cost two round
+       trips (~280ms against a managed Postgres), together they cost one. */
+    const totalPromise =
+      !needle && !cursor
+        ? this.db
+            .select({ value: sql<number>`count(*)`.mapWith(Number) })
+            .from(students)
+            .where(isNull(students.deletedAt))
+        : null;
+
+    const rowsPromise = this.db
       .select({
         id: students.id,
         firstName: students.firstName,
@@ -152,6 +177,8 @@ export class ListStudentsQuery {
       // a second round-trip — sliced back off before mapping to output.
       .limit(limit + 1);
 
+    const [rows, counted] = await Promise.all([rowsPromise, totalPromise]);
+
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor =
@@ -185,6 +212,8 @@ export class ListStudentsQuery {
       };
     });
 
-    return { items, nextCursor };
+    const total = counted ? (counted[0]?.value ?? 0) : null;
+
+    return { items, nextCursor, total };
   }
 }

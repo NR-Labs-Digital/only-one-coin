@@ -54,6 +54,11 @@ Venda por WhatsApp (humano, fora do sistema)
 - Comprovante: retido por **5 anos**. Só a **versão processada/reduzida** (pós downscale/grayscale da OCR, `CLAUDE.md` §5) é retida — não o upload original bruto.
 - **Exame de clasificación é o portão do inglés intermedio/avanzado e do Cambridge (decisão 02/09/2026).** Ninguém entra nesses níveis sem aprovar o exame, que é **pago** (valor vigente na tabela de procedimentos, `docs/REGRAS-NEGOCIO.md` §3/§5). Hoje roda em Google Forms com correção manual; na plataforma vira exame online com **resultado calculado automaticamente**. Aprovado → segue pra pagar o nível alto (paquete ou mensual); reprovado → começa do básico. **Em aberto no desenho:** se o exame pode ser feito sem registro prévio (resultado → opção de matricular) ou se exige registro antes — os dois caminhos foram descritos, qual (ou se ambos) fica pra hora de desenhar o fluxo. Validade do resultado também não foi definida.
 - **Quem já é aluno não volta pelo site público (decisão 02/09/2026).** Repetir módulo, exame de rezagados (pago), próximo nível e re-matrícula saem do **portal do aluno**, puxando o cadastro existente — nunca duplicando `student`. E-mails de gatilho convidam pro próximo curso/nível. As solicitações pagas do portal seguem o mesmo padrão da constancia: solicitação com pagamento associado, comprovante + OCR + fila de revisão.
+- **Um documento, uma pessoa, uma ficha (decisão 21/09/2026).** O par `(national_id_type, national_id)` identifica o aluno — nunca o nome, nunca o e-mail. Até esta data todo caminho que escrevia aluno fazia `INSERT` cego, então o mesmo DNI abria tantas fichas quantas vezes fosse digitado, e cada ficha levava um pedaço do histórico junto (matrícula e pagamento penduram no `student_id` que estava valendo naquele dia). Agora:
+  - **O checkout público reaproveita a ficha existente.** Achou o documento, matricula sobre aquela pessoa e **atualiza só o contato** que ela acabou de redigitar (e-mail, celular, país/região/cidade). Nome, documento e data de nascimento ficam intactos — corrigir isso é ato de staff com trilha de auditoria, não efeito colateral de um checkout. Idem para o apoderado: `guardians.student_id` é único, então a ficha do apoderado é atualizada no lugar e o **consentimento novo é anexado** (a tabela `consents` é append — cada aceite é um registro, com versão, data e IP).
+  - **O cadastro manual recusa.** Documento já na base → `StudentAlreadyRegisteredError` (422) e a tela manda procurar no diretório. A diferença é intencional: no checkout quem digita é a própria pessoa, então dá pra levá-la de volta à ficha dela; no painel é um terceiro afirmando que uma pessoa nova existe, e um formulário de criar não pode reescrever em silêncio os dados de um estranho por causa de um DNI errado.
+  - **Apagar ou invalidar a ficha antiga está fora** — §6 proíbe delete físico em `student`, e invalidar a antiga partiria o histórico entre dois ids que as FKs (`onDelete: restrict`) seguram de pé.
+  - **Em aberto:** o índice único em `(national_id_type, national_id)` ainda **não existe**. Vai em duas etapas (§7, expand/contract): primeiro consolidar as duplicatas que já estão na base — `pnpm --filter @ooc/api report:duplicate-students` lista cada documento repetido e quantas matrículas cada cópia carrega —, depois a migration do índice parcial (`where deleted_at is null`). Enquanto ele não existe, a garantia é só de aplicação: duas gravações simultâneas do mesmo documento ainda passam.
 - **Congelamento de matrícula (decisão 02/09/2026).** Procedimento pago (tabela §5 da `docs/REGRAS-NEGOCIO.md`), gerido pelo aluno no portal e pela coordenação no backoffice. O aluno volta **só no módulo em que parou**, **sem prazo máximo** — com cadência de e-mails de reengajamento em **1, 3 e 6 meses** (o de 6 é o último; depois dele, silêncio, não exclusão). Não disponível para intermedio/avanzado (regra atual, §5 da doc de regras).
 - **Progressão de módulo é em lote, com o mesmo docente (decisão 02/09/2026).** Ao fim de um módulo, os aprovados seguem juntos pro módulo seguinte com o mesmo docente — independente de serem mensual ou paquete completo. Quem reprovou ou não pagou o mês (mensual) tem o **acesso à aula bloqueado no portal do aluno** — o "cadeado" é a opção de acessar a aula no portal, **não** integração com o Google Classroom (integração está em estudo, fora do escopo por ora — §2). Mesmo padrão do certificado: o sistema prepara a lista, a coordenação confirma.
 
@@ -137,7 +142,7 @@ packages/
 | Camada | Idioma |
 | --- | --- |
 | Tabelas, colunas, enums, funções, variáveis, tipos | Inglês |
-| Branches, commits, comentários de código | Inglês |
+| Branches, commits, comentários de código | Inglês — **sem exceção** (ver §9) |
 | Chaves de i18n | Inglês (`payment.status.under_review`) |
 | **Todo texto visível ao usuário** | **Trilíngue**: `es-PE.json` (padrão) · `pt-BR.json` · `en.json` |
 | Templates de e-mail, PDFs, manual | **Trilíngue**, `es-PE` padrão |
@@ -629,7 +634,8 @@ O `role` **nunca** mora em lugar que o próprio usuário escreve. Regras duras:
 - **Não invente regra de negócio.** Se eu der um exemplo, é exemplo — não generalize para regra. Em dúvida, pergunte.
 - **Pergunte antes de assumir** volume, preço, nome de curso, quantidade de turmas.
 - Mudança de banco = migration versionada. Nunca `psql` direto em ambiente remoto.
-- Commits pequenos e em inglês, no formato convencional (`feat:`, `fix:`, `chore:`).
+- **Todo commit é em inglês. Sem exceção, e isso vale para a mensagem inteira** — título e corpo, não só o prefixo convencional. O mesmo para nome de branch, título e descrição de PR, e comentário de código. A regra já estava na tabela do §4; está repetida aqui porque é a que mais escapa na hora de escrever. Nossa conversa continua em português; o que vai pro Git, não.
+- Commits pequenos, no formato convencional (`feat:`, `fix:`, `chore:`).
 - Antes de escrever código novo, diga em uma linha o que vai fazer e onde.
 - Se um pedido meu contradisser este arquivo, **avise antes de executar**.
 - Prefira explicitar o trade-off a escolher em silêncio.

@@ -62,6 +62,7 @@ export default async function StudentsPage({
       <StudentsTable
         rows={page.items}
         initialNextCursor={page.nextCursor}
+        total={page.total}
         canCreate={canCreateStudent(staff.role)}
       />
     </div>

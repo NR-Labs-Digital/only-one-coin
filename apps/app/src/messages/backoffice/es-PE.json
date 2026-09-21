@@ -175,6 +175,7 @@
       "cancel": "Cancelar",
       "created": "Alumno registrado.",
       "submit_error": "No se pudo registrar al alumno. Intenta de nuevo.",
+      "duplicate_error": "Ya hay un alumno registrado con este documento. Búscalo en el directorio: su ficha ya existe y la matrícula se abre sobre ella.",
       "missing_fields": "Completa los campos obligatorios para registrar al alumno."
     },
     "national_id_type": {
@@ -413,6 +414,9 @@
       "other": "Otro motivo"
     },
     "enrollments": {
+      "truncated_notice": "Se muestran las {shown} matrículas más recientes de {total}. Las métricas de arriba cuentan el ciclo completo; el listado todavía no pagina desde el servidor.",
+      "load_error_title": "No se pudo cargar el listado de matrículas",
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "title": "Matrículas",
       "tab_ledger": "Listado",
       "tab_reservations": "Reservas",

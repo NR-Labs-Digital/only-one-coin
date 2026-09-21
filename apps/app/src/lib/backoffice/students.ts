@@ -7,6 +7,9 @@ export interface StudentListPage {
    * straight back as `?cursor=` to fetch the next page. Always null for a
    * `q` search (a short, non-paginated match list). */
   nextCursor: string | null
+  /** Live students in total (directory browse only; null for a `q` search) —
+   * what lets the table offer pages it has not fetched yet. */
+  total: number | null
 }
 
 /**
