@@ -21,6 +21,8 @@
     "seed": "pnpm --filter @ooc/api seed",
     "seed:admin": "pnpm --filter @ooc/api seed:admin",
     "seed:catalog": "pnpm --filter @ooc/api seed:catalog",
+    "seed:students": "pnpm --filter @ooc/api seed:students",
+    "seed:enrollments": "pnpm --filter @ooc/api seed:enrollments",
     "build": "pnpm -r build",
     "build:landing": "pnpm --filter @ooc/landing build",
     "build:app": "pnpm --filter @ooc/app build",

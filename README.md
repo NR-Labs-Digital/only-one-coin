@@ -39,6 +39,30 @@ das telas do app é mockada, então nada disso precisa de banco; `pnpm db:up` +
 `pnpm dev:api` entram quando o trabalho for na API ou nas telas já ligadas a
 ela (diretório e ficha de aluno, livro de matrículas).
 
+Para trabalhar nessas telas com uma lista de verdade — paginação, busca,
+filtro de menores — há um seed de gente inventada:
+
+```bash
+# contra Postgres local
+pnpm db:up && pnpm db:migrate
+pnpm seed:students                   # 300 alunos; --count=N para outro tamanho
+
+# contra um banco gerenciado (Neon), que exige nomear o destino
+pnpm seed:students -- --confirm-host=ep-xxx.sa-east-1.aws.neon.tech
+pnpm seed:students -- --confirm-host=ep-xxx... --undo   # desfaz
+```
+
+Banco local escreve sem cerimônia. **Qualquer outro host exige
+`--confirm-host=<hostname>` batendo com a `DATABASE_URL`** — digitar o destino
+é a trava: impede que o seed caia no que a `.env` estiver apontando naquele
+dia. Build de produção (`NODE_ENV=production`) é recusado sem flag nenhuma.
+
+Rodar de novo não duplica ninguém: as pessoas são determinísticas e o documento
+já cadastrado é pulado. **`--undo`** aposenta o que o seed criou com
+`deleted_at` — nunca DELETE, que não tem grant em `students` (§6) — e deixa em
+paz quem já tiver matrícula. É o que substitui o `pnpm db:reset` quando o banco
+não está na sua máquina.
+
 Os CTAs da landing (`/enrollment` e `/login`, nos três idiomas) são links
 relativos de propósito — para quem lê é tudo o mesmo site. Quem os atravessa
 para o app é o Vercel em produção e o dev server no local: copie
