@@ -44,6 +44,19 @@ interface StudentSearchResult {
   nationalId: string
 }
 
+/**
+ * `GET /api/v1/students` answers a page, not a bare array: it is the same route
+ * the student directory browses, cursor-paginated since #86. A `q` search is
+ * never paginated — the API returns the whole (short) match list with
+ * `nextCursor` null — so the picker reads `items` and ignores the cursor.
+ */
+interface StudentSearchPage {
+  items: StudentSearchResult[]
+  nextCursor: string | null
+}
+
+const EMPTY_PAGE: StudentSearchPage = { items: [], nextCursor: null }
+
 interface OpenClassGroup {
   id: string
   courseId: string
@@ -139,9 +152,15 @@ export function NewEnrollmentForm({
     let cancelled = false
     const timeout = window.setTimeout(() => {
       fetch(`/api/v1/students?q=${encodeURIComponent(query)}`)
-        .then((response) => (response.ok ? (response.json() as Promise<StudentSearchResult[]>) : []))
-        .then((data) => {
-          if (!cancelled) setMatches(data)
+        .then((response) =>
+          response.ok ? (response.json() as Promise<StudentSearchPage>) : EMPTY_PAGE,
+        )
+        .then((page) => {
+          // Defensive: the cast above is a promise, not a proof. Reading a
+          // shape the API no longer sends is exactly what broke this picker
+          // once — a wrong answer must degrade to "no matches", never to a
+          // `.map` on something that isn't a list.
+          if (!cancelled) setMatches(Array.isArray(page?.items) ? page.items : [])
         })
         .catch(() => {
           if (!cancelled) setMatches([])
