@@ -25,7 +25,7 @@ export {
 } from "./student/Guardian.js";
 export type { GuardianProps, CreateGuardianDTO, GuardianRelationship } from "./student/Guardian.js";
 export type { IGuardianRepository } from "./student/GuardianRepository.js";
-export { GuardianRequiredForMinorError } from "./student/errors.js";
+export { GuardianRequiredForMinorError, StudentAlreadyRegisteredError } from "./student/errors.js";
 export {
   RegisterStudentUseCase,
   type RegisterStudentInput,

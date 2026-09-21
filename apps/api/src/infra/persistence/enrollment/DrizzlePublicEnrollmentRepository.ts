@@ -15,7 +15,7 @@ import {
   type SubmitPublicEnrollmentResult,
 } from "@ooc/domain";
 import { classGroups, consents, courses, enrollments, guardians, payments, planPrices, plans, students } from "@ooc/db";
-import { and, eq, lt, lte, desc, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, lte, desc, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -81,46 +81,110 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
         throw new ClassGroupFullError();
       }
 
-      const [studentRow] = await tx
-        .insert(students)
-        .values({
-          id: params.student.id,
-          firstName: params.student.firstName,
-          lastName: params.student.lastName,
-          nationalIdType: params.student.nationalIdType,
-          nationalId: params.student.nationalId,
-          email: params.student.email,
-          phone: params.student.phone,
-          birthDate: params.student.birthDate,
-          country: params.student.country,
-          region: params.student.region,
-          city: params.student.city,
-        })
-        .returning();
+      // One person, one record (CLAUDE.md §1): the document decides, not the
+      // id the usecase proposed. A returning student re-typing their name with
+      // a different accent, or a new e-mail, is the same human being — and a
+      // second row here is what splits their history in two, since every
+      // enrollment and payment hangs off whichever id was written that day.
+      const [existingStudent] = await tx
+        .select()
+        .from(students)
+        .where(
+          and(
+            eq(students.nationalIdType, params.student.nationalIdType),
+            eq(students.nationalId, params.student.nationalId),
+            // A retired record does not answer for the person any more
+            // (CLAUDE.md §6 — soft delete is the only delete there is).
+            isNull(students.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      const [studentRow] = existingStudent
+        ? // Contact details are refreshed, identity is not: the person just
+          // told us their current e-mail, phone and city, and that is the
+          // whole reason they could still receive the Classroom invite. Name,
+          // document and birth date are left alone — correcting those is a
+          // staff act with an audit trail, not a side effect of a checkout.
+          await tx
+            .update(students)
+            .set({
+              email: params.student.email,
+              phone: params.student.phone,
+              country: params.student.country,
+              region: params.student.region,
+              city: params.student.city,
+              updatedAt: new Date(),
+            })
+            .where(eq(students.id, existingStudent.id))
+            .returning()
+        : await tx
+            .insert(students)
+            .values({
+              id: params.student.id,
+              firstName: params.student.firstName,
+              lastName: params.student.lastName,
+              nationalIdType: params.student.nationalIdType,
+              nationalId: params.student.nationalId,
+              email: params.student.email,
+              phone: params.student.phone,
+              birthDate: params.student.birthDate,
+              country: params.student.country,
+              region: params.student.region,
+              city: params.student.city,
+            })
+            .returning();
 
       if (!studentRow) {
-        throw new Error("Insert into students returned no row");
+        throw new Error("Writing the student returned no row");
       }
 
       let guardianResult: Guardian | null = null;
       if (params.guardian) {
-        const [guardianRow] = await tx
-          .insert(guardians)
-          .values({
-            id: params.guardian.id,
-            studentId: studentRow.id,
-            firstName: params.guardian.firstName,
-            lastName: params.guardian.lastName,
-            relationship: params.guardian.relationship,
-            nationalIdType: params.guardian.nationalIdType,
-            nationalId: params.guardian.nationalId,
-            email: params.guardian.email,
-            phone: params.guardian.phone,
-          })
-          .returning();
+        // `guardians.student_id` is UNIQUE, so a returning minor cannot get a
+        // second guardian row — and must not: the apoderado on file is the one
+        // whose consent the institution holds. The record is updated in place
+        // and the new acceptance is appended below, which is also how an
+        // apoderado who changed (a mother enrolling this time, a father the
+        // last) ends up on the record that the class group actually reads.
+        const [existingGuardian] = await tx
+          .select()
+          .from(guardians)
+          .where(eq(guardians.studentId, studentRow.id))
+          .limit(1);
+
+        const [guardianRow] = existingGuardian
+          ? await tx
+              .update(guardians)
+              .set({
+                firstName: params.guardian.firstName,
+                lastName: params.guardian.lastName,
+                relationship: params.guardian.relationship,
+                nationalIdType: params.guardian.nationalIdType,
+                nationalId: params.guardian.nationalId,
+                email: params.guardian.email,
+                phone: params.guardian.phone,
+                updatedAt: new Date(),
+              })
+              .where(eq(guardians.id, existingGuardian.id))
+              .returning()
+          : await tx
+              .insert(guardians)
+              .values({
+                id: params.guardian.id,
+                studentId: studentRow.id,
+                firstName: params.guardian.firstName,
+                lastName: params.guardian.lastName,
+                relationship: params.guardian.relationship,
+                nationalIdType: params.guardian.nationalIdType,
+                nationalId: params.guardian.nationalId,
+                email: params.guardian.email,
+                phone: params.guardian.phone,
+              })
+              .returning();
 
         if (!guardianRow) {
-          throw new Error("Insert into guardians returned no row");
+          throw new Error("Writing the guardian returned no row");
         }
 
         if (params.consent) {

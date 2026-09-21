@@ -175,6 +175,7 @@
       "cancel": "Cancel",
       "created": "Student registered.",
       "submit_error": "Could not register the student. Try again.",
+      "duplicate_error": "A student is already registered under this document. Find them in the directory: their file exists, and the enrollment is opened over it.",
       "missing_fields": "Fill in the required fields to register the student."
     },
     "national_id_type": {

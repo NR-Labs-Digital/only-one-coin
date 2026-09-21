@@ -175,6 +175,7 @@
       "cancel": "Cancelar",
       "created": "Aluno cadastrado.",
       "submit_error": "Não foi possível cadastrar o aluno. Tente novamente.",
+      "duplicate_error": "Já existe um aluno cadastrado com este documento. Procure-o no diretório: a ficha já existe e a matrícula é aberta sobre ela.",
       "missing_fields": "Preencha os campos obrigatórios para cadastrar o aluno."
     },
     "national_id_type": {
