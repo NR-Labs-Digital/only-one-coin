@@ -25,15 +25,36 @@ env:
 
 jobs:
   # Portão de CI item 1 (CLAUDE.md §6) — segredo commitado.
+  #
+  # Roda o binário do gitleaks, não a action `gitleaks/gitleaks-action@v2`: a
+  # action recusa rodar em repositório de organização sem `GITLEAKS_LICENSE`
+  # ("[NR-Labs-Digital] is an organization. License key is required"), e era
+  # isso — não um segredo encontrado — que reprovava este job em todo PR. O
+  # gitleaks em si é MIT e não pede licença nenhuma; quem cobra é o wrapper.
+  #
+  # Trocar o wrapper pelo binário mantém o portão do §6 de pé. Desligar a
+  # varredura resolveria o CI vermelho e deixaria o repo sem a única defesa
+  # automática contra `.env` commitado — que é justamente o erro proibido que
+  # ela existe para pegar.
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          # Histórico inteiro: um segredo commitado e removido depois continua
+          # no histórico, e é lá que ele vaza.
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - name: Install gitleaks
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Scan history for committed secrets
+        # `--redact` para o próprio log do CI não virar o vazamento; exit != 0
+        # quando acha algo, que é o que reprova o merge.
+        run: gitleaks git --redact --verbose .
 
   # Portão de CI item 3 (tsc --noEmit) + build de todo o monorepo.
   # Item 4 (ESLint com no-floating-promises/no-literal-string) ainda não
