@@ -36,10 +36,36 @@ pnpm dev:web
 Sobe os dois de uma vez: a landing (Astro) em `localhost:4321` e o app
 (Next.js — matrícula, portal e backoffice) em `localhost:3000`. Boa parte do
 backoffice ainda é mockada e não precisa de banco — mas várias telas já falam
-com `apps/api` de verdade (alunos, equipe, funcionalidades, matrícula manual;
-ver "Estado atual" abaixo) e ficam com erro de rede sem ela. Para trabalhar
-nessas telas, ou em qualquer coisa do lado do servidor: `pnpm db:up` +
+com `apps/api` de verdade (alunos, equipe, funcionalidades, matrícula manual e
+o livro de matrículas; ver "Estado atual" abaixo) e ficam com erro de rede sem
+ela. Para essas telas, ou qualquer coisa do lado do servidor: `pnpm db:up` +
 `pnpm dev:api`.
+
+Para trabalhar com uma lista de verdade — paginação, busca, filtro de menores
+— há um seed de gente inventada:
+
+```bash
+# contra Postgres local
+pnpm db:up && pnpm db:migrate
+pnpm seed:students                   # 300 alunos; --count=N para outro tamanho
+
+# contra um banco gerenciado (Neon), que exige nomear o destino
+pnpm seed:students -- --confirm-host=ep-xxx.sa-east-1.aws.neon.tech
+pnpm seed:students -- --confirm-host=ep-xxx... --undo   # desfaz
+```
+
+Banco local escreve sem cerimônia. **Qualquer outro host exige
+`--confirm-host=<hostname>` batendo com a `DATABASE_URL`** — digitar o destino
+é a trava: impede que o seed caia no que a `.env` estiver apontando naquele
+dia. Build de produção (`NODE_ENV=production`) é recusado sem flag nenhuma.
+
+Rodar de novo não duplica ninguém: as pessoas são determinísticas e o documento
+já cadastrado é pulado. **`--undo`** aposenta o que o seed criou com
+`deleted_at` — nunca DELETE, que não tem grant em `students` (§6) — e deixa em
+paz quem já tiver matrícula. É o que substitui o `pnpm db:reset` quando o banco
+não está na sua máquina. `pnpm seed:enrollments` (mesma convenção de
+`--confirm-host`/`--count`, sem `--undo` — matrícula e pagamento não têm
+`deleted_at`) popula o livro de matrículas por cima dos alunos já semeados.
 
 Os CTAs da landing (`/enrollment` e `/login`, nos três idiomas) são links
 relativos de propósito — para quem lê é tudo o mesmo site. Quem os atravessa
@@ -87,7 +113,10 @@ Sessão 7) já existem. Domínio e fila já existem, independentes dessa escolha
   seguem `noindex` enquanto forem placeholder.
 - `apps/app` — Next.js App Router: layout, roteamento, i18n trilíngue e as telas
   em parte já ligadas a `apps/api`, em parte ainda **mockup** — quadro
-  completo em "Estado de integração por tela" mais abaixo. As telas são **desenhadas para o celular**,
+  completo em "Estado de integração por tela" mais abaixo, com o **livro de
+  matrículas** (`GET /enrollments` — lista, métricas do ciclo e a linha de
+  abertura manual, todos relidos do servidor) entre as exceções reais desde a
+  última sessão. As telas são **desenhadas para o celular**,
   não só encolhidas nele (`docs/ARCHITECTURE.md` §7.1): menu do portal numa
   barra de abas no rodapé, tabela densa do painel virando lista com o nome da
   coluna como etiqueta, modal virando folha de baixo, safe area do notch e da
@@ -274,7 +303,7 @@ o que é real:
 | Tela | Estado |
 | --- | --- |
 | Alunos (`/backoffice/students`) | **Real**: listagem, ficha e criação chamam a API. Edição é stub de frontend (fica em estado local; a escrita real ainda não existe) |
-| Matrículas (`/backoffice/enrollments`) | Listagem e métricas são mock; **abrir matrícula manual é real** (`POST /api/v1/enrollments`) |
+| Matrículas (`/backoffice/enrollments`) | **Real**: listagem, métricas do ciclo e abertura manual (`GET`/`POST /api/v1/enrollments`) |
 | Reservas de vaga (`/backoffice/enrollments/reservations`) | Mock |
 | Pagamentos e fila de revisão (`/backoffice/payments`, `/payments/review`) | Mock — não existe ainda ação em lote nem endpoint de pagamento avulso |
 | Turmas (`/backoffice/class-groups`) | Mock — `apps/api` só expõe leitura (`GET /class-groups`); não há rota de criar/editar turma |

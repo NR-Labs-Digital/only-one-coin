@@ -44,6 +44,10 @@ const StudentListResponseSchema = z.object({
   // Present (non-null) only for the no-`q` directory browse when another
   // page follows — `q` searches are a short, non-paginated list.
   nextCursor: z.string().nullable(),
+  // Live students in total, for the directory browse only — what lets the
+  // screen's pager offer the pages it has not fetched yet. Null for a `q`
+  // search, which is a capped match list.
+  total: z.number().int().nullable(),
 });
 
 // management + enrollment supervision only — same audience as the rest of the student
@@ -70,5 +74,6 @@ export const listStudentsRoute = RouteBuilder.get("/students")
         lastActivityAt: row.lastActivityAt.toISOString(),
       })),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   });

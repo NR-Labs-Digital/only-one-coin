@@ -53,6 +53,7 @@ import { DrizzlePublicEnrollmentRepository } from "./infra/persistence/enrollmen
 import { DrizzlePlanPriceLookup } from "./infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
+import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollmentsQuery.js";
 import { ListOpenClassGroupsQuery } from "./infra/persistence/catalog/ListOpenClassGroupsQuery.js";
 import { GetPublicCatalogQuery } from "./infra/persistence/catalog/GetPublicCatalogQuery.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
@@ -98,6 +99,7 @@ export interface AppUseCases {
 
 export interface AppQueries {
   listStudents: ListStudentsQuery;
+  listEnrollments: ListEnrollmentsQuery;
   getStudent: GetStudentQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
@@ -181,6 +183,7 @@ function buildContainer(): AppContainer {
   // Queries (read-only, no domain invariant to protect — see class docs)
   const listStudents = new ListStudentsQuery(db);
   const getStudent = new GetStudentQuery(db);
+  const listEnrollments = new ListEnrollmentsQuery(db);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
   const getPublicCatalog = new GetPublicCatalogQuery(db);
   const listStaff = new ListStaffQuery(db);
@@ -240,6 +243,7 @@ function buildContainer(): AppContainer {
     queries: {
       listStudents,
       getStudent,
+      listEnrollments,
       listOpenClassGroups,
       getPublicCatalog,
       listStaff,

@@ -97,7 +97,14 @@ export function NewStudentForm({
   const [guardian, setGuardian] = useState<EditableGuardian>(EMPTY_GUARDIAN)
   const [guardianAsked, setGuardianAsked] = useState(false)
   const [pending, setPending] = useState(false)
-  const [submitError, setSubmitError] = useState(false)
+  /**
+   * Which failure, not whether one happened: "ya existe un alumno con este
+   * documento" is an instruction (go find them in the directory) and "intenta
+   * de nuevo" is not. A discriminated union rather than the API's `reason`
+   * string carried into the markup — a domain code never reaches the screen
+   * (CLAUDE.md §4).
+   */
+  const [submitError, setSubmitError] = useState<'none' | 'generic' | 'duplicate'>('none')
 
   function set<K extends keyof EditableStudent>(key: K, next: EditableStudent[K]) {
     setStudent((prev) => ({ ...prev, [key]: next }))
@@ -153,7 +160,7 @@ export function NewStudentForm({
     event.preventDefault()
     if (pending || !ready) return
     setPending(true)
-    setSubmitError(false)
+    setSubmitError('none')
 
     try {
       const response = await fetch('/api/v1/students', {
@@ -187,7 +194,11 @@ export function NewStudentForm({
       })
 
       if (!response.ok) {
-        setSubmitError(true)
+        /* The API answers the project's error envelope, `{status, reason}`
+           (docs/ARCHITECTURE.md §5.7). Only the one reason this form can act
+           on is read; anything else is a failure the person can only retry. */
+        const failure = (await response.json().catch(() => null)) as { reason?: string } | null
+        setSubmitError(failure?.reason === 'student.already_registered' ? 'duplicate' : 'generic')
         return
       }
 
@@ -217,7 +228,7 @@ export function NewStudentForm({
         lastActivityAt: now,
       })
     } catch {
-      setSubmitError(true)
+      setSubmitError('generic')
     } finally {
       setPending(false)
     }
@@ -564,9 +575,11 @@ export function NewStudentForm({
               {t('new_student.missing_fields')}
             </span>
           )}
-          {submitError && (
+          {submitError !== 'none' && (
             <span className="text-xs font-medium text-red-600">
-              {t('new_student.submit_error')}
+              {submitError === 'duplicate'
+                ? t('new_student.duplicate_error')
+                : t('new_student.submit_error')}
             </span>
           )}
         </div>

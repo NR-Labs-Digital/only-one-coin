@@ -51,7 +51,7 @@ src/
     RootRoute.ts, HealthCheckRoute.ts
     auth/AuthCatchAllRoute.ts            # traduz erro nativo do Better Auth pro envelope do projeto
     catalog/                              # GetPublicCatalogRoute, ListOpenClassGroupsRoute
-    enrollment/                           # SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute (backoffice)
+    enrollment/                           # SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute e ListEnrollmentsRoute (backoffice)
     identity/                             # staff: convite, promoção de cargo, acesso, redefinição de senha, bitácora
     platform/                             # feature flags: Get/List/Set
     student/                              # GetStudentRoute, ListStudentsRoute, RegisterStudentRoute
@@ -62,14 +62,18 @@ src/
     logger.ts                     # pino compartilhado (container.logger)
     auth/betterAuth.ts             # Better Auth embutido no processo
     identity/                      # adapters Drizzle de identidade (staff, convites, audit_log, role) + pontes com o Better Auth
-    persistence/                   # repositórios/queries Drizzle por bounded context: student/, enrollment/, catalog/, identity/, platform/
+    persistence/                   # repositórios/queries Drizzle por bounded context: student/, enrollment/ (inclui ListEnrollmentsQuery), catalog/, identity/, platform/
     plugins/
       authorization.ts               # deny-by-default: rota sem .roles()/.owners()/.public() falha o boot; onRequest resolve sessão e checa papel/domínio
       errorHandler.ts                 # setErrorHandler global — mapeia HttpError (@ooc/domain) e erro zod pro envelope de ErrorResponseSchema
       swagger.ts, authSwagger.ts      # docs interativas (fora de produção)
   scripts/
     seed-admin.ts, seed-catalog.ts             # bootstrap local (ver CLAUDE.md §8 "Bootstrap")
+    seed-students.ts, seed-enrollments.ts       # dado fictício e determinístico pro backoffice ter lista de verdade (ver README.md da raiz, "Rodar local") — sempre exigem --confirm-host fora do Postgres local
+    report-duplicate-students.ts                 # lista documento repetido e quantas matrículas cada cópia carrega — passo prévio ao índice único de (national_id_type, national_id), CLAUDE.md §1
     import-legacy-enrollments.ts, legacy-import/  # importador da base antiga (dry-run, deduplicação)
+  tests/
+    register-student-dedupe.test.ts, seed-students.test.ts, seed-enrollments.test.ts
   shared/http/RouteBuilder.ts, ErrorResponseSchema.ts
 ```
 
@@ -93,6 +97,11 @@ substituída pelos bounded contexts reais acima.
   tabela nem repositório de `teachers`, de turma no lado da escrita (só
   leitura, `GET /class-groups`), de `payments` avulso fora do fluxo de
   matrícula, nem de `attendance`/`grades`/`materials`/`certificates`/`outbox`/`campaigns`.
+- **Índice único de documento** (`national_id_type` + `national_id`, CLAUDE.md
+  §1 "Um documento, uma pessoa, uma ficha"): ainda não existe — só a garantia
+  de aplicação no `RegisterStudentUseCase`. `scripts/report-duplicate-students.ts`
+  é o passo prévio (lista as duplicatas já na base) antes da migration do
+  índice parcial.
 - **OCR**: não iniciado. O checkout público (`SubmitPublicEnrollmentRoute`)
   já grava `payments`/`payment_receipts` e reserva a vaga atomicamente com
   idempotency key, mas não enfileira job de extração, não tem upload por

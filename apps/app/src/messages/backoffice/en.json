@@ -175,6 +175,7 @@
       "cancel": "Cancel",
       "created": "Student registered.",
       "submit_error": "Could not register the student. Try again.",
+      "duplicate_error": "A student is already registered under this document. Find them in the directory: their file exists, and the enrollment is opened over it.",
       "missing_fields": "Fill in the required fields to register the student."
     },
     "national_id_type": {
@@ -413,6 +414,9 @@
       "other": "Another reason"
     },
     "enrollments": {
+      "truncated_notice": "Showing the {shown} most recent enrollments of {total}. The figures above count the whole ciclo; the list does not page server-side yet.",
+      "load_error_title": "Could not load the enrollment ledger",
+      "load_error_body": "The system did not answer. Reload the page; if it stays this way, tell the technical team.",
       "title": "Enrollments",
       "tab_ledger": "Ledger",
       "tab_reservations": "Reservations",

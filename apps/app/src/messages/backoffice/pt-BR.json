@@ -175,6 +175,7 @@
       "cancel": "Cancelar",
       "created": "Aluno cadastrado.",
       "submit_error": "Não foi possível cadastrar o aluno. Tente novamente.",
+      "duplicate_error": "Já existe um aluno cadastrado com este documento. Procure-o no diretório: a ficha já existe e a matrícula é aberta sobre ela.",
       "missing_fields": "Preencha os campos obrigatórios para cadastrar o aluno."
     },
     "national_id_type": {
@@ -413,6 +414,9 @@
       "other": "Outro motivo"
     },
     "enrollments": {
+      "truncated_notice": "Mostrando as {shown} matrículas mais recentes de {total}. As métricas acima contam o ciclo inteiro; a listagem ainda não pagina pelo servidor.",
+      "load_error_title": "Não foi possível carregar a lista de matrículas",
+      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar assim, avise a equipe técnica.",
       "title": "Matrículas",
       "tab_ledger": "Listagem",
       "tab_reservations": "Reservas",
