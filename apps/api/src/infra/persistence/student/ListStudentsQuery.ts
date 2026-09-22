@@ -169,7 +169,10 @@ export class ListStudentsQuery {
         lastEnrollmentAt: sql<Date | null>`max(${enrollments.updatedAt})`,
       })
       .from(students)
-      .leftJoin(enrollments, eq(enrollments.studentId, students.id))
+      // Retired enrollments do not count towards the student's numbers
+      // (CLAUDE.md §6) — joined, not filtered in WHERE, so a student with
+      // only retired enrollments still lists, with zeroes.
+      .leftJoin(enrollments, and(eq(enrollments.studentId, students.id), isNull(enrollments.deletedAt)))
       .where(cursorFilter ? and(baseFilter, cursorFilter) : baseFilter)
       .groupBy(students.id)
       .orderBy(desc(students.createdAt), desc(students.id))

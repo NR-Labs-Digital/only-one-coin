@@ -9,13 +9,16 @@ import {
   CreateStaffPasswordResetUseCase,
   PromoteUserRoleUseCase,
   RegisterStudentUseCase,
+  RetireCatalogEntryUseCase,
   RemoveStaffAccessUseCase,
   RenewStaffInviteUseCase,
   RenewStaffPasswordResetUseCase,
+  RestoreCatalogEntryUseCase,
   RestoreStaffAccessUseCase,
   SetFeatureFlagOverrideUseCase,
   SubmitPublicEnrollmentUseCase,
   type IAuditLogRepository,
+  type ICatalogEntryRepository,
   type ICurrentSessionPort,
   type IEnrollmentRepository,
   type IFeatureFlagOverrideRepository,
@@ -56,11 +59,13 @@ import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js"
 import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollmentsQuery.js";
 import { ListOpenClassGroupsQuery } from "./infra/persistence/catalog/ListOpenClassGroupsQuery.js";
 import { GetPublicCatalogQuery } from "./infra/persistence/catalog/GetPublicCatalogQuery.js";
+import { DrizzleCatalogEntryRepository } from "./infra/persistence/catalog/DrizzleCatalogEntryRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 
 export interface AppRepositories {
+  catalogEntry: ICatalogEntryRepository;
   student: IStudentRepository;
   guardian: IGuardianRepository;
   enrollment: IEnrollmentRepository;
@@ -94,6 +99,10 @@ export interface AppUseCases {
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
+  };
+  catalog: {
+    retire: RetireCatalogEntryUseCase;
+    restore: RestoreCatalogEntryUseCase;
   };
 }
 
@@ -157,6 +166,7 @@ function buildContainer(): AppContainer {
   const staffPasswordResetRepository = new DrizzleStaffPasswordResetRepository(db);
   const staffPasswordSetter = new BetterAuthStaffPasswordSetter(db);
   const featureFlagOverrideRepository = new DrizzleFeatureFlagOverrideRepository(db);
+  const catalogEntryRepository = new DrizzleCatalogEntryRepository(db);
 
   // Use cases
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository);
@@ -179,6 +189,9 @@ function buildContainer(): AppContainer {
   );
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
+
+  const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
+  const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
 
   // Queries (read-only, no domain invariant to protect — see class docs)
   const listStudents = new ListStudentsQuery(db);
@@ -206,6 +219,7 @@ function buildContainer(): AppContainer {
       staffPasswordSetter,
     },
     repositories: {
+      catalogEntry: catalogEntryRepository,
       student: studentRepository,
       guardian: guardianRepository,
       enrollment: enrollmentRepository,
@@ -238,6 +252,10 @@ function buildContainer(): AppContainer {
       },
       platform: {
         setFeatureFlag,
+      },
+      catalog: {
+        retire: retireCatalogEntry,
+        restore: restoreCatalogEntry,
       },
     },
     queries: {

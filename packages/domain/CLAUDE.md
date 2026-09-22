@@ -10,6 +10,12 @@ Vale pra qualquer bounded context novo (não só `identity`/`enrollment` etc.): 
 
 Detalhe de padrão (`BaseModel`/`BaseUseCase`, `RouteBuilder`, `container.ts`, entrypoints) está em [`packages/domain/README.md`](README.md) e `apps/api/README.md` — não duplicado aqui. Estrutura e dependência entre os pacotes: `docs/ARCHITECTURE.md` §1.
 
+## Aposentar é marcar, nunca apagar
+
+Entidade cuja linha pode ser aposentada estende **`SoftDeletableModel`** (`deletedAt`, `isDeleted`, `softDelete()`); entidade append-only estende **`BaseModel`** e fica sem `softDelete()` — de propósito. A separação não é estilo: a migration `0011` faz o Postgres **recusar** DELETE em `payments`, `payment_receipts`, `consents` e `audit_log`, e um método que o banco responde com exceção não é contrato, é armadilha pra quem implementar a porta depois. Pelo mesmo motivo `IBaseRepository` não tem `delete(id)`, e quem precisa dele usa `ISoftDeletableRepository`.
+
+Hoje estendem `SoftDeletableModel`: `Student`, `Guardian`, `Enrollment`. `Payment` não — `status` já diz que um pagamento não vale. A lista de tabelas correspondente está em `packages/db/CLAUDE.md`.
+
 ## Exceção documentada à regra acima
 
 O vocabulário de erro HTTP (`src/shared/base/errors/` — `HttpError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `UnableToProcessEntryError`) carrega uma noção de HTTP (`status`) dentro do pacote de domínio. Decisão consciente pra reaproveitar o mesmo vocabulário entre `apps/api` e qualquer bounded context futuro, em vez de duplicar a classe do lado de fora.

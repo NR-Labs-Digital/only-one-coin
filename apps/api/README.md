@@ -50,7 +50,7 @@ src/
   http/
     RootRoute.ts, HealthCheckRoute.ts
     auth/AuthCatchAllRoute.ts            # traduz erro nativo do Better Auth pro envelope do projeto
-    catalog/                              # GetPublicCatalogRoute, ListOpenClassGroupsRoute
+    catalog/                              # GetPublicCatalogRoute, ListOpenClassGroupsRoute, RetireCatalogEntryRoute, RestoreCatalogEntryRoute
     enrollment/                           # SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute e ListEnrollmentsRoute (backoffice)
     identity/                             # staff: convite, promoção de cargo, acesso, redefinição de senha, bitácora
     platform/                             # feature flags: Get/List/Set
@@ -73,7 +73,7 @@ src/
     report-duplicate-students.ts                 # lista documento repetido e quantas matrículas cada cópia carrega — passo prévio ao índice único de (national_id_type, national_id), CLAUDE.md §1
     import-legacy-enrollments.ts, legacy-import/  # importador da base antiga (dry-run, deduplicação)
   tests/
-    register-student-dedupe.test.ts, seed-students.test.ts, seed-enrollments.test.ts
+    register-student-dedupe.test.ts, soft-deletable-model.test.ts, retire-catalog-entry.test.ts, seed-students.test.ts, seed-enrollments.test.ts
   shared/http/RouteBuilder.ts, ErrorResponseSchema.ts
 ```
 

@@ -16,6 +16,8 @@ import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js"
 import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { listOpenClassGroupsRoute } from "@/http/catalog/ListOpenClassGroupsRoute.js";
 import { getPublicCatalogRoute } from "@/http/catalog/GetPublicCatalogRoute.js";
+import { retireCatalogEntryRoute } from "@/http/catalog/RetireCatalogEntryRoute.js";
+import { restoreCatalogEntryRoute } from "@/http/catalog/RestoreCatalogEntryRoute.js";
 import { getCurrentStaffRoute } from "@/http/identity/GetCurrentStaffRoute.js";
 import { listStaffRoute } from "@/http/identity/ListStaffRoute.js";
 import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesRoute.js";
@@ -78,6 +80,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOpenClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPublicCatalogRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireCatalogEntryRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(restoreCatalogEntryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getCurrentStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoleChangesRoute);

@@ -1,5 +1,5 @@
 import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 /**
@@ -161,6 +161,10 @@ export class ListEnrollmentsQuery {
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
       .innerJoin(plans, eq(plans.id, planPrices.planId))
       .leftJoin(latestPayment, eq(latestPayment.enrollmentId, enrollments.id))
+      // Only the enrollment itself is filtered: a retired course or class
+      // group must still label the enrollments that happened on it, or the
+      // ledger would lose rows every time the catalog is tidied up.
+      .where(isNull(enrollments.deletedAt))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id))
       .limit(MAX_ROWS + 1);
 
@@ -250,13 +254,14 @@ export class ListEnrollmentsQuery {
         released: sql<number>`count(*) filter (where ${enrollments.seatStatus} = 'released')`.mapWith(Number),
       })
       .from(enrollments)
-      .leftJoin(latestPaymentStatus, eq(latestPaymentStatus.enrollmentId, enrollments.id));
+      .leftJoin(latestPaymentStatus, eq(latestPaymentStatus.enrollmentId, enrollments.id))
+      .where(isNull(enrollments.deletedAt));
 
     // The period the institution is in: the most recent one already started.
     const [period] = await this.db
       .select({ name: academicPeriods.name })
       .from(academicPeriods)
-      .where(sql`${academicPeriods.startsOn} <= now()`)
+      .where(and(sql`${academicPeriods.startsOn} <= now()`, isNull(academicPeriods.deletedAt)))
       .orderBy(desc(academicPeriods.startsOn))
       .limit(1);
 

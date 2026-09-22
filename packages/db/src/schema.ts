@@ -12,14 +12,71 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+// ---------------------------------------------------------------------------
+// Base schema — the columns every table starts from
+// ---------------------------------------------------------------------------
+// Which helper a table spreads is the whole statement this file makes about
+// it: `...softDeletable()` says a row can leave the present,
+// `createdAt: createdAt()` alone says the table is append-only.
+//
+// Lives here rather than in its own module because drizzle-kit loads this
+// file through a CJS require that cannot follow a NodeNext ".js" specifier
+// to its ".ts" source — a separate file breaks `db:generate`.
+
+/**
+ * The columns every table starts from, in one place instead of copied into
+ * fifteen `pgTable` calls. Mirrors the domain side: `BaseModel` carries id +
+ * timestamps, `SoftDeletableModel` adds `deletedAt`
+ * (packages/domain/src/shared/base/).
+ *
+ * Every export is a **factory**, never a shared constant. A Drizzle column
+ * builder carries the state of the column it is building, so handing the same
+ * instance to two tables makes them share it — the kind of bug that surfaces
+ * as a migration diff nobody asked for.
+ */
+
 // Postgres 18 (see compose.yml) generates uuidv7() natively — no extension
-// needed, and it matches the uuid v7 format packages/domain already uses
-// (packages/domain/src/example/Example.ts) for when this bounded context
-// gets a domain layer.
-const uuidPk = () =>
+// needed, and it matches the uuid v7 format packages/domain already uses.
+export const uuidPk = () =>
   uuid("id")
     .primaryKey()
     .default(sql`uuidv7()`);
+
+/** `timestamptz` always — UTC in the database, America/Lima only on render (CLAUDE.md §6). */
+export const createdAt = () =>
+  timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+
+export const updatedAt = () =>
+  timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+
+/**
+ * Null while the record still answers for itself. The only delete there is
+ * (CLAUDE.md §6) — and on the tables migration 0011 locked, the only one
+ * Postgres will allow.
+ */
+export const deletedAt = () => timestamp("deleted_at", { withTimezone: true });
+
+/** For a table whose rows change over their life. */
+export const timestamps = () => ({
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/**
+ * For a table whose rows can be retired. Spread it and the table has the whole
+ * base: born, last changed, and retired-or-not.
+ *
+ * Deliberately not on every table. `plan_prices`, `consents` and `audit_log`
+ * are append-only — a price in force is superseded by a new row rather than
+ * edited (CLAUDE.md §5), a consent is the Ley 29733 proof, an audit entry
+ * records that something happened and that does not stop being true. Giving
+ * them a `deleted_at` would be handing out a way to hide what the platform
+ * promises to keep.
+ */
+export const softDeletable = () => ({
+  ...timestamps(),
+  deletedAt: deletedAt(),
+});
 
 // Catalog is stable across sales periods — only class_groups (the class:
 // schedule, seats, start date) gets recreated per academic_period
@@ -30,12 +87,7 @@ export const academicPeriods = pgTable("academic_periods", {
   name: text("name").notNull(),
   startsOn: timestamp("starts_on", { withTimezone: true }).notNull(),
   endsOn: timestamp("ends_on", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  ...softDeletable(),
 });
 
 // Each language track (Kids, Básico, Intermediário/Avançado...) is its own
@@ -56,12 +108,7 @@ export const courses = pgTable(
     level: text("level").notNull().default(""),
     modules: integer("modules").notNull().default(1),
     totalHours: integer("total_hours").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
   },
   (table) => [
     check("courses_min_age_check", sql`${table.minAge} > 0`),
@@ -80,12 +127,7 @@ export const plans = pgTable(
       .notNull()
       .references(() => courses.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
   },
   (table) => [index("plans_course_id_idx").on(table.courseId)],
 );
@@ -105,9 +147,7 @@ export const planPrices = pgTable(
     validFrom: timestamp("valid_from", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: createdAt(),
   },
   (table) => [
     check("plan_prices_amount_cents_check", sql`${table.amountCents} > 0`),
@@ -158,12 +198,7 @@ export const classGroups = pgTable(
     capacity: integer("capacity").notNull(),
     seatsTaken: integer("seats_taken").notNull().default(0),
     status: text("status").notNull().default("enrolling"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
   },
   (table) => [
     check("class_groups_capacity_check", sql`${table.capacity} > 0`),
@@ -214,14 +249,8 @@ export const students = pgTable(
     // First-level division ("departamento" in Peru). Null outside it.
     region: text("region"),
     city: text("city").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
     // Soft delete only — no DELETE grant on students (CLAUDE.md §6).
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     check("students_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
@@ -272,12 +301,7 @@ export const guardians = pgTable(
     nationalId: text("national_id").notNull(),
     email: text("email").notNull(),
     phone: text("phone").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
   },
   (table) => [
     check(
@@ -304,9 +328,7 @@ export const consents = pgTable(
     version: text("version").notNull(),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull(),
     ip: text("ip").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: createdAt(),
   },
   (table) => [
     index("consents_guardian_id_accepted_at_idx").on(
@@ -347,12 +369,7 @@ export const enrollments = pgTable(
     // platform. Default 'web' only so the column lands additively on existing
     // rows written before this column existed.
     origin: text("origin").notNull().default("web"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...softDeletable(),
   },
   (table) => [
     check(
@@ -395,12 +412,7 @@ export const payments = pgTable(
     // provides it upfront. Uniqueness against fraud lives on
     // payment_receipts, not here (see below).
     operationNumber: text("operation_number"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    ...timestamps(),
   },
   (table) => [
     uniqueIndex("payments_idempotency_key_uidx").on(table.idempotencyKey),
@@ -448,9 +460,7 @@ export const paymentReceipts = pgTable(
     modelName: text("model_name"),
     modelVersion: text("model_version"),
     extractedFields: jsonb("extracted_fields"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: createdAt(),
   },
   (table) => [
     uniqueIndex("payment_receipts_image_phash_uidx")
@@ -477,9 +487,7 @@ export const waitlistEntries = pgTable(
     studentId: uuid("student_id")
       .notNull()
       .references(() => students.id, { onDelete: "restrict" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: createdAt(),
   },
   (table) => [
     uniqueIndex("waitlist_entries_class_group_id_student_id_uidx").on(
@@ -512,8 +520,7 @@ export const staffInvites = pgTable(
     invitedBy: text("invited_by").notNull(),
     completedUserId: text("completed_user_id"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps(),
   },
   (table) => [
     uniqueIndex("staff_invites_token_uidx").on(table.token),
@@ -542,7 +549,7 @@ export const auditLog = pgTable(
     action: text("action").notNull(),
     targetId: text("target_id").notNull(),
     metadata: jsonb("metadata"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
   },
   (table) => [index("audit_log_target_id_idx").on(table.targetId)],
 );
@@ -562,8 +569,7 @@ export const staffPasswordResets = pgTable(
     status: text("status").notNull().default("pending"),
     requestedBy: text("requested_by").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps(),
   },
   (table) => [
     uniqueIndex("staff_password_resets_token_uidx").on(table.token),
@@ -598,6 +604,5 @@ export const featureFlagOverrides = pgTable("feature_flag_overrides", {
   key: text("key").primaryKey(),
   enabled: boolean("enabled").notNull(),
   updatedBy: text("updated_by").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  ...timestamps(),
 });

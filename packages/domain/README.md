@@ -14,9 +14,10 @@ quando o próximo ajuste do template chegar.
 ```
 src/
   shared/base/
-    BaseModel.ts        # entidade com id
+    BaseModel.ts        # entidade com id + created_at/updated_at
+    SoftDeletableModel.ts # + deleted_at, isDeleted, softDelete() — só pra quem pode ser aposentado
     BaseUseCase.ts       # abstract run(input): Promise<output> — equivalente ao "BaseService" do template
-    IBaseRepository.ts   # contrato CRUD que a infraestrutura implementa
+    IBaseRepository.ts   # contrato CRU_ (sem D — delete físico não existe, CLAUDE.md §6) + ISoftDeletableRepository
     errors/               # vocabulário de erro HTTP — ver exceção na seção "Regra" abaixo
       HttpError.ts          # base: status (default 500), reason (chave de i18n), path, cause
       UnauthorizedError.ts  # 401
@@ -37,6 +38,11 @@ src/
       IAuditLogRepository.ts         # só append — sem update/delete no tipo (audit_log é append-only)
       IFreshAuthVerifier.ts           # exigido pela promoção de papel — Better Auth não garante reautenticação fresca sozinho
     PromoteUserRoleUseCase.ts          # único caminho pra mudar o role de alguém
+  catalog/                     # aposentar/reativar entrada de catálogo (curso, plano, turma, período)
+    CatalogEntry.ts              # união fechada dos quatro tipos + o estado lido do banco
+    ports/ICatalogEntryRepository.ts  # find/retire/restore — sem delete, por definição
+    RetireCatalogEntryUseCase.ts      # marca deleted_at, conta matrícula viva, grava audit_log
+    RestoreCatalogEntryUseCase.ts      # o caminho de volta, sem o qual um clique errado é irreversível
   index.ts                   # barrel
 ```
 

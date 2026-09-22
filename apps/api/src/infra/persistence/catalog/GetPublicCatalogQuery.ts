@@ -1,5 +1,5 @@
 import { classGroups, courses, planPrices, plans } from "@ooc/db";
-import { desc, eq, lte, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 export interface PublicCatalogCourse {
@@ -69,7 +69,10 @@ export class GetPublicCatalogQuery {
         modules: courses.modules,
         totalHours: courses.totalHours,
       })
-      .from(courses);
+      // Retired catalog is not offered (CLAUDE.md §6). Filtered on every
+      // table this query is *about* — the offer itself — which is all three.
+      .from(courses)
+      .where(isNull(courses.deletedAt));
 
     // One row per (plan, current price) — a plan with no price on file
     // (CLAUDE.md §5) is not offered, same as a class group with no seats.
@@ -86,7 +89,7 @@ export class GetPublicCatalogQuery {
       })
       .from(plans)
       .innerJoin(planPrices, eq(planPrices.planId, plans.id))
-      .where(lte(planPrices.validFrom, sql`now()`))
+      .where(and(isNull(plans.deletedAt), lte(planPrices.validFrom, sql`now()`)))
       .orderBy(desc(planPrices.validFrom));
 
     const seenPlanIds = new Set<string>();
@@ -110,7 +113,7 @@ export class GetPublicCatalogQuery {
         seatsTaken: classGroups.seatsTaken,
       })
       .from(classGroups)
-      .where(eq(classGroups.status, "enrolling"));
+      .where(and(eq(classGroups.status, "enrolling"), isNull(classGroups.deletedAt)));
 
     const courseIdsWithPrice = new Set(planRows.map((plan) => plan.courseId));
     const courseIdsWithOpenGroup = new Set(classGroupRows.map((group) => group.courseId));

@@ -1,6 +1,16 @@
-export { BaseModel } from "./shared/base/BaseModel.js";
+export { BaseModel, BaseModelPropsSchema } from "./shared/base/BaseModel.js";
+export type { BaseModelProps } from "./shared/base/BaseModel.js";
+export {
+  BASE_PROPS_KEYS,
+  SoftDeletableModel,
+  SoftDeletableModelPropsSchema,
+} from "./shared/base/SoftDeletableModel.js";
+export type { SoftDeletableModelProps } from "./shared/base/SoftDeletableModel.js";
 export { BaseUseCase } from "./shared/base/BaseUseCase.js";
-export type { IBaseRepository } from "./shared/base/IBaseRepository.js";
+export type {
+  IBaseRepository,
+  ISoftDeletableRepository,
+} from "./shared/base/IBaseRepository.js";
 
 export { HttpError } from "./shared/base/errors/HttpError.js";
 export type { HttpErrorParams } from "./shared/base/errors/HttpError.js";
@@ -154,3 +164,21 @@ export {
   type SetFeatureFlagOverrideInput,
   type SetFeatureFlagOverrideOutput,
 } from "./platform/SetFeatureFlagOverrideUseCase.js";
+
+export {
+  CatalogEntryKindSchema,
+  type CatalogEntryKind,
+  type CatalogEntryState,
+} from "./catalog/CatalogEntry.js";
+export type { ICatalogEntryRepository } from "./catalog/ports/ICatalogEntryRepository.js";
+export { CatalogEntryNotFoundError } from "./catalog/errors.js";
+export {
+  RetireCatalogEntryUseCase,
+  type RetireCatalogEntryInput,
+  type RetireCatalogEntryOutput,
+} from "./catalog/RetireCatalogEntryUseCase.js";
+export {
+  RestoreCatalogEntryUseCase,
+  type RestoreCatalogEntryInput,
+  type RestoreCatalogEntryOutput,
+} from "./catalog/RestoreCatalogEntryUseCase.js";

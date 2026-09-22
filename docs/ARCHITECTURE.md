@@ -71,6 +71,7 @@ A maior parte já está coberta pelos mecanismos do `CLAUDE.md` §6/§8 (tabela 
 - Anti-enumeração de conta (login/recuperação de senha respondem igual pra conta existente e inexistente) — já coberto, `CLAUDE.md` §8.
 - Reautenticação por senha (não MFA completo) para ação sensível (promoção de papel, aprovação financeira) — já é o mecanismo descrito em `CLAUDE.md` §8 pra promoção de staff.
 - Storage de comprovante privado, signed URL curto, acesso registrado — já coberto.
+- **Delete físico e `audit_log` append-only deixaram de depender só da aplicação (migration `0011`, 22/09/2026).** Até ela, as duas regras viviam na fronteira do domínio — e fronteira só recusa o que passa por ela: quem chegasse no Postgres com uma string de conexão (credencial vazada, sessão `psql`, console de query) não era recusado por nada. Agora são duas camadas no próprio banco: `REVOKE` no papel de aplicação `ooc_app` (pega quem entra pela credencial do `apps/api`) e trigger `FOR EACH STATEMENT` (pega quem entra pela credencial do **dono**, que é o que a `DATABASE_URL` ainda carrega). Regra de uso, lista de tabelas e o passo de ops que liga o papel: `packages/db/CLAUDE.md` e `packages/db/README.md` — não duplicados aqui.
 
 ### Pendente de confirmação — não decidido ainda
 

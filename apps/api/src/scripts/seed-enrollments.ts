@@ -16,9 +16,10 @@
 // needs `--confirm-host=<hostname>`, a production build is refused outright.
 //
 // ONE WAY, unlike the student seed, and worth knowing before running it: there
-// is no `--undo`. `enrollments` has no `deleted_at` to retire a row with, and
-// the payments hanging off it cannot be deleted at all (CLAUDE.md §6 — no
-// DELETE grant on payment). Everything it writes is marked (the class groups
+// is no `--undo`. `enrollments` gained a `deleted_at` in migration 0012, but
+// the payments hanging off it have none and cannot be deleted either
+// (CLAUDE.md §6 — no DELETE grant on payment), so retiring the enrollment
+// would leave its money behind. Everything it writes is marked (the class groups
 // carry a `SEED-` code), so what it created stays identifiable, but the way
 // back to a clean ledger is a fresh database — on Neon, a new branch.
 //
@@ -328,7 +329,7 @@ async function main(): Promise<void> {
   if (already.size > 0) {
     console.log(`${already.size} were already on file and were left alone.`);
   }
-  console.log("No undo: enrollments have no deleted_at and payments cannot be deleted (CLAUDE.md §6).");
+  console.log("No undo: payments have no deleted_at and cannot be deleted (CLAUDE.md §6).");
 
   process.exit(0);
 }

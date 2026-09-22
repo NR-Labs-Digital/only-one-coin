@@ -13,6 +13,10 @@ export default defineConfig({
     conditions: ["development"],
   },
   test: {
+    // The *.integration.test.ts suites need a real, migrated Postgres and run
+    // from vitest.integration.config.ts (`pnpm test:api:db`). Keeping them out
+    // here is what lets `pnpm test` stay a pure-domain run with no database.
+    exclude: ["**/node_modules/**", "**/dist/**", "**/*.integration.test.ts"],
     // container.ts builds the app container at import time and validates
     // env eagerly (config.ts) — these let it build in tests without a real
     // Postgres/Redis reachable; no route under test touches either.

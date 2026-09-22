@@ -1,5 +1,5 @@
 import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/db";
-import { and, asc, desc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 export interface OpenClassGroupResult {
@@ -57,7 +57,18 @@ export class ListOpenClassGroupsQuery {
       .innerJoin(academicPeriods, eq(classGroups.academicPeriodId, academicPeriods.id))
       .innerJoin(plans, eq(plans.courseId, courses.id))
       .innerJoin(planPrices, and(eq(planPrices.planId, plans.id), lte(planPrices.validFrom, sql`now()`)))
-      .where(and(eq(classGroups.status, "enrolling"), gt(classGroups.capacity, classGroups.seatsTaken)))
+      // Every table joined here is part of the offer being listed, so a
+      // retired row on any of them takes the class group out (CLAUDE.md §6).
+      .where(
+        and(
+          eq(classGroups.status, "enrolling"),
+          gt(classGroups.capacity, classGroups.seatsTaken),
+          isNull(classGroups.deletedAt),
+          isNull(courses.deletedAt),
+          isNull(academicPeriods.deletedAt),
+          isNull(plans.deletedAt),
+        ),
+      )
       .orderBy(asc(courses.name), desc(plans.createdAt), desc(planPrices.validFrom));
 
     // The joins above can produce more than one row per class_group when a

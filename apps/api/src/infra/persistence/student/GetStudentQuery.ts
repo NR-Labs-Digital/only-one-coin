@@ -86,7 +86,9 @@ export class GetStudentQuery {
         lastEnrollmentAt: sql<Date | null>`max(${enrollments.updatedAt})`,
       })
       .from(enrollments)
-      .where(eq(enrollments.studentId, studentId));
+      // Retired enrollments are not part of what the student has going on
+      // (CLAUDE.md §6).
+      .where(and(eq(enrollments.studentId, studentId), isNull(enrollments.deletedAt)));
 
     const [guardian] = await this.db
       .select({
@@ -99,7 +101,7 @@ export class GetStudentQuery {
         phone: guardians.phone,
       })
       .from(guardians)
-      .where(eq(guardians.studentId, studentId));
+      .where(and(eq(guardians.studentId, studentId), isNull(guardians.deletedAt)));
 
     let consent: StudentGuardianRow["consent"] = null;
     if (guardian) {
