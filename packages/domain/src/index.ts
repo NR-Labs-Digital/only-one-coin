@@ -1,6 +1,16 @@
-export { BaseModel } from "./shared/base/BaseModel.js";
+export { BaseModel, BaseModelPropsSchema } from "./shared/base/BaseModel.js";
+export type { BaseModelProps } from "./shared/base/BaseModel.js";
+export {
+  BASE_PROPS_KEYS,
+  SoftDeletableModel,
+  SoftDeletableModelPropsSchema,
+} from "./shared/base/SoftDeletableModel.js";
+export type { SoftDeletableModelProps } from "./shared/base/SoftDeletableModel.js";
 export { BaseUseCase } from "./shared/base/BaseUseCase.js";
-export type { IBaseRepository } from "./shared/base/IBaseRepository.js";
+export type {
+  IBaseRepository,
+  ISoftDeletableRepository,
+} from "./shared/base/IBaseRepository.js";
 
 export { HttpError } from "./shared/base/errors/HttpError.js";
 export type { HttpErrorParams } from "./shared/base/errors/HttpError.js";

@@ -64,8 +64,9 @@ já cadastrado é pulado. **`--undo`** aposenta o que o seed criou com
 `deleted_at` — nunca DELETE, que não tem grant em `students` (§6) — e deixa em
 paz quem já tiver matrícula. É o que substitui o `pnpm db:reset` quando o banco
 não está na sua máquina. `pnpm seed:enrollments` (mesma convenção de
-`--confirm-host`/`--count`, sem `--undo` — matrícula e pagamento não têm
-`deleted_at`) popula o livro de matrículas por cima dos alunos já semeados.
+`--confirm-host`/`--count`, sem `--undo` — o pagamento não tem `deleted_at` e
+não pode ser apagado, então a matrícula semeada não tem como voltar inteira)
+popula o livro de matrículas por cima dos alunos já semeados.
 
 Os CTAs da landing (`/enrollment` e `/login`, nos três idiomas) são links
 relativos de propósito — para quem lê é tudo o mesmo site. Quem os atravessa
@@ -324,7 +325,7 @@ o que é real:
   vocabulário de erro HTTP reutilizável (`shared/base/errors/`).
 - `packages/queue` — contrato de fila compartilhado (BullMQ/Redis).
 - `packages/db` — Postgres local via `compose.yml` (`postgres:18-alpine`) +
-  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Onze
+  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Doze
   migrations além da baseline: schema do Better Auth
   (`0001_better_auth_core.sql`), o modelo acadêmico e de pessoas inteiro —
   `academic_periods`, `courses`, `plans`, `plan_prices`, `class_groups`,
@@ -338,7 +339,10 @@ o que é real:
   `DELETE` em `students`/`payments`/`payment_receipts`/`consents`/`audit_log`
   e sem `UPDATE` em `audit_log`, mais triggers que recusam a mesma coisa para
   o dono das tabelas (`CLAUDE.md` §6/§8), cobertas por
-  `packages/db/tests/privileges.test.ts`. Ainda
+  `packages/db/tests/privileges.test.ts`; e `deleted_at` no catálogo,
+  na matrícula e no apoderado (`0012`), completando o par da trava —
+  `students` já tinha, e `plan_prices`/`consents`/`audit_log` ficam de fora
+  por serem append-only. Ainda
   não existem: `teachers`, `outbox`, `campaigns`, `attendance`, `grades`,
   `materials`, `certificates` — essas entram nas próximas sessões do
   `ROADMAP.md`.

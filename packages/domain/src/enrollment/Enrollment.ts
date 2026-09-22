@@ -1,13 +1,15 @@
 // TODO: switch to native crypto.randomUUIDv7() once engines.node requires >=26 (LTS ~out/2026)
 import { v7 as uuid } from "uuid";
 import { z } from "zod";
-import { BaseModel } from "../shared/base/BaseModel.js";
+import {
+  SoftDeletableModel,
+  SoftDeletableModelPropsSchema,
+} from "../shared/base/SoftDeletableModel.js";
 
 export const SeatStatusSchema = z.enum(["reserved", "confirmed", "released"]);
 export type SeatStatus = z.infer<typeof SeatStatusSchema>;
 
-export const EnrollmentPropsSchema = z.object({
-  id: z.string().uuid(),
+export const EnrollmentPropsSchema = SoftDeletableModelPropsSchema.extend({
   studentId: z.string().uuid(),
   classGroupId: z.string().uuid(),
   // Frozen at creation — the plan price in force at the moment of
@@ -18,14 +20,14 @@ export const EnrollmentPropsSchema = z.object({
 
 export type EnrollmentProps = z.infer<typeof EnrollmentPropsSchema>;
 
-export class Enrollment extends BaseModel {
+export class Enrollment extends SoftDeletableModel {
   public studentId: string;
   public classGroupId: string;
   public planPriceId: string;
   public seatStatus: SeatStatus;
 
   constructor(props: EnrollmentProps) {
-    super(props.id);
+    super(props);
     this.studentId = props.studentId;
     this.classGroupId = props.classGroupId;
     this.planPriceId = props.planPriceId;

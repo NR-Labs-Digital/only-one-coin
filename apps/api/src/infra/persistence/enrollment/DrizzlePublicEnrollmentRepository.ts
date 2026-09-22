@@ -28,7 +28,16 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
       .select({ courseMinAge: courses.minAge })
       .from(classGroups)
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
-      .where(and(eq(classGroups.id, params.classGroupId), eq(classGroups.status, "enrolling")));
+      // A retired class group or course is not on offer any more, the same
+      // way a closed one is not (CLAUDE.md §6).
+      .where(
+        and(
+          eq(classGroups.id, params.classGroupId),
+          eq(classGroups.status, "enrolling"),
+          isNull(classGroups.deletedAt),
+          isNull(courses.deletedAt),
+        ),
+      );
 
     if (!classGroupRow) {
       return null;
@@ -38,7 +47,13 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
       .select({ id: planPrices.id, amountCents: planPrices.amountCents })
       .from(planPrices)
       .innerJoin(plans, eq(plans.id, planPrices.planId))
-      .where(and(eq(planPrices.planId, params.planId), lte(planPrices.validFrom, sql`now()`)))
+      .where(
+        and(
+          eq(planPrices.planId, params.planId),
+          lte(planPrices.validFrom, sql`now()`),
+          isNull(plans.deletedAt),
+        ),
+      )
       .orderBy(desc(planPrices.validFrom))
       .limit(1);
 
@@ -165,6 +180,10 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
                 email: params.guardian.email,
                 phone: params.guardian.phone,
                 updatedAt: new Date(),
+                // Revived, not duplicated: `guardians.student_id` is UNIQUE
+                // across retired rows too, and a student enrolling right now
+                // does have an apoderado on file — this one (CLAUDE.md §6).
+                deletedAt: null,
               })
               .where(eq(guardians.id, existingGuardian.id))
               .returning()

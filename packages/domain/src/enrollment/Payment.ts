@@ -1,7 +1,7 @@
 // TODO: switch to native crypto.randomUUIDv7() once engines.node requires >=26 (LTS ~out/2026)
 import { v7 as uuid } from "uuid";
 import { z } from "zod";
-import { BaseModel } from "../shared/base/BaseModel.js";
+import { BaseModel, BaseModelPropsSchema } from "../shared/base/BaseModel.js";
 
 export const PaymentRailSchema = z.enum(["yape", "plin", "bcp", "interbank"]);
 export const PaymentMethodSchema = z.union([PaymentRailSchema, z.literal("other")]);
@@ -10,9 +10,8 @@ export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
 export const PaymentStatusSchema = z.enum(["pending", "under_review", "approved", "rejected"]);
 export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
 
-export const PaymentPropsSchema = z
-  .object({
-    id: z.string().uuid(),
+export const PaymentPropsSchema = BaseModelPropsSchema
+  .extend({
     enrollmentId: z.string().uuid(),
     idempotencyKey: z.string().min(1),
     status: PaymentStatusSchema,
@@ -40,7 +39,7 @@ export class Payment extends BaseModel {
   public operationNumber: string | null;
 
   constructor(props: PaymentProps) {
-    super(props.id);
+    super(props);
     this.enrollmentId = props.enrollmentId;
     this.idempotencyKey = props.idempotencyKey;
     this.status = props.status;

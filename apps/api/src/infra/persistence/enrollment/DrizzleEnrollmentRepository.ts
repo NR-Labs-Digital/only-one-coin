@@ -8,7 +8,7 @@ import {
   type SeatStatus,
 } from "@ooc/domain";
 import { classGroups, enrollments, payments } from "@ooc/db";
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
@@ -27,7 +27,17 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
       const [reservedSeat] = await tx
         .update(classGroups)
         .set({ seatsTaken: sql`${classGroups.seatsTaken} + 1` })
-        .where(and(eq(classGroups.id, enrollment.classGroupId), lt(classGroups.seatsTaken, classGroups.capacity)))
+        // isNull guards the window between resolving the offer and writing:
+        // a class group retired in between must not take the seat. Zero rows
+        // back is the same answer as full, which is what the caller already
+        // handles.
+        .where(
+          and(
+            eq(classGroups.id, enrollment.classGroupId),
+            lt(classGroups.seatsTaken, classGroups.capacity),
+            isNull(classGroups.deletedAt),
+          ),
+        )
         .returning({ seatsTaken: classGroups.seatsTaken });
 
       if (!reservedSeat) {

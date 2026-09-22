@@ -1,13 +1,16 @@
 // TODO: switch to native crypto.randomUUIDv7() once engines.node requires >=26 (LTS ~out/2026)
 import { v7 as uuid } from "uuid";
 import { z } from "zod";
-import { BaseModel } from "../shared/base/BaseModel.js";
+import {
+  BASE_PROPS_KEYS,
+  SoftDeletableModel,
+  SoftDeletableModelPropsSchema,
+} from "../shared/base/SoftDeletableModel.js";
 
 export const NationalIdTypeSchema = z.enum(["DNI", "CE", "passport"]);
 export type NationalIdType = z.infer<typeof NationalIdTypeSchema>;
 
-export const StudentPropsSchema = z.object({
-  id: z.string().uuid(),
+export const StudentPropsSchema = SoftDeletableModelPropsSchema.extend({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   nationalIdType: NationalIdTypeSchema,
@@ -22,12 +25,12 @@ export const StudentPropsSchema = z.object({
   city: z.string().min(1),
 });
 
-export const CreateStudentSchema = StudentPropsSchema.omit({ id: true });
+export const CreateStudentSchema = StudentPropsSchema.omit(BASE_PROPS_KEYS);
 
 export type StudentProps = z.infer<typeof StudentPropsSchema>;
 export type CreateStudentDTO = z.infer<typeof CreateStudentSchema>;
 
-export class Student extends BaseModel {
+export class Student extends SoftDeletableModel {
   // Peru's Código Civil sets the age of majority at 18 — same value the
   // backoffice mock already computes against
   // (apps/app/.../students/new-student-form.tsx, MAJORITY_AGE).
@@ -45,7 +48,7 @@ export class Student extends BaseModel {
   public city: string;
 
   constructor(props: StudentProps) {
-    super(props.id);
+    super(props);
     this.firstName = props.firstName;
     this.lastName = props.lastName;
     this.nationalIdType = props.nationalIdType;

@@ -20,10 +20,11 @@ ainda em aberto — este pacote só cobre schema/migration.
 ```
 drizzle.config.ts   # dialect postgresql, schema -> migrations, lê DATABASE_URL
 src/
-  schema.ts          # tabelas Drizzle — modelo acadêmico, de pessoas, matrícula/pagamento e identidade (11 migrations além da baseline, ver README.md da raiz)
+  schema.ts          # base schema (uuidPk/timestamps/softDeletable) + tabelas Drizzle — modelo acadêmico, de pessoas, matrícula/pagamento e identidade (12 migrations além da baseline, ver README.md da raiz)
 migrations/          # SQL gerado pelo drizzle-kit, versionado no Git
 tests/
   privileges.test.ts # emite as operações proibidas direto no Postgres e exige a recusa
+  soft-delete.test.ts # confere, nos dois sentidos, em que tabelas deleted_at existe
 ```
 
 ## Uso

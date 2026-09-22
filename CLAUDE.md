@@ -233,7 +233,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 | `async` sem tratamento | `no-floating-promises`, `require-await`, handler de `unhandledRejection`, DLQ na fila |
 | Float para dinheiro | `amount_cents INTEGER` |
 | Data sem timezone | `timestamptz` sempre, UTC no banco, `America/Lima` só na renderização |
-| Delete físico | trava no próprio Postgres (migration `0011`), não só no domínio: papel de aplicação `ooc_app` sem grant de DELETE em `students`, `payments`, `payment_receipts`, `consents` e `audit_log` (nem UPDATE em `audit_log`) **e** trigger que recusa a mesma coisa para o dono das tabelas. Só `deleted_at`. Detalhe em `packages/db/CLAUDE.md` |
+| Delete físico | trava no próprio Postgres (migration `0011`), não só no domínio: papel de aplicação `ooc_app` sem grant de DELETE em `students`, `payments`, `payment_receipts`, `consents` e `audit_log` (nem UPDATE em `audit_log`) **e** trigger que recusa a mesma coisa para o dono das tabelas. Só `deleted_at` — que existe nas sete tabelas que podem aposentar linha (`0012`), e tem espelho no domínio: `SoftDeletableModel` separado de `BaseModel`, entidade append-only fica sem `softDelete()`. Detalhe em `packages/db/CLAUDE.md` e `packages/domain/CLAUDE.md` |
 | PII em log | redaction de nome, DNI, e-mail, payload de comprovante. Scrubbing no Sentry |
 | Dado real de produção em staging | seed anonimizado, nunca dump |
 | Backup nunca restaurado | restauração testada em staging por trimestre |

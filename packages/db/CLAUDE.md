@@ -14,6 +14,11 @@ Carregado junto com o `CLAUDE.md` da raiz quando uma sessão trabalha aqui dentr
 
 ## Convenções de schema
 
+- **Toda tabela começa pelo base schema** (topo de `src/schema.ts`): `uuidPk()`, `timestamps()` (`created_at` + `updated_at`) e `softDeletable()` (os dois mais `deleted_at`). Espalhar `...softDeletable()` **é** a declaração de que a linha pode ser aposentada; `createdAt: createdAt()` sozinho declara tabela append-only. Nenhuma tabela redeclara essas colunas na mão.
+  - Cada helper é **função**, nunca constante compartilhada — um column builder do Drizzle carrega o estado da coluna que está construindo, e a mesma instância em duas tabelas as faz compartilhar a coluna.
+  - Mora dentro de `src/schema.ts`, não num módulo à parte: o `drizzle-kit` carrega esse arquivo por `require` CJS, que não segue um especificador NodeNext `.js` até o `.ts` — arquivo separado quebra o `db:generate`.
+  - O espelho no domínio é `BaseModel` / `SoftDeletableModel` (`packages/domain/src/shared/base/`).
+- **`deleted_at` existe em sete tabelas e é uma decisão, não gosto:** `students`, `guardians`, `enrollments`, `academic_periods`, `courses`, `plans`, `class_groups`. Fora, de propósito: `plan_prices`, `consents` e `audit_log` são append-only (§5 preço versionado, §1 consentimento da Ley 29733, §8 trilha de auditoria) — um `deleted_at` ali seria um jeito de esconder o que a plataforma promete guardar. `payments` e `payment_receipts` também ficaram fora: `payments.status` já diz que um pagamento não vale, e a `0011` proíbe o delete de qualquer jeito. O conjunto exato é asserido nos dois sentidos por `tests/soft-delete.test.ts`.
 - **`amount_cents INTEGER`.** Nunca float, nunca `numeric` de ponto flutuante, em qualquer coluna de dinheiro.
 - **`timestamptz` sempre.** UTC no banco; `America/Lima` só na renderização (`apps/app`/`apps/landing`).
 - **Sem grant de `DELETE`** em `students`, `payments`, `payment_receipts`, `consents` e `audit_log` — exclusão é sempre `deleted_at`. `audit_log` também não tem grant de `UPDATE`, nem para admin. Desde a migration `0011` isso é **trava de banco em duas camadas**, não convenção:

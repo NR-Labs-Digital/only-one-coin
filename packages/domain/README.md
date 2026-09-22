@@ -14,9 +14,10 @@ quando o próximo ajuste do template chegar.
 ```
 src/
   shared/base/
-    BaseModel.ts        # entidade com id
+    BaseModel.ts        # entidade com id + created_at/updated_at
+    SoftDeletableModel.ts # + deleted_at, isDeleted, softDelete() — só pra quem pode ser aposentado
     BaseUseCase.ts       # abstract run(input): Promise<output> — equivalente ao "BaseService" do template
-    IBaseRepository.ts   # contrato CRUD que a infraestrutura implementa
+    IBaseRepository.ts   # contrato CRU_ (sem D — delete físico não existe, CLAUDE.md §6) + ISoftDeletableRepository
     errors/               # vocabulário de erro HTTP — ver exceção na seção "Regra" abaixo
       HttpError.ts          # base: status (default 500), reason (chave de i18n), path, cause
       UnauthorizedError.ts  # 401
