@@ -43,39 +43,62 @@ encadeiam exatamente esses passos pro deploy no Fly.io.
 
 ```
 src/
-  config.ts             # env validada com zod no boot (NODE_ENV, PORT, HOST, REDIS_URL)
-  container.ts           # composition root — monta logger, repositórios e usecases de @ooc/domain
-  app.ts                  # build do Fastify (zod type provider, swagger fora de produção, rotas) — usa container.logger via loggerInstance, genReqId gera UUID real
+  config.ts               # env validada com zod no boot (NODE_ENV, PORT, HOST, REDIS_URL, DATABASE_URL...)
+  container.ts             # composition root — monta identity, repositories, useCases e queries de @ooc/domain
+  app.ts                    # build do Fastify (zod type provider, swagger fora de produção, rotas, plugin de autorização)
+  index.ts                  # entrypoint único: servidor HTTP + workers de fila no mesmo processo
   http/
-    RootRoute.ts             # rota raiz
-    HealthCheckRoute.ts       # /health
-    example/CreateExampleRoute.ts   # exemplo de rota chamando um usecase
+    RootRoute.ts, HealthCheckRoute.ts
+    auth/AuthCatchAllRoute.ts            # traduz erro nativo do Better Auth pro envelope do projeto
+    catalog/                              # GetPublicCatalogRoute, ListOpenClassGroupsRoute
+    enrollment/                           # SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute (backoffice)
+    identity/                             # staff: convite, promoção de cargo, acesso, redefinição de senha, bitácora
+    platform/                             # feature flags: Get/List/Set
+    student/                              # GetStudentRoute, ListStudentsRoute, RegisterStudentRoute
   workers/
-    send-email.worker.ts       # consome a fila send-email de @ooc/queue — hoje só loga (stub)
+    send-email.worker.ts       # consome a fila send-email de @ooc/queue — hoje só loga (stub, ver Pendências)
   infra/
-    logger.ts                     # pino compartilhado (container.logger) — mesma instância usada pelo Fastify (request.log) e por futuros repositórios/workers
-    persistence/example/InMemoryExampleRepository.ts   # implementação em memória do IExampleRepository (stub deliberado)
-    plugins/swagger.ts           # plugin do @fastify/swagger + swagger-ui
-    plugins/errorHandler.ts       # setErrorHandler global — mapeia HttpError (@ooc/domain) e erro de validação zod pro envelope de ErrorResponseSchema
-  shared/http/RouteBuilder.ts     # builder fluente de rota (method/body/params/query/response/handler) — específico de HTTP, por isso não mora em @ooc/domain
-  shared/http/ErrorResponseSchema.ts  # schema zod do contrato público de erro ({ status, reason, path, errorId }) — sem message livre (CLAUDE.md §4)
+    db/client.ts                  # pg.Pool + drizzle(), aponta pro Postgres local ou Neon via DATABASE_URL
+    logger.ts                     # pino compartilhado (container.logger)
+    auth/betterAuth.ts             # Better Auth embutido no processo
+    identity/                      # adapters Drizzle de identidade (staff, convites, audit_log, role) + pontes com o Better Auth
+    persistence/                   # repositórios/queries Drizzle por bounded context: student/, enrollment/, catalog/, identity/, platform/
+    plugins/
+      authorization.ts               # deny-by-default: rota sem .roles()/.owners()/.public() falha o boot; onRequest resolve sessão e checa papel/domínio
+      errorHandler.ts                 # setErrorHandler global — mapeia HttpError (@ooc/domain) e erro zod pro envelope de ErrorResponseSchema
+      swagger.ts, authSwagger.ts      # docs interativas (fora de produção)
+  scripts/
+    seed-admin.ts, seed-catalog.ts             # bootstrap local (ver CLAUDE.md §8 "Bootstrap")
+    import-legacy-enrollments.ts, legacy-import/  # importador da base antiga (dry-run, deduplicação)
+  shared/http/RouteBuilder.ts, ErrorResponseSchema.ts
 ```
 
-## Pendências conhecidas (fora do escopo deste scaffold)
+Não existe mais rota nem repositório de exemplo (`CreateExampleRoute`,
+`InMemoryExampleRepository`) — essa era a base do scaffold inicial e já foi
+substituída pelos bounded contexts reais acima.
+
+## Pendências conhecidas
 
 - **Build/deploy**: feito — app real `only-one-coin-api` no ar em
   `only-one-coin-api.fly.dev` (GRU, 1 máquina `shared-cpu-1x`/256mb sempre
-  ligada), os 5 secrets setados, CI/CD automatizado
+  ligada), os 5 secrets (`FLY_API_TOKEN`, `DATABASE_URL`,
+  `TIGRIS_ACCESS_KEY_ID`, `TIGRIS_SECRET_ACCESS_KEY`, `VERCEL_TOKEN`) já
+  setados no repo do GitHub, CI/CD automatizado
   (`.github/workflows/deploy-api.yml`): a cada push em `main`, backup do Neon
   pro Tigris → migration → `flyctl deploy`, nessa ordem, cada um só roda se
-  o anterior passar (`docs/ARCHITECTURE.md` §5.8). Precisa de
-  `FLY_API_TOKEN`, `DATABASE_URL`, `TIGRIS_ACCESS_KEY_ID` e
-  `TIGRIS_SECRET_ACCESS_KEY` como secret do repo no GitHub — nenhum setado
-  ainda, o bucket Tigris de backup (`only-one-coin-backups`) também não foi
-  criado.
-- **Persistência real**: `InMemoryExampleRepository` é só pra rodar local —
-  ainda não trocado por repositório real sobre `@ooc/db`/Drizzle. O provedor
-  de Postgres já está fechado (Neon, `docs/ARCHITECTURE.md` §5.1); o que
-  falta aqui é só a implementação do repositório, não uma decisão em aberto.
+  o anterior passar (`docs/ARCHITECTURE.md` §5.8).
+- **Persistência**: real via Drizzle sobre `@ooc/db` — todo repositório em
+  `infra/persistence/` e `infra/identity/` fala com o Postgres, não existe
+  implementação em memória. Ainda faltam bounded contexts inteiros: não há
+  tabela nem repositório de `teachers`, de turma no lado da escrita (só
+  leitura, `GET /class-groups`), de `payments` avulso fora do fluxo de
+  matrícula, nem de `attendance`/`grades`/`materials`/`certificates`/`outbox`/`campaigns`.
+- **OCR**: não iniciado. O checkout público (`SubmitPublicEnrollmentRoute`)
+  já grava `payments`/`payment_receipts` e reserva a vaga atomicamente com
+  idempotency key, mas não enfileira job de extração, não tem upload por
+  signed URL, magic bytes nem Turnstile/rate limit — é uma fatia
+  deliberadamente reduzida do funil (`docs/ROADMAP.md`, Sessões 23/25/26).
 - **Envio de e-mail real**: `send-email.worker.ts` só loga o payload — falta
   `packages/notifications` (adapter Brevo) pra completar.
+- **MFA**: nenhum plugin `twoFactor` do Better Auth configurado — `admin`/`billing`
+  não têm segundo fator ainda, apesar de `CLAUDE.md` §8 exigir.
