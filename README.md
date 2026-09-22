@@ -324,7 +324,7 @@ o que é real:
   vocabulário de erro HTTP reutilizável (`shared/base/errors/`).
 - `packages/queue` — contrato de fila compartilhado (BullMQ/Redis).
 - `packages/db` — Postgres local via `compose.yml` (`postgres:18-alpine`) +
-  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Dez
+  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Onze
   migrations além da baseline: schema do Better Auth
   (`0001_better_auth_core.sql`), o modelo acadêmico e de pessoas inteiro —
   `academic_periods`, `courses`, `plans`, `plan_prices`, `class_groups`,
@@ -333,7 +333,12 @@ o que é real:
   (`0002`), ajustes de turma/curso (`0004`), origem da matrícula (`0005`),
   índice de busca de aluno (`0006`), `audit_log` e `staff_invites` (`0007`),
   reset de senha de staff (`0008`), o quadro de papéis atual nos `CHECK` de
-  `user`/`staff_invites` (`0009`) e `feature_flag_overrides` (`0010`). Ainda
+  `user`/`staff_invites` (`0009`), `feature_flag_overrides` (`0010`) e a trava
+  de privilégio no próprio banco (`0011`) — papel de aplicação `ooc_app` sem
+  `DELETE` em `students`/`payments`/`payment_receipts`/`consents`/`audit_log`
+  e sem `UPDATE` em `audit_log`, mais triggers que recusam a mesma coisa para
+  o dono das tabelas (`CLAUDE.md` §6/§8), cobertas por
+  `packages/db/tests/privileges.test.ts`. Ainda
   não existem: `teachers`, `outbox`, `campaigns`, `attendance`, `grades`,
   `materials`, `certificates` — essas entram nas próximas sessões do
   `ROADMAP.md`.

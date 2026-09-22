@@ -233,7 +233,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 | `async` sem tratamento | `no-floating-promises`, `require-await`, handler de `unhandledRejection`, DLQ na fila |
 | Float para dinheiro | `amount_cents INTEGER` |
 | Data sem timezone | `timestamptz` sempre, UTC no banco, `America/Lima` só na renderização |
-| Delete físico | sem grant de DELETE em student, payment, audit. Só `deleted_at` |
+| Delete físico | trava no próprio Postgres (migration `0011`), não só no domínio: papel de aplicação `ooc_app` sem grant de DELETE em `students`, `payments`, `payment_receipts`, `consents` e `audit_log` (nem UPDATE em `audit_log`) **e** trigger que recusa a mesma coisa para o dono das tabelas. Só `deleted_at`. Detalhe em `packages/db/CLAUDE.md` |
 | PII em log | redaction de nome, DNI, e-mail, payload de comprovante. Scrubbing no Sentry |
 | Dado real de produção em staging | seed anonimizado, nunca dump |
 | Backup nunca restaurado | restauração testada em staging por trimestre |
@@ -247,6 +247,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 5. teste de autorização — toda rota de `apps/api` declara papel exigido; teste tenta acessar com papel errado e exige falha
 6. migrations em banco limpo
 7. validação de env com zod
+8. trava de privilégio no banco — a suíte emite DELETE/UPDATE/TRUNCATE proibido direto no Postgres migrado e exige a recusa (`packages/db/tests/privileges.test.ts`, no mesmo job das migrations)
 
 ---
 
@@ -277,7 +278,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 - Anti-enumeração: login e recuperação de senha respondem igual para conta existente e inexistente
 - Upload validado por **magic bytes**, re-encode da imagem, teto de tamanho
 - Headers: CSP, HSTS, X-Frame-Options, Referrer-Policy
-- `audit_log` append-only: sem grant de UPDATE nem DELETE, nem para admin
+- `audit_log` append-only: sem grant de UPDATE nem DELETE, nem para admin — e desde a migration `0011` um trigger recusa UPDATE/DELETE/TRUNCATE também para o dono da tabela, que é quem uma `DATABASE_URL` vazada entrega. Só `apps/api` (papel `ooc_app`) conecta no runtime; ligar esse papel em cada ambiente é passo de ops documentado em `packages/db/README.md`
 - Ley 29733: consentimento com timestamp, versão do texto e IP; política de retenção; exclusão a pedido
 
 **Papéis (quadro redefinido pelo dono, 07/09/2026):** `master`, `admin`, `analyst`, `enrollment_supervisor`, `academic_supervisor`, `teacher`, `sales`, `support`, `billing`. Aluno e apoderado: `student`, `guardian`. Substituiu o quadro antigo (`coordinator`, `treasury`, `mass_approver` deixaram de existir; grosso modo: coordinator → enrollment_supervisor, treasury → billing, mass_approver extinto — aprovação é de admin/billing).

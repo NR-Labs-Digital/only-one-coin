@@ -78,6 +78,13 @@
       "when": 1788901199183,
       "tag": "0010_chilly_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790091365537,
+      "tag": "0011_least_privilege_and_append_only",
+      "breakpoints": true
     }
   ]
 }
