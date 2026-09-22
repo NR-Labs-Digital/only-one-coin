@@ -164,3 +164,21 @@ export {
   type SetFeatureFlagOverrideInput,
   type SetFeatureFlagOverrideOutput,
 } from "./platform/SetFeatureFlagOverrideUseCase.js";
+
+export {
+  CatalogEntryKindSchema,
+  type CatalogEntryKind,
+  type CatalogEntryState,
+} from "./catalog/CatalogEntry.js";
+export type { ICatalogEntryRepository } from "./catalog/ports/ICatalogEntryRepository.js";
+export { CatalogEntryNotFoundError } from "./catalog/errors.js";
+export {
+  RetireCatalogEntryUseCase,
+  type RetireCatalogEntryInput,
+  type RetireCatalogEntryOutput,
+} from "./catalog/RetireCatalogEntryUseCase.js";
+export {
+  RestoreCatalogEntryUseCase,
+  type RestoreCatalogEntryInput,
+  type RestoreCatalogEntryOutput,
+} from "./catalog/RestoreCatalogEntryUseCase.js";

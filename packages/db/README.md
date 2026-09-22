@@ -39,7 +39,8 @@ neste pacote (copiar de `.env.example`).
 | `pnpm db:generate` | gera migration nova a partir do diff de `src/schema.ts` |
 | `pnpm db:migrate` | aplica as migrations pendentes |
 | `pnpm db:reset` | derruba o container **e o volume**, sobe do zero, reaplica todas as migrations |
-| `pnpm test:db` | roda `tests/privileges.test.ts` contra o banco migrado |
+| `pnpm test:db` | roda `tests/privileges.test.ts` e `tests/soft-delete.test.ts` contra o banco migrado |
+| `pnpm test:api:db` | roda os testes de repositório de `apps/api` contra o mesmo banco |
 
 `pnpm test:db` **não** lê o `.env` deste pacote: ele fala com um Postgres de
 verdade, então a `DATABASE_URL` vem do ambiente, explícita, pra ninguém rodar

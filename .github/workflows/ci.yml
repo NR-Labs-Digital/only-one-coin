@@ -149,3 +149,13 @@ jobs:
         run: pnpm --filter @ooc/db test
         env:
           DATABASE_URL: postgres://ooc:ooc@localhost:5432/ooc_ci
+
+      # Os repositórios Drizzle cujo SQL o typecheck não verifica — join
+      # escrito contra a coluna errada compila e responde "ninguém nessa
+      # turma" sobre uma turma cheia. Rodam aqui, e não no job test-api,
+      # porque precisam do banco migrado que só existe neste job; `pnpm
+      # test:api` continua sendo uma suíte de domínio puro, sem banco.
+      - name: Repositórios contra o banco (apps/api)
+        run: pnpm --filter @ooc/api test:db
+        env:
+          DATABASE_URL: postgres://ooc:ooc@localhost:5432/ooc_ci
