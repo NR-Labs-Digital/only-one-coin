@@ -22,16 +22,26 @@ export function Toggle({
   onChange,
   label,
   hint,
+  disabled = false,
 }: {
   checked: boolean
   onChange: (checked: boolean) => void
   label: string
   hint?: string
+  /**
+   * A switch that shows a state nobody may move — `master` holding every
+   * permission, say. Drawn rather than hidden: the state is the answer to the
+   * question the reader came with, and an empty space would only make them
+   * look for it somewhere else.
+   */
+  disabled?: boolean
 }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <span className="flex flex-col gap-0.5">
-        <span className="text-sm text-ink">{label}</span>
+        <span className={disabled ? 'text-sm text-muted-foreground' : 'text-sm text-ink'}>
+          {label}
+        </span>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </span>
       <button
@@ -39,10 +49,11 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         aria-label={label}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40 ${
-          checked ? 'bg-brand-blue' : 'bg-slate-300'
-        }`}
+          disabled ? 'cursor-not-allowed opacity-60' : ''
+        } ${checked ? 'bg-brand-blue' : 'bg-slate-300'}`}
       >
         <span
           className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${

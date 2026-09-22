@@ -1,4 +1,5 @@
 import type { StaffRole, StaffUser } from './types'
+import { isRoleAllowed } from './role-permissions'
 
 /**
  * Screen-level gates. These decide what a staff member *sees*, never what they
@@ -6,7 +7,15 @@ import type { StaffRole, StaffUser } from './types'
  * every route declares its role (CLAUDE.md §8). Hiding a button is defense in
  * depth, not the defense.
  *
- * The cargo map (owner's decision, 07/09/2026):
+ * Every gate below asks the same question of the same place — does this cargo
+ * hold this capability (`capabilities.ts`, resolved in `role-permissions.ts`)?
+ * The cargo lists used to be typed into each function here, which meant that
+ * letting `sales` register a student was a commit and a deploy. They are now
+ * the *defaults*: admin moves them on `/backoffice/team/permissions`, and the
+ * functions keep their names so no screen had to change.
+ *
+ * The cargo map (owner's decision, 07/09/2026) — what each one is for, which
+ * is also why the defaults are what they are:
  * - `master` — the platform owners' cargo, everything everywhere. Only an
  *   account on the owners' e-mail domain may hold it (`canHoldMaster`).
  * - `admin` — sees everything, authorizes everything.
@@ -19,89 +28,55 @@ import type { StaffRole, StaffUser } from './types'
  * - `sales` — follows the enrollments their WhatsApp sales become.
  * - `support` — answers students: reads people, enrollments and payments.
  * - `billing` — settles money; no academic data beyond what a receipt carries.
- */
-
-/**
- * The owners' e-mail domains — the only accounts allowed to hold `master`.
- * Mirrors `packages/domain/src/identity/Role.ts` (apps/app never imports that
- * package, CLAUDE.md §3) — keep the two lists in sync by hand.
- */
-export const MASTER_EMAIL_DOMAINS = ['nrlabsdigital.com', 'admin.com'] as const
-
-/** Whether this e-mail belongs to the platform owners. */
-export function isOwnerEmail(email: string): boolean {
-  const normalized = email.trim().toLowerCase()
-  return MASTER_EMAIL_DOMAINS.some((domain) => normalized.endsWith(`@${domain}`))
-}
-
-/** Whether this e-mail is allowed to carry the `master` cargo. */
-export function canHoldMaster(email: string): boolean {
-  return isOwnerEmail(email)
-}
-
-/**
- * Who opens Funcionalidades — the switchboard that says which sections of the
- * platform are on the air (CLAUDE.md §5).
  *
- * The only gate in this file that reads an e-mail instead of a cargo, and
- * deliberately so: what exists is a decision of whoever runs the platform, not
- * of whoever runs the school. An `admin` of the Asociación authorizes
- * everything academic and none of this; an owner opens it whatever cargo their
- * account carries. As everywhere else here, this only draws the screen — the
- * check that counts is `.owners()` on the route in `apps/api`.
+ * Two of these are not opinions the matrix can change. `master` and `admin`
+ * hold everything by construction (`ALWAYS_ALLOWED_ROLES`), and a docente's
+ * scope — their own class groups and nothing else — is a comparison inside the
+ * usecase, which is why it is not a capability at all.
  */
-export function canManageFeatureFlags(email: string): boolean {
-  return isOwnerEmail(email)
-}
 
-/** The two cargos that run the platform itself. */
-function isManagement(role: StaffRole): boolean {
-  return role === 'master' || role === 'admin'
-}
+export {
+  MASTER_EMAIL_DOMAINS,
+  isOwnerEmail,
+  canHoldMaster,
+  canManageFeatureFlags,
+} from './owners'
 
-/** Only management and the enrollment side open a class group. */
+/** Only management and the enrollment side open a class group, by default. */
 export function canCreateClassGroup(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor'
-  )
+  return isRoleAllowed(role, 'class_groups_create')
 }
 
 /**
  * Who may issue a document or fire the batch. A teacher can, but only for their
  * own class groups — that scope check lives in the usecase, comparing the
- * authenticated `teacher_id` against the class group's (CLAUDE.md §8).
+ * authenticated `teacher_id` against the class group's (CLAUDE.md §8), and no
+ * switch on the permissions screen relaxes it.
  */
 export function canIssueCertificates(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor' ||
-    role === 'teacher'
-  )
+  return isRoleAllowed(role, 'certificates_issue')
 }
 
 /**
  * Who may record an administrative procedure over an enrollment — moving,
  * freezing, withdrawing (`docs/REGRAS-NEGOCIO.md` §5). They all carry a fee and
- * touch a seat, so they belong to management and the enrollment side.
+ * touch a seat, so by default they belong to management and the enrollment side.
  */
 export function canManageEnrollment(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+  return isRoleAllowed(role, 'enrollments_manage')
 }
 
 /**
- * Opening a course is a management call: it is what the whole catalog, the
- * price table and every future class group hang off.
+ * Opening a course is a management call by default: it is what the whole
+ * catalog, the price table and every future class group hang off.
  */
 export function canCreateCourse(role: StaffRole): boolean {
-  return isManagement(role)
+  return isRoleAllowed(role, 'courses_create')
 }
 
 /** Who may change a course's options — not the same as who may create one. */
 export function canConfigureCourse(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+  return isRoleAllowed(role, 'courses_configure')
 }
 
 /**
@@ -110,22 +85,18 @@ export function canConfigureCourse(role: StaffRole): boolean {
  * the money screens.
  */
 export function canViewPayments(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'billing' ||
-    role === 'support'
-  )
+  return isRoleAllowed(role, 'payments_view')
 }
 
 /**
  * Who may settle a receipt the ladder could not. Management authorizes and
- * billing settles; the analyst sees the queue but never approves — that is the
- * whole definition of the cargo. The enforcing check is the role declared on
- * the `apps/api` usecase — this only decides whether the button is drawn.
+ * billing settles; the analyst reads the queue and by default never approves —
+ * that is the whole definition of the cargo. The enforcing check is the role
+ * declared on the `apps/api` usecase — this only decides whether the button is
+ * drawn.
  */
 export function canReviewPayments(role: StaffRole): boolean {
-  return isManagement(role) || role === 'billing'
+  return isRoleAllowed(role, 'payments_review')
 }
 
 /**
@@ -133,18 +104,16 @@ export function canReviewPayments(role: StaffRole): boolean {
  * the docentes; the analyst reads it, management runs it.
  */
 export function canManageTeachers(role: StaffRole): boolean {
-  return (
-    isManagement(role) || role === 'academic_supervisor' || role === 'analyst'
-  )
+  return isRoleAllowed(role, 'teachers_manage')
 }
 
 /**
- * Who registers a new teacher. Management only: a teacher record is an account
- * that will read student grades, and creating one is one step away from
+ * Who registers a new teacher. Management by default: a teacher record is an
+ * account that will read student grades, and creating one is one step away from
  * creating staff — which `CLAUDE.md` §8 puts behind a dedicated usecase.
  */
 export function canCreateTeacher(role: StaffRole): boolean {
-  return isManagement(role)
+  return isRoleAllowed(role, 'teachers_create')
 }
 
 /**
@@ -153,26 +122,26 @@ export function canCreateTeacher(role: StaffRole): boolean {
  * money and has no business in the directory.
  */
 export function canBrowseStudents(role: StaffRole): boolean {
-  return role !== 'teacher' && role !== 'billing'
+  return isRoleAllowed(role, 'students_browse')
 }
 
 /**
  * Who registers a student by hand. The documented way in is the student filling
  * `/enrollment` themselves (CLAUDE.md §1); this covers the person who closed
  * the sale on WhatsApp and never reached the form. A registration carries the
- * guardian record and the consent behind it (Ley 29733, CLAUDE.md §8), so it
- * stays with management and the enrollment side.
+ * guardian record and the consent behind it (Ley 29733, CLAUDE.md §8), which is
+ * why it starts with management and the enrollment side.
  */
 export function canCreateStudent(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+  return isRoleAllowed(role, 'students_create')
 }
 
 /**
  * Who records a final grade — the teacher of that class group, nobody else.
  * The grade is what the docente signs, and everything downstream reads it: the
  * certificate (grade ≥ 14, `docs/REGRAS-NEGOCIO.md` §3) and the module
- * progression both hang off it. As everywhere else this only decides whether
- * the roster draws inputs: the enforcing check compares the authenticated
+ * progression both hang off it. Scope, not a capability: this is never on the
+ * permissions matrix, because the enforcing check compares the authenticated
  * `teacher_id` against the class group inside the usecase (CLAUDE.md §8).
  */
 export function canRecordGrades(
@@ -184,10 +153,10 @@ export function canRecordGrades(
 
 /**
  * Whether the panel must be narrowed to the signed-in teacher's own class
- * groups (`docs/ARCHITECTURE.md` §3). The screen honours it so the reader is
- * not shown doors that would fail; the enforcing check compares the
- * authenticated `teacher_id` against the class group inside the usecase, and it
- * is the only one that counts (CLAUDE.md §8).
+ * groups (`docs/ARCHITECTURE.md` §3). Scope again, and for the same reason:
+ * the screen honours it so the reader is not shown doors that would fail; the
+ * enforcing check compares the authenticated `teacher_id` against the class
+ * group inside the usecase, and it is the only one that counts (CLAUDE.md §8).
  */
 export function isRestrictedToOwnClassGroups(role: StaffRole): boolean {
   return role === 'teacher'
@@ -201,14 +170,7 @@ export function isRestrictedToOwnClassGroups(role: StaffRole): boolean {
  * class groups, one at a time (CLAUDE.md §8).
  */
 export function canBrowseEnrollments(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor' ||
-    role === 'sales' ||
-    role === 'support'
-  )
+  return isRoleAllowed(role, 'enrollments_browse')
 }
 
 /**
@@ -217,12 +179,7 @@ export function canBrowseEnrollments(role: StaffRole): boolean {
  * is on the payments section, next to the receipts it settles.
  */
 export function canBrowseReports(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor'
-  )
+  return isRoleAllowed(role, 'reports_browse')
 }
 
 /**
@@ -231,16 +188,18 @@ export function canBrowseReports(role: StaffRole): boolean {
  * exception for the sale that closed on WhatsApp and never reached the form.
  */
 export function canCreateEnrollment(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+  return isRoleAllowed(role, 'enrollments_create')
 }
 
 /**
- * Who opens the team directory — the panel's own accounts and their cargos.
- * Management only: it is the surface where a cargo changes, and the
- * anti-escalation rule keeps that with the top of the house (CLAUDE.md §8).
+ * Who opens the team directory — the panel's own accounts, their cargos, and
+ * the matrix that says what each cargo opens. Management alone, and the one
+ * capability the matrix itself cannot hand out: it is the surface where a cargo
+ * changes, so giving it away would be giving everything else away with it
+ * (CLAUDE.md §8).
  */
 export function canManageStaff(role: StaffRole): boolean {
-  return isManagement(role)
+  return isRoleAllowed(role, 'team_manage')
 }
 
 /**
@@ -249,25 +208,24 @@ export function canManageStaff(role: StaffRole): boolean {
  * enrollment side; the analyst reads it.
  */
 export function canManageEmail(role: StaffRole): boolean {
-  return (
-    isManagement(role) || role === 'enrollment_supervisor' || role === 'analyst'
-  )
+  return isRoleAllowed(role, 'email_manage')
 }
 
 /**
- * Who opens the platform settings. Management only: that screen holds the grade
- * that decides who is certified and the tolerance the platform approves a
+ * Who opens the platform settings. Management by default: that screen holds the
+ * grade that decides who is certified and the tolerance the platform approves a
  * receipt with when nobody is looking.
  */
 export function canConfigureSettings(role: StaffRole): boolean {
-  return isManagement(role)
+  return isRoleAllowed(role, 'settings_configure')
 }
 
 /**
  * Whose second factor is not optional (CLAUDE.md §8). These cargos move money
  * or hand out roles, so the panel never offers them a switch to turn it off.
- * The enforcing check is the session policy in `apps/api`.
+ * Not a capability either — it is a requirement placed on a cargo, not a door
+ * opened for one, and the enforcing check is the session policy in `apps/api`.
  */
 export function isMfaMandatory(role: StaffRole): boolean {
-  return isManagement(role) || role === 'billing'
+  return role === 'master' || role === 'admin' || role === 'billing'
 }

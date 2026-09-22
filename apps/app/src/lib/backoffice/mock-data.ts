@@ -1145,14 +1145,19 @@ export function listEmailFlows(): EmailFlow[] {
       sample: studentSample,
     },
     {
-      /* Off in the mock so the journey has to show what that costs: three days
-         before the class group starts, nobody gets the Classroom link
-         (`docs/REGRAS-NEGOCIO.md` §8). A paused flow is a silence, not a gap. */
+      /* On, like every other flow here. It used to ship off, to show the
+         journey what a pause costs — three days before the class group
+         starts, nobody gets the Classroom link (`docs/REGRAS-NEGOCIO.md` §8).
+         But a panel nobody has touched saying an e-mail is paused is an
+         invented fact about this institution, and the catalog is not the place
+         to demonstrate states (owner's rule: the panel starts clean). The
+         paused look still exists — it draws the day somebody actually pauses
+         one. */
       template: 'class_access_ready',
       audience: 'student',
       stage: 'access',
       conditional: false,
-      enabled: false,
+      enabled: true,
       version: 2,
       updatedAt: '2026-08-02T15:45:00Z',
       metrics: { sent: 0, delivered: 0, bounced: 0, failed: 0 },
@@ -1293,85 +1298,13 @@ export function countEmailRecipients(segment: EmailSegment): number {
  * The deliveries that did not land, newest first. Not a report: it is a list of
  * people the institution failed to reach — the student whose credentials
  * bounced cannot get into the portal, and nobody finds that out from a counter.
+ *
+ * Empty, like every other fixture in this file: the panel starts clean, never
+ * populated with invented people (owner's rule). These rows arrive from the
+ * `outbox` and what the provider reports back about each send (CLAUDE.md §5),
+ * so until that pipe exists the screen shows its empty state — which is the
+ * truth, and is also what "nobody was failed today" will look like.
  */
 export function listEmailDeliveryIssues(): EmailDeliveryIssue[] {
-  return [
-    {
-      id: 'del_01',
-      template: 'credentials_issued',
-      studentId: 'stu_0002',
-      studentName: 'Jhon Alexander Mamani Ccama',
-      address: 'jhon.mamani@outlook.com',
-      state: 'bounced',
-      reason: 'mailbox_full',
-      at: '2026-08-23T14:20:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_02',
-      template: 'payment_approved',
-      studentId: 'stu_0006',
-      studentName: 'Diego Huamán Ccopa',
-      address: 'diego.huaman@gmial.com',
-      state: 'bounced',
-      reason: 'domain_invalid',
-      at: '2026-08-23T02:41:00Z',
-      attempts: 1,
-    },
-    {
-      id: 'del_03',
-      template: 'enrollment_submitted',
-      studentId: 'stu_0007',
-      studentName: 'Valentina Núñez Ibarra',
-      address: 'valentina.nunez@gmail.com',
-      state: 'failed',
-      reason: 'provider_error',
-      at: '2026-08-22T19:05:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_04',
-      template: 'credentials_issued',
-      studentId: 'stu_0004',
-      studentName: 'Sebastián Ríos Paredes',
-      address: 'sebastian.ríos@gmail.com',
-      state: 'bounced',
-      reason: 'address_unknown',
-      at: '2026-08-22T16:30:00Z',
-      attempts: 2,
-    },
-    {
-      id: 'del_05',
-      template: 'certificate_issued',
-      studentId: 'stu_0003',
-      studentName: 'Camila Torres Vílchez',
-      address: 'camila.torres@gmail.com',
-      state: 'bounced',
-      reason: 'mailbox_full',
-      at: '2026-08-21T22:14:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_06',
-      template: 'guardian_consent_reminder',
-      studentId: 'stu_0008',
-      studentName: 'Renzo Palacios Vega',
-      address: 'renzo.palacios@gmail.com',
-      state: 'bounced',
-      reason: 'blocked_by_server',
-      at: '2026-08-21T11:02:00Z',
-      attempts: 2,
-    },
-    {
-      id: 'del_07',
-      template: 'payment_approved',
-      studentId: 'stu_0005',
-      studentName: 'Ana Lucía Chávez Soto',
-      address: 'analucia.chavez@gmail.com',
-      state: 'failed',
-      reason: 'provider_error',
-      at: '2026-08-20T09:48:00Z',
-      attempts: 3,
-    },
-  ]
+  return []
 }

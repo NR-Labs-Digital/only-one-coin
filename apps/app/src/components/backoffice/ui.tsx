@@ -392,3 +392,37 @@ export function OptionalMark({ label }: { label: string }) {
     </span>
   )
 }
+
+/**
+ * A line of context above the work: what this environment is, why a switch is
+ * fixed, what a screen will and will not do. Not an alert — nothing here is
+ * wrong — which is why it is quiet type on a tinted card rather than a banner.
+ *
+ * Shared by Funcionalidades and the permissions matrix: the two screens that
+ * govern the panel itself both need to say something about themselves before
+ * the reader starts flipping switches, and saying it two different ways would
+ * read as two different kinds of notice.
+ */
+export function Callout({
+  tone,
+  icon,
+  children,
+}: {
+  tone: 'warning' | 'info'
+  icon: BoIconName
+  children: ReactNode
+}) {
+  const skin =
+    tone === 'warning'
+      ? 'border-amber-600/20 bg-amber-50 text-amber-800'
+      : 'border-brand-blue/20 bg-sky text-brand-blue-deep'
+
+  return (
+    <p
+      className={`flex items-start gap-2 rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed ${skin}`}
+    >
+      <BoIcon name={icon} size={14} className="mt-0.5 shrink-0" />
+      {children}
+    </p>
+  )
+}
