@@ -47,7 +47,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | ☐ 5 | **Migration: pessoas e papéis** | `students`, `guardians`, `consents`, `teachers`, `user_roles`, `pg_trgm` para busca | Busca por nome/DNI/telefone funciona; sem grant de DELETE em `students` |
 | ☐ 6 | **Migration: matrícula e pagamento** | `enrollments`, `payments` (idempotency key única, `amount_cents`), `payment_receipts` (índice único por operação e por `image_phash`), `waitlist_entries` | Máquina de estados documentada; tentar inserir pagamento duplicado falha no banco |
 | ☐ 7 | **Migration: operação** | `outbox`, `campaigns`, ~~`audit_log`~~ (append-only), `attendance`, `grades`, `materials`, `certificates` — `audit_log` já nasceu adiantado, no wiring real de Equipo (`packages/db/migrations/0007_*.sql`); o resto da sessão segue pendente | `audit_log` sem grant de UPDATE/DELETE nem para admin |
-| ☐ 8 | **Autorização deny-by-default + suíte de teste** | Middleware deny-by-default em `apps/api`, toda rota/usecase declara o papel exigido | Teste enumera rotas e falha se faltar declaração de papel; teste tenta acessar com papel errado e falha corretamente |
+| ☑ 8 | **Autorização deny-by-default + suíte de teste** | Middleware deny-by-default em `apps/api`, toda rota/usecase declara o papel exigido | Teste enumera rotas e falha se faltar declaração de papel; teste tenta acessar com papel errado e falha corretamente — feito: `apps/api/src/infra/plugins/authorization.ts` falha o **boot** da aplicação se alguma rota não declarar `.roles()`/`.owners()`/`.public()`, e `authorization.test.ts` cobre os três casos |
 | ☐ 9 | **Seed** | Script com dado fictício: 500 alunos, 3 períodos, ~40 turmas em vários idiomas, 200 comprovantes | Idempotente, com comando de reset. Zero dado real |
 | ☐ 10 | **Fila e outbox** | BullMQ (Redis/Upstash) via `packages/queue`, worker rodando em `apps/api` (Fly.io) com retry/backoff/DLQ, adapter de notificação, `providers/brevo.ts` stub | Job falho vai para DLQ e não trava a fila. **Guarda de e-mail ativa: fora de produção só allowlist** |
 | ☐ 11 | **i18n** | `packages/i18n` com `es-PE.json`, lint `no-literal-string` nos diretórios de UI | Build quebra ao introduzir string crua |
@@ -91,21 +91,27 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | ☐ 29 | **OCR nível 2** | Escalada para modelo de outra família em baixa confiança, critério de concordância, alarme de volume | Divergência entre modelos vai para fila humana; escalada nunca encadeia |
 | ☐ 30 | **E-mails da matrícula** | Templates de matrícula recebida, pago aprovado/em revisão/rejeitado, credenciais — via outbox | Todos em `es-PE.json`, disparados pela fila, nenhum no caminho síncrono |
 
-#### Estado das Sessões 20–25 (atualizado em 21/08/2026)
+#### Estado das Sessões 20–25 (atualizado em 21/08/2026; servidor auditado em 22/09/2026)
 
 O **front inteiro** do checkout público existe e está navegável em
-`/enrollment` (`apps/app`), desenhado em `docs/MATRICULA-CHECKOUT.md`. Nenhuma
-sessão está fechada: o que falta em todas é a metade de servidor, que depende
-de peças da Fase 0 que ainda não existem (autorização deny-by-default da Sessão
-8, `apps/api` publicado da Sessão 13).
+`/enrollment` (`apps/app`), desenhado em `docs/MATRICULA-CHECKOUT.md`. As
+peças da Fase 0 que bloqueavam a metade de servidor (autorização
+deny-by-default da Sessão 8, `apps/api` publicado da Sessão 13) já existem, e
+uma fatia real do servidor foi construída junto do checkout público
+(`SubmitPublicEnrollmentRoute`, `apps/api`): validação server-side, registro
+de consentimento com timestamp/IP, e o núcleo de concorrência da Sessão 24
+(incremento atômico de vaga + idempotency key, com reforço no banco). Ainda
+não fecha nenhuma sessão porque falta o restante de cada entregável (ver
+coluna "Falta" abaixo) — mas a checagem seguinte é sobre isso, não mais sobre
+"nada existe no servidor".
 
 | # | Já existe | Falta para fechar |
 | --- | --- | --- |
-| 20 | Wizard de 4 passos, validação com zod no cliente, estado preservado no `sessionStorage` (recarregar no meio não perde nada) | Validação no **servidor**, com o mesmo schema |
-| 21 | Campos reais da planilha do Forms (nome completo em um campo, documento, celular, nascimento, Gmail travado), idade mínima por curso como trava, bloco do apoderado com aceite de consentimento versionado | Gravar o consentimento com **timestamp e IP** — é registro do servidor |
-| 22 | Data de início e horário como escolhas separadas, só turma com vaga selecionável, turma cheia visível e desabilitada | **Lista de espera** quando a data inteira estiver cheia |
-| 23 | Upload com teto de tamanho, tipo aceito, prévia, comprovante **obrigatório** travando o passo | **Signed URL** direto ao Storage, magic bytes, normalização (downscale, cinza, strip EXIF, HEIC) |
-| 24 | Tela de revisão e envio, guarda de duplo clique | Transação curta, incremento atômico de vaga, idempotency key, enfileiramento, p95 < 300ms |
+| 20 | Wizard de 4 passos, validação com zod no cliente, estado preservado no `sessionStorage` (recarregar no meio não perde nada), **e a validação no servidor com o mesmo formato** (`SubmitPublicEnrollmentBodySchema`, `apps/api`) | — (fechada nesta auditoria; falta só confirmar p95 < 300ms sob carga, que nenhuma sessão mediu ainda) |
+| 21 | Campos reais da planilha do Forms (nome completo em um campo, documento, celular, nascimento, Gmail travado), bloco do apoderado com aceite de consentimento versionado, **e o consentimento já grava timestamp e IP no servidor** (`consents`, via `SubmitPublicEnrollmentRoute`) | Confirmar que a idade mínima por curso é recusada também no **servidor**, não só na trava do cliente — não verificado nesta auditoria |
+| 22 | Data de início e horário como escolhas separadas, só turma com vaga selecionável, turma cheia visível e desabilitada | **Lista de espera** quando a data inteira estiver cheia — `waitlist_entries` existe na base, mas nenhuma rota grava nela ainda |
+| 23 | Upload com teto de tamanho, tipo aceito, prévia, comprovante **obrigatório** travando o passo | **Signed URL** direto ao Storage, magic bytes, normalização (downscale, cinza, strip EXIF, HEIC) — nada disso existe no servidor ainda |
+| 24 | Tela de revisão e envio, guarda de duplo clique, **e o núcleo do servidor: transação curta com incremento atômico de vaga (`UPDATE ... WHERE seats_taken < capacity`) e idempotency key única por pagamento** (`DrizzlePublicEnrollmentRepository`, com índice único no banco) | **Enfileiramento** do job de OCR (o submit hoje só grava e responde, não enfileira nada) e confirmar p95 < 300ms sob carga |
 | 25 | — | Turnstile, rate limit na borda, cache de idempotência |
 
 **Decisão nova desta sessão, que muda o desenho da Sessão 24:** a vaga passa a
@@ -140,7 +146,7 @@ nova, não incha a atual).
 
 | # | Sessão | Entregável | Pronto quando |
 | --- | --- | --- | --- |
-| ☐ 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`treasury`/`mass_approver`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL |
+| ☐ 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL |
 | ☐ 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, painel de comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, botão reprocessar | 25 revisões seguidas sem usar o mouse |
 | ☐ 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um |
 | ☐ 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI retorna em < 300ms com 30k alunos no seed |
@@ -150,6 +156,24 @@ nova, não incha a atual).
 | ☐ 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados |
 | ☐ 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo |
 | ☐ 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco |
+
+#### Estado da Fase 3 (auditado em 22/09/2026)
+
+Nenhuma sessão fecha o próprio critério de pronto ainda — mas três já têm
+trabalho real por baixo do mock, o que o quadro de checkboxes sozinho não
+mostra:
+
+| # | O que já existe |
+| --- | --- |
+| 31 | Login, logout, convite e redefinição de senha do backoffice já falam com o Better Auth de verdade; gate de papel na UI (`permissions.ts`) e anti-enumeração no formulário de login. **Falta**: MFA (nenhum plugin `twoFactor` configurado) — login do aluno (`/login`) continua um stub à parte |
+| 34 | Listagem, ficha e criação de aluno são reais, com `pg_trgm` funcionando. **Falta**: edição (é stub de frontend, sem usecase de escrita em `apps/api`), suspensão, exportação |
+| 40 | Existe uma bitácora real de troca de cargo (lê `audit_log` via `/backoffice/team`), mas não a tela geral de auditoria com filtro/exportação que a sessão descreve |
+
+32, 33, 35, 36, 37, 38 e 39 continuam só UI mock, sem contraparte no
+`apps/api` — 32/33 esperam o OCR (Sessão 26, não iniciada); 35/36 esperam
+rota de escrita de turma e a tabela `teachers` (nenhuma existe); 37/38/39
+esperam suas próprias tabelas (`attendance`, `grades`, conciliação, materialized
+views), nenhuma criada ainda.
 
 ---
 

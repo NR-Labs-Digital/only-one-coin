@@ -20,7 +20,7 @@ ainda em aberto — este pacote só cobre schema/migration.
 ```
 drizzle.config.ts   # dialect postgresql, schema -> migrations, lê DATABASE_URL
 src/
-  schema.ts          # tabelas Drizzle — vazio até a Sessão 4 do ROADMAP
+  schema.ts          # tabelas Drizzle — modelo acadêmico, de pessoas, matrícula/pagamento e identidade (10 migrations além da baseline, ver README.md da raiz)
 migrations/          # SQL gerado pelo drizzle-kit, versionado no Git
 ```
 

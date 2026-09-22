@@ -6,7 +6,7 @@ backoffice administrativo e módulo de e-mail.
 
 ## Documentos
 
-- [`CLAUDE.md`](CLAUDE.md) — contexto permanente: stack fechada, convenções, regras proibidas.
+- [`CLAUDE.md`](CLAUDE.md) — contexto permanente: stack fechada, convenções, regras proibidas. Em camada: o que é específico de cada app/pacote vive em `apps/*/CLAUDE.md` e `packages/*/CLAUDE.md` (mapa completo no topo do arquivo da raiz).
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — estrutura do monorepo, modelo de autorização (Caminho A vs. B), RBAC, custo mensal estimado, o shell/layout responsivo de `apps/app` e as **feature flags** das três superfícies (§8).
 - [`docs/MATRICULA-CHECKOUT.md`](docs/MATRICULA-CHECKOUT.md) — o funil público de matrícula: wizard de 4 passos com dois modos de entrada (landing e link do vendedor), os dois relógios da vaga e a atribuição de canal.
 - [`docs/DOCUMENTOS-E-CERTIFICADOS.md`](docs/DOCUMENTOS-E-CERTIFICADOS.md) — emissão de constancia e certificado, lote por turma, e-mail pela outbox.
@@ -34,13 +34,15 @@ pnpm dev:web
 ```
 
 Sobe os dois de uma vez: a landing (Astro) em `localhost:4321` e o app
-(Next.js — matrícula, portal e backoffice) em `localhost:3000`. A maior parte
-das telas do app é mockada, então nada disso precisa de banco; `pnpm db:up` +
-`pnpm dev:api` entram quando o trabalho for na API ou nas telas já ligadas a
-ela (diretório e ficha de aluno, livro de matrículas).
+(Next.js — matrícula, portal e backoffice) em `localhost:3000`. Boa parte do
+backoffice ainda é mockada e não precisa de banco — mas várias telas já falam
+com `apps/api` de verdade (alunos, equipe, funcionalidades, matrícula manual e
+o livro de matrículas; ver "Estado atual" abaixo) e ficam com erro de rede sem
+ela. Para essas telas, ou qualquer coisa do lado do servidor: `pnpm db:up` +
+`pnpm dev:api`.
 
-Para trabalhar nessas telas com uma lista de verdade — paginação, busca,
-filtro de menores — há um seed de gente inventada:
+Para trabalhar com uma lista de verdade — paginação, busca, filtro de menores
+— há um seed de gente inventada:
 
 ```bash
 # contra Postgres local
@@ -61,7 +63,9 @@ Rodar de novo não duplica ninguém: as pessoas são determinísticas e o docume
 já cadastrado é pulado. **`--undo`** aposenta o que o seed criou com
 `deleted_at` — nunca DELETE, que não tem grant em `students` (§6) — e deixa em
 paz quem já tiver matrícula. É o que substitui o `pnpm db:reset` quando o banco
-não está na sua máquina.
+não está na sua máquina. `pnpm seed:enrollments` (mesma convenção de
+`--confirm-host`/`--count`, sem `--undo` — matrícula e pagamento não têm
+`deleted_at`) popula o livro de matrículas por cima dos alunos já semeados.
 
 Os CTAs da landing (`/enrollment` e `/login`, nos três idiomas) são links
 relativos de propósito — para quem lê é tudo o mesmo site. Quem os atravessa
@@ -77,16 +81,29 @@ Postgres (Neon), hospedagem de `apps/api` (Fly.io), storage de comprovante
 (Tigris), caixa de e-mail (Zoho Mail) e auth (Better Auth) já estão
 decididos (`docs/ARCHITECTURE.md` §5). `apps/api` está no ar em
 `only-one-coin-api.fly.dev`; `apps/landing` e `apps/app` estão no ar em
-projetos Vercel separados (`docs/ARCHITECTURE.md` §5.9) — falta só ligar o
-deploy automático por push (pendente de autenticação no dashboard) e o
-domínio próprio. O adapter de auth já está
-implementado (`docs/ARCHITECTURE.md` §5.6): sign-up/sign-in/sessão testados
-ponta a ponta, `role` protegido, erros do provedor traduzidos pro envelope do
-projeto (§5.7), docs interativas mescladas no Swagger. As telas de login
-(`apps/app`) continuam mockadas — wiring real, MFA e redirect por `role`
-pertencem à Sessão 31 do `ROADMAP.md`, que depende de peças que ainda não
-existem (autorização deny-by-default da Sessão 8, `audit_log` da Sessão 7).
-Domínio e fila já existem, independentes dessa escolha:
+projetos Vercel separados (`docs/ARCHITECTURE.md` §5.9). **Deploy é automático
+a cada push em `main`** para os três: `.github/workflows/deploy-vercel.yml`
+publica `apps/landing`/`apps/app` (`vercel deploy --prod` por projeto) e
+`.github/workflows/deploy-api.yml` publica `apps/api` no Fly.io, sempre backup
+do Neon → migration → deploy, nessa ordem. Os cinco secrets do pipeline
+(`FLY_API_TOKEN`, `DATABASE_URL`, `TIGRIS_ACCESS_KEY_ID`,
+`TIGRIS_SECRET_ACCESS_KEY`, `VERCEL_TOKEN`) estão configurados no GitHub e os
+dois workflows rodam verdes a cada merge. O que falta é só a integração
+nativa `vercel git connect` (passo de OAuth só do dashboard,
+`docs/ARCHITECTURE.md` §5.9) e o domínio próprio — nenhum dos dois bloqueia
+publicar hoje, porque o GitHub Actions já cobre o auto-deploy. O adapter de
+auth já está implementado (`docs/ARCHITECTURE.md` §5.6): sign-up/sign-in/sessão
+testados ponta a ponta, `role` protegido, erros do provedor traduzidos pro
+envelope do projeto (§5.7), docs interativas mescladas no Swagger. **A
+autenticação real do backoffice já está de pé** — login, logout, convite de
+staff e recuperação de senha do painel falam com o Better Auth de verdade
+(`/api/auth/sign-in/email` etc.); só falta o MFA (nenhum plugin `twoFactor`
+configurado ainda, então `admin`/`billing` entram sem o segundo fator por
+enquanto). **O login do aluno (`/login`) continua mockado**: qualquer
+submissão válida redireciona pro portal sem checar credencial — esse é o
+único pedaço da Sessão 31 do `ROADMAP.md` ainda não iniciado, e as duas peças
+que a bloqueavam (autorização deny-by-default da Sessão 8, `audit_log` da
+Sessão 7) já existem. Domínio e fila já existem, independentes dessa escolha:
 
 - `apps/landing` — site público (Astro), trilíngue. Camada de SEO montada: título e
   descrição por página nos três idiomas (`src/i18n/ui.ts`), `canonical` + `hreflang`
@@ -95,14 +112,11 @@ Domínio e fila já existem, independentes dessa escolha:
   JSON-LD de `EducationalOrganization`, `Course` e `FAQPage`. `/blog` e `/comunidad`
   seguem `noindex` enquanto forem placeholder.
 - `apps/app` — Next.js App Router: layout, roteamento, i18n trilíngue e as telas
-  em **mockup** (sem acesso a dados), **com três exceções já ligadas ao banco
-  pela API**: o diretório de alunos (`GET /students`, com paginação por
-  cursor), a ficha do aluno (`GET /students/:id`, só a metade de identidade) e
-  o **livro de matrículas** (`GET /enrollments` — a lista, as métricas do ciclo
-  e a linha que aparece depois de abrir matrícula manual, que agora é relida do
-  servidor em vez de montada na tela). A aba de **Reservas** da mesma seção
-  continua em mockup: depende da tabela de parâmetros de `/backoffice/settings`
-  e da fila de revisão, que ainda não existem. As telas são **desenhadas para o celular**,
+  em parte já ligadas a `apps/api`, em parte ainda **mockup** — quadro
+  completo em "Estado de integração por tela" mais abaixo, com o **livro de
+  matrículas** (`GET /enrollments` — lista, métricas do ciclo e a linha de
+  abertura manual, todos relidos do servidor) entre as exceções reais desde a
+  última sessão. As telas são **desenhadas para o celular**,
   não só encolhidas nele (`docs/ARCHITECTURE.md` §7.1): menu do portal numa
   barra de abas no rodapé, tabela densa do painel virando lista com o nome da
   coluna como etiqueta, modal virando folha de baixo, safe area do notch e da
@@ -215,8 +229,8 @@ Domínio e fila já existem, independentes dessa escolha:
   leitura pura — nada se decide dali —
   e cada coluna diz de onde vem: matrícula e dinheiro saem do livro de
   matrículas, a ocupação sai das vagas das turmas, e os trâmites pagos ficam de
-  fora porque são liquidados em Pagos. A seção é de `admin` e `coordinator`,
-  como o livro de matrículas). Fecha a lista a configuração
+  fora porque são liquidados em Pagos. A seção é de `admin`, `analyst`,
+  `enrollment_supervisor` e `academic_supervisor`, como o livro de matrículas). Fecha a lista a configuração
   (`/backoffice/settings`, só `admin`), a tela única dos números que o resto do
   painel roda em cima: as regras acadêmicas e de trâmite (nota mínima, prazo do
   certificado, taxa da constancia, antecedência do aviso de contrato) e os
@@ -248,8 +262,8 @@ Domínio e fila já existem, independentes dessa escolha:
   dropdown do usuário no rodapé do menu, que junta perfil, a ficha do docente e
   a saída): senha
   com as exigências listadas enquanto se digita, verificação em dois passos —
-  obrigatória e sem botão de desligar para `admin`, `treasury` e
-  `mass_approver` (`CLAUDE.md` §8), opcional para os demais —, códigos de
+  obrigatória e sem botão de desligar para `admin` e `billing`
+  (`CLAUDE.md` §8), opcional para os demais —, códigos de
   recuperação, sessões abertas com o encerramento por linha, e o idioma do
   painel. Nome, e-mail de acesso e cargo ficam de fora de propósito: são
   identidade, e o cargo só muda pelo usecase de promoção. Toda escrita é estado
@@ -279,24 +293,66 @@ Domínio e fila já existem, independentes dessa escolha:
   existindo e ganha do painel — é o caminho de volta quando o painel é o que
   quebrou. Hoje **todas as flags estão ligadas** — o registro chegou para gerir
   o que se expõe, não para aposentar tela.
+
+### Estado de integração por tela (`apps/app`)
+
+Nem toda tela do backoffice fala com `apps/api` ainda — a tabela abaixo é o
+retrato de hoje, tela a tela, para não depender de abrir o código para saber
+o que é real:
+
+| Tela | Estado |
+| --- | --- |
+| Alunos (`/backoffice/students`) | **Real**: listagem, ficha e criação chamam a API. Edição é stub de frontend (fica em estado local; a escrita real ainda não existe) |
+| Matrículas (`/backoffice/enrollments`) | **Real**: listagem, métricas do ciclo e abertura manual (`GET`/`POST /api/v1/enrollments`) |
+| Reservas de vaga (`/backoffice/enrollments/reservations`) | Mock |
+| Pagamentos e fila de revisão (`/backoffice/payments`, `/payments/review`) | Mock — não existe ainda ação em lote nem endpoint de pagamento avulso |
+| Turmas (`/backoffice/class-groups`) | Mock — `apps/api` só expõe leitura (`GET /class-groups`); não há rota de criar/editar turma |
+| Docentes (`/backoffice/teachers`) | Mock — não existe tabela `teachers` ainda (decisão deliberada, `docs/ROADMAP.md` Sessão 36) |
+| Equipe (`/backoffice/team`) | **Real**: listagem, criação, convite, redefinição de senha e a bitácora de troca de cargo (lida do `audit_log`) |
+| Funcionalidades (`/backoffice/features`) | **Real** |
+| E-mails (`/backoffice/emails*`) | Mock |
+| Relatórios (`/backoffice/reports`) | Mock — a agregação roda no navegador porque o dataset é mockado; contra a API real vira query no servidor |
+| Configuração (`/backoffice/settings`) | Mock (constantes fixas — vira `GET /settings` quando a API existir) |
+| Conta (`/backoffice/account`) | Estado local — toda escrita fica só na sessão do navegador |
+| Login do backoffice, convite e redefinição de senha | **Real** — fala direto com o Better Auth (`/api/auth/sign-in/email`). MFA ainda não (nenhum plugin `twoFactor` configurado) |
+| Login do aluno (`/login`) | Mock — qualquer submissão válida redireciona pro portal, sem checar credencial |
+| Portal do aluno (`/portal/*`, todas as telas) | Mock — nenhuma chamada à API ainda |
+
 - `packages/domain` — domínio DDD puro (entidades, usecases, portas de
   repositório), sem framework nem provedor de banco. Já inclui a porta de
   identidade/auth (`identity/`, ver `packages/domain/README.md`) e um
   vocabulário de erro HTTP reutilizável (`shared/base/errors/`).
 - `packages/queue` — contrato de fila compartilhado (BullMQ/Redis).
 - `packages/db` — Postgres local via `compose.yml` (`postgres:18-alpine`) +
-  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Migration
-  baseline vazia + schema do Better Auth (`user`/`session`/`account`/
-  `verification`, `0001_better_auth_core.sql`). Modelo acadêmico e de pessoas
-  entra nas próximas sessões do `ROADMAP.md`.
+  schema/migrations com Drizzle Kit (`docs/ARCHITECTURE.md` §5.8). Dez
+  migrations além da baseline: schema do Better Auth
+  (`0001_better_auth_core.sql`), o modelo acadêmico e de pessoas inteiro —
+  `academic_periods`, `courses`, `plans`, `plan_prices`, `class_groups`,
+  `students`, `guardians`, `consents`, `enrollments`, `payments`,
+  `payment_receipts`, `waitlist_entries` (`0003`) —, `pg_trgm` para busca
+  (`0002`), ajustes de turma/curso (`0004`), origem da matrícula (`0005`),
+  índice de busca de aluno (`0006`), `audit_log` e `staff_invites` (`0007`),
+  reset de senha de staff (`0008`), o quadro de papéis atual nos `CHECK` de
+  `user`/`staff_invites` (`0009`) e `feature_flag_overrides` (`0010`). Ainda
+  não existem: `teachers`, `outbox`, `campaigns`, `attendance`, `grades`,
+  `materials`, `certificates` — essas entram nas próximas sessões do
+  `ROADMAP.md`.
 - `apps/api` — Fastify expondo `@ooc/domain` via HTTP e rodando os workers de
-  fila. Better Auth embutido (`infra/auth/`), fala com o Postgres local via
-  `pg.Pool`. Persistência de negócio ainda em memória
-  (`InMemoryExampleRepository`). Error handler global + logger compartilhado
+  fila. Better Auth embutido (`infra/auth/`), fala com o Postgres via
+  `pg.Pool`. **Persistência real via Drizzle** — todo repositório em
+  `infra/persistence/` e `infra/identity/` é Drizzle (alunos, apoderados,
+  matrícula pública e manual, catálogo de turmas, staff, convites,
+  redefinição de senha, `audit_log`, feature flags); não existe mais
+  implementação em memória. Error handler global + logger compartilhado
   (`container.logger`) via `infra/plugins/`, incluindo a tradução dos erros
-  do Better Auth pro mesmo envelope.
+  do Better Auth pro mesmo envelope e a autorização deny-by-default (rota sem
+  `.roles()`/`.owners()`/`.public()` falha o **boot**, não só o CI —
+  `infra/plugins/authorization.ts`).
 
-**A reconstruir** (volta quando o Neon de staging/produção for provisionado,
-`ROADMAP.md` Sessão 13): storage, OCR e notificações reais. Migrations do
-modelo de negócio já podem começar — Postgres local existe. Autorização é
-feita na camada de aplicação (`apps/api`), não em RLS — ver `CLAUDE.md` §8.
+**Autorização e domínio de negócio já não dependem de Neon de staging/produção
+provisionado** — rodam sobre o Postgres local. **A reconstruir** quando
+staging/produção tiverem seus próprios dados de verdade: storage, OCR e
+notificações reais (hoje só o comprovante do checkout público grava
+`payments`/`payment_receipts`; não há worker de OCR nem envio de e-mail real
+— `send-email.worker.ts` só loga o payload). Autorização é feita na camada de
+aplicação (`apps/api`), não em RLS — ver `CLAUDE.md` §8.
