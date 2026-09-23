@@ -48,12 +48,22 @@ const PAGE_SIZE = 50;
 const SEARCH_LIMIT = 10;
 
 export interface StudentListCursor {
-  createdAt: Date;
+  /**
+   * UTC timestamp at full microsecond precision, as `to_char` renders it —
+   * never a JS `Date`. `created_at` has no explicit column precision, so
+   * Postgres keeps microseconds, but `Date` (and `Date#toISOString()`) only
+   * carries milliseconds. A cursor built from a truncated `Date` can land
+   * mid-microsecond inside a tie (e.g. a bulk import whose rows share one
+   * `now()`), where neither `<` nor `=` matches the real column value —
+   * pagination stalls there instead of advancing. Round-tripping the raw text
+   * keeps the boundary comparison exact.
+   */
+  createdAt: string;
   id: string;
 }
 
 export function encodeStudentCursor(cursor: StudentListCursor): string {
-  return Buffer.from(`${cursor.createdAt.toISOString()}|${cursor.id}`, "utf8").toString("base64url");
+  return Buffer.from(`${cursor.createdAt}|${cursor.id}`, "utf8").toString("base64url");
 }
 
 /** Malformed/tampered input decodes to `null` rather than throwing — an
@@ -63,10 +73,8 @@ export function encodeStudentCursor(cursor: StudentListCursor): string {
 export function decodeStudentCursor(raw: string): StudentListCursor | null {
   try {
     const decoded = Buffer.from(raw, "base64url").toString("utf8");
-    const [isoDate, id] = decoded.split("|");
-    if (!isoDate || !id) return null;
-    const createdAt = new Date(isoDate);
-    if (Number.isNaN(createdAt.getTime())) return null;
+    const [createdAt, id] = decoded.split("|");
+    if (!createdAt || !id || Number.isNaN(new Date(createdAt).getTime())) return null;
     return { createdAt, id };
   } catch {
     return null;
@@ -122,10 +130,14 @@ export class ListStudentsQuery {
         )
       : isNull(students.deletedAt);
 
+    // Cast as text, not bound as a `Date` — a driver-level `Date` parameter
+    // would re-truncate this back to milliseconds before Postgres ever sees
+    // it, undoing the point of carrying full precision in the cursor.
+    const cursorCreatedAt = decodedCursor ? sql`${decodedCursor.createdAt}::timestamptz` : undefined;
     const cursorFilter = decodedCursor
       ? or(
-          lt(students.createdAt, decodedCursor.createdAt),
-          and(eq(students.createdAt, decodedCursor.createdAt), lt(students.id, decodedCursor.id)),
+          lt(students.createdAt, cursorCreatedAt!),
+          and(eq(students.createdAt, cursorCreatedAt!), lt(students.id, decodedCursor.id)),
         )
       : undefined;
 
@@ -156,6 +168,10 @@ export class ListStudentsQuery {
         region: students.region,
         city: students.city,
         createdAt: students.createdAt,
+        // Full microsecond precision, for the cursor only — see
+        // `StudentListCursor.createdAt`. `AT TIME ZONE 'UTC'` fixes the
+        // rendering to UTC regardless of the session's own timezone setting.
+        createdAtCursor: sql<string>`to_char(${students.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
         updatedAt: students.updatedAt,
         totalEnrollments: sql<number>`count(${enrollments.id})`.mapWith(Number),
         confirmedEnrollments:
@@ -185,7 +201,9 @@ export class ListStudentsQuery {
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor =
-      !needle && hasMore ? encodeStudentCursor({ createdAt: page[page.length - 1]!.createdAt, id: page[page.length - 1]!.id }) : null;
+      !needle && hasMore
+        ? encodeStudentCursor({ createdAt: page[page.length - 1]!.createdAtCursor, id: page[page.length - 1]!.id })
+        : null;
 
     const items = page.map((row): StudentListRow => {
       const status: StudentStatus =
