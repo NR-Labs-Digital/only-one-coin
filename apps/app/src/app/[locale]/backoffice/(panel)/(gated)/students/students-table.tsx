@@ -27,6 +27,20 @@ type StatusFilter = StudentStatus | 'all'
 const STATUS_FILTERS: StatusFilter[] = ['all', 'active', 'under_review', 'inactive']
 
 /**
+ * Guards `directory` against a page fetched twice ending up twice on screen —
+ * belt-and-suspenders alongside the stalled-cursor guard in `loadUpTo`, since
+ * a retry after a dropped response can otherwise re-append rows already held.
+ */
+function dedupeById(rows: StudentRow[]): StudentRow[] {
+  const seen = new Set<string>()
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false
+    seen.add(row.id)
+    return true
+  })
+}
+
+/**
  * A screen of rows, not a scroll of them: past ~15 the eye stops scanning and
  * starts hunting, and the toolbar scrolls out of reach.
  */
@@ -124,14 +138,20 @@ export function StudentsTable({
           nextCursor: string | null
         }
 
-        if (!Array.isArray(nextPage.items) || nextPage.items.length === 0) {
-          // Nothing came back: stop rather than spin on a cursor that is not
-          // advancing.
+        if (!Array.isArray(nextPage.items) || nextPage.items.length === 0 || nextPage.nextCursor === cursor) {
+          // Nothing came back, or the server handed back the same cursor it
+          // was given: stop rather than spin on a cursor that is not
+          // advancing — that loop is what actually hammered the API in
+          // production (same URL, over and over) instead of failing safe.
+          if (nextPage.nextCursor === cursor && nextPage.items.length > 0) {
+            setDirectory((current) => dedupeById([...current, ...nextPage.items]))
+            setToast(t('students.load_more_error'))
+          }
           cursor = null
           break
         }
 
-        setDirectory((current) => [...current, ...nextPage.items])
+        setDirectory((current) => dedupeById([...current, ...nextPage.items]))
         loaded += nextPage.items.length
         cursor = nextPage.nextCursor
       }
