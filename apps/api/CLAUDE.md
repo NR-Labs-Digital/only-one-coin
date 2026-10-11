@@ -190,6 +190,8 @@ O catálogo e o interruptor de feature flags são coisa de `apps/app` (`apps/app
 - **Aluno ativo** = estudando agora: vaga `confirmed`, matrícula não aposentada, turma que ainda não chegou a `finished`/`closed`. **Não** é a regra do filtro "ativo" do diretório de Alunos (qualquer matrícula confirmada, em qualquer época).
 - **Variação** = comparação com ontem. "Ativos ao fim de ontem" é reconstruído pelo mesmo `audit_log`: vaga conta a partir da aprovação, turma deixa de contar a partir do `catalog.class_group.status_changed` para `finished`/`closed`. Linha sem trilha (seed, import antigo) vale como estando no estado atual desde sempre. Se algum caminho novo aprovar pagamento ou avançar turma sem gravar no `audit_log`, a variação mente — e o teste de integração não pega isso.
 
+**Ao vivo de propósito (decisão do dono, 11/10/2026):** os relatórios da Sessão 39 seguem em materialized view noturna, como o contrato pede; a home é a exceção, porque "matrícula de hoje" numa view da madrugada seria sempre zero.
+
 Custo: uma passada por todas as aprovações já gravadas (`payments.enrollment_id` não tem índice), mais o índice `audit_log (action, created_at)` da `0024`. Se a home ficar lenta, o caminho é foto diária ou materialized view, não mais índice.
 
 ## Proteção da rota pública (OOC-24, 03/10/2026)
