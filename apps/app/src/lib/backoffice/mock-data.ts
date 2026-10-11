@@ -4,18 +4,13 @@ import type {
   ClassGroupStudent,
   CourseLanguage,
   CourseRow,
-  DashboardMetrics,
   EnrollmentRow,
   EmailDeliveryIssue,
   EmailFlow,
   EmailMetrics,
   EmailSegment,
-  PaymentMethod,
   PaymentSettings,
   PlanPrice,
-  ReviewFlag,
-  ReviewQueueItem,
-  SeatWatchItem,
   StaffUser,
   StudentDetail,
   TeacherContract,
@@ -58,108 +53,7 @@ export const CONSTANCIA_FEE_CENTS = 2500
  */
 export const PASSING_GRADE = 14
 
-/**
- * The tail of the human review queue. One entry describes a person, the seat
- * they reserved and the receipt still waiting on a human — the student file
- * and the queue row are both derived from it, so the two screens can never
- * disagree about the same receipt.
- */
-interface PendingReceipt {
-  id: string
-  studentId: string
-  firstName: string
-  lastName: string
-  nationalId: string
-  email: string
-  phone: string
-  region: string
-  city: string
-  birthDate: string
-  courseName: string
-  classGroupName: string
-  teacherName: string
-  method: PaymentMethod
-  /** What the extraction read on the receipt. */
-  amountCents: number
-  /** The frozen plan price it is checked against (CLAUDE.md §5). */
-  expectedAmountCents: number
-  operationNumber: string | null
-  flag: ReviewFlag
-  tier: number
-  confidence: number
-  submittedAt: string
-}
-
-const pendingReceipts: PendingReceipt[] = []
-
 const students: StudentDetail[] = []
-
-
-export function getDashboardMetrics(): DashboardMetrics {
-  return {
-    enrollmentsToday: 0,
-    enrollmentsTodayDelta: 0,
-    pendingReview: listReviewQueue().length,
-    oldestPendingHours: 0,
-    activeStudents: 0,
-    activeStudentsDelta: 0,
-    seatsTaken: 0,
-    seatsCapacity: 0,
-  }
-}
-
-/** Receipts already sitting on a student file of their own. */
-const flaggedReceipts: ReviewQueueItem[] = []
-
-/**
- * The whole human queue, oldest first — the order it is worked in, and the one
- * the screen promises. Never a model's decision: tier 3 and divergence end
- * here by rule (CLAUDE.md §5).
- */
-function listReviewQueue(): ReviewQueueItem[] {
-  return [
-    ...flaggedReceipts,
-    ...pendingReceipts.map(
-      ({
-        studentId,
-        firstName,
-        lastName,
-        courseName,
-        method,
-        amountCents,
-        expectedAmountCents,
-        operationNumber,
-        flag,
-        tier,
-        confidence,
-        submittedAt,
-        id,
-      }): ReviewQueueItem => ({
-        id,
-        studentId,
-        studentName: `${firstName} ${lastName}`,
-        courseName,
-        method,
-        amountCents,
-        expectedAmountCents,
-        operationNumber,
-        flag,
-        tier,
-        confidence,
-        submittedAt,
-      }),
-    ),
-  ].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt))
-}
-
-/** Home preview: the five that have been waiting the longest. */
-export function getReviewQueue(): ReviewQueueItem[] {
-  return listReviewQueue().slice(0, 5)
-}
-
-export function getSeatWatch(): SeatWatchItem[] {
-  return []
-}
 
 /* -------------------------------------------------------------------------- */
 /* Class groups                                                                */

@@ -402,55 +402,6 @@ export interface StudentDetail extends StudentRow {
   attachments: StudentAttachment[]
 }
 
-/** Why a receipt landed in the human queue (CLAUDE.md §5 tier ladder). */
-export type ReviewFlag =
-  | 'amount_mismatch'
-  | 'low_confidence'
-  | 'illegible'
-  | 'duplicate_phash'
-  | 'model_divergence'
-
-export interface ReviewQueueItem {
-  id: string
-  studentId: string
-  studentName: string
-  courseName: string
-  method: PaymentMethod
-  /** What the receipt says vs. what the frozen plan price says. */
-  amountCents: number
-  expectedAmountCents: number
-  /** Null when the extraction could not read it — an illegible receipt. */
-  operationNumber: string | null
-  flag: ReviewFlag
-  /** OCR ladder tier that produced the extraction (0–3). */
-  tier: number
-  /** Lowest per-field confidence, 0–1. */
-  confidence: number
-  submittedAt: string
-}
-
-/** Headline numbers on the backoffice home. */
-export interface DashboardMetrics {
-  enrollmentsToday: number
-  enrollmentsTodayDelta: number
-  pendingReview: number
-  oldestPendingHours: number
-  activeStudents: number
-  activeStudentsDelta: number
-  seatsTaken: number
-  seatsCapacity: number
-}
-
-/** Seat pressure per class group — the "vagas" watchlist. */
-export interface SeatWatchItem {
-  id: string
-  courseName: string
-  classGroupName: string
-  startDate: string
-  seatsTaken: number
-  capacity: number
-}
-
 /* -------------------------------------------------------------------------- */
 /* Class groups — where certificates are issued in batch                       */
 /* -------------------------------------------------------------------------- */

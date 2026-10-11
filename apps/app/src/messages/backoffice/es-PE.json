@@ -81,7 +81,7 @@
     "dashboard": {
       "greeting": "Hola, {name}",
       "metric_enrollments_today": "Matrículas de hoy",
-      "metric_delta": "{value}% frente a ayer",
+      "metric_delta": "{value} frente a ayer",
       "metric_pending_review": "En revisión humana",
       "metric_oldest": "La más antigua espera {hours} h",
       "metric_active_students": "Alumnos activos",
@@ -93,10 +93,15 @@
       "subtitle": "Pagos que esperan tu decisión, con la validación de la IA. Se revisan de más antiguo a más reciente.",
       "col_student": "Alumno",
       "col_course": "Curso",
-      "col_amount": "Monto leído",
-      "col_flag": "Motivo",
+      "col_amount": "Monto",
+      "col_verdict": "Validación",
       "col_submitted": "Enviado",
       "expected": "Esperado: {amount}",
+      "verdict_short": {
+        "approve": "Coincide",
+        "review": "Revisar",
+        "reject_suggested": "Rechazo sugerido"
+      },
       "open_file": "Ver ficha",
       "empty_title": "No hay nada en cola",
       "empty_body": "Cuando un comprobante necesite revisión humana, aparecerá aquí.",
@@ -122,13 +127,6 @@
       "page_next": "Siguientes",
       "page_status": "Página {page} de {pages}"
     },
-    "review_flag": {
-      "amount_mismatch": "Monto no coincide",
-      "low_confidence": "Confianza baja",
-      "illegible": "Ilegible",
-      "duplicate_phash": "Comprobante repetido",
-      "model_divergence": "Modelos no coinciden"
-    },
     "receipt_state": {
       "missing": "Sin comprobante",
       "uploading": "Subiendo",
@@ -144,7 +142,8 @@
     },
     "seats": {
       "title": "Vacantes por aula",
-      "subtitle": "Aulas más cerca de llenarse en este período de venta.",
+      "subtitle": "Aulas en venta más cerca de llenarse.",
+      "empty": "Ninguna aula está en venta ahora.",
       "full": "Llena",
       "available": "{count} libres",
       "taken": "{taken} de {capacity}",

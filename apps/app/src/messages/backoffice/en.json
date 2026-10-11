@@ -81,7 +81,7 @@
     "dashboard": {
       "greeting": "Hi, {name}",
       "metric_enrollments_today": "Enrollments today",
-      "metric_delta": "{value}% vs. yesterday",
+      "metric_delta": "{value} vs. yesterday",
       "metric_pending_review": "In human review",
       "metric_oldest": "Oldest waiting {hours} h",
       "metric_active_students": "Active students",
@@ -93,10 +93,15 @@
       "subtitle": "Payments waiting for your decision, with the AI's validation. Reviewed oldest first.",
       "col_student": "Student",
       "col_course": "Course",
-      "col_amount": "Amount read",
-      "col_flag": "Reason",
+      "col_amount": "Amount",
+      "col_verdict": "Validation",
       "col_submitted": "Submitted",
       "expected": "Expected: {amount}",
+      "verdict_short": {
+        "approve": "Matches",
+        "review": "Review",
+        "reject_suggested": "Rejection suggested"
+      },
       "open_file": "Open file",
       "empty_title": "Nothing in the queue",
       "empty_body": "When a receipt needs a human, it shows up here.",
@@ -122,13 +127,6 @@
       "page_next": "Next",
       "page_status": "Page {page} of {pages}"
     },
-    "review_flag": {
-      "amount_mismatch": "Amount mismatch",
-      "low_confidence": "Low confidence",
-      "illegible": "Illegible",
-      "duplicate_phash": "Duplicate receipt",
-      "model_divergence": "Models disagreed"
-    },
     "receipt_state": {
       "missing": "No receipt",
       "uploading": "Uploading",
@@ -144,7 +142,8 @@
     },
     "seats": {
       "title": "Seats per class group",
-      "subtitle": "Groups closest to filling up in this sales period.",
+      "subtitle": "Class groups on sale closest to filling up.",
+      "empty": "No class group is on sale right now.",
       "full": "Full",
       "available": "{count} left",
       "taken": "{taken} of {capacity}",
