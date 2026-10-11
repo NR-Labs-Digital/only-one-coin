@@ -183,6 +183,13 @@
       "when": 1791739971971,
       "tag": "0025_teacher_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791741247762,
+      "tag": "0026_teacher_checks",
+      "breakpoints": true
     }
   ]
 }

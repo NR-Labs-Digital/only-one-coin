@@ -121,6 +121,16 @@ describe("teacher_contracts", () => {
 });
 
 describe("teachers", () => {
+  it("refuses a document that is not stored normalized", async () => {
+    expect(
+      await answerTo(
+        `insert into teachers (first_name, last_name, national_id_type, national_id, email, phone,
+                               nationality, country, region, city, address_line)
+         values ('Ana', 'Quispe', 'DNI', '12.345.678', 'ana@example.com', '+51900000000', 'PE', 'PE', 'Lima', 'Lima', 'Av. Siempre Viva 123')`,
+      ),
+    ).toBe(CHECK_VIOLATION);
+  });
+
   it("refuses a second living teacher with the same document", async () => {
     await insertTeacher("70000010");
     await expect(insertTeacher("70000010")).rejects.toMatchObject({ code: UNIQUE_VIOLATION });
@@ -139,6 +149,16 @@ describe("teachers", () => {
 });
 
 describe("teacher_availability", () => {
+  it("refuses a window with seconds in it", async () => {
+    const teacher = await insertTeacher("70000022");
+    expect(
+      await answerTo(
+        "insert into teacher_availability (teacher_id, weekday, start_time, end_time) values ($1, 'tue', '19:00:30', '21:00')",
+        [teacher],
+      ),
+    ).toBe(CHECK_VIOLATION);
+  });
+
   it("refuses a window that does not run forwards", async () => {
     const teacher = await insertTeacher("70000020");
     expect(

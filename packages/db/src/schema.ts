@@ -404,6 +404,13 @@ export const teachers = pgTable(
   (table) => [
     check("teachers_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
     check("teachers_status_check", sql`${table.status} in ('active', 'inactive')`),
+    // The same normal form as normalizeNationalId (no spaces, dots or dashes,
+    // upper case): the unique index sits on the raw column, so a value written
+    // un-normalized would slip past it.
+    check(
+      "teachers_national_id_normalized_check",
+      sql`${table.nationalId} = upper(regexp_replace(${table.nationalId}, '[[:space:].-]', '', 'g'))`,
+    ),
     uniqueIndex("teachers_national_id_uidx")
       .on(table.nationalIdType, table.nationalId)
       .where(sql`${table.deletedAt} is null`),
@@ -450,6 +457,12 @@ export const teacherAvailability = pgTable(
       sql`${table.weekday} in ('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')`,
     ),
     check("teacher_availability_time_range_check", sql`${table.startTime} < ${table.endTime}`),
+    // Whole minutes only: the domain speaks HH:mm, so seconds would be lost on
+    // the round-trip.
+    check(
+      "teacher_availability_whole_minutes_check",
+      sql`extract(second from ${table.startTime}) = 0 and extract(second from ${table.endTime}) = 0`,
+    ),
     uniqueIndex("teacher_availability_slot_uidx").on(table.teacherId, table.weekday, table.startTime),
   ],
 );
