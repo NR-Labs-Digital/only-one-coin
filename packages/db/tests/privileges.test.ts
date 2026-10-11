@@ -58,6 +58,7 @@ const DELETE_LOCKED = [
   "payment_receipts",
   "consents",
   "audit_log",
+  "teachers",
 ] as const;
 
 /**
@@ -161,6 +162,21 @@ describe("application role (GRANT layer)", () => {
   it("still DELETEs from a table outside the lock", async () => {
     expect(await answerTo(deleteFrom("waitlist_entries"))).toBe("SUCCEEDED");
   });
+
+  // A filed contract is documentary proof: correcting it is filing a new one.
+  it("refuses UPDATE on teacher_contracts", async () => {
+    expect(
+      await answerTo(`update teacher_contracts set file_name = 'tampered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on teacher_contracts", async () => {
+    expect(await answerTo(deleteFrom("teacher_contracts"))).toBe(DENIED_BY_GRANT);
+  });
+
+  it("still moves a teacher out of the roster", async () => {
+    expect(await answerTo(`update teachers set status = 'inactive' where id = '${NO_SUCH_ID}'`)).toBe("SUCCEEDED");
+  });
 });
 
 describe("table owner (TRIGGER layer)", () => {
@@ -192,6 +208,21 @@ describe("table owner (TRIGGER layer)", () => {
   // constraint" — is what does the refusing.
   it("blocks TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses UPDATE on teacher_contracts", async () => {
+    expect(
+      await answerTo(`update teacher_contracts set file_name = 'tampered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on teacher_contracts", async () => {
+    expect(await answerTo(deleteFrom("teacher_contracts"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // No inbound foreign key, so the trigger — not Postgres' FK rule — refuses.
+  it("blocks TRUNCATE on teacher_contracts", async () => {
+    expect(await answerTo("truncate teacher_contracts")).toBe(DENIED_BY_TRIGGER);
   });
 
   it("still appends to audit_log", async () => {

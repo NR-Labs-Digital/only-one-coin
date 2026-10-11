@@ -71,3 +71,24 @@ CREATE INDEX "class_groups_teacher_id_idx" ON "class_groups" USING btree ("teach
 -- filed contract outlive the account that touched them.
 ALTER TABLE "teachers" ADD CONSTRAINT "teachers_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE restrict;--> statement-breakpoint
 ALTER TABLE "teacher_contracts" ADD CONSTRAINT "teacher_contracts_uploaded_by_user_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "user"("id") ON DELETE restrict;
+
+--> statement-breakpoint
+-- teachers joins the delete lock (CLAUDE.md §6): a teacher leaves the roster
+-- as `inactive`, never as a deleted row. teacher_contracts is append-only:
+-- a filed contract is proof, and correcting it is filing a new one. Both
+-- layers, never one of the two (packages/db/CLAUDE.md).
+REVOKE DELETE ON teachers FROM ooc_app;
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS teachers_no_physical_delete ON teachers;
+--> statement-breakpoint
+CREATE TRIGGER teachers_no_physical_delete
+	BEFORE DELETE OR TRUNCATE ON teachers
+	FOR EACH STATEMENT EXECUTE FUNCTION forbid_history_rewrite();
+--> statement-breakpoint
+REVOKE UPDATE, DELETE ON teacher_contracts FROM ooc_app;
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS teacher_contracts_append_only ON teacher_contracts;
+--> statement-breakpoint
+CREATE TRIGGER teacher_contracts_append_only
+	BEFORE UPDATE OR DELETE OR TRUNCATE ON teacher_contracts
+	FOR EACH STATEMENT EXECUTE FUNCTION forbid_history_rewrite();
