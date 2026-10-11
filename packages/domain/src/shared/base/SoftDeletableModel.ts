@@ -14,7 +14,7 @@ import { BaseModel, BaseModelPropsSchema } from "./BaseModel.js";
  * `softDelete()` to call, so the type refuses what the database would refuse
  * anyway, at the point where it is cheap to notice.
  *
- * Who extends this today: Student, Guardian, Enrollment.
+ * Who extends this today: Student, Guardian, Enrollment, the catalog entities and Teacher.
  */
 export const SoftDeletableModelPropsSchema = BaseModelPropsSchema.extend({
   /** Absent or null while the record still answers for itself. */

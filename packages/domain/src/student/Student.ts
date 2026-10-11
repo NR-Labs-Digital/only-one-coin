@@ -7,6 +7,7 @@ import {
   ageOn,
   BirthDateField,
   CityField,
+  CountryCodeField,
   EmailField,
   NationalIdField,
   NationalIdTypeSchema,
@@ -14,6 +15,7 @@ import {
   PersonNameField,
   PhoneField,
   refineNationalId,
+  refineRegion,
   RegionField,
   toFieldErrors,
 } from "./fields.js";
@@ -55,21 +57,11 @@ export const StudentFieldsSchema = z.object({
   phone: PhoneField,
   birthDate: BirthDateField,
   // ISO 3166-1 alpha-2.
-  country: z
-    .string()
-    .transform((value) => value.trim().toUpperCase())
-    .pipe(z.string().length(2, "invalid")),
+  country: CountryCodeField,
   // First-level division ("departamento" in Peru). Null outside it.
   region: RegionField.nullable(),
   city: CityField,
 });
-
-/** Inside Peru the address names its departamento — both forms ask for it. */
-function refineRegion(value: { country: string; region: string | null }, ctx: z.RefinementCtx): void {
-  if (value.country === "PE" && value.region === null) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["region"], message: "required" });
-  }
-}
 
 export const CreateStudentSchema = StudentFieldsSchema.superRefine(refineNationalId).superRefine(refineRegion);
 
