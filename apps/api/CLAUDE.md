@@ -182,6 +182,16 @@ Templates versionados no repositório (`packages/notifications/src/locales/{es-P
 
 O catálogo e o interruptor de feature flags são coisa de `apps/app` (`apps/app/CLAUDE.md`, seção "Feature flags"). Aqui só vive a ponta que a API precisa garantir: `PUT /feature-flags/:key` é `.owners()` (e-mail do domínio dos donos, nunca papel), `GET /feature-flags/state` é público (sem sessão), e toda troca grava no `audit_log`. Deny-by-default (abaixo) continua valendo mesmo pra rota `.owners()`.
 
+## Números da home do backoffice (OOC-67, decisões do dono 11/10/2026)
+
+`GET /dashboard/summary` (`.roles(...CATALOG_READ_ROLES)`, os mesmos de `canBrowseCatalog` no app) devolve quatro números, calculados ao vivo por `DashboardSummaryQuery`:
+
+- **Matrícula de hoje** = matrícula cujo **primeiro** pagamento foi aprovado hoje, no dia de `America/Lima`. A data sai do `audit_log` (`payment.approved`), como a data de decisão em Pagos — nunca de `payments.updated_at`. Primeiro pagamento, então um módulo mensual aprovado depois não conta a matrícula de novo.
+- **Aluno ativo** = estudando agora: vaga `confirmed`, matrícula não aposentada, turma que ainda não chegou a `finished`/`closed`. **Não** é a regra do filtro "ativo" do diretório de Alunos (qualquer matrícula confirmada, em qualquer época).
+- **Variação** = comparação com ontem. "Ativos ao fim de ontem" é reconstruído pelo mesmo `audit_log`: vaga conta a partir da aprovação, turma deixa de contar a partir do `catalog.class_group.status_changed` para `finished`/`closed`. Linha sem trilha (seed, import antigo) vale como estando no estado atual desde sempre. Se algum caminho novo aprovar pagamento ou avançar turma sem gravar no `audit_log`, a variação mente — e o teste de integração não pega isso.
+
+Custo: uma passada por todas as aprovações já gravadas (`payments.enrollment_id` não tem índice), mais o índice `audit_log (action, created_at)` da `0024`. Se a home ficar lenta, o caminho é foto diária ou materialized view, não mais índice.
+
 ## Proteção da rota pública (OOC-24, 03/10/2026)
 
 O checkout é público e é a porta da frente do funil. Três camadas, todas dentro de `apps/api`, sobre o mesmo Redis da fila (`CLAUDE.md` §3 da raiz):
