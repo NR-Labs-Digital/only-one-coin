@@ -27,6 +27,7 @@ import { issuePortalAccessRoute } from "@/http/student/IssuePortalAccessRoute.js
 import { createManualEnrollmentRoute } from "@/http/enrollment/CreateManualEnrollmentRoute.js";
 import { listPaymentsRoute } from "@/http/payment/ListPaymentsRoute.js";
 import { listPaymentReviewQueueRoute } from "@/http/payment/ListPaymentReviewQueueRoute.js";
+import { getDashboardSummaryRoute } from "@/http/dashboard/GetDashboardSummaryRoute.js";
 import { getPaymentReceiptRoute } from "@/http/payment/GetPaymentReceiptRoute.js";
 import { approvePaymentRoute, rejectPaymentRoute } from "@/http/payment/SettlePaymentRoute.js";
 import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
@@ -146,6 +147,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listEnrollmentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPaymentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPaymentReviewQueueRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getDashboardSummaryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(approvePaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(rejectPaymentRoute);
