@@ -128,6 +128,7 @@ import { StudentActivityQuery } from "./infra/persistence/student/StudentActivit
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
+import { DashboardSummaryQuery } from "./infra/persistence/dashboard/DashboardSummaryQuery.js";
 import { PaymentReceiptImageQuery } from "./infra/persistence/payment/PaymentReceiptImageQuery.js";
 import { StudentPortalQuery } from "./infra/persistence/portal/StudentPortalQuery.js";
 import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollmentsQuery.js";
@@ -261,6 +262,7 @@ export interface AppQueries {
   listEnrollments: ListEnrollmentsQuery;
   listPayments: ListPaymentsQuery;
   listPaymentReviewQueue: ListPaymentReviewQueueQuery;
+  dashboardSummary: DashboardSummaryQuery;
   paymentReceiptImage: PaymentReceiptImageQuery;
   getStudent: GetStudentQuery;
   studentPortal: StudentPortalQuery;
@@ -502,6 +504,7 @@ function buildContainer(): AppContainer {
   const listEnrollments = new ListEnrollmentsQuery(db);
   const listPayments = new ListPaymentsQuery(db);
   const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db);
+  const dashboardSummary = new DashboardSummaryQuery(db);
   const paymentReceiptImage = new PaymentReceiptImageQuery(db, receiptObjectStore);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
   const getPublicCatalog = new GetPublicCatalogQuery(db);
@@ -631,6 +634,7 @@ function buildContainer(): AppContainer {
       listEnrollments,
       listPayments,
       listPaymentReviewQueue,
+      dashboardSummary,
       paymentReceiptImage,
       listOpenClassGroups,
       getPublicCatalog,

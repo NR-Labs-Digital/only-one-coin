@@ -842,7 +842,13 @@ export const auditLog = pgTable(
     metadata: jsonb("metadata"),
     createdAt: createdAt(),
   },
-  (table) => [index("audit_log_target_id_idx").on(table.targetId)],
+  (table) => [
+    index("audit_log_target_id_idx").on(table.targetId),
+    // Reads by kind of event over a time window — the backoffice home counts
+    // the day's approvals (OOC-67) on every visit, and would otherwise scan
+    // the whole trail.
+    index("audit_log_action_created_at_idx").on(table.action, table.createdAt),
+  ],
 );
 
 // Pending password-reset links for an EXISTING panel account (CLAUDE.md §8 —

@@ -130,7 +130,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | ⬜ Quebrada em OOC-77 → 78 → 79 → 80 → 81 → 82 |
 | 37 | **Frequência e notas** | Registro por sessão, interface para celular do docente, tolerante a conexão ruim | Funciona em 3G lento; perda de conexão não perde o registro | ⬜ OOC-38, OOC-102 |
 | 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados | ⬜ OOC-39 |
-| 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40); home do painel em OOC-67 |
+| 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40). Home do painel com dado real (OOC-67), agregada ao vivo — exceção decidida pelo dono em 11/10/2026: os relatórios desta sessão seguem em view noturna, a home não ("matrículas de hoje" numa view noturna seria sempre zero) |
 | 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco | 🟡 A trava no banco existe (`0011`), e há bitácora de cargo e a aba Atividade do aluno. Falta a tela geral com filtro e exportação |
 
 ---
@@ -201,7 +201,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Consentimento do apoderado para aluno cadastrado pelo backoffice | OOC-72 | 21/09/2026 |
 | Livro de reclamações | OOC-58, OOC-63 | — |
 | Índice único de documento e consolidação de duplicatas | sem ticket | 21/09/2026 |
-| Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92, OOC-68 (convite de docente sem o seletor mock — feito) | — |
+| Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92, OOC-68 (convite de docente sem o seletor mock — feito), OOC-67 (home e badge de Pagos — feito) | — |
 
 ---
 

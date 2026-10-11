@@ -47,7 +47,7 @@ que muda a tela.
 | Funcionalidades (`/backoffice/features`) | **Real** |
 | Conta (`/backoffice/account`) | **Real**: troca da própria senha. MFA e sessões são mock |
 | Configuração (`/backoffice/settings`) | Parcial: reais só a reserva durante o pagamento, a tolerância de valor e o limite de rejeição do comprovante — OOC-41 |
-| Home do backoffice | Mock — OOC-67 |
+| Home do backoffice | **Real** (OOC-67): KPIs, prévia da fila, vagas sob pressão e badge de Pagos, cada bloco só para o cargo que a API serve. A home do docente segue mock |
 | E-mails (`/backoffice/emails*`) | Mock — OOC-42, OOC-88 |
 | Relatórios (`/backoffice/reports`) | Mock — OOC-40 |
 

@@ -11,12 +11,11 @@ import {
   canManageEmail,
   canManageFeatureFlags,
   canManageStaff,
+  canViewPayments,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import {
-  getDashboardMetrics,
-  getTeacher,
-} from '@/lib/backoffice/mock-data'
+import { getTeacher } from '@/lib/backoffice/mock-data'
+import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { initials } from '@/lib/format'
@@ -59,7 +58,6 @@ export default async function BackofficePanelLayout({
   // is the one screen the `backoffice` flag must never be able to hide
   // (CLAUDE.md §5).
   const staff = await getStaffSession()
-  const { pendingReview } = getDashboardMetrics()
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
@@ -79,6 +77,16 @@ export default async function BackofficePanelLayout({
   const restricted = isRestrictedToOwnClassGroups(staff.role)
 
   const flags = await getFeatureFlags()
+
+  /* The queue count behind the Payments badge, asked only by a cargo the API
+     serves the queue to — anybody else would get a 403, and the badge would
+     just say nothing. A failed read says nothing too: no badge beats a wrong
+     zero. */
+  const reviewQueue =
+    flags['backoffice.payments'] && canViewPayments(staff.role)
+      ? await getReviewQueueHead()
+      : null
+  const pendingReview = reviewQueue?.total ?? 0
 
   /* The teacher's badge is their own queue — the final grades still open
      across their class groups. Same role as the review-queue badge below:

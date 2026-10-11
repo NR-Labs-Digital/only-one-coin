@@ -27,6 +27,11 @@ export function formatMoney(
   }).format(amountCents / 100)
 }
 
+/** A change against a previous figure: "+3", "−2", or a bare "0" when nothing moved. */
+export function formatSignedNumber(value: number, locale: Locale): string {
+  return new Intl.NumberFormat(intlLocale[locale], { signDisplay: 'exceptZero' }).format(value)
+}
+
 /**
  * The same amount without its symbol, for a file a spreadsheet opens: the
  * currency column is money to the reader and a number to the sheet, and a
