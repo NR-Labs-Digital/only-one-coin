@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { NewStaffForm, type TeacherOption } from './new-staff-form'
+import { NewStaffForm } from './new-staff-form'
 import { RoleChangeDialog } from './role-change-dialog'
 
 /**
@@ -73,14 +73,11 @@ const selectClass =
  */
 export function TeamView({
   rows,
-  teachers,
   currentUserId,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
 }: {
   rows: StaffMemberRow[]
-  /** Teachers still on the roster — who an account may be opened over. */
-  teachers: TeacherOption[]
   /** The signed-in admin: nobody moves their own cargo or their own door. */
   currentUserId: string
   currentUserName: string
@@ -127,17 +124,6 @@ export function TeamView({
       inactive: members.filter((row) => row.status === 'inactive').length,
     }),
     [members],
-  )
-
-  /* Only teachers who do not already hold an account: two doors for one person
-     is two sessions to remember to close. Computed here rather than on the
-     server so an account opened a second ago already counts. */
-  const availableTeachers = useMemo(
-    () =>
-      teachers.filter(
-        (teacher) => !members.some((row) => row.teacherId === teacher.id),
-      ),
-    [teachers, members],
   )
 
   const activeFilters = role !== ALL ? 1 : 0
@@ -398,7 +384,6 @@ export function TeamView({
 
       {creating && (
         <NewStaffForm
-          teachers={availableTeachers}
           onCancel={() => setCreating(false)}
           onCreate={(member) => {
             setMembers((current) => [member, ...current])

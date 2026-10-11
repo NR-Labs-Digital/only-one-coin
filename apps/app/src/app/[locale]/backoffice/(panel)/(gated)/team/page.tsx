@@ -1,5 +1,4 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listTeachers } from '@/lib/backoffice/mock-data'
 import { listStaff } from '@/lib/backoffice/staff'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageStaff } from '@/lib/backoffice/permissions'
@@ -42,18 +41,6 @@ export default async function TeamPage({
     )
   }
 
-  /* An account for a docente is opened over somebody already on the roster —
-     and only over one still on it, because the account is what lets them run
-     the class groups they are given. */
-  const teachers = listTeachers()
-    .filter((teacher) => teacher.status === 'active')
-    .map((teacher) => ({
-      id: teacher.id,
-      firstName: teacher.firstName,
-      lastName: teacher.lastName,
-      email: teacher.email,
-    }))
-
   const rows = await listStaff()
 
   return (
@@ -61,7 +48,6 @@ export default async function TeamPage({
       <PageHeader title={t('team.title')} />
       <TeamView
         rows={rows}
-        teachers={teachers}
         currentUserId={staff.id}
         currentUserName={`${staff.firstName} ${staff.lastName}`}
       />
