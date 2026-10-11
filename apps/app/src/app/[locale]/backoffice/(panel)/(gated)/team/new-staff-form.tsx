@@ -11,14 +11,6 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { formatDate, type Locale } from '@/lib/format'
 
-/** A teacher still on the roster — who an account may be opened over. */
-export interface TeacherOption {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
-
 /** `master` is not listed: it only appears for the owners' e-mail domain. */
 const ROLES: StaffRole[] = [
   'admin',
@@ -47,21 +39,20 @@ const labelClass =
  * shows somebody else's password is a panel that has it. The second factor is
  * not set here either — the owner enrolls their own, on first sign-in.
  *
- * A `teacher` account is opened over a teacher who is already on the roster,
- * the same shape as a manual enrollment acting only on a student who already
- * exists (CLAUDE.md §1): the record carries what the account is scoped by, so
- * it has to exist before the door does.
+ * A `teacher` invite goes out like any other cargo (OOC-68). There is no
+ * teacher table yet to pick the person from — the roster screen still reads
+ * mock data — and the invite route has no `teacherId` to carry the pick
+ * anyway. Linking the account to its roster record is its own ticket, once
+ * that table exists.
  *
  * Posts to `POST /api/v1/staff/invites` (same-origin `/api/v1/...` proxy, the
  * pattern `new-student-form.tsx` already established) — `CreateStaffInviteUseCase`
  * generates the token server-side; this form never assembles one itself.
  */
 export function NewStaffForm({
-  teachers,
   onCancel,
   onCreate,
 }: {
-  teachers: TeacherOption[]
   onCancel: () => void
   onCreate: (member: StaffMemberRow) => void
 }) {
@@ -73,7 +64,6 @@ export function NewStaffForm({
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<StaffRole>('enrollment_supervisor')
-  const [teacherId, setTeacherId] = useState('')
   const [created, setCreated] = useState<{ member: StaffMemberRow; link: string } | null>(
     null,
   )
@@ -94,25 +84,7 @@ export function NewStaffForm({
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
     email.trim() !== '' &&
-    (role !== 'master' || allowMaster) &&
-    (!isTeacher || teacherId !== '')
-
-  /* Picking the teacher fills the person in: the roster already answered who
-     they are and where to write to them, and retyping it is how two records of
-     one person start disagreeing. */
-  function selectTeacher(id: string) {
-    setTeacherId(id)
-    const teacher = teachers.find((item) => item.id === id)
-    if (!teacher) return
-    setFirstName(teacher.firstName)
-    setLastName(teacher.lastName)
-    setEmail(teacher.email)
-  }
-
-  function selectRole(next: StaffRole) {
-    setRole(next)
-    if (next !== 'teacher') setTeacherId('')
-  }
+    (role !== 'master' || allowMaster)
 
   async function submit() {
     if (!ready || pending) return
@@ -163,7 +135,7 @@ export function NewStaffForm({
         email: email.trim(),
         role,
         status: 'invited',
-        teacherId: isTeacher ? teacherId : null,
+        teacherId: null,
         // Nobody enrolls somebody else's second factor: the account starts
         // without one and the owner sets it up on first sign-in.
         mfaEnrolled: false,
@@ -258,16 +230,14 @@ export function NewStaffForm({
         </div>
       )}
 
-      {/* Access first: the cargo decides whether the rest of the form is typed
-          or picked from the roster. */}
       <Block>
-        {/* Capped: one or two selects stretched across a wide panel read as a
+        {/* Capped: a lone select stretched across a wide panel reads as a
             form with a field missing. */}
         <AutoGrid min="15rem" gap="gap-3" className="max-w-3xl">
           <Labelled label={t('team.field_role')} required>
             <select
               value={role}
-              onChange={(event) => selectRole(event.target.value as StaffRole)}
+              onChange={(event) => setRole(event.target.value as StaffRole)}
               className={fieldClass}
             >
               {roles.map((item) => (
@@ -277,23 +247,6 @@ export function NewStaffForm({
               ))}
             </select>
           </Labelled>
-
-          {isTeacher && (
-            <Labelled label={t('team.field_teacher')} required>
-              <select
-                value={teacherId}
-                onChange={(event) => selectTeacher(event.target.value)}
-                className={fieldClass}
-              >
-                <option value="">{t('team.teacher_select')}</option>
-                {teachers.map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {`${teacher.firstName} ${teacher.lastName}`}
-                  </option>
-                ))}
-              </select>
-            </Labelled>
-          )}
         </AutoGrid>
 
         {isTeacher && (
@@ -307,8 +260,7 @@ export function NewStaffForm({
             <input
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
 
@@ -316,8 +268,7 @@ export function NewStaffForm({
             <input
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
 
@@ -326,8 +277,7 @@ export function NewStaffForm({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
         </AutoGrid>
