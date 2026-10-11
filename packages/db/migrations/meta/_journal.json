@@ -169,6 +169,13 @@
       "when": 1791417404084,
       "tag": "0023_email_verifications",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791732542726,
+      "tag": "0024_audit_log_action_index",
+      "breakpoints": true
     }
   ]
 }
