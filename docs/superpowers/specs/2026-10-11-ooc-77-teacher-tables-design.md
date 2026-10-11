@@ -149,7 +149,8 @@ inválida, sobreposição, idioma repetido, sair e voltar ao quadro.
 - `packages/db/CLAUDE.md`: as tabelas, a trava nova, a exceção do `time`, oito
   tabelas com `deleted_at`.
 - `CLAUDE.md` raiz §6: lista da trava e "oito tabelas".
-- `docs/ARCHITECTURE.md`: onde o modelo de dados é descrito.
+- `docs/ARCHITECTURE.md` não ganha nada: ele não descreve o modelo de dados,
+  e duplicar o `packages/db/CLAUDE.md` violaria a regra de camada (§10).
 - `SoftDeletableModel`: "quem estende" ganha `Teacher`.
 - `docs/ROADMAP.md`: Sessão 36, OOC-77 feito.
 
