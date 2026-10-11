@@ -43,7 +43,7 @@ que muda a tela.
 | Cursos (`/backoffice/courses`) | **Real**: CRUD, aposentar/reativar, planos com preço agendado |
 | Turmas (`/backoffice/class-groups`) | **Real**: períodos, duplicar, ciclo de vida, lista de espera manual. Visão do docente, roster, notas e certificados são mock |
 | Docentes (`/backoffice/teachers`) | Mock — sem tabela `teachers` (OOC-77) |
-| Equipe (`/backoffice/team`) | **Real**: contas, convite, troca de cargo com bitácora |
+| Equipe (`/backoffice/team`) | **Real**: contas, convite, troca de cargo com bitácora. Convite de docente sai como qualquer cargo, sem vínculo com a ficha em Docentes até existir `teachers` (OOC-68) |
 | Funcionalidades (`/backoffice/features`) | **Real** |
 | Conta (`/backoffice/account`) | **Real**: troca da própria senha. MFA e sessões são mock |
 | Configuração (`/backoffice/settings`) | Parcial: reais só a reserva durante o pagamento, a tolerância de valor e o limite de rejeição do comprovante — OOC-41 |
