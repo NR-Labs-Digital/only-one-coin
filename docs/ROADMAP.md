@@ -42,7 +42,7 @@ entra aqui ou vira sessão nova.
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
-| 0 — Espinha dorsal | 9 | 4 | 0 | Falta `teachers`, as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
+| 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
 | 3 — Backoffice | 1 | 4 | 5 | Alunos, turmas, Pagos e equipe reais; docentes, notas, conciliação e relatórios ainda mock |
@@ -63,7 +63,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 2 | **Config e ambiente** | Validação de env com zod no boot, `.env.example`, `.gitignore`, zero URL literal | App recusa subir com variável faltando, com mensagem clara | ✅ `apps/api/src/config.ts` |
 | 3 | **Banco Postgres local** | Postgres local rodando (Docker — staging/produção usam Neon), CLI de migrations configurado, migration vazia inicial aplicando | `reset` do banco roda do zero e reaplica as migrations | ✅ `compose.yml` + Drizzle Kit |
 | 4 | **Migration: modelo acadêmico** | `academic_periods`, `courses`, `plans`, `plan_prices`, `class_groups` com `CHECK (seats_taken <= capacity)` | `db reset` roda limpo; `plan_prices` versionado por vigência | ✅ `0003`; `plan_prices` append-only desde a `0017` |
-| 5 | **Migration: pessoas e papéis** | `students`, `guardians`, `consents`, `teachers`, `user_roles`, `pg_trgm` para busca | Busca por nome/DNI/telefone funciona; sem grant de DELETE em `students` | 🟡 Pessoas, `pg_trgm` e trava de DELETE (`0011`) prontos. Falta `teachers` (OOC-77). `user_roles` não vai existir: o papel é `user.role` do Better Auth |
+| 5 | **Migration: pessoas e papéis** | `students`, `guardians`, `consents`, `teachers`, `user_roles`, `pg_trgm` para busca | Busca por nome/DNI/telefone funciona; sem grant de DELETE em `students` | ✅ Pessoas, `pg_trgm` e trava de DELETE (`0011`) prontos; `teachers` (com idiomas, disponibilidade e contratos) desde a `0025`/`0026` (OOC-77). `user_roles` não vai existir: o papel é `user.role` do Better Auth |
 | 6 | **Migration: matrícula e pagamento** | `enrollments`, `payments` (idempotency key única, `amount_cents`), `payment_receipts`, `waitlist_entries` | Máquina de estados documentada; tentar inserir pagamento duplicado falha no banco | ✅ Máquina de estados em `apps/api/CLAUDE.md`. O índice de `image_phash` virou comum (`0016`, OOC-22) |
 | 7 | **Migration: operação** | `outbox`, `campaigns`, `audit_log` (append-only), `attendance`, `grades`, `materials`, `certificates` | `audit_log` sem grant de UPDATE/DELETE nem para admin | 🟡 `outbox` (`0013`) e `audit_log` com trava (`0007`/`0011`) prontos. Faltam `campaigns`, `attendance`, `grades`, `materials`, `certificates` — entram com as sessões 37, 45 e 48 |
 | 8 | **Autorização deny-by-default + suíte de teste** | Middleware deny-by-default em `apps/api`, toda rota/usecase declara o papel exigido | Teste enumera rotas e falha se faltar declaração; teste com papel errado falha | ✅ Rota sem `.roles()`/`.owners()`/`.public()` derruba o **boot** (`infra/plugins/authorization.ts`) |
