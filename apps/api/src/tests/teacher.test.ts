@@ -81,6 +81,39 @@ describe("Teacher.create", () => {
     ).toEqual(["teacher.availability.1:invalid"]);
   });
 
+  it("flags the later-listed window of an overlapping pair, whatever the input order", () => {
+    expect(
+      codesOf({
+        ...VALID,
+        availability: [
+          { weekday: "wed", startTime: "19:30", endTime: "21:00" },
+          { weekday: "wed", startTime: "18:00", endTime: "20:00" },
+        ],
+      }),
+    ).toEqual(["teacher.availability.1:invalid"]);
+  });
+
+  it("accepts the same hours on different weekdays", () => {
+    expect(
+      codesOf({
+        ...VALID,
+        availability: [
+          { weekday: "mon", startTime: "19:00", endTime: "21:00" },
+          { weekday: "tue", startTime: "19:00", endTime: "21:00" },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("does not store keys a window was not defined with", () => {
+    const teacher = Teacher.create({
+      ...VALID,
+      availability: [{ weekday: "mon", startTime: "19:00", endTime: "21:00", note: "x" } as never],
+    });
+
+    expect(teacher.availability[0]).toEqual({ weekday: "mon", startTime: "19:00", endTime: "21:00" });
+  });
+
   it("refuses the same language twice, whatever the case", () => {
     expect(codesOf({ ...VALID, languages: ["Inglés", "inglés"] })).toEqual(["teacher.languages.1:invalid"]);
   });

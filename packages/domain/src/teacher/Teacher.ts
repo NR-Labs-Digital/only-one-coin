@@ -70,7 +70,7 @@ export const TeacherFieldsSchema = z.object({
   city: CityField,
   addressLine: AddressLineField,
   languages: z.array(LanguageField),
-  availability: z.array(z.unknown()),
+  availability: z.array(WeeklySlotSchema),
 });
 
 /** The same language listed twice, ignoring case. */
@@ -86,22 +86,17 @@ function refineLanguages(value: { languages: string[] }, ctx: z.RefinementCtx): 
 }
 
 /**
- * Each window must run forwards, and two windows of the same day may not
- * overlap — a class group is allocated into one window, so an overlap is two
- * answers to the same question. Windows that touch (19–21, 21–22) are fine.
+ * Two windows of the same day may not overlap — a class group is allocated into
+ * one window, so an overlap is two answers to the same question. Windows that
+ * touch (19–21, 21–22) are fine. A window that does not run forwards is already
+ * refused by `WeeklySlotSchema`, so it is skipped here rather than reported twice.
  */
-function refineAvailability(value: { availability: unknown[] }, ctx: z.RefinementCtx): void {
-  const windows: (WeeklySlot & { index: number })[] = [];
-  value.availability.forEach((raw, index) => {
-    const parsed = WeeklySlotSchema.safeParse(raw);
-    if (!parsed.success) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["availability", index], message: "invalid" });
-      return;
-    }
-    windows.push({ ...parsed.data, index });
-  });
+function refineAvailability(value: { availability: WeeklySlot[] }, ctx: z.RefinementCtx): void {
+  const windows = value.availability
+    .map((slot, index) => ({ ...slot, index }))
+    .filter((slot) => slot.startTime < slot.endTime);
 
-  const byStart = [...windows].sort(
+  const byStart = windows.sort(
     (a, b) => a.weekday.localeCompare(b.weekday) || a.startTime.localeCompare(b.startTime) || a.index - b.index,
   );
   for (let i = 1; i < byStart.length; i += 1) {
@@ -117,8 +112,7 @@ function refineAvailability(value: { availability: unknown[] }, ctx: z.Refinemen
 export const CreateTeacherSchema = TeacherFieldsSchema.superRefine(refineNationalId)
   .superRefine(refineRegion)
   .superRefine(refineLanguages)
-  .superRefine(refineAvailability)
-  .transform((value) => ({ ...value, availability: value.availability as WeeklySlot[] }));
+  .superRefine(refineAvailability);
 
 export type CreateTeacherDTO = z.input<typeof CreateTeacherSchema>;
 
