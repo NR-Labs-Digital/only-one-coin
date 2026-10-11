@@ -37,13 +37,14 @@ const SOFT_DELETABLE = [
   "guardians",
   "plans",
   "students",
+  "teachers",
 ];
 
 /**
  * Rows here are only ever appended. No `updated_at` either: nothing about them
  * changes after the fact (CLAUDE.md §1 consents, §5 plan_prices, §8 audit_log).
  */
-const APPEND_ONLY = ["audit_log", "consents", "plan_prices"];
+const APPEND_ONLY = ["audit_log", "consents", "plan_prices", "teacher_contracts"];
 
 let db: pg.Client;
 
