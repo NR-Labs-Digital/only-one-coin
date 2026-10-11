@@ -49,8 +49,9 @@ const DENIED_BY_TRIGGER = "OOC01";
 
 /**
  * Tables where a row may never physically leave. `students` has `deleted_at`
- * to take its place; the other four are append-only by nature — money,
- * receipt kept for 5 years, Ley 29733 consent, audit trail (CLAUDE.md §1/§6).
+ * to take its place, and so does `teachers` (a teacher leaves the staff, the
+ * record stays); the other four are append-only by nature — money, receipt
+ * kept for 5 years, Ley 29733 consent, audit trail (CLAUDE.md §1/§6).
  */
 const DELETE_LOCKED = [
   "students",
@@ -202,10 +203,11 @@ describe("table owner (TRIGGER layer)", () => {
     expect(await answerTo(deleteFrom("plan_prices"))).toBe(DENIED_BY_TRIGGER);
   });
 
-  // TRUNCATE is checked on `audit_log` alone: it is the only locked table with
-  // no inbound foreign key, so it is the only one where the trigger — and not
-  // Postgres' own "cannot truncate a table referenced in a foreign key
-  // constraint" — is what does the refusing.
+  // TRUNCATE is checked on `audit_log` alone: among the tables locked here it
+  // is the one with no inbound foreign key (`teacher_contracts` has none too,
+  // but it is covered by its own suite), so the trigger — and not Postgres' own
+  // "cannot truncate a table referenced in a foreign key constraint" — is what
+  // does the refusing.
   it("blocks TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_TRIGGER);
   });
