@@ -123,6 +123,40 @@ export const CreateTeacherSchema = TeacherFieldsSchema.superRefine(refineNationa
 
 export type CreateTeacherDTO = z.input<typeof CreateTeacherSchema>;
 
+/**
+ * The file without the week (OOC-78): who they are, how to reach them, where
+ * they live and what they may teach. The week is its own edit — it changes far
+ * more often, and from a different conversation.
+ */
+export const TeacherDataSchema = TeacherFieldsSchema.omit({ availability: true })
+  .superRefine(refineNationalId)
+  .superRefine(refineRegion)
+  .superRefine(refineLanguages);
+
+export type TeacherDataDTO = z.input<typeof TeacherDataSchema>;
+
+export const TeacherAvailabilitySchema = z
+  .object({ availability: z.array(WeeklySlotSchema) })
+  .superRefine(refineAvailability);
+
+/** Same set of languages, whatever the order they were ticked in. */
+function sameLanguages(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sorted = (list: string[]) => [...list].sort().join("\u0000");
+  return sorted(a) === sorted(b);
+}
+
+/** Same week, whatever the order the windows were listed in. */
+function sameWeek(a: WeeklySlot[], b: WeeklySlot[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (list: WeeklySlot[]) =>
+    list
+      .map((slot) => `${slot.weekday} ${slot.startTime} ${slot.endTime}`)
+      .sort()
+      .join("|");
+  return key(a) === key(b);
+}
+
 export class Teacher extends SoftDeletableModel {
   public firstName: string;
   public lastName: string;
@@ -174,6 +208,46 @@ export class Teacher extends SoftDeletableModel {
     if (this.status === "active") return;
     this.status = "active";
     this.touch(at);
+  }
+
+  /**
+   * A staff correction to the file (OOC-78), held to what registration is held
+   * to. Returns the names of the fields that changed — what the audit line
+   * records, never the values (CLAUDE.md §8, OOC-74).
+   */
+  rewrite(dto: TeacherDataDTO): (keyof TeacherDataDTO)[] {
+    const result = TeacherDataSchema.safeParse(dto);
+
+    if (!result.success) {
+      throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
+    }
+
+    const next = result.data;
+    const changed: (keyof TeacherDataDTO)[] = [];
+    for (const key of Object.keys(next) as (keyof TeacherDataDTO)[]) {
+      const same =
+        key === "languages" ? sameLanguages(this.languages, next.languages) : this[key] === next[key];
+      if (same) continue;
+      (this as Record<string, unknown>)[key] = next[key];
+      changed.push(key);
+    }
+
+    if (changed.length > 0) this.touch();
+    return changed;
+  }
+
+  /** Replaces the week. False when it is the same week, so nothing is written. */
+  replaceAvailability(availability: WeeklySlot[]): boolean {
+    const result = TeacherAvailabilitySchema.safeParse({ availability });
+
+    if (!result.success) {
+      throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
+    }
+
+    if (sameWeek(this.availability, result.data.availability)) return false;
+    this.availability = result.data.availability;
+    this.touch();
+    return true;
   }
 
   static create(dto: CreateTeacherDTO): Teacher {
