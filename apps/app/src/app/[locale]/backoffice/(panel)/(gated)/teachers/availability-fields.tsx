@@ -13,8 +13,26 @@ function isValid(slot: AvailabilitySlot): boolean {
   return toMinutes(slot.endTime) > toMinutes(slot.startTime)
 }
 
+/**
+ * Two windows of the same day that share a minute — the API refuses them
+ * (`Teacher` in packages/domain), so the form says so first. Windows that only
+ * touch (19–21, 21–22) are fine.
+ */
+function overlapsAnother(slots: AvailabilitySlot[], index: number): boolean {
+  const slot = slots[index]
+  if (!slot || !isValid(slot)) return false
+  return slots.some(
+    (other, i) =>
+      i !== index &&
+      other.weekday === slot.weekday &&
+      isValid(other) &&
+      toMinutes(slot.startTime) < toMinutes(other.endTime) &&
+      toMinutes(other.startTime) < toMinutes(slot.endTime),
+  )
+}
+
 export function slotsAreValid(slots: AvailabilitySlot[]): boolean {
-  return slots.every(isValid)
+  return slots.every((slot, index) => isValid(slot) && !overlapsAnother(slots, index))
 }
 
 /**
@@ -38,12 +56,14 @@ export function AvailabilityFields({
     onChange(value.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)))
   }
 
+  /** Same hours as the last window, on the next day — a copy on the same day would overlap it. */
   function add() {
     const last = value[value.length - 1]
+    const next = last ? WEEK[(WEEK.indexOf(last.weekday) + 1) % WEEK.length] : undefined
     onChange([
       ...value,
-      last
-        ? { ...last, weekday: last.weekday }
+      last && next
+        ? { ...last, weekday: next }
         : { weekday: 'mon' as Weekday, startTime: '18:00', endTime: '21:00' },
     ])
   }
@@ -111,6 +131,11 @@ export function AvailabilityFields({
           {!isValid(slot) && (
             <span className="text-xs font-semibold text-red-600">
               {t('availability.invalid_range')}
+            </span>
+          )}
+          {overlapsAnother(value, index) && (
+            <span className="text-xs font-semibold text-red-600">
+              {t('availability.overlap')}
             </span>
           )}
 

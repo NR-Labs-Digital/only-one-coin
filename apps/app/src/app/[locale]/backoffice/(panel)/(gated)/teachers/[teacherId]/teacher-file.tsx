@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import type {
   AvailabilitySlot,
   CourseLanguage,
@@ -40,6 +40,8 @@ import {
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AvailabilityFields, slotsAreValid } from '../availability-fields'
+import { saveTeacher, type TeacherSaveFailure } from '../save-teacher'
+import { FieldMessage } from '../../students/field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 type Tab = 'data' | 'availability' | 'class_groups'
@@ -52,14 +54,24 @@ const fieldClass =
 const labelClass =
   'text-xs font-medium uppercase tracking-wide text-muted-foreground'
 
+/** What every teacher write answers — the file as the server normalized it. */
+interface SavedTeacher {
+  email: string
+  phone: string
+  nationality: string
+  languages: string[]
+  availability: AvailabilitySlot[]
+  status: TeacherStatus
+}
+
 /**
  * Teacher file. Three tabs, in the order the record is used: who they are, when
  * they are free, and what is already on them.
  *
- * Edits live in component state only — there is no backend yet, and the real
- * write goes through a usecase in `apps/api`, never from the browser
- * (CLAUDE.md §8). A teacher reading their own file gets it read-only: what they
- * may teach and what they were allocated is coordination's call, not theirs.
+ * Every edit saves through `apps/api` (OOC-78) — the data, the week and the
+ * place on the roster are three separate writes, each in the audit log
+ * (CLAUDE.md §8). Whoever may not edit gets the file read-only: what a teacher
+ * may teach and what they were allocated is coordination's call.
  */
 export function TeacherFile({
   teacher,
@@ -79,11 +91,14 @@ export function TeacherFile({
   /**
    * On or off the roster. Out of it deletes nothing (`TeacherStatus`) — it is
    * what coordination does when somebody stops teaching: a contract that
-   * lapsed, a term that ended. Local state only; the real write is a usecase in
-   * `apps/api` and lands in the append-only audit log (CLAUDE.md §8).
+   * lapsed, a term that ended. It also closes the linked panel account, and
+   * coming back reopens it.
    */
   const [status, setStatus] = useState<TeacherStatus>(teacher.status)
   const [confirmingExit, setConfirmingExit] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [failure, setFailure] = useState<TeacherSaveFailure | null>(null)
+  const router = useRouter()
 
   const [editingData, setEditingData] = useState(false)
   const [email, setEmail] = useState(teacher.email)
@@ -92,6 +107,13 @@ export function TeacherFile({
   const [languageIds, setLanguageIds] = useState(
     teacher.languages.map((language) => language.id),
   )
+  /* What the server last saved — the draft above is reset to these. */
+  const [saved, setSaved] = useState({
+    email: teacher.email,
+    phone: teacher.phone,
+    nationality: teacher.nationality,
+    languageIds: teacher.languages.map((language) => language.id),
+  })
 
   const [editingAvailability, setEditingAvailability] = useState(false)
   const [availability, setAvailability] = useState<AvailabilitySlot[]>(
@@ -108,36 +130,112 @@ export function TeacherFile({
   )
   const columns = weekColumns(availability, running)
 
-  const languages = catalogue.filter((language) => languageIds.includes(language.id))
+  /* A language the teacher holds stays listed even if the catalog stopped
+     offering it — dropping it from the screen would drop it on the next save. */
+  const choices = [
+    ...catalogue,
+    ...teacher.languages.filter((held) => !catalogue.some((offered) => offered.id === held.id)),
+  ]
+  const languages = choices.filter((language) => languageIds.includes(language.id))
 
-  function saveData() {
+  const fieldError = (key: string) => (failure?.kind === 'invalid' ? failure.fields[key] : undefined)
+
+  const failureMessage =
+    failure === null
+      ? null
+      : failure.kind === 'duplicate'
+        ? t('teachers.save_error_duplicate')
+        : failure.kind === 'invalid'
+          ? t('new_student.invalid_error')
+          : t('teachers.save_error_generic')
+
+  /* The file as the server holds it, so a save sends the whole record — PUT,
+     not PATCH — with only the fields this tab edits changed. */
+  const record = {
+    firstName: teacher.firstName,
+    lastName: teacher.lastName,
+    nationalIdType: teacher.nationalIdType,
+    nationalId: teacher.nationalId,
+    country: teacher.country,
+    region: teacher.region,
+    city: teacher.city,
+    addressLine: teacher.addressLine,
+  }
+
+  async function saveData() {
+    if (pending) return
+    setPending(true)
+    setFailure(null)
+    const result = await saveTeacher<SavedTeacher>(`/api/v1/teachers/${teacher.id}`, 'PUT', {
+      ...record,
+      email: email.trim(),
+      phone,
+      nationality,
+      languages: languageIds,
+    })
+    setPending(false)
+    if (!result.ok) {
+      setFailure(result.failure)
+      return
+    }
+    const next = {
+      email: result.value.email,
+      phone: result.value.phone,
+      nationality: result.value.nationality,
+      languageIds: result.value.languages,
+    }
+    setSaved(next)
+    setEmail(next.email)
+    setPhone(next.phone)
+    setNationality(next.nationality)
+    setLanguageIds(next.languageIds)
     setEditingData(false)
     setToast(t('teacher_file.saved'))
   }
 
   function cancelData() {
-    setEmail(teacher.email)
-    setPhone(teacher.phone)
-    setNationality(teacher.nationality)
-    setLanguageIds(teacher.languages.map((language) => language.id))
+    setEmail(saved.email)
+    setPhone(saved.phone)
+    setNationality(saved.nationality)
+    setLanguageIds(saved.languageIds)
+    setFailure(null)
     setEditingData(false)
   }
 
-  function saveAvailability() {
-    setAvailability(availabilityDraft)
+  async function saveAvailability() {
+    if (pending) return
+    setPending(true)
+    setFailure(null)
+    const result = await saveTeacher<SavedTeacher>(`/api/v1/teachers/${teacher.id}/availability`, 'PUT', {
+      availability: availabilityDraft,
+    })
+    setPending(false)
+    if (!result.ok) {
+      setFailure(result.failure)
+      return
+    }
+    setAvailability(result.value.availability)
     setEditingAvailability(false)
     setToast(t('teacher_file.saved'))
   }
 
-  function leaveRoster() {
-    setStatus('inactive')
+  async function changeStatus(next: TeacherStatus) {
+    if (pending) return
+    setPending(true)
+    setFailure(null)
+    const result = await saveTeacher<{ teacher: SavedTeacher }>(`/api/v1/teachers/${teacher.id}/status`, 'PUT', {
+      status: next,
+    })
+    setPending(false)
+    if (!result.ok) {
+      setFailure(result.failure)
+      return
+    }
+    setStatus(result.value.teacher.status)
     setConfirmingExit(false)
-    setToast(t('teacher_file.deactivated_toast'))
-  }
-
-  function rejoinRoster() {
-    setStatus('active')
-    setToast(t('teacher_file.activated_toast'))
+    setToast(t(next === 'inactive' ? 'teacher_file.deactivated_toast' : 'teacher_file.activated_toast'))
+    // The roster's tabs and counts read the server; the next visit must too.
+    router.refresh()
   }
 
   const editButton = (onClick: () => void) => (
@@ -192,7 +290,8 @@ export function TeacherFile({
               ) : (
                 <button
                   type="button"
-                  onClick={rejoinRoster}
+                  disabled={pending}
+                  onClick={() => void changeStatus('active')}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-brand-blue transition hover:border-brand-blue"
                 >
                   <BoIcon name="check" size={15} />
@@ -222,7 +321,8 @@ export function TeacherFile({
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={leaveRoster}
+                disabled={pending}
+                onClick={() => void changeStatus('inactive')}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
               >
                 <BoIcon name="check" size={16} />
@@ -237,6 +337,12 @@ export function TeacherFile({
               </button>
             </div>
           </div>
+        )}
+
+        {failureMessage && !editingData && !editingAvailability && (
+          <p role="alert" className="mt-3 text-xs font-semibold text-red-600">
+            {failureMessage}
+          </p>
         )}
       </Card>
 
@@ -284,10 +390,12 @@ export function TeacherFile({
                     onChange={(event) => setEmail(event.target.value)}
                     className={fieldClass}
                   />
+                  <FieldMessage code={fieldError('email')} />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className={labelClass}>{t('teachers.field_phone')}</span>
                   <PhoneField value={phone} onChange={setPhone} />
+                  <FieldMessage code={fieldError('phone')} />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className={labelClass}>{t('teachers.field_nationality')}</span>
@@ -308,7 +416,7 @@ export function TeacherFile({
               <div>
                 <p className={`${labelClass} mb-2`}>{t('teachers.field_languages')}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {catalogue.map((language) => {
+                  {choices.map((language) => {
                     const active = languageIds.includes(language.id)
                     return (
                       <button
@@ -336,10 +444,11 @@ export function TeacherFile({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={saveData}
+                  disabled={pending || languageIds.length === 0}
+                  onClick={() => void saveData()}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
                 >
                   <BoIcon name="check" size={16} />
@@ -352,6 +461,11 @@ export function TeacherFile({
                 >
                   {t('teacher_file.cancel')}
                 </button>
+                {failureMessage && (
+                  <span role="alert" className="text-xs font-semibold text-red-600">
+                    {failureMessage}
+                  </span>
+                )}
               </div>
             </div>
           ) : (
@@ -469,11 +583,11 @@ export function TeacherFile({
                 value={availabilityDraft}
                 onChange={setAvailabilityDraft}
               />
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  disabled={!slotsAreValid(availabilityDraft)}
-                  onClick={saveAvailability}
+                  disabled={pending || !slotsAreValid(availabilityDraft)}
+                  onClick={() => void saveAvailability()}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <BoIcon name="check" size={16} />
@@ -481,11 +595,20 @@ export function TeacherFile({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditingAvailability(false)}
+                  onClick={() => {
+                    setFailure(null)
+                    setEditingAvailability(false)
+                  }}
                   className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
                 >
                   {t('teacher_file.cancel')}
                 </button>
+                <FieldMessage code={fieldError('availability')} />
+                {failureMessage && (
+                  <span role="alert" className="text-xs font-semibold text-red-600">
+                    {failureMessage}
+                  </span>
+                )}
               </div>
             </div>
           ) : availability.length === 0 ? (
@@ -524,7 +647,7 @@ export function TeacherFile({
 
                     {column.classes.map((item) => (
                       <Link
-                        key={item.id}
+                        key={`${item.id}-${item.startTime}`}
                         href={`/backoffice/class-groups/${item.id}`}
                         title={item.courseName}
                         className={`rounded px-1.5 py-1 text-[11px] font-semibold transition ${
@@ -607,16 +730,24 @@ export function TeacherFile({
                     <td
                       className={`${tdClass} whitespace-nowrap text-sm tabular-nums text-muted-foreground`}
                     >
-                      {`${group.weekdays.map((day) => t(`weekday.${day}`)).join('/')} · ${group.startTime}`}
+                      <span className="flex flex-col leading-tight">
+                        {group.slots.map((slot) => (
+                          <span key={`${slot.weekday}-${slot.startTime}`}>
+                            {`${t(`weekday.${slot.weekday}`)} ${slot.startTime}–${slot.endTime}`}
+                          </span>
+                        ))}
+                      </span>
                     </td>
                     <td
                       className={`${tdClass} whitespace-nowrap text-sm text-muted-foreground`}
                     >
                       <span className="flex flex-col leading-tight">
                         <span>{group.academicPeriodName}</span>
-                        <span className="text-xs tabular-nums">
-                          {formatDateRange(group.startDate, group.endDate, locale)}
-                        </span>
+                        {group.startsOn && group.endsOn && (
+                          <span className="text-xs tabular-nums">
+                            {formatDateRange(group.startsOn, group.endsOn, locale)}
+                          </span>
+                        )}
                       </span>
                     </td>
                     <td className={`${tdClass} min-w-32`}>
@@ -640,13 +771,6 @@ export function TeacherFile({
                           tone={classGroupTone[group.status]}
                           label={t(`class_group_status.${group.status}`)}
                         />
-                        {group.pendingCertificates > 0 && (
-                          <span className="text-xs font-semibold text-amber-700">
-                            {t('teachers.pending_certificates', {
-                              count: group.pendingCertificates,
-                            })}
-                          </span>
-                        )}
                       </span>
                     </td>
                   </tr>

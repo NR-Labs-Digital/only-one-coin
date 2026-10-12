@@ -1322,7 +1322,6 @@
       "col_teacher": "Docente",
       "col_languages": "Idiomas",
       "col_class_groups": "Turmas",
-      "col_pending": "Pendente",
       "col_status": "Estado",
       "free": "Livre",
       "pending_grades": "{count, plural, one {# nota} other {# notas}}",
@@ -1359,7 +1358,11 @@
       "tab_inactive": "Inativos",
       "empty_inactive_title": "Nenhum docente inativo",
       "empty_inactive_body": "O quadro inteiro segue ativo.",
-      "contract_inactive": "O contrato só é vigiado enquanto o docente está ativo."
+      "contract_inactive": "O contrato só é vigiado enquanto o docente está ativo.",
+      "load_error_title": "Não foi possível carregar o quadro de docentes",
+      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar igual, avise a equipe técnica.",
+      "save_error_duplicate": "Já existe um docente cadastrado com este documento.",
+      "save_error_generic": "Não foi possível salvar. Tente de novo em instantes."
     },
     "teacher_status": {
       "active": "Ativo",
@@ -1408,7 +1411,8 @@
       "none_body": "Sem faixas não dá para atribuir turma nenhuma.",
       "legend_free": "Faixa livre",
       "legend_allocated": "Turma atribuída",
-      "legend_outside": "Turma fora da faixa"
+      "legend_outside": "Turma fora da faixa",
+      "overlap": "Sobrepõe outra faixa do mesmo dia"
     },
     "teacher_home": {
       "metric_class_groups": "Turmas ativas",

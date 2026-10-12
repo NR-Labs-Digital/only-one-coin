@@ -1322,7 +1322,6 @@
       "col_teacher": "Docente",
       "col_languages": "Idiomas",
       "col_class_groups": "Aulas",
-      "col_pending": "Pendiente",
       "col_status": "Estado",
       "free": "Libre",
       "pending_grades": "{count, plural, one {# nota} other {# notas}}",
@@ -1359,7 +1358,11 @@
       "tab_inactive": "Inactivos",
       "empty_inactive_title": "Ningún docente inactivo",
       "empty_inactive_body": "Todo el plantel sigue activo.",
-      "contract_inactive": "El contrato solo se vigila mientras el docente está activo."
+      "contract_inactive": "El contrato solo se vigila mientras el docente está activo.",
+      "load_error_title": "No se pudo cargar la plana docente",
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
+      "save_error_duplicate": "Ya hay un docente registrado con este documento.",
+      "save_error_generic": "No se pudo guardar. Inténtalo de nuevo en un momento."
     },
     "teacher_status": {
       "active": "Activo",
@@ -1408,7 +1411,8 @@
       "none_body": "Sin franjas no se le puede asignar un aula.",
       "legend_free": "Franja libre",
       "legend_allocated": "Aula asignada",
-      "legend_outside": "Aula fuera de la franja"
+      "legend_outside": "Aula fuera de la franja",
+      "overlap": "Se cruza con otra franja del mismo día"
     },
     "teacher_home": {
       "metric_class_groups": "Aulas activas",

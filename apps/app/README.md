@@ -42,7 +42,7 @@ que muda a tela.
 | Pagos e fila de revisão (`/backoffice/payments*`) | **Real**: livro, fila, comprovante por URL assinada, leitura da IA, semáforo, aprovar/rejeitar (cria a conta do portal). Faltam lote, ordenação por confiança e atalhos |
 | Cursos (`/backoffice/courses`) | **Real**: CRUD, aposentar/reativar, planos com preço agendado |
 | Turmas (`/backoffice/class-groups`) | **Real**: períodos, duplicar, ciclo de vida, lista de espera manual. Visão do docente, roster, notas e certificados são mock |
-| Docentes (`/backoffice/teachers`) | Mock — as tabelas de docentes existem desde o OOC-77, a tela só passa a usá-las a partir do OOC-78 |
+| Docentes (`/backoffice/teachers`) | **Real** (OOC-78): diretório com abas, busca e filtros no servidor; cadastro, edição de dados, disponibilidade e saída/volta ao quadro gravando na API. Contrato só é lido — upload e download são o OOC-81. O docente lendo a própria ficha espera o vínculo da conta (OOC-79) |
 | Equipe (`/backoffice/team`) | **Real**: contas, convite, troca de cargo com bitácora. Convite de docente sai como qualquer cargo, sem vínculo com a ficha em Docentes até a tela de Docentes ser ligada às tabelas `teachers` (OOC-78+, OOC-68) |
 | Funcionalidades (`/backoffice/features`) | **Real** |
 | Conta (`/backoffice/account`) | **Real**: troca da própria senha. MFA e sessões são mock |

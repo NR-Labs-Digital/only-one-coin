@@ -13,11 +13,7 @@ import type {
   PlanPrice,
   StaffUser,
   StudentDetail,
-  TeacherContract,
-  TeacherDetail,
-  TeacherRow,
 } from './types'
-import { daysUntil } from './contract'
 
 /**
  * Mock backoffice dataset for the UI/UX phase. Every value is shaped like the
@@ -169,98 +165,31 @@ export function listClassGroupRosters(): ClassGroupDetail[] {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Teacher roster. Everything countable — class groups, students, pending
- * grades, pending certificates — is derived from `classGroups` below rather
- * than written here, so the roster can never disagree with the class group
- * list about who teaches what.
- *
- * The nationalities are not decoration: the catalog advertises the Italian
- * class group with a "docente ítalo-peruano" (`docs/REGRAS-NEGOCIO.md` §3), so
- * origin is catalogue data the ficha carries (`docs/REQUISITOS.md` RF03).
+ * The signed-in teacher's own figures, for the teacher home and the menu badge
+ * until the teacher area reads the API (OOC-79, OOC-82). The roster and the
+ * teacher file already read `apps/api` (OOC-78); no teacher is seeded here, so
+ * this answers for nobody.
  */
-const teachers: Omit<
-  TeacherDetail,
-  | 'activeClassGroups'
-  | 'studentCount'
-  | 'pendingGrades'
-  | 'pendingCertificates'
-  | 'classGroups'
-  /* Derived from `contract` against the request's clock, not seeded. */
-  | 'contractDaysLeft'
->[] = []
+export interface TeacherWorkload {
+  studentCount: number
+  pendingGrades: number
+  pendingCertificates: number
+}
+
+const teacherIds: string[] = []
 
 /** Still enrolling or running — what counts as load right now. */
 function isRunning(group: Pick<ClassGroupRow, 'status'>): boolean {
   return group.status === 'enrolling' || group.status === 'in_progress'
 }
 
-function teacherLoad(teacherId: string) {
-  const own = classGroups.filter((group) => group.teacherId === teacherId)
-  const running = own.filter(isRunning)
+export function getTeacher(id: string): TeacherWorkload | undefined {
+  if (!teacherIds.includes(id)) return undefined
+  const own = classGroups.filter((group) => group.teacherId === id)
   return {
-    activeClassGroups: running.length,
-    studentCount: running.reduce((sum, group) => sum + group.seatsTaken, 0),
+    studentCount: own.filter(isRunning).reduce((sum, group) => sum + group.seatsTaken, 0),
     pendingGrades: own.reduce((sum, group) => sum + pendingGradesOf(group), 0),
     pendingCertificates: own.reduce((sum, group) => sum + group.pendingCertificates, 0),
-  }
-}
-
-/**
- * Days left on the contract, against the request's clock. Handed down as a
- * number so the component never computes a date: it would hydrate a different
- * figure than the server rendered.
- */
-function contractCountdown(
-  contract: TeacherContract | null,
-  now: Date,
-): { contractDaysLeft: number | null } {
-  return {
-    contractDaysLeft: contract ? daysUntil(contract.endsAt, now) : null,
-  }
-}
-
-export function listTeachers(now: Date = new Date()): TeacherRow[] {
-  return teachers
-    .map(({ availability, ...teacher }) => {
-      void availability
-      return {
-        ...teacher,
-        ...teacherLoad(teacher.id),
-        ...contractCountdown(teacher.contract, now),
-      }
-    })
-    .sort(
-      (a, b) =>
-        a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
-    )
-}
-
-export function getTeacher(
-  id: string,
-  now: Date = new Date(),
-): TeacherDetail | undefined {
-  const teacher = teachers.find((item) => item.id === id)
-  if (!teacher) return undefined
-  return {
-    ...teacher,
-    ...teacherLoad(teacher.id),
-    ...contractCountdown(teacher.contract, now),
-    /* Running first, then the finished ones that still owe a certificate:
-       the file is opened either to allocate the next class group or to close
-       the last one. */
-    classGroups: classGroups
-      .filter((group) => group.teacherId === id)
-      .map((group) => {
-        const { students, ...row } = group
-        void students
-        return { ...row, pendingGrades: pendingGradesOf(group) }
-      })
-      .sort(
-        (a, b) =>
-          Number(isRunning(b)) - Number(isRunning(a)) ||
-          b.pendingCertificates - a.pendingCertificates ||
-          b.startDate.localeCompare(a.startDate),
-      ),
   }
 }
 

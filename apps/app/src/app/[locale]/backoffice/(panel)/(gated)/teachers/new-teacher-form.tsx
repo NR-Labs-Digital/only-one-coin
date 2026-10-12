@@ -2,14 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type {
-  AvailabilitySlot,
-  CourseLanguage,
-  NationalIdType,
-  TeacherContract,
-  TeacherRow,
-} from '@/lib/backoffice/types'
-import { CONTRACT_ALERT_DAYS, daysUntil } from '@/lib/backoffice/contract'
+import type { AvailabilitySlot, CourseLanguage, NationalIdType } from '@/lib/backoffice/types'
 import {
   COUNTRIES,
   countryName,
@@ -23,6 +16,8 @@ import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AvailabilityFields, slotsAreValid } from './availability-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { FieldMessage } from '../students/field-message'
+import { saveTeacher, type TeacherSaveFailure } from './save-teacher'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -32,34 +27,27 @@ const labelClass =
 
 const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
 
-/** A placeholder size, until a real upload reports one (no storage is wired). */
-const MOCK_FILE_SIZE_BYTES = 180_224
-
 /**
  * Registering a teacher: who they are on paper, how to reach them, where they
- * live, what they can teach, when they are free, and the contract behind all of
- * it (`docs/REQUISITOS.md` RF03).
+ * live, what they can teach and when they are free (`docs/REQUISITOS.md` RF03).
  *
  * Read top to bottom it answers one question per block, which is why it is cut
- * into blocks: identification, contact, address, teaching, contract. The three
- * short ones are grids of fields; the two long ones are lists that grow, and a
- * list that grows next to a field grid is what made this form hard to read.
+ * into blocks: identification, contact, address, teaching. The three short ones
+ * are grids of fields; the teaching one holds two lists that grow, and a list
+ * that grows next to a field grid is what made this form hard to read.
  *
  * Availability is filled in here rather than left for later because it is the
  * whole reason the record exists on the day it is created — a teacher on the
  * roster with no windows cannot be allocated to anything, so the class group
  * that prompted the hire still has nobody to run it.
  *
- * The contract is a file plus the window it covers. The panel does not draft it
- * — generating it from the Asociación's template is its own step, and this form
- * only files what was signed. What the dates buy is the warning: the directory
- * goes amber before a contract lapses, instead of after somebody notices.
+ * The contract is filed on the teacher's own file once the upload exists
+ * (OOC-81) — until then the directory flags the new teacher as "sin contrato",
+ * which is the truth.
  *
- * Screen-local, like the course and class group forms: the real write is a
- * usecase in `packages/domain` behind `apps/api`, never the browser
- * (CLAUDE.md §8). Creating the *login* for this teacher is a separate,
- * admin-only usecase with fresh re-authentication (CLAUDE.md §8) — not this
- * form.
+ * Saves through `POST /teachers` (OOC-78), a usecase in `apps/api` that holds
+ * the same field rules and refuses a document already on the roster. Creating
+ * the *login* for this teacher is a staff invite, not this form (CLAUDE.md §8).
  */
 export function NewTeacherForm({
   languages,
@@ -68,7 +56,8 @@ export function NewTeacherForm({
 }: {
   languages: CourseLanguage[]
   onCancel: () => void
-  onCreate: (teacher: TeacherRow) => void
+  /** Called with the new file's id once the server saved it. */
+  onCreate: (teacherId: string) => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale()
@@ -86,25 +75,11 @@ export function NewTeacherForm({
   const [addressLine, setAddressLine] = useState('')
   const [languageIds, setLanguageIds] = useState<string[]>([])
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([])
-  const [contractFileName, setContractFileName] = useState('')
-  const [contractStartsAt, setContractStartsAt] = useState('')
-  const [contractEndsAt, setContractEndsAt] = useState('')
+  const [pending, setPending] = useState(false)
+  const [failure, setFailure] = useState<TeacherSaveFailure | null>(null)
 
   const inPeru = country === DEFAULT_COUNTRY
   const cities = citiesOf(region)
-
-  /**
-   * A contract is all three things or none: a file nobody dated cannot be
-   * chased, and a window with no file behind it is a promise the Asociación
-   * cannot produce. Filing it later is allowed — leaving it half-filed is not.
-   */
-  const contractStarted =
-    contractFileName !== '' || contractStartsAt !== '' || contractEndsAt !== ''
-  const contractComplete =
-    contractFileName !== '' && contractStartsAt !== '' && contractEndsAt !== ''
-  const contractDatesOrdered =
-    !contractComplete || contractStartsAt < contractEndsAt
-  const contractReady = !contractStarted || (contractComplete && contractDatesOrdered)
 
   const ready =
     firstName.trim() !== '' &&
@@ -116,8 +91,10 @@ export function NewTeacherForm({
     (!inPeru || region !== null) &&
     city.trim() !== '' &&
     languageIds.length > 0 &&
-    slotsAreValid(availability) &&
-    contractReady
+    slotsAreValid(availability)
+
+  /** The API's refusal for one field, shown under it. */
+  const fieldError = (key: string) => (failure?.kind === 'invalid' ? failure.fields[key] : undefined)
 
   function selectCountry(next: string) {
     setCountry(next)
@@ -131,48 +108,43 @@ export function NewTeacherForm({
     )
   }
 
-  function submit() {
-    if (!ready) return
-    const now = new Date()
-    /* No storage is wired yet: in production the file goes to the bucket
-       through a signed URL and never through the app (CLAUDE.md §5), and the
-       row keeps the name it was filed under. */
-    const contract: TeacherContract | null = contractComplete
-      ? {
-          fileName: contractFileName,
-          fileSizeBytes: MOCK_FILE_SIZE_BYTES,
-          uploadedAt: now.toISOString(),
-          startsAt: contractStartsAt,
-          endsAt: contractEndsAt,
-        }
-      : null
+  async function submit() {
+    if (!ready || pending) return
+    setPending(true)
+    setFailure(null)
 
-    onCreate({
-      id: `tea_local_${email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+    const result = await saveTeacher<{ id: string }>('/api/v1/teachers', 'POST', {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       nationalIdType,
       nationalId: nationalId.trim(),
       email: email.trim(),
-      phone: phone.trim(),
-      status: 'active',
-      languages: languages.filter((item) => languageIds.includes(item.id)),
+      phone,
       nationality,
       country,
       region,
       city: city.trim(),
       addressLine: addressLine.trim(),
-      contract,
-      contractDaysLeft: contract ? daysUntil(contract.endsAt, now) : null,
-      // Everything countable comes from the class groups, and a teacher created
-      // a second ago runs none.
-      activeClassGroups: 0,
-      studentCount: 0,
-      pendingGrades: 0,
-      pendingCertificates: 0,
-      joinedAt: now.toISOString().slice(0, 10),
+      languages: languageIds,
+      availability,
     })
+    setPending(false)
+
+    if (!result.ok) {
+      setFailure(result.failure)
+      return
+    }
+    onCreate(result.value.id)
   }
+
+  const failureMessage =
+    failure === null
+      ? null
+      : failure.kind === 'duplicate'
+        ? t('teachers.save_error_duplicate')
+        : failure.kind === 'invalid'
+          ? t('new_student.invalid_error')
+          : t('teachers.save_error_generic')
 
   return (
     <Card className="p-5">
@@ -220,6 +192,7 @@ export function NewTeacherForm({
               onChange={(event) => setNationalId(event.target.value)}
               className={`${fieldClass} tabular-nums`}
             />
+            <FieldMessage code={fieldError('nationalId')} />
           </Labelled>
 
           {/* Origin is not residence: the catalog sells the Italian class
@@ -251,10 +224,12 @@ export function NewTeacherForm({
               onChange={(event) => setEmail(event.target.value)}
               className={fieldClass}
             />
+            <FieldMessage code={fieldError('email')} />
           </Labelled>
 
           <Labelled label={t('teachers.field_phone')} required>
             <PhoneField value={phone} onChange={setPhone} required />
+            <FieldMessage code={fieldError('phone')} />
           </Labelled>
         </AutoGrid>
       </Block>
@@ -379,70 +354,16 @@ export function NewTeacherForm({
               {t('availability.hint')}
             </p>
             <AvailabilityFields value={availability} onChange={setAvailability} />
+            <FieldMessage code={fieldError('availability')} />
           </fieldset>
         </div>
-      </Block>
-
-      {/* Contract */}
-      <Block title={t('teachers.section_contract')} hint={t('teachers.contract_hint')}>
-        <AutoGrid min="15rem" gap="gap-3">
-          <Labelled label={t('teachers.field_contract_file')} optional={!contractStarted}>
-            {/* A name, not a picker: the upload goes straight to the bucket
-                through a signed URL once storage is wired (CLAUDE.md §5), and
-                until then a file input would promise something that does not
-                happen. */}
-            <input
-              value={contractFileName}
-              onChange={(event) => setContractFileName(event.target.value)}
-              placeholder={t('teachers.contract_file_placeholder')}
-              className={fieldClass}
-            />
-          </Labelled>
-
-          <Labelled
-            label={t('teachers.field_contract_starts')}
-            optional={!contractStarted}
-          >
-            <input
-              type="date"
-              value={contractStartsAt}
-              onChange={(event) => setContractStartsAt(event.target.value)}
-              className={fieldClass}
-            />
-          </Labelled>
-
-          <Labelled label={t('teachers.field_contract_ends')} optional={!contractStarted}>
-            <input
-              type="date"
-              value={contractEndsAt}
-              onChange={(event) => setContractEndsAt(event.target.value)}
-              className={fieldClass}
-            />
-          </Labelled>
-        </AutoGrid>
-
-        <p className="mt-3 flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">
-          <BoIcon name="clock" size={14} className="mt-0.5 shrink-0" />
-          {t('teachers.contract_alert_hint', { days: CONTRACT_ALERT_DAYS })}
-        </p>
-
-        {contractStarted && !contractComplete && (
-          <p className="mt-2 text-xs font-semibold text-red-600">
-            {t('teachers.contract_incomplete')}
-          </p>
-        )}
-        {contractComplete && !contractDatesOrdered && (
-          <p className="mt-2 text-xs font-semibold text-red-600">
-            {t('teachers.contract_dates_out_of_order')}
-          </p>
-        )}
       </Block>
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4">
         <button
           type="button"
-          disabled={!ready}
-          onClick={submit}
+          disabled={!ready || pending}
+          onClick={() => void submit()}
           className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-blue"
         >
           <BoIcon name="check" size={16} />
@@ -459,6 +380,11 @@ export function NewTeacherForm({
         {!ready && (
           <span className="text-xs text-muted-foreground">
             {t('teachers.missing_fields')}
+          </span>
+        )}
+        {failureMessage && (
+          <span role="alert" className="text-xs font-semibold text-red-600">
+            {failureMessage}
           </span>
         )}
       </div>
