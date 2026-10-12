@@ -408,8 +408,6 @@
       "detail_receipt_note": "This list does not open the receipt image: it shows in the review queue while the payment awaits a decision.",
       "open_review": "Review receipt",
       "no_operation": "No number",
-      "empty_title": "No payments yet",
-      "empty_body": "Every enrollment's payment lands here, wherever it came from.",
       "empty_search_title": "No results",
       "empty_search_body": "Try another student, course or operation number, or clear the filters.",
       "page_prev": "Previous",
@@ -418,7 +416,17 @@
       "locked_title": "No access to payments",
       "locked_body": "Receipts are settled by treasury. Your side of the panel is the class group.",
       "load_error_title": "Could not load the payment ledger",
-      "load_error_body": "The system did not answer. Reload the page; if it stays this way, tell the technical team."
+      "load_error_body": "The system did not answer. Reload the page; if it stays this way, tell the technical team.",
+      "state_label": "Payment state",
+      "state_open": "Open",
+      "state_closed": "Settled",
+      "state_all": "All",
+      "empty_open_title": "Nothing to decide",
+      "empty_open_body": "Every payment received has already been approved or rejected.",
+      "empty_closed_title": "No settled payments yet",
+      "empty_closed_body": "Every approved or rejected payment shows up here, with who decided it and when.",
+      "empty_all_title": "No payments yet",
+      "empty_all_body": "Every enrollment's payment lands here, wherever it came from."
     },
     "receipt_review": {
       "open": "Review",

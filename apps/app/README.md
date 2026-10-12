@@ -39,7 +39,7 @@ que muda a tela.
 | Login, convite e senha do staff | **Real** (Better Auth). Falta MFA — OOC-29 |
 | Alunos (`/backoffice/students`) | **Real**: diretório com busca/filtros no servidor, cadastro, ficha com matrículas, edição de aluno e apoderado, aba Atividade. Faltam documentos emitidos e trâmites (OOC-33), suspensão e exportação |
 | Matrículas (`/backoffice/enrollments`) | **Real**: só vaga confirmada; abertura manual manda pra Pagos |
-| Pagos e fila de revisão (`/backoffice/payments*`) | **Real**: livro, fila, comprovante por URL assinada, leitura da IA, semáforo, aprovar/rejeitar (cria a conta do portal). Faltam lote, ordenação por confiança e atalhos |
+| Pagos e fila de revisão (`/backoffice/payments*`) | **Real**: livro (abre em Abertos; abas Abertos · Resolvidos · Todos com contador, Resolvidos por data de decisão — OOC-114), fila, comprovante por URL assinada, leitura da IA, semáforo, aprovar/rejeitar (cria a conta do portal). Faltam lote, ordenação por confiança e atalhos |
 | Cursos (`/backoffice/courses`) | **Real**: CRUD, aposentar/reativar, planos com preço agendado |
 | Turmas (`/backoffice/class-groups`) | **Real**: períodos, duplicar, ciclo de vida, lista de espera manual, docente escolhido do cadastro com aviso de horário e turmas sem docente destacadas (OOC-80). Visão do docente, roster, notas e certificados são mock |
 | Docentes (`/backoffice/teachers`) | **Real** (OOC-78): diretório com abas, busca e filtros no servidor; cadastro, edição de dados, disponibilidade e saída/volta ao quadro gravando na API. Contrato só é lido — upload e download são o OOC-81. O docente lendo a própria ficha espera o vínculo da conta (OOC-79) |

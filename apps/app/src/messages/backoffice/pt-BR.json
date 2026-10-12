@@ -408,8 +408,6 @@
       "detail_receipt_note": "Esta listagem não abre a imagem do comprovante: ela aparece na fila de revisão enquanto o pagamento espera uma decisão.",
       "open_review": "Revisar comprovante",
       "no_operation": "Sem número",
-      "empty_title": "Ainda não há pagamentos",
-      "empty_body": "O pagamento de cada matrícula aparece aqui, não importa de onde venha.",
       "empty_search_title": "Sem resultados",
       "empty_search_body": "Tente outro aluno, curso ou número de operação, ou tire os filtros.",
       "page_prev": "Anteriores",
@@ -418,7 +416,17 @@
       "locked_title": "Sem acesso a pagamentos",
       "locked_body": "Os comprovantes são resolvidos pela tesouraria. O seu painel é a turma.",
       "load_error_title": "Não foi possível carregar a lista de pagamentos",
-      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar assim, avise a equipe técnica."
+      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar assim, avise a equipe técnica.",
+      "state_label": "Estado do pagamento",
+      "state_open": "Abertos",
+      "state_closed": "Resolvidos",
+      "state_all": "Todos",
+      "empty_open_title": "Nada para decidir",
+      "empty_open_body": "Todos os pagamentos recebidos já foram aprovados ou rejeitados.",
+      "empty_closed_title": "Ainda não há pagamentos resolvidos",
+      "empty_closed_body": "Cada pagamento aprovado ou rejeitado aparece aqui, com quem decidiu e quando.",
+      "empty_all_title": "Ainda não há pagamentos",
+      "empty_all_body": "O pagamento de cada matrícula aparece aqui, não importa de onde venha."
     },
     "receipt_review": {
       "open": "Revisar",
