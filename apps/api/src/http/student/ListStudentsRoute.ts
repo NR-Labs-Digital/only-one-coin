@@ -26,7 +26,7 @@ export const StudentListRowSchema = z.object({
   nationalId: z.string(),
   email: z.string(),
   phone: z.string(),
-  birthDate: z.string(),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   country: z.string(),
   region: z.string().nullable(),
   city: z.string(),
@@ -56,7 +56,7 @@ const StudentDirectoryResponseSchema = z.object({
 export function serializeStudentRow(row: StudentListRow) {
   return {
     ...row,
-    birthDate: row.birthDate.toISOString(),
+    birthDate: row.birthDate.toISOString().slice(0, 10),
     createdAt: row.createdAt.toISOString(),
     lastActivityAt: row.lastActivityAt.toISOString(),
   };
