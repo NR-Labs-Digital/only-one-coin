@@ -133,6 +133,7 @@ import { StudentActivityQuery } from "./infra/persistence/student/StudentActivit
 import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
+import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
@@ -285,6 +286,7 @@ export interface AppQueries {
   studentActivity: StudentActivityQuery;
   listTeachers: ListTeachersQuery;
   getTeacher: GetTeacherQuery;
+  listTeacherOptions: ListTeacherOptionsQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
@@ -492,9 +494,15 @@ function buildContainer(): AppContainer {
     courseRepository,
     academicPeriodRepository,
     classGroupRepository,
+    teacherRepository,
     auditLogRepository,
   );
-  const updateClassGroup = new UpdateClassGroupUseCase(courseRepository, classGroupRepository, auditLogRepository);
+  const updateClassGroup = new UpdateClassGroupUseCase(
+    courseRepository,
+    classGroupRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
   const advanceClassGroupStatus = new AdvanceClassGroupStatusUseCase(classGroupRepository, auditLogRepository);
   const joinWaitlist = new JoinWaitlistUseCase(classGroupRepository, waitlistRepository, auditLogRepository);
   const leaveWaitlist = new LeaveWaitlistUseCase(waitlistRepository, auditLogRepository);
@@ -540,6 +548,7 @@ function buildContainer(): AppContainer {
   const listClassGroups = new ListClassGroupsQuery(db);
   const listTeachers = new ListTeachersQuery(db);
   const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
+  const listTeacherOptions = new ListTeacherOptionsQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
@@ -668,6 +677,7 @@ function buildContainer(): AppContainer {
       studentActivity,
       listTeachers,
       getTeacher,
+      listTeacherOptions,
       listEnrollments,
       listPayments,
       listPaymentReviewQueue,

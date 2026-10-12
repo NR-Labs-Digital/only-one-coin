@@ -392,6 +392,8 @@ export {
   ClassGroupIncompleteError,
   CapacityBelowSeatsTakenError,
   ClassGroupCourseLockedError,
+  ClassGroupTeacherUnavailableError,
+  ClassGroupTeacherLanguageError,
   PeriodAlreadyDuplicatedError,
   DuplicateSamePeriodError,
   ClassGroupNotFullError,

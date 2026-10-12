@@ -1,6 +1,7 @@
 import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 /**
  * The enrollment ledger — every confirmed seat in the institution, read for the
@@ -179,7 +180,7 @@ export class ListEnrollmentsQuery {
         classGroupId: classGroups.id,
         classGroupSchedule: classGroups.schedule,
         classGroupCode: classGroups.code,
-        teacherName: classGroups.teacherName,
+        teacherName: classGroupTeacherName,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
         planPriceId: planPrices.id,
@@ -303,7 +304,7 @@ export class ListEnrollmentsQuery {
           ilike(courses.name, needle),
           ilike(classGroups.code, needle),
           ilike(classGroups.schedule, needle),
-          ilike(classGroups.teacherName, needle),
+          ilike(classGroupTeacherName, needle),
           ilike(sql`${latestPayment.operationNumber}`, needle),
         )!,
       );

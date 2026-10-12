@@ -72,6 +72,19 @@ export class ClassGroupCourseLockedError extends UnableToProcessEntryError {
   }
 }
 
+/** No teacher on the roster with that id — never filed, or left it (OOC-80). */
+export class ClassGroupTeacherUnavailableError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_teacher_unavailable", message: "Only an active teacher runs a class group.", ...params });
+  }
+}
+
+export class ClassGroupTeacherLanguageError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_teacher_language", message: "The teacher does not teach the course's language.", ...params });
+  }
+}
+
 export class PeriodAlreadyDuplicatedError extends ConflictError {
   constructor(params?: { path?: string; cause?: unknown }) {
     super({ reason: "catalog.period_already_duplicated", message: "That period was already copied into this one.", ...params });

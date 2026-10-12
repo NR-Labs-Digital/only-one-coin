@@ -11,6 +11,8 @@ const ListClassGroupsQuerySchema = z.object({
   courseId: z.string().uuid().optional(),
   status: ClassGroupStatusSchema.optional(),
   q: z.string().trim().max(100).optional(),
+  /** Only the class groups still waiting for a teacher from the roster (OOC-80). */
+  unassigned: z.enum(["true"]).optional(),
 });
 
 // No rate limit yet (docs/ROADMAP.md Sessão 25).
@@ -26,5 +28,8 @@ export const listClassGroupsRoute = RouteBuilder.get("/catalog/class-groups")
   .response(200, z.object({ items: z.array(ClassGroupItemSchema) }))
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    reply.status(200).send({ items: await container.queries.listClassGroups.run(request.query) });
+    const { unassigned, ...filter } = request.query;
+    reply
+      .status(200)
+      .send({ items: await container.queries.listClassGroups.run({ ...filter, unassigned: unassigned === "true" }) });
   });
