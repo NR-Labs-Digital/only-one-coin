@@ -419,6 +419,74 @@ describe("ListPaymentsQuery", () => {
     });
   });
 
+  it("the open tab holds only what still needs a decision (OOC-114)", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, state: "open" });
+
+      expect(ledger.total).toBe(2);
+      expect(ledger.items.map((row) => row.id)).toEqual([seeded.underReview, seeded.pending]);
+      expect(ledger.counts).toEqual({ open: 2, closed: 2 });
+    });
+  });
+
+  it("the closed tab is ordered by when it was decided, not when it came in", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      // The older payment was settled last.
+      await tx
+        .update(payments)
+        .set({ decidedAt: sql`now() + interval '1 hour'` })
+        .where(eq(payments.id, seeded.approved));
+
+      const query = new ListPaymentsQuery(tx as unknown as Db);
+      const newest = await query.run({ academicPeriodId: PERIOD, state: "closed" });
+      const oldest = await query.run({ academicPeriodId: PERIOD, state: "closed", sort: "oldest" });
+
+      expect(newest.total).toBe(2);
+      expect(newest.items.map((row) => row.id)).toEqual([seeded.approved, seeded.rejected]);
+      expect(oldest.items.map((row) => row.id)).toEqual([seeded.rejected, seeded.approved]);
+    });
+  });
+
+  it("the fine status narrows inside the tab, and the counters ignore both", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const query = new ListPaymentsQuery(tx as unknown as Db);
+      const within = await query.run({ academicPeriodId: PERIOD, state: "closed", status: "rejected" });
+      const across = await query.run({ academicPeriodId: PERIOD, state: "open", status: "approved" });
+
+      expect(within.items.map((row) => row.id)).toEqual([seeded.rejected]);
+      expect(within.counts).toEqual({ open: 2, closed: 2 });
+      expect(across.total).toBe(0);
+    });
+  });
+
+  it("the counters follow the search", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({
+        academicPeriodId: PERIOD,
+        state: "open",
+        q: seeded.operationOf.approved,
+      });
+
+      expect(ledger.total).toBe(0);
+      expect(ledger.counts).toEqual({ open: 0, closed: 1 });
+    });
+  });
+
+  it("the open tab counts what the review queue lists — the number on the menu badge", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ state: "open" });
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({});
+
+      expect(ledger.counts.open).toBe(queue.total);
+      expect(ledger.total).toBe(queue.total);
+    });
+  });
+
   it("counts the header figures over the current period", async () => {
     await rolledBack(async (tx) => {
       // Make the suite's period the most recent one already started, so the

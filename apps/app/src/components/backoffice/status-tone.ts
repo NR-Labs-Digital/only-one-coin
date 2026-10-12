@@ -20,8 +20,9 @@ import type {
 
 export const studentTone: Record<StudentStatus, Tone> = {
   active: 'success',
+  former: 'info',
   under_review: 'warning',
-  inactive: 'neutral',
+  no_enrollment: 'neutral',
 }
 
 /** Off the roster is not an alarm — it is a record kept on purpose. */

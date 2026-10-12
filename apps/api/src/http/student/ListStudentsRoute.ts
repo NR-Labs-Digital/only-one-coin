@@ -6,17 +6,17 @@ import type { StudentListRow } from "@/infra/persistence/student/ListStudentsQue
 import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 // The directory's filters (OOC-76), all applied by Postgres. Absent means
-// "all". `q` keeps a two-character floor so a keystroke is not a full-table
+// "all", except the tab, which opens on who studies now (OOC-116). `q` keeps a two-character floor so a keystroke is not a full-table
 // ILIKE; `minor` is the literal "true" a URL carries.
 const ListStudentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   q: z.string().trim().min(2).max(100).optional(),
-  status: z.enum(["active", "inactive"]).optional(),
+  status: z.enum(["active", "former", "no_enrollment", "all"]).default("active"),
   minor: z.enum(["true"]).optional(),
   sort: z.enum(["newest", "oldest"]).default("newest"),
 });
 
-const StudentStatusSchema = z.enum(["active", "under_review", "inactive"]);
+const StudentStatusSchema = z.enum(["active", "former", "under_review", "no_enrollment"]);
 
 export const StudentListRowSchema = z.object({
   id: z.string().uuid(),
@@ -44,11 +44,12 @@ const StudentDirectoryResponseSchema = z.object({
   total: z.number().int(),
   page: z.number().int(),
   pageSize: z.number().int(),
-  // Per chip, over the search alone — what choosing each chip would give.
+  // Per tab and chip, over the search alone — what choosing each would give.
   counts: z.object({
     all: z.number().int(),
     active: z.number().int(),
-    inactive: z.number().int(),
+    former: z.number().int(),
+    noEnrollment: z.number().int(),
     minors: z.number().int(),
   }),
 });
@@ -69,7 +70,8 @@ export const listStudentsRoute = RouteBuilder.get("/students")
   .docs({
     tags: ["Students"],
     summary: "The student directory",
-    description: "Search, status and age filters applied server-side, paged by offset.",
+    description:
+      "Opens on the active tab (a current enrollment). Search, tab and age filters applied server-side, paged by offset; `counts` gives every tab and chip over the search alone.",
   })
   .roles(...STUDENT_FILE_ROLES)
   .query(ListStudentsQuerySchema)
@@ -80,7 +82,7 @@ export const listStudentsRoute = RouteBuilder.get("/students")
     const result = await container.queries.listStudents.directory({
       page,
       q,
-      status,
+      status: status === "all" ? undefined : status,
       minor: minor === "true",
       sort,
     });

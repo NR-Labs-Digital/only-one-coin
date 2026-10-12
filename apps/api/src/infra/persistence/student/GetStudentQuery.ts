@@ -1,7 +1,7 @@
-import { consents, enrollments, guardians, students } from "@ooc/db";
+import { classGroups, consents, enrollments, guardians, students } from "@ooc/db";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
-import { isMinor, type StudentStatus } from "./ListStudentsQuery.js";
+import { currentClassGroupSql, deriveStudentStatus, isMinor, type StudentStatus } from "./ListStudentsQuery.js";
 
 export interface StudentGuardianRow {
   firstName: string;
@@ -77,6 +77,10 @@ export class GetStudentQuery {
           sql<number>`count(${enrollments.id}) filter (where ${enrollments.seatStatus} = 'confirmed')`.mapWith(
             Number,
           ),
+        currentEnrollments:
+          sql<number>`count(${enrollments.id}) filter (where ${enrollments.seatStatus} = 'confirmed' and ${currentClassGroupSql})`.mapWith(
+            Number,
+          ),
         reservedEnrollments:
           sql<number>`count(${enrollments.id}) filter (where ${enrollments.seatStatus} = 'reserved')`.mapWith(
             Number,
@@ -84,6 +88,7 @@ export class GetStudentQuery {
         lastEnrollmentAt: sql<Date | null>`max(${enrollments.updatedAt})`,
       })
       .from(enrollments)
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       // Retired enrollments are not part of what the student has going on
       // (CLAUDE.md §6).
       .where(and(eq(enrollments.studentId, studentId), isNull(enrollments.deletedAt)));
@@ -114,9 +119,20 @@ export class GetStudentQuery {
       consent = latestConsent ?? null;
     }
 
-    const stats = enrollmentStats ?? { totalEnrollments: 0, confirmedEnrollments: 0, reservedEnrollments: 0, lastEnrollmentAt: null };
-    const status: StudentStatus =
-      stats.confirmedEnrollments > 0 ? "active" : stats.reservedEnrollments > 0 ? "under_review" : "inactive";
+    const stats = enrollmentStats ?? {
+      totalEnrollments: 0,
+      confirmedEnrollments: 0,
+      currentEnrollments: 0,
+      reservedEnrollments: 0,
+      lastEnrollmentAt: null,
+    };
+    // The same derivation as the directory (OOC-116), so the badge on the
+    // file and the tab the student is listed under always agree.
+    const status: StudentStatus = deriveStudentStatus({
+      confirmed: stats.confirmedEnrollments,
+      current: stats.currentEnrollments,
+      reserved: stats.reservedEnrollments,
+    });
     const lastActivityAt =
       stats.lastEnrollmentAt && stats.lastEnrollmentAt > student.updatedAt ? stats.lastEnrollmentAt : student.updatedAt;
 
@@ -135,7 +151,7 @@ export class GetStudentQuery {
       createdAt: student.createdAt,
       isMinor: isMinor(student.birthDate),
       status,
-      activeCourses: stats.confirmedEnrollments,
+      activeCourses: stats.currentEnrollments,
       totalEnrollments: stats.totalEnrollments,
       lastActivityAt,
       guardian: guardian ? { ...guardian, consent } : null,

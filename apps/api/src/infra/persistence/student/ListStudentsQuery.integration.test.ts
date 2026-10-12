@@ -1,5 +1,6 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups, courses, enrollments, planPrices, plans, students } from "@ooc/db";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -14,6 +15,10 @@ import { DIRECTORY_PAGE_SIZE, ListStudentsQuery } from "./ListStudentsQuery.js";
  *
  * OOC-76: search, status and age run in Postgres over the whole directory,
  * and the counts per chip agree with what each chip would list.
+ *
+ * OOC-116: "active" means a current enrollment — a confirmed seat in a class
+ * group still enrolling or in progress. A confirmed seat in a finished one
+ * makes a former student; nothing confirmed, no enrollment.
  *
  * `students` is under the delete lock (migration 0011): every test runs in a
  * transaction that is always rolled back, and every directory read is scoped
@@ -31,6 +36,8 @@ const COURSE = "018f2b5c-7000-7000-8000-000000000002";
 const PLAN = "018f2b5c-7000-7000-8000-000000000003";
 const PLAN_PRICE = "018f2b5c-7000-7000-8000-000000000004";
 const GROUP = "018f2b5c-7000-7000-8000-000000000005";
+/** A class group that already finished. */
+const GROUP_DONE = "018f2b5c-7000-7000-8000-000000000006";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 class RolledBack extends Error {}
@@ -62,19 +69,23 @@ async function rolledBack(fn: (tx: Tx) => Promise<void>): Promise<void> {
 const CHILD = new Date(Date.UTC(new Date().getUTCFullYear() - 10, 0, 1));
 const ADULT = new Date("2000-01-01T00:00:00.000Z");
 
-/** One student per seat shape: none, reserved only, confirmed, released only, confirmed + reserved. */
+/** One student per seat shape: none, reserved only, confirmed, released only,
+ * confirmed + reserved, and confirmed in a class group that already finished. */
 const SHAPES: {
   name: string;
   seats: ("reserved" | "confirmed" | "released")[];
+  /** The seats sit in GROUP_DONE instead of GROUP. */
+  finished?: boolean;
   listed: boolean;
-  status?: "active" | "inactive";
+  status: "active" | "former" | "under_review" | "no_enrollment";
   birthDate: Date;
 }[] = [
-  { name: "SinMatricula", seats: [], listed: true, status: "inactive", birthDate: ADULT },
-  { name: "SoloReservada", seats: ["reserved"], listed: false, birthDate: CHILD },
+  { name: "SinMatricula", seats: [], listed: true, status: "no_enrollment", birthDate: ADULT },
+  { name: "SoloReservada", seats: ["reserved"], listed: false, status: "under_review", birthDate: CHILD },
   { name: "Confirmada", seats: ["confirmed"], listed: true, status: "active", birthDate: CHILD },
-  { name: "SoloLiberada", seats: ["released"], listed: true, status: "inactive", birthDate: ADULT },
+  { name: "SoloLiberada", seats: ["released"], listed: true, status: "no_enrollment", birthDate: ADULT },
   { name: "ConfirmadaYReservada", seats: ["confirmed", "reserved"], listed: true, status: "active", birthDate: ADULT },
+  { name: "Egresada", seats: ["confirmed"], finished: true, listed: true, status: "former", birthDate: ADULT },
 ];
 
 const SURNAME = "Directorio";
@@ -89,15 +100,20 @@ async function seed(tx: Tx): Promise<Map<string, string>> {
   await tx.insert(courses).values({ id: COURSE, name: "Curso (students integration)", language: "Prueba", minAge: 12 });
   await tx.insert(plans).values({ id: PLAN, courseId: COURSE, name: "Paquete completo" });
   await tx.insert(planPrices).values({ id: PLAN_PRICE, planId: PLAN, amountCents: 10000 });
-  await tx.insert(classGroups).values({
-    id: GROUP,
-    courseId: COURSE,
-    academicPeriodId: PERIOD,
-    schedule: "Lun/Mié 19:00",
-    startsOn: new Date("2026-03-02T00:00:00.000Z"),
-    endsOn: new Date("2026-06-30T00:00:00.000Z"),
-    capacity: 50,
-  });
+  await tx.insert(classGroups).values(
+    [
+      { id: GROUP, status: "enrolling" },
+      { id: GROUP_DONE, status: "finished" },
+    ].map((group) => ({
+      ...group,
+      courseId: COURSE,
+      academicPeriodId: PERIOD,
+      schedule: "Lun/Mié 19:00",
+      startsOn: new Date("2026-03-02T00:00:00.000Z"),
+      endsOn: new Date("2026-06-30T00:00:00.000Z"),
+      capacity: 50,
+    })),
+  );
 
   const rows = await tx
     .insert(students)
@@ -121,7 +137,7 @@ async function seed(tx: Tx): Promise<Map<string, string>> {
   const seats = SHAPES.flatMap((shape) =>
     shape.seats.map((seatStatus) => ({
       studentId: idOf.get(shape.name)!,
-      classGroupId: GROUP,
+      classGroupId: shape.finished ? GROUP_DONE : GROUP,
       planPriceId: PLAN_PRICE,
       seatStatus,
     })),
@@ -156,17 +172,67 @@ describe("student directory", () => {
       const active = await query.directory({ q: SURNAME, status: "active" });
       expect(names(active.items)).toEqual(["Confirmada", "ConfirmadaYReservada"]);
 
-      const inactive = await query.directory({ q: SURNAME, status: "inactive" });
-      expect(names(inactive.items)).toEqual(["SinMatricula", "SoloLiberada"]);
+      const former = await query.directory({ q: SURNAME, status: "former" });
+      expect(names(former.items)).toEqual(["Egresada"]);
+
+      const noEnrollment = await query.directory({ q: SURNAME, status: "no_enrollment" });
+      expect(names(noEnrollment.items)).toEqual(["SinMatricula", "SoloLiberada"]);
 
       const minors = await query.directory({ q: SURNAME, minor: true });
       expect(names(minors.items)).toEqual(["Confirmada"]);
       expect(minors.items.every((row) => row.isMinor)).toBe(true);
 
-      // The chips ignore the chip filters themselves — same answer either way.
-      expect(minors.counts).toEqual({ all: 4, active: 2, inactive: 2, minors: 1 });
+      // The tabs and chips ignore those filters themselves — same answer either way.
+      expect(minors.counts).toEqual({ all: 5, active: 2, former: 1, noEnrollment: 2, minors: 1 });
       expect(active.counts).toEqual(minors.counts);
+      expect(former.counts).toEqual(minors.counts);
       expect(active.total).toBe(2);
+    });
+  });
+
+  it("derives each listed student's status from their seats (OOC-116)", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      const idOf = await seed(tx);
+      const all = await query.directory({ q: SURNAME });
+
+      for (const shape of SHAPES.filter((item) => item.listed)) {
+        const row = all.items.find((item) => item.id === idOf.get(shape.name));
+        expect(row?.status, shape.name).toBe(shape.status);
+      }
+      // Current enrollments only: the finished class group is not an active course.
+      expect(all.items.find((row) => row.id === idOf.get("Egresada"))?.activeCourses).toBe(0);
+      expect(all.items.find((row) => row.id === idOf.get("Confirmada"))?.activeCourses).toBe(1);
+    });
+  });
+
+  it("a class group that finishes moves its students from active to former, with no write on the student", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      const idOf = await seed(tx);
+      const names = (rows: { id: string }[]) =>
+        rows.map((row) => [...idOf].find(([, id]) => id === row.id)?.[0]).sort();
+
+      await tx.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP));
+
+      const active = await query.directory({ q: SURNAME, status: "active" });
+      const former = await query.directory({ q: SURNAME, status: "former" });
+
+      expect(active.total).toBe(0);
+      expect(names(former.items)).toEqual(["Confirmada", "ConfirmadaYReservada", "Egresada"]);
+    });
+  });
+
+  it("a closed class group is ended too, and in_progress is current", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      await seed(tx);
+
+      await tx.update(classGroups).set({ status: "in_progress" }).where(eq(classGroups.id, GROUP));
+      await tx.update(classGroups).set({ status: "closed" }).where(eq(classGroups.id, GROUP_DONE));
+      const page = await query.directory({ q: SURNAME });
+
+      expect(page.counts).toMatchObject({ active: 2, former: 1 });
     });
   });
 

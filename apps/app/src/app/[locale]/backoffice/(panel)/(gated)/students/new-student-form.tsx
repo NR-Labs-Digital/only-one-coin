@@ -297,11 +297,9 @@ export function NewStudentForm({
         phone: student.phone,
         birthDate: student.birthDate,
         isMinor,
-        /* Derived, never typed: `active` means an active enrollment and
-           `under_review` one waiting on review (see `StudentStatus`). A file
-           with no enrollment behind it is neither — registering somebody does
-           not enroll them. */
-        status: 'inactive',
+        /* Derived, never typed (see `StudentStatus`). Registering somebody
+           does not enroll them. */
+        status: 'no_enrollment',
         country: student.country,
         region: student.region,
         city: student.city.trim(),

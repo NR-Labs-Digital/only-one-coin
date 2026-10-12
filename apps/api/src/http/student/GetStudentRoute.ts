@@ -56,7 +56,7 @@ const GetStudentResponseSchema = z.object({
   city: z.string(),
   createdAt: z.string(),
   isMinor: z.boolean(),
-  status: z.enum(["active", "under_review", "inactive"]),
+  status: z.enum(["active", "former", "under_review", "no_enrollment"]),
   activeCourses: z.number().int(),
   totalEnrollments: z.number().int(),
   lastActivityAt: z.string(),
