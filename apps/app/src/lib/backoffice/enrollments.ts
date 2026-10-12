@@ -8,6 +8,8 @@ export interface EnrollmentLedger {
   items: EnrollmentRow[]
   /** Enrollments matching the query, across every page. */
   total: number
+  /** What each tab holds under the other filters — the tab counters. */
+  counts: { current: number; ended: number; all: number }
   page: number
   pageSize: number
   /** The whole ledger, never the filtered page. */

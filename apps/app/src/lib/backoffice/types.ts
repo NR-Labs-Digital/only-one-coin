@@ -1068,6 +1068,8 @@ export interface EnrollmentRow {
   language: CourseLanguage | null
   modality: ClassModality
   academicPeriodName: string
+  /** Which tab the row belongs to — shown as a column on the "all" tab. */
+  classGroupStatus: ClassGroupStatus
   status: EnrollmentStatus
   seatStatus: SeatStatus
   planName: string

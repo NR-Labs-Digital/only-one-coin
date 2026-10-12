@@ -7,6 +7,7 @@ import { Link } from '@/i18n/navigation'
 import type { EnrollmentRow } from '@/lib/backoffice/types'
 import type { EnrollmentLedger } from '@/lib/backoffice/enrollments'
 import {
+  ENROLLMENT_LEDGER_STATES,
   enrollmentLedgerSearchParams,
   MIN_SEARCH_LENGTH,
   type EnrollmentLedgerQuery,
@@ -26,12 +27,14 @@ import {
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import {
+  classGroupTone,
   enrollmentTone,
   paymentTone,
   seatTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
+import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
 import { NewEnrollmentForm, type StudentSearchResult } from './new-enrollment-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -50,6 +53,10 @@ const SEARCH_DEBOUNCE_MS = 350
  * The enrollment ledger. Newest first, like the payments one: this screen
  * answers "who came in", and the tab next door answers "who is still owed a
  * decision".
+ *
+ * It opens on the current tab (OOC-115) — seats in a class group still
+ * selling or running, i.e. who is studying now. An enrollment whose class
+ * group finished never leaves the ledger, only the default view.
  *
  * It shows the seat and the money side by side because that pair is the whole
  * job — a confirmed seat with an unsettled payment is the case coordination
@@ -129,7 +136,10 @@ export function EnrollmentsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, query])
 
-  const { items: pageRows, total, pageSize, metrics, filterOptions } = ledger
+  const { items: pageRows, total, pageSize, metrics, filterOptions, counts } = ledger
+  /** Only the "all" tab mixes both sides, so only there does a row need to
+   * say which one it is on. */
+  const showGroupStatus = query.state === 'all'
 
   const activeFilters = [query.language, query.period].filter(
     (value) => value !== null,
@@ -174,6 +184,18 @@ export function EnrollmentsView({
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
+        {/* The counters come from the server, under the search and the other
+            filters. */}
+        <ListStateTabs
+          label={t('enrollments.state_label')}
+          active={query.state}
+          onSelect={(state) => navigate({ state })}
+          tabs={ENROLLMENT_LEDGER_STATES.map((state) => ({
+            key: state,
+            label: t(`enrollments.state_${state}`),
+            count: counts[state],
+          }))}
+        />
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('enrollments.search_label')}</span>
@@ -286,12 +308,12 @@ export function EnrollmentsView({
               icon={!narrowed ? 'enrollments' : 'search'}
               title={t(
                 !narrowed
-                  ? 'enrollments.empty_title'
+                  ? `enrollments.empty_${query.state}_title`
                   : 'enrollments.empty_search_title',
               )}
               body={t(
                 !narrowed
-                  ? 'enrollments.empty_body'
+                  ? `enrollments.empty_${query.state}_body`
                   : 'enrollments.empty_search_body',
               )}
             />
@@ -302,6 +324,7 @@ export function EnrollmentsView({
               columns={[
                 t('enrollments.col_student'),
                 t('enrollments.col_course'),
+                ...(showGroupStatus ? [t('enrollments.col_class_group_status')] : []),
                 t('enrollments.col_status'),
                 t('enrollments.col_seat'),
                 t('enrollments.col_payment'),
@@ -312,6 +335,9 @@ export function EnrollmentsView({
                 <tr>
                   <th className={thClass}>{t('enrollments.col_student')}</th>
                   <th className={thClass}>{t('enrollments.col_course')}</th>
+                  {showGroupStatus && (
+                    <th className={thClass}>{t('enrollments.col_class_group_status')}</th>
+                  )}
                   <th className={thClass}>{t('enrollments.col_status')}</th>
                   <th className={thClass}>{t('enrollments.col_seat')}</th>
                   <th className={thClass}>{t('enrollments.col_payment')}</th>
@@ -350,6 +376,15 @@ export function EnrollmentsView({
                         </span>
                       </span>
                     </td>
+
+                    {showGroupStatus && (
+                      <td className={tdClass}>
+                        <StatusBadge
+                          tone={classGroupTone[row.classGroupStatus]}
+                          label={t(`class_group_status.${row.classGroupStatus}`)}
+                        />
+                      </td>
+                    )}
 
                     <td className={tdClass}>
                       <StatusBadge
