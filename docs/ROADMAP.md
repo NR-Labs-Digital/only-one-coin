@@ -201,7 +201,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Consentimento do apoderado para aluno cadastrado pelo backoffice | OOC-72 | 21/09/2026 |
 | Livro de reclamações | OOC-58, OOC-63 | — |
 | Índice único de documento e consolidação de duplicatas | sem ticket | 21/09/2026 |
-| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113, OOC-114 (Pagos abre em Abertos — feito), OOC-115, OOC-116, OOC-118 | 12/10/2026 |
+| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113, OOC-114 (Pagos abre em Abertos — feito), OOC-115 (Matrículas abre em Vigentes — feito), OOC-116, OOC-118 | 12/10/2026 |
 | Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92, OOC-68 (convite de docente sem o seletor mock — feito), OOC-67 (home e badge de Pagos — feito) | — |
 
 ---
