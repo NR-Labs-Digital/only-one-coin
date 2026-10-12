@@ -9,6 +9,7 @@ import {
   jsonb,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -203,9 +204,13 @@ export const classGroups = pgTable(
     // (CatalogClassGroup.code doc comment) — carried for the backoffice
     // side. Default '' only so the column can land aditively.
     code: text("code").notNull().default(""),
-    // Plain text, not a `teachers` FK — there is no `teachers` table yet
-    // (docs/ROADMAP.md Sessão 36). Denormalized placeholder until then.
+    // Denormalized teacher name, kept until the contract step (CLAUDE.md §7);
+    // `teacher_id` below is the real link.
     teacherName: text("teacher_name").notNull().default(""),
+    // The teacher running it (OOC-77). Nullable: a class group can open before
+    // anybody is allocated, and every row written before this column has none.
+    // `teacher_name` stays until the contract step (CLAUDE.md §7).
+    teacherId: uuid("teacher_id").references((): AnyPgColumn => teachers.id, { onDelete: "restrict" }),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module
@@ -254,6 +259,7 @@ export const classGroups = pgTable(
     ),
     index("class_groups_source_class_group_id_idx").on(table.sourceClassGroupId),
     index("class_groups_course_id_idx").on(table.courseId),
+    index("class_groups_teacher_id_idx").on(table.teacherId),
     index("class_groups_academic_period_id_idx").on(table.academicPeriodId),
   ],
 );
@@ -359,6 +365,134 @@ export const guardians = pgTable(
       sql`"relationship" in ('mother', 'father', 'legal_guardian')`,
     ),
     check("guardians_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Teachers (OOC-77)
+// ---------------------------------------------------------------------------
+// A teacher leaves the roster as `inactive`, never as a deleted row: whoever
+// ran a class group and signed its grades is still pointed at by them. The
+// physical DELETE is refused by the database (0025), as for students.
+// `deleted_at` exists for a record created by mistake, not for leaving.
+//
+// `national_id` is stored normalized by the domain (student/fields.ts), so the
+// unique index sits on the raw column. `user_id` is the panel account
+// (Better Auth's "user".id, text) — its FK is hand-written in 0025, as in 0022.
+export const teachers = pgTable(
+  "teachers",
+  {
+    id: uuidPk(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    nationalIdType: text("national_id_type").notNull(),
+    nationalId: text("national_id").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    // ISO 3166-1 alpha-2 — where they are from; a selling point in the catalog.
+    nationality: text("nationality").notNull(),
+    // ISO 3166-1 alpha-2 — where they live; the contract needs an address.
+    country: text("country").notNull(),
+    // First-level division ("departamento" in Peru). Null outside it.
+    region: text("region"),
+    city: text("city").notNull(),
+    addressLine: text("address_line").notNull(),
+    status: text("status").notNull().default("active"),
+    userId: text("user_id"),
+    ...softDeletable(),
+  },
+  (table) => [
+    check("teachers_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
+    check("teachers_status_check", sql`${table.status} in ('active', 'inactive')`),
+    // The same normal form as normalizeNationalId (no spaces, dots or dashes,
+    // upper case): the unique index sits on the raw column, so a value written
+    // un-normalized would slip past it.
+    check(
+      "teachers_national_id_normalized_check",
+      sql`${table.nationalId} = upper(regexp_replace(${table.nationalId}, '[[:space:].-]', '', 'g'))`,
+    ),
+    uniqueIndex("teachers_national_id_uidx")
+      .on(table.nationalIdType, table.nationalId)
+      .where(sql`${table.deletedAt} is null`),
+    uniqueIndex("teachers_user_id_uidx").on(table.userId),
+  ],
+);
+
+// The languages a teacher is cleared to run a class group in — the same text
+// as `courses.language` (there is no languages table, CLAUDE.md §1). Rewritten
+// as a set when the file is edited.
+export const teacherLanguages = pgTable(
+  "teacher_languages",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    language: text("language").notNull(),
+    ...timestamps(),
+  },
+  (table) => [uniqueIndex("teacher_languages_teacher_id_language_uidx").on(table.teacherId, table.language)],
+);
+
+// Weekly windows a teacher is free in. `time`, not `timestamptz`: "Tuesday at
+// 19:00" is a wall-clock time in America/Lima, the same thing as a class
+// group's `slots` — there is no instant to put a zone on. The one documented
+// exception to "timestamptz sempre" (packages/db/CLAUDE.md). Overlapping
+// windows are refused by the domain; the database would need btree_gist.
+export const teacherAvailability = pgTable(
+  "teacher_availability",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    weekday: text("weekday").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    check(
+      "teacher_availability_weekday_check",
+      sql`${table.weekday} in ('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')`,
+    ),
+    check("teacher_availability_time_range_check", sql`${table.startTime} < ${table.endTime}`),
+    // Whole minutes only: the domain speaks HH:mm, so seconds would be lost on
+    // the round-trip.
+    check(
+      "teacher_availability_whole_minutes_check",
+      sql`extract(second from ${table.startTime}) = 0 and extract(second from ${table.endTime}) = 0`,
+    ),
+    uniqueIndex("teacher_availability_slot_uidx").on(table.teacherId, table.weekday, table.startTime),
+  ],
+);
+
+// Signed contracts, filed. A row exists only once a contract was filed, and
+// file, start and end come together (CLAUDE.md §1) — all three NOT NULL;
+// "no contract" is no row. Append-only (0025 lock): correcting a filing is
+// filing a new one. The current contract is the latest by `created_at`, which
+// is the filing date. The bytes live in the bucket under `object_key`.
+// `uploaded_by` is Better Auth's "user".id — FK hand-written in 0025.
+export const teacherContracts = pgTable(
+  "teacher_contracts",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    objectKey: text("object_key").notNull(),
+    fileName: text("file_name").notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+    startsOn: timestamp("starts_on", { withTimezone: true }).notNull(),
+    endsOn: timestamp("ends_on", { withTimezone: true }).notNull(),
+    uploadedBy: text("uploaded_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("teacher_contracts_object_key_uidx").on(table.objectKey),
+    index("teacher_contracts_teacher_id_created_at_idx").on(table.teacherId, table.createdAt),
+    check("teacher_contracts_file_size_check", sql`${table.fileSizeBytes} > 0`),
+    check("teacher_contracts_period_check", sql`${table.startsOn} <= ${table.endsOn}`),
   ],
 );
 

@@ -1,0 +1,2 @@
+ALTER TABLE "teacher_availability" ADD CONSTRAINT "teacher_availability_whole_minutes_check" CHECK (extract(second from "teacher_availability"."start_time") = 0 and extract(second from "teacher_availability"."end_time") = 0);--> statement-breakpoint
+ALTER TABLE "teachers" ADD CONSTRAINT "teachers_national_id_normalized_check" CHECK ("teachers"."national_id" = upper(regexp_replace("teachers"."national_id", '[[:space:].-]', '', 'g')));

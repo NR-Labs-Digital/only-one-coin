@@ -26,6 +26,14 @@ export { Student, StudentPropsSchema, StudentFieldsSchema, CreateStudentSchema }
 export type { StudentProps, CreateStudentDTO } from "./student/Student.js";
 export type { IStudentRepository } from "./student/StudentRepository.js";
 export {
+  Teacher,
+  TeacherPropsSchema,
+  TeacherFieldsSchema,
+  CreateTeacherSchema,
+  TeacherStatusSchema,
+} from "./teacher/Teacher.js";
+export type { TeacherProps, CreateTeacherDTO, TeacherStatus } from "./teacher/Teacher.js";
+export {
   Guardian,
   GuardianPropsSchema,
   GuardianFieldsSchema,

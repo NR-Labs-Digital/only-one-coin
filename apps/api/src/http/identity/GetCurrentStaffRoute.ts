@@ -30,10 +30,10 @@ const GetCurrentStaffResponseSchema = z.object({
 // read for the client, it does not touch persistence or enforce a business
 // rule.
 //
-// `teacherId` is always null for now — there is no `teachers` table yet
-// (docs/ROADMAP.md Sessão 36). A `teacher` account still authenticates and
-// reaches this route; the panel just cannot narrow it to "their own class
-// groups" until that table exists.
+// `teacherId` is always null for now — the `teachers` table exists (OOC-77),
+// but nothing links a panel account to a teacher record yet (OOC-80). A
+// `teacher` account still authenticates and reaches this route; the panel just
+// cannot narrow it to "their own class groups" until that link exists.
 export const getCurrentStaffRoute = RouteBuilder.get("/me")
   .docs({
     tags: ["Identity"],
