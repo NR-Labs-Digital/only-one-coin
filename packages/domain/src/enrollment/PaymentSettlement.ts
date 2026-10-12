@@ -27,8 +27,8 @@ export interface IPaymentSettlementRepository {
    * (zero rows → `PaymentAlreadySettledError`); approving confirms a reserved
    * seat and refuses a released one (`PaymentSeatReleasedError`); rejecting
    * releases a reserved seat and gives it back to the class group; a confirmed
-   * seat (a monthly module) is left alone either way. Outbox and audit entry in
-   * the same transaction. The portal account, when asked for, in the same
+   * seat (a monthly module) is left alone either way. Who decided, when and
+   * why, the outbox and the audit entry in the same transaction. The portal account, when asked for, in the same
    * transaction.
    */
   settle(params: {
@@ -36,6 +36,9 @@ export interface IPaymentSettlementRepository {
     enrollmentId: string;
     classGroupId: string;
     to: "approved" | "rejected";
+    /** Written on the payment row itself (OOC-112) — the ledger reads the
+     * decision from there; `audit` stays the trail. */
+    decision: { by: string; at: Date; rejectionReason: PaymentRejectionReason | null };
     notifications: EmailNotification[];
     audit: AuditLogEntry;
     /** Approving only: create the student's portal account in the same

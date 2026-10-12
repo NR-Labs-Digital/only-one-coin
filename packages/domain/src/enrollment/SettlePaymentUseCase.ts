@@ -86,6 +86,11 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
       enrollmentId: target.enrollmentId,
       classGroupId: target.classGroupId,
       to,
+      decision: {
+        by: input.actorId,
+        at: now,
+        rejectionReason: input.decision.kind === "reject" ? input.decision.reason : null,
+      },
       notifications,
       audit: {
         actorId: input.actorId,
@@ -95,7 +100,7 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
           input.decision.kind === "reject"
             ? { enrollmentId: target.enrollmentId, reason: input.decision.reason, note: input.decision.note }
             : { enrollmentId: target.enrollmentId },
-        at: new Date(),
+        at: now,
       },
       portalAccess,
     });

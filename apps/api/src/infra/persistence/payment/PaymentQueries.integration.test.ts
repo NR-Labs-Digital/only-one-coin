@@ -108,8 +108,14 @@ type SeedKey = keyof SeededPayments["operationOf"];
 /**
  * Four payments in the suite's period, a minute apart, oldest first: one
  * nobody has sent a receipt for, one whose receipt was screened and flagged,
- * one approved (with its audit entry) and one rejected.
+ * one approved and one rejected. The approval also has an audit entry by
+ * someone else, which the ledger must not read.
  */
+/** Thirty seconds after the payment came in. */
+function decidedAtOf(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + 30_000);
+}
+
 /** What OCR level 1 left on the under-review payment's receipt. */
 type SeedReading = "read" | "failed" | "none";
 
@@ -159,6 +165,9 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
         operationNumber: operationOf[entry.key],
         createdAt,
         updatedAt: createdAt,
+        // A decided payment always says when (payments_decided_at_check);
+        // nobody is named, as on a row decided outside the panel.
+        decidedAt: entry.status === "approved" || entry.status === "rejected" ? decidedAtOf(createdAt) : null,
       })
       .returning({ id: payments.id });
     ids[entry.key] = payment!.id;
@@ -220,8 +229,11 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
     });
   }
 
+  await tx.execute(
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values ('usr_payment_queries_trail', 'Solo en la trilla', 'usr_payment_queries_trail@example.com', true, 'billing')`,
+  );
   await tx.insert(auditLog).values({
-    actorId: "usr_payment_queries_integration",
+    actorId: "usr_payment_queries_trail",
     action: "payment.approved",
     targetId: ids.approved,
     metadata: { test: true },
@@ -359,15 +371,26 @@ describe("ListPaymentsQuery", () => {
     });
   });
 
-  it("names who decided and when, from the audit trail", async () => {
+  it("reads when it was decided from the payment, never from the audit trail", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
+      const [row] = await tx.select({ decidedAt: payments.decidedAt }).from(payments).where(eq(payments.id, seeded.approved));
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "approved" });
 
-      expect(ledger.items[0]!.decidedAt).not.toBeNull();
-      // The actor id in the seed matches no Better Auth user: the name is null, not an error.
-      expect(ledger.items[0]!.decidedByName).toBeNull();
       expect(ledger.items[0]!.id).toBe(seeded.approved);
+      expect(ledger.items[0]!.decidedAt).toEqual(row!.decidedAt);
+      // The trail names someone; the payment names nobody — the ledger
+      // follows the payment.
+      expect(ledger.items[0]!.decidedByName).toBeNull();
+    });
+  });
+
+  it("an open payment has no decision", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "pending" });
+
+      expect(ledger.items[0]).toMatchObject({ decidedAt: null, decidedByName: null });
     });
   });
 
@@ -378,7 +401,7 @@ describe("ListPaymentsQuery", () => {
       await tx.execute(
         sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values (${userId}, 'Caja Prueba', ${`${userId}@example.com`}, true, 'billing')`,
       );
-      await tx.insert(auditLog).values({ actorId: userId, action: "payment.rejected", targetId: seeded.rejected, metadata: { test: true } });
+      await tx.update(payments).set({ decidedBy: userId }).where(eq(payments.id, seeded.rejected));
 
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "rejected" });
 
