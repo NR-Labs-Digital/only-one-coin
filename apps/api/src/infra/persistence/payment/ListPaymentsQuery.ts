@@ -1,4 +1,4 @@
-import { academicPeriods, auditLog, classGroups, courses, enrollments, payments, planPrices, students } from "@ooc/db";
+import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, students } from "@ooc/db";
 import type { PaymentMethod } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -53,7 +53,7 @@ export interface PaymentListRow {
   expectedAmountCents: number;
   currency: "PEN";
   submittedAt: Date;
-  /** From the audit trail, not from `payments.updated_at`: the row's
+  /** `payments.decided_at` (OOC-112), not `payments.updated_at`: the row's
    * timestamp moves for reasons other than the decision. */
   decidedAt: Date | null;
   decidedByName: string | null;
@@ -81,7 +81,6 @@ export interface PaymentListResult {
 
 /** A payment nobody has decided yet — what the review queue lists. */
 export const OPEN_STATUSES: ("pending" | "under_review")[] = ["pending", "under_review"];
-const DECISION_ACTIONS = ["payment.approved", "payment.rejected"];
 
 /**
  * The free-text search both Payments reads share: student name, course and
@@ -104,21 +103,6 @@ export class ListPaymentsQuery {
 
   async run(filters: PaymentListFilters = {}): Promise<PaymentListResult> {
     const page = Math.max(1, Math.floor(filters.page ?? 1));
-
-    // The decision that speaks for the payment: the latest approval or
-    // rejection written against it. DrizzlePaymentSettlementRepository writes
-    // exactly one, but the read does not lean on that — a second entry would
-    // otherwise duplicate the row.
-    const decision = this.db
-      .selectDistinctOn([auditLog.targetId], {
-        targetId: auditLog.targetId,
-        actorId: auditLog.actorId,
-        createdAt: auditLog.createdAt,
-      })
-      .from(auditLog)
-      .where(inArray(auditLog.action, DECISION_ACTIONS))
-      .orderBy(auditLog.targetId, desc(auditLog.createdAt))
-      .as("decision");
 
     const where = and(
       // A retired enrollment takes its payments out of the ledger with it;
@@ -143,11 +127,11 @@ export class ListPaymentsQuery {
         lastName: students.lastName,
         courseName: courses.name,
         expectedAmountCents: planPrices.amountCents,
-        decidedAt: decision.createdAt,
+        decidedAt: payments.decidedAt,
         // "user" is Better Auth's table, not modelled in the Drizzle schema —
-        // raw SQL, as in DrizzleStaffUserLookup. An actor with no account
-        // (deleted, or a system actor) reads as no name rather than an error.
-        decidedByName: sql<string | null>`(select "name" from "user" where "id" = ${decision.actorId})`,
+        // raw SQL, as in DrizzleStaffUserLookup. A payment decided outside the
+        // panel (seed, legacy import) has no reviewer and reads as no name.
+        decidedByName: sql<string | null>`(select "name" from "user" where "id" = ${payments.decidedBy})`,
       })
       .from(payments)
       .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
@@ -155,8 +139,6 @@ export class ListPaymentsQuery {
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
-      // `audit_log.target_id` is text — it names targets of every kind.
-      .leftJoin(decision, eq(decision.targetId, sql`${payments.id}::text`))
       .where(where)
       .orderBy(
         ...(filters.sort === "oldest"

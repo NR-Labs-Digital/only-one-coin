@@ -152,6 +152,8 @@ async function seedLedger(): Promise<void> {
       enrollmentId: enrollmentIdOf.get(studentIdOf.get(`LEDGER${i}`)!)!,
       idempotencyKey: `ledger-integration-${i}`,
       status: COMBOS[i % COMBOS.length]!.payment!,
+      // A decided payment always says when (payments_decided_at_check).
+      decidedAt: ["approved", "rejected"].includes(COMBOS[i % COMBOS.length]!.payment!) ? new Date() : null,
       method: "yape",
       amountCents: 10000,
       operationNumber: `OPLEDGER${String(i).padStart(4, "0")}`,

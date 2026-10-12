@@ -154,9 +154,9 @@ async function seed(): Promise<void> {
   ].map((row) => ({ ...row, classGroupId: GROUP, planPriceId: PLAN_PRICE })));
 
   await db.insert(payments).values([
-    { id: PAID, enrollmentId: ON_OLD_FILE, status: "approved", createdAt: at(10), updatedAt: at(20) },
-    { id: WAITING, enrollmentId: ON_NEW_FILE, status: "pending", createdAt: at(11), updatedAt: at(11) },
-    { id: STRANGERS_PAYMENT, enrollmentId: STRANGERS, status: "approved", createdAt: at(12), updatedAt: at(12) },
+    { id: PAID, enrollmentId: ON_OLD_FILE, status: "approved", createdAt: at(10), updatedAt: at(20), decidedAt: at(20) },
+    { id: WAITING, enrollmentId: ON_NEW_FILE, status: "pending", createdAt: at(11), updatedAt: at(11), decidedAt: null },
+    { id: STRANGERS_PAYMENT, enrollmentId: STRANGERS, status: "approved", createdAt: at(12), updatedAt: at(12), decidedAt: at(12) },
   ].map((row, i) => ({ ...row, idempotencyKey: `portal-integration-${i}`, method: "yape", amountCents: 12000 })));
 
   const [hold] = await db

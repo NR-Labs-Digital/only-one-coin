@@ -563,6 +563,11 @@ export const enrollments = pgTable(
     check("enrollments_origin_check", sql`"origin" in ('whatsapp', 'web')`),
     index("enrollments_student_id_idx").on(table.studentId),
     index("enrollments_class_group_id_idx").on(table.classGroupId),
+    // A confirmed, live seat per class group — Enrollments' default list and
+    // the "active student" count (OOC-112).
+    index("enrollments_confirmed_class_group_id_idx")
+      .on(table.classGroupId)
+      .where(sql`${table.seatStatus} = 'confirmed' and ${table.deletedAt} is null`),
   ],
 );
 
@@ -702,10 +707,35 @@ export const payments = pgTable(
     // provides it upfront. Uniqueness against fraud lives on
     // payment_receipts, not here (see below).
     operationNumber: text("operation_number"),
+    // The decision, as data to read (OOC-112). `audit_log` stays the trail
+    // and is still written in the same transaction; these columns are what
+    // the ledger sorts and filters on without joining it. `decided_by` has a
+    // hand-written FK to Better Auth's "user" (0027) and is null for rows
+    // decided outside the panel (seed, legacy import). `rejection_reason` is
+    // the reason code only — the reviewer's free-text note stays in the trail.
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decidedBy: text("decided_by"),
+    rejectionReason: text("rejection_reason"),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex("payments_idempotency_key_uidx").on(table.idempotencyKey),
+    // Decided ⇔ dated: a settled payment always says when.
+    check(
+      "payments_decided_at_check",
+      sql`("status" in ('approved', 'rejected')) = ("decided_at" is not null)`,
+    ),
+    check("payments_decided_by_check", sql`"decided_by" is null or "decided_at" is not null`),
+    // Only a rejection carries a reason. Nullable on a rejection on purpose:
+    // the legacy import's PAGOS ERRONEOS bucket has none to give.
+    check(
+      "payments_rejection_reason_check",
+      sql`"rejection_reason" is null or ("status" = 'rejected' and "rejection_reason" in ('amount_mismatch', 'illegible', 'duplicate', 'not_a_receipt', 'other'))`,
+    ),
+    // The open queue — Payments' default list and the badge (OOC-112).
+    index("payments_open_created_at_idx")
+      .on(table.createdAt)
+      .where(sql`${table.status} in ('pending', 'under_review')`),
     check(
       "payments_status_check",
       sql`"status" in ('pending', 'under_review', 'approved', 'rejected')`,

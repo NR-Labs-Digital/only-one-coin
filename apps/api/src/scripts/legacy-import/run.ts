@@ -180,6 +180,11 @@ async function commitRecords(app: AppContainer, records: LegacyRecord[]) {
         methodDetail: record.methodDetail,
         amountCents: record.amountCents,
         operationNumber: record.operationNumber,
+        // The spreadsheet already settled every row it imports except the
+        // "under review" ones (payments_decided_at_check). It records no
+        // decision date or reviewer, so the import date stands in and nobody
+        // is named.
+        decidedAt: record.paymentStatus === "under_review" ? null : new Date(),
       });
     });
     inserted++;

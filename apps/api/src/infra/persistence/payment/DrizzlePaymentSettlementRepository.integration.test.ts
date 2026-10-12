@@ -34,6 +34,8 @@ const COURSE = "018f2b5c-8000-7000-8000-000000000002";
 const PLAN = "018f2b5c-8000-7000-8000-000000000003";
 const PLAN_PRICE = "018f2b5c-8000-7000-8000-000000000004";
 const GROUP = "018f2b5c-8000-7000-8000-000000000005";
+const REVIEWER = "usr_billing";
+const DECIDED_AT = new Date("2026-03-10T15:00:00.000Z");
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 class RolledBack extends Error {}
@@ -63,6 +65,12 @@ async function rolledBack(fn: (tx: Tx) => Promise<void>): Promise<void> {
 }
 
 async function seedCatalog(tx: Tx): Promise<void> {
+  // The reviewer: payments.decided_by is a foreign key to Better Auth's
+  // "user" (0027), which is not in the Drizzle schema.
+  await tx.execute(
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
+        values (${REVIEWER}, 'Caja', 'billing.settle@test.local', true, 'billing', now(), now())`,
+  );
   await tx.insert(academicPeriods).values({
     id: PERIOD,
     name: "Ciclo de prueba (settlement integration)",
@@ -125,7 +133,23 @@ async function openPayment(
 }
 
 function audit(paymentId: string, action: string): AuditLogEntry {
-  return { actorId: "usr_billing", action, targetId: paymentId, metadata: { test: true }, at: new Date() };
+  return { actorId: REVIEWER, action, targetId: paymentId, metadata: { test: true }, at: DECIDED_AT };
+}
+
+const approval = { by: REVIEWER, at: DECIDED_AT, rejectionReason: null };
+const rejection = { by: REVIEWER, at: DECIDED_AT, rejectionReason: "illegible" as const };
+
+async function decisionColumns(tx: Tx, paymentId: string) {
+  const [row] = await tx
+    .select({
+      status: payments.status,
+      decidedAt: payments.decidedAt,
+      decidedBy: payments.decidedBy,
+      rejectionReason: payments.rejectionReason,
+    })
+    .from(payments)
+    .where(eq(payments.id, paymentId));
+  return row!;
 }
 
 async function seatsTaken(tx: Tx): Promise<number> {
@@ -145,7 +169,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
     });
   });
 
-  it("approving confirms the seat, writes the audit entry and the e-mail", async () => {
+  it("approving confirms the seat, records who decided and when, writes the audit entry and the e-mail", async () => {
     await rolledBack(async (tx) => {
       const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
       const { paymentId, enrollmentId } = await openPayment(tx);
@@ -155,6 +179,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
         enrollmentId,
         classGroupId: GROUP,
         to: "approved",
+        decision: approval,
         notifications: [
           {
             templateKey: "payment_approved",
@@ -169,8 +194,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
       });
 
       expect(result.seatStatus).toBe("confirmed");
-      const [payment] = await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, paymentId));
-      expect(payment!.status).toBe("approved");
+      expect(await decisionColumns(tx, paymentId)).toEqual({
+        status: "approved",
+        decidedAt: DECIDED_AT,
+        decidedBy: REVIEWER,
+        rejectionReason: null,
+      });
       const entries = await tx.select().from(auditLog).where(eq(auditLog.targetId, paymentId));
       expect(entries.map((entry) => entry.action)).toEqual(["payment.approved"]);
       const mails = await tx.select().from(outbox).where(eq(outbox.dedupeKey, `payment_approved:${paymentId}:student`));
@@ -179,7 +208,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
     });
   });
 
-  it("rejecting releases the seat and gives it back to the class group once", async () => {
+  it("rejecting releases the seat once and records who decided, when and why", async () => {
     await rolledBack(async (tx) => {
       const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
       const { paymentId, enrollmentId } = await openPayment(tx);
@@ -189,6 +218,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
         enrollmentId,
         classGroupId: GROUP,
         to: "rejected",
+        decision: rejection,
         notifications: [],
         audit: audit(paymentId, "payment.rejected"),
         portalAccess: null,
@@ -196,6 +226,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       expect(result.seatStatus).toBe("released");
       expect(await seatsTaken(tx)).toBe(0);
+      expect(await decisionColumns(tx, paymentId)).toEqual({
+        status: "rejected",
+        decidedAt: DECIDED_AT,
+        decidedBy: REVIEWER,
+        rejectionReason: "illegible",
+      });
     });
   });
 
@@ -205,13 +241,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
       const { paymentId, enrollmentId } = await openPayment(tx);
       const params = { paymentId, enrollmentId, classGroupId: GROUP, notifications: [], portalAccess: null };
 
-      await repository.settle({ ...params, to: "rejected", audit: audit(paymentId, "payment.rejected") });
+      await repository.settle({ ...params, to: "rejected", decision: rejection, audit: audit(paymentId, "payment.rejected") });
       await expect(
-        repository.settle({ ...params, to: "approved", audit: audit(paymentId, "payment.approved") }),
+        repository.settle({ ...params, to: "approved", decision: approval, audit: audit(paymentId, "payment.approved") }),
       ).rejects.toBeInstanceOf(PaymentAlreadySettledError);
 
-      const [payment] = await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, paymentId));
-      expect(payment!.status).toBe("rejected");
+      expect(await decisionColumns(tx, paymentId)).toMatchObject({ status: "rejected", rejectionReason: "illegible" });
       expect(await seatsTaken(tx)).toBe(0);
     });
   });
@@ -227,14 +262,19 @@ describe("DrizzlePaymentSettlementRepository", () => {
           enrollmentId,
           classGroupId: GROUP,
           to: "approved",
+          decision: approval,
           notifications: [],
           audit: audit(paymentId, "payment.approved"),
           portalAccess: null,
         }),
       ).rejects.toBeInstanceOf(PaymentSeatReleasedError);
 
-      const [payment] = await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, paymentId));
-      expect(payment!.status).toBe("pending");
+      expect(await decisionColumns(tx, paymentId)).toEqual({
+        status: "pending",
+        decidedAt: null,
+        decidedBy: null,
+        rejectionReason: null,
+      });
     });
   });
 
@@ -248,6 +288,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
         enrollmentId,
         classGroupId: GROUP,
         to: "rejected",
+        decision: rejection,
         notifications: [],
         audit: audit(paymentId, "payment.rejected"),
         portalAccess: null,
@@ -269,11 +310,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
         enrollmentId,
         classGroupId: GROUP,
         to: "approved",
+        decision: approval,
         notifications: [],
         audit: audit(paymentId, "payment.approved"),
         portalAccess: {
           studentId,
-          actorId: "usr_billing",
+          actorId: REVIEWER,
           activation,
           at: new Date(),
           notify: (account, tokenId) => [portalCredentialsEmail(account, "https://student.test/access/x", tokenId, "es-PE")],
@@ -317,11 +359,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
           enrollmentId,
           classGroupId: GROUP,
           to: "approved",
+          decision: approval,
           notifications: [],
           audit: audit(paymentId, "payment.approved"),
           portalAccess: {
             studentId,
-            actorId: "usr_billing",
+            actorId: REVIEWER,
             activation: newPortalToken("activation"),
             at: new Date(),
             notify: (account, tokenId) => [portalCredentialsEmail(account, "https://student.test/access/x", tokenId, "es-PE")],

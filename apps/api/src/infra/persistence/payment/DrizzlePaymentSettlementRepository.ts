@@ -42,7 +42,13 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
       // UPDATEs on the row lock — the second sees the first's status.
       const [moved] = await tx
         .update(payments)
-        .set({ status: params.to, updatedAt: sql`now()` })
+        .set({
+          status: params.to,
+          decidedAt: params.decision.at,
+          decidedBy: params.decision.by,
+          rejectionReason: params.decision.rejectionReason,
+          updatedAt: sql`now()`,
+        })
         .where(and(eq(payments.id, params.paymentId), inArray(payments.status, OPEN)))
         .returning({ id: payments.id });
       if (!moved) throw new PaymentAlreadySettledError();

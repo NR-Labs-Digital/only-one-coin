@@ -292,6 +292,9 @@ async function main(): Promise<void> {
             // there are no discounts (CLAUDE.md §1).
             amountCents: groupPrice[item.groupSlot]!.amountCents,
             operationNumber: item.operationNumber,
+            // A decided payment always says when (payments_decided_at_check).
+            // The seed has no reviewer, so nobody is named.
+            decidedAt: item.paymentStatus === "approved" || item.paymentStatus === "rejected" ? item.createdAt : null,
             createdAt: item.createdAt,
             updatedAt: item.createdAt,
           })),

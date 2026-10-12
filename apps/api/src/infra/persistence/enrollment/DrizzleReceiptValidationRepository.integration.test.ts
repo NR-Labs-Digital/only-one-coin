@@ -138,6 +138,8 @@ async function payment(
       enrollmentId: enrollment!.id,
       idempotencyKey: `validate-integration-${n}`,
       status: params.status ?? "pending",
+      // A decided payment always says when (payments_decided_at_check).
+      decidedAt: params.status === "approved" || params.status === "rejected" ? new Date() : null,
       method: "yape",
       amountCents: 15000,
       operationNumber: "08312457",

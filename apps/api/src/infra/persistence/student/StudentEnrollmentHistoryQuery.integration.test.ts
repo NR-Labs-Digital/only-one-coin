@@ -119,7 +119,14 @@ async function seed(): Promise<void> {
     { enrollmentId: RELEASED, status: "rejected", operationNumber: "OPHIST4", createdAt: at(13) },
     { enrollmentId: RETIRED, status: "approved", operationNumber: "OPHIST5", createdAt: at(14) },
     { enrollmentId: SOMEONE_ELSES, status: "approved", operationNumber: "OPHIST6", createdAt: at(15) },
-  ].map((row, i) => ({ ...row, idempotencyKey: `history-integration-${i}`, method: "yape", amountCents: 12000 })));
+  ].map((row, i) => ({
+    ...row,
+    idempotencyKey: `history-integration-${i}`,
+    method: "yape",
+    amountCents: 12000,
+    // A decided payment always says when (payments_decided_at_check).
+    decidedAt: row.status === "approved" || row.status === "rejected" ? row.createdAt : null,
+  })));
 }
 
 describe("StudentEnrollmentHistoryQuery", () => {
