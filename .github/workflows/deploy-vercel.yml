@@ -56,7 +56,9 @@ jobs:
       # Directory configurado no próprio projeto Vercel (apps/app,
       # apps/landing), e `vercel deploy` a partir do subdiretório só
       # funciona sem Root Directory setado — ver docs/ARCHITECTURE.md §5.9.
-      - run: npx --yes vercel@latest deploy --prod --yes --project "${{ matrix.name }}" --token "$VERCEL_TOKEN"
+      # O build roda na Vercel e também baixa as fontes do Google: mesmo
+      # retry do CI, só para essa falha.
+      - run: scripts/retry-on-font-fetch.sh npx --yes vercel@latest deploy --prod --yes --project "${{ matrix.name }}" --token "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: team_7z0Q3VrHICSlv9IQXFt2p8SA
