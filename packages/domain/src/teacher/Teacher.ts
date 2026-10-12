@@ -99,13 +99,20 @@ function refineAvailability(value: { availability: WeeklySlot[] }, ctx: z.Refine
   const byStart = windows.sort(
     (a, b) => a.weekday.localeCompare(b.weekday) || a.startTime.localeCompare(b.startTime) || a.index - b.index,
   );
-  for (let i = 1; i < byStart.length; i += 1) {
-    const previous = byStart[i - 1]!;
-    const current = byStart[i]!;
-    if (current.weekday === previous.weekday && current.startTime < previous.endTime) {
-      const later = Math.max(previous.index, current.index);
+  // Compare against the window of the day that runs latest so far, not just the
+  // previous one: a short window nested inside a long one (09–18 holding 10–11
+  // and 12–13) must still be caught after the first nested window.
+  let furthest: (typeof byStart)[number] | undefined;
+  for (const current of byStart) {
+    if (furthest?.weekday !== current.weekday) {
+      furthest = current;
+      continue;
+    }
+    if (current.startTime < furthest.endTime) {
+      const later = Math.max(furthest.index, current.index);
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["availability", later], message: "invalid" });
     }
+    if (current.endTime > furthest.endTime) furthest = current;
   }
 }
 

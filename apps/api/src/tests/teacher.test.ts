@@ -93,6 +93,19 @@ describe("Teacher.create", () => {
     ).toEqual(["teacher.availability.1:invalid"]);
   });
 
+  it("refuses a window nested inside an earlier long window, not just the one before it", () => {
+    expect(
+      codesOf({
+        ...VALID,
+        availability: [
+          { weekday: "wed", startTime: "09:00", endTime: "18:00" },
+          { weekday: "wed", startTime: "10:00", endTime: "11:00" },
+          { weekday: "wed", startTime: "12:00", endTime: "13:00" },
+        ],
+      }),
+    ).toEqual(["teacher.availability.1:invalid", "teacher.availability.2:invalid"]);
+  });
+
   it("accepts the same hours on different weekdays", () => {
     expect(
       codesOf({
