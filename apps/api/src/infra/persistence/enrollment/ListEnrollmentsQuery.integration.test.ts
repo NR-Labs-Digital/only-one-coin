@@ -1,5 +1,6 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -250,5 +251,76 @@ describe("search", () => {
 
     const expected = VISIBLE.filter((i) => `Alumno${i}`.includes("Alumno1")).length;
     expect(found.total).toBe(expected);
+  });
+});
+
+describe("tabs (OOC-115)", () => {
+  // Even rows sit on GROUP_A, odd rows on GROUP_B.
+  const visibleOn = (group: "A" | "B") => VISIBLE.filter((i) => (i % 2 === 0) === (group === "A"));
+
+  it("a class group still selling or running is current", async () => {
+    await db.update(classGroups).set({ status: "in_progress" }).where(eq(classGroups.id, GROUP_B));
+
+    const current = await readAll({ state: "current" });
+    const ended = await readAll({ state: "ended" });
+
+    expect(current.total).toBe(VISIBLE.length);
+    expect(ended.total).toBe(0);
+  });
+
+  it("a finished or closed class group moves its enrollments to ended, with no write on the enrollment", async () => {
+    await db.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_B));
+
+    const current = await readAll({ state: "current" });
+    const ended = await readAll({ state: "ended" });
+    const all = await readAll();
+
+    expect(current.total).toBe(visibleOn("A").length);
+    expect(ended.total).toBe(visibleOn("B").length);
+    expect(ended.rows.every((row) => row.classGroupStatus === "finished")).toBe(true);
+    expect(all.total).toBe(VISIBLE.length);
+
+    await db.update(classGroups).set({ status: "closed" }).where(eq(classGroups.id, GROUP_B));
+    expect((await readAll({ state: "ended" })).total).toBe(visibleOn("B").length);
+  });
+
+  it("counts every tab under the other filters, whichever tab is on screen", async () => {
+    await db.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_B));
+
+    const onCurrent = await query.run({ academicPeriodId: PERIOD, state: "current" });
+    const onEnded = await query.run({ academicPeriodId: PERIOD, state: "ended" });
+    const narrowed = await query.run({ academicPeriodId: PERIOD, state: "current", language: LANGUAGE_B });
+
+    const expected = { current: visibleOn("A").length, ended: visibleOn("B").length, all: VISIBLE.length };
+    expect(onCurrent.counts).toEqual(expected);
+    expect(onEnded.counts).toEqual(expected);
+    expect(narrowed.counts).toEqual({ current: 0, ended: visibleOn("B").length, all: visibleOn("B").length });
+    expect(narrowed.total).toBe(0);
+  });
+
+  it("an enrollment on a retired class group still lists under ended and all", async () => {
+    await db
+      .update(classGroups)
+      .set({ status: "closed", deletedAt: new Date() })
+      .where(eq(classGroups.id, GROUP_B));
+
+    const ended = await readAll({ state: "ended" });
+    const all = await readAll();
+
+    expect(ended.total).toBe(visibleOn("B").length);
+    expect(all.total).toBe(VISIBLE.length);
+  });
+
+  it("a draft class group is in neither tab", async () => {
+    // Unreachable through the product (a draft takes no seat); written by hand
+    // to pin that neither tab claims it if one ever appears.
+    await db.update(classGroups).set({ status: "draft" }).where(eq(classGroups.id, GROUP_B));
+
+    const current = await query.run({ academicPeriodId: PERIOD, state: "current" });
+    const ended = await query.run({ academicPeriodId: PERIOD, state: "ended" });
+
+    expect(current.total).toBe(visibleOn("A").length);
+    expect(ended.total).toBe(0);
+    expect(current.counts).toEqual({ current: visibleOn("A").length, ended: 0, all: VISIBLE.length });
   });
 });
