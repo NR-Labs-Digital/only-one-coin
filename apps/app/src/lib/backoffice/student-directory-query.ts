@@ -9,9 +9,20 @@
 export interface StudentDirectoryQuery {
   page: number
   q: string
-  status: 'active' | 'inactive' | null
+  /** The tab (OOC-116). Opens on `active`: who studies now. */
+  status: StudentDirectoryTab
   minor: boolean
 }
+
+export type StudentDirectoryTab = 'active' | 'former' | 'no_enrollment' | 'all'
+
+/** Tab order on screen; the first is the default. */
+export const STUDENT_DIRECTORY_TABS: readonly StudentDirectoryTab[] = [
+  'active',
+  'former',
+  'no_enrollment',
+  'all',
+]
 
 /** Mirrors the API's floor on `q` — shorter than this is no search at all. */
 export const MIN_SEARCH_LENGTH = 2
@@ -38,7 +49,7 @@ export function parseStudentDirectoryQuery(
   return {
     page: Number.isInteger(page) && page >= 1 ? page : 1,
     q: q.length >= MIN_SEARCH_LENGTH && q.length <= MAX_SEARCH_LENGTH ? q : '',
-    status: status === 'active' || status === 'inactive' ? status : null,
+    status: STUDENT_DIRECTORY_TABS.find((tab) => tab === status) ?? 'active',
     minor: first(params.minor) === 'true',
   }
 }
@@ -48,7 +59,7 @@ export function studentDirectorySearchParams(query: StudentDirectoryQuery): URLS
   const search = new URLSearchParams()
   if (query.page > 1) search.set('page', String(query.page))
   if (query.q) search.set('q', query.q)
-  if (query.status) search.set('status', query.status)
+  if (query.status !== 'active') search.set('status', query.status)
   if (query.minor) search.set('minor', 'true')
   return search
 }

@@ -154,7 +154,6 @@
       "title": "Alunos",
       "search_label": "Buscar aluno",
       "search_placeholder": "Nome, documento, e-mail ou telefone",
-      "filter_all": "Todos",
       "filters": "Filtros",
       "col_student": "Aluno",
       "col_document": "Documento",
@@ -163,7 +162,7 @@
       "col_courses": "Cursos ativos",
       "minor": "Menor de idade",
       "empty_title": "Nenhum resultado",
-      "empty_body": "Tente outro nome, documento ou e-mail, ou remova o filtro de status.",
+      "empty_body": "Tente outro nome, documento ou e-mail, ou remova o filtro de idade.",
       "page_prev": "Anteriores",
       "page_next": "Próximos",
       "page_status": "{from}–{to} de {total}",
@@ -171,12 +170,19 @@
       "locked_body": "Você chega a um aluno pela sua própria turma. A lista completa é da coordenação.",
       "new_student": "Novo aluno",
       "load_error_title": "Não foi possível carregar a lista",
-      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar assim, avise a equipe técnica."
+      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar assim, avise a equipe técnica.",
+      "tabs_label": "Situação do aluno",
+      "tab_active": "Ativos",
+      "tab_former": "Ex-alunos",
+      "tab_no_enrollment": "Sem matrícula",
+      "tab_all": "Todos",
+      "empty_tab_body": "Tente outra aba, outro nome ou documento, ou tire o filtro de idade."
     },
     "student_status": {
       "active": "Ativo",
+      "former": "Ex-aluno",
       "under_review": "Em revisão",
-      "inactive": "Inativo"
+      "no_enrollment": "Sem matrícula"
     },
     "new_student": {
       "title": "Novo aluno",

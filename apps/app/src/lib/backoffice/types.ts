@@ -157,11 +157,13 @@ export interface StaffRoleChange {
 }
 
 /**
- * Derived, not a stored column: `active` = has at least one active enrollment,
- * `under_review` = has an enrollment/payment waiting on review, `inactive` =
- * neither. Kept as a UI concept until the rule is confirmed.
+ * Derived by `apps/api` from the student's seats, not a stored column
+ * (OOC-116): `active` = a current enrollment (confirmed seat in a class group
+ * enrolling or in progress), `former` = confirmed seats, none current,
+ * `under_review` = only a reserved seat (pickers only — Payments settles it),
+ * `no_enrollment` = nothing confirmed or reserved.
  */
-export type StudentStatus = 'active' | 'under_review' | 'inactive'
+export type StudentStatus = 'active' | 'former' | 'under_review' | 'no_enrollment'
 
 export type GuardianRelationship = 'mother' | 'father' | 'legal_guardian'
 

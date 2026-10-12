@@ -154,7 +154,6 @@
       "title": "Alumnos",
       "search_label": "Buscar alumno",
       "search_placeholder": "Nombre, documento, correo o teléfono",
-      "filter_all": "Todos",
       "filters": "Filtros",
       "col_student": "Alumno",
       "col_document": "Documento",
@@ -163,7 +162,7 @@
       "col_courses": "Cursos activos",
       "minor": "Menor de edad",
       "empty_title": "Sin resultados",
-      "empty_body": "Prueba con otro nombre, documento o correo, o quita el filtro de estado.",
+      "empty_body": "Prueba con otro nombre, documento o correo, o quita el filtro de edad.",
       "page_prev": "Anteriores",
       "page_next": "Siguientes",
       "page_status": "{from}–{to} de {total}",
@@ -171,12 +170,19 @@
       "locked_body": "Llegas a un alumno desde tu propia aula. El listado completo es de coordinación.",
       "new_student": "Nuevo alumno",
       "load_error_title": "No se pudo cargar el padrón",
-      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico."
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
+      "tabs_label": "Situación del alumno",
+      "tab_active": "Activos",
+      "tab_former": "Exalumnos",
+      "tab_no_enrollment": "Sin matrícula",
+      "tab_all": "Todos",
+      "empty_tab_body": "Prueba otra pestaña, otro nombre o documento, o quita el filtro de edad."
     },
     "student_status": {
       "active": "Activo",
+      "former": "Exalumno",
       "under_review": "En revisión",
-      "inactive": "Inactivo"
+      "no_enrollment": "Sin matrícula"
     },
     "new_student": {
       "title": "Nuevo alumno",

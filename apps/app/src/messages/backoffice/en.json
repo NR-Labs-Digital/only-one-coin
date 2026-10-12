@@ -154,7 +154,6 @@
       "title": "Students",
       "search_label": "Search student",
       "search_placeholder": "Name, ID, email or phone",
-      "filter_all": "All",
       "filters": "Filters",
       "col_student": "Student",
       "col_document": "ID",
@@ -163,7 +162,7 @@
       "col_courses": "Active courses",
       "minor": "Minor",
       "empty_title": "No results",
-      "empty_body": "Try another name, ID or email, or clear the status filter.",
+      "empty_body": "Try another name, ID or email, or clear the age filter.",
       "page_prev": "Previous",
       "page_next": "Next",
       "page_status": "{from}–{to} of {total}",
@@ -171,12 +170,19 @@
       "locked_body": "You reach a student through your own class group. The full list belongs to coordination.",
       "new_student": "New student",
       "load_error_title": "Could not load the directory",
-      "load_error_body": "The system did not respond. Reload the page; if it keeps happening, tell the technical team."
+      "load_error_body": "The system did not respond. Reload the page; if it keeps happening, tell the technical team.",
+      "tabs_label": "Student standing",
+      "tab_active": "Active",
+      "tab_former": "Former",
+      "tab_no_enrollment": "No enrollment",
+      "tab_all": "All",
+      "empty_tab_body": "Try another tab, another name or document, or clear the age filter."
     },
     "student_status": {
       "active": "Active",
+      "former": "Former student",
       "under_review": "In review",
-      "inactive": "Inactive"
+      "no_enrollment": "No enrollment"
     },
     "new_student": {
       "title": "New student",
