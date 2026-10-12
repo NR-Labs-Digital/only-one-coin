@@ -1,12 +1,11 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import {
-  getTeacher,
-  listCourses,
-} from '@/lib/backoffice/mock-data'
+import { listCatalogCourses } from '@/lib/backoffice/catalog'
+import { getTeacher, toLanguage } from '@/lib/backoffice/teachers'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
+  canEditTeachers,
   canManageTeachers,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
@@ -20,6 +19,8 @@ import { TeacherFile } from './teacher-file'
  * A teacher may open their own and nobody else's. Answering with `notFound` for
  * somebody else's id, rather than hiding a link, is the point: the id in the
  * URL is guessable, and a hidden button stops nobody (anti-IDOR, CLAUDE.md §8).
+ * The API enforces the same: `GET /teachers/:id` is the roster's readers only,
+ * and a teacher reading their own file waits for the account link (OOC-79).
  */
 export default async function TeacherDetailPage({
   params,
@@ -36,16 +37,14 @@ export default async function TeacherDetailPage({
   if (restricted && staff.teacherId !== teacherId) notFound()
   if (!restricted && !canManageTeachers(staff.role)) notFound()
 
-  const teacher = getTeacher(teacherId)
+  const [teacher, courses] = await Promise.all([getTeacher(teacherId), listCatalogCourses()])
   if (!teacher) notFound()
 
   /* Clearing a teacher for a language means picking from the catalog — a new
      language is a course row, never a code branch (CLAUDE.md §1). */
-  const catalogue = [
-    ...new Map(
-      listCourses().map((course) => [course.language.id, course.language]),
-    ).values(),
-  ].sort((a, b) => a.name.localeCompare(b.name))
+  const catalogue = [...new Set((courses ?? []).map((course) => course.language.name))]
+    .sort((a, b) => a.localeCompare(b))
+    .map(toLanguage)
 
   return (
     <div className="flex flex-col gap-5">
@@ -67,7 +66,7 @@ export default async function TeacherDetailPage({
       <TeacherFile
         teacher={teacher}
         catalogue={catalogue}
-        canEdit={canManageTeachers(staff.role)}
+        canEdit={canEditTeachers(staff.role)}
       />
     </div>
   )

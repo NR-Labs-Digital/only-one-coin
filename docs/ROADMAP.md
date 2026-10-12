@@ -45,7 +45,7 @@ entra aqui ou vira sessão nova.
 | 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
-| 3 — Backoffice | 1 | 4 | 5 | Alunos, turmas, Pagos e equipe reais; docentes, notas, conciliação e relatórios ainda mock |
+| 3 — Backoffice | 1 | 4 | 5 | Alunos, turmas, Pagos, equipe e docentes reais; área do docente, notas, conciliação e relatórios ainda mock |
 | 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32); faltam enlace da aula, módulos/mensalidade, trâmites pagos e documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
@@ -127,7 +127,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
 | 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Em review: busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75). Faltam suspensão, exportação e a medição com 30k |
 | 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 e OOC-104 |
-| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | 🟡 OOC-77 feito (tabelas, trava, entidade). Faltam OOC-78 → 82 |
+| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | 🟡 OOC-77 (tabelas, trava, entidade) e OOC-78 (CRUD na API; diretório, cadastro, ficha, disponibilidade e saída do quadro reais) feitos. Faltam OOC-79 → 82 |
 | 37 | **Frequência e notas** | Registro por sessão, interface para celular do docente, tolerante a conexão ruim | Funciona em 3G lento; perda de conexão não perde o registro | ⬜ OOC-38, OOC-102 |
 | 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados | ⬜ OOC-39 |
 | 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40). Home do painel com dado real (OOC-67), agregada ao vivo — exceção decidida pelo dono em 11/10/2026: os relatórios desta sessão seguem em view noturna, a home não ("matrículas de hoje" numa view noturna seria sempre zero) |

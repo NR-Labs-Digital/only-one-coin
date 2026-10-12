@@ -36,6 +36,8 @@ export interface ClassGroupFilter {
   /** Free text over code, course name and teacher name. */
   q?: string;
   id?: string;
+  /** The class groups allocated to one teacher (OOC-78). */
+  teacherId?: string;
 }
 
 /** Without a period or a search the list would be every class group ever opened. */
@@ -59,6 +61,7 @@ export class ListClassGroupsQuery {
       filter.id ? eq(classGroups.id, filter.id) : undefined,
       filter.periodId ? eq(classGroups.academicPeriodId, filter.periodId) : undefined,
       filter.courseId ? eq(classGroups.courseId, filter.courseId) : undefined,
+      filter.teacherId ? eq(classGroups.teacherId, filter.teacherId) : undefined,
       filter.status ? eq(classGroups.status, filter.status) : undefined,
       term
         ? or(
@@ -68,7 +71,7 @@ export class ListClassGroupsQuery {
           )
         : undefined,
     ];
-    const unscoped = !filter.id && !filter.periodId && !term;
+    const unscoped = !filter.id && !filter.periodId && !filter.teacherId && !term;
 
     const waitlistCount = sql<number>`(
       select count(*) from ${waitlistEntries}

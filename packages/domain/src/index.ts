@@ -32,7 +32,22 @@ export {
   CreateTeacherSchema,
   TeacherStatusSchema,
 } from "./teacher/Teacher.js";
-export type { TeacherProps, CreateTeacherDTO, TeacherStatus } from "./teacher/Teacher.js";
+export type { TeacherProps, CreateTeacherDTO, TeacherDataDTO, TeacherStatus } from "./teacher/Teacher.js";
+export { TeacherDataSchema, TeacherAvailabilitySchema } from "./teacher/Teacher.js";
+export type { ITeacherRepository } from "./teacher/TeacherRepository.js";
+export { TeacherAlreadyRegisteredError, TeacherNotFoundError } from "./teacher/errors.js";
+export { RegisterTeacherUseCase, type RegisterTeacherInput } from "./teacher/RegisterTeacherUseCase.js";
+export { UpdateTeacherUseCase, type UpdateTeacherInput } from "./teacher/UpdateTeacherUseCase.js";
+export {
+  UpdateTeacherAvailabilityUseCase,
+  type UpdateTeacherAvailabilityInput,
+} from "./teacher/UpdateTeacherAvailabilityUseCase.js";
+export {
+  SetTeacherRosterStatusUseCase,
+  TEACHER_LEFT_ROSTER_BAN_REASON,
+  type SetTeacherRosterStatusInput,
+  type SetTeacherRosterStatusOutput,
+} from "./teacher/SetTeacherRosterStatusUseCase.js";
 export {
   Guardian,
   GuardianPropsSchema,

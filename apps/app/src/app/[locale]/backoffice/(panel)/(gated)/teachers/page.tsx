@@ -1,33 +1,33 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
-import {
-  listCourses,
-  listTeachers,
-} from '@/lib/backoffice/mock-data'
+import { listCatalogCourses } from '@/lib/backoffice/catalog'
+import { listTeachers, parseTeacherDirectoryQuery, toLanguage } from '@/lib/backoffice/teachers'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateTeacher,
   canManageTeachers,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import type { CourseLanguage } from '@/lib/backoffice/types'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeachersView } from './teachers-view'
 
 /**
  * Teacher roster (`docs/REQUISITOS.md` RF03): who can teach what, who is free,
- * and who still owes a grade or a certificate.
+ * and whose contract needs chasing.
  *
- * The list is a client component so search and filters work with no backend;
- * the data and the role gates come from the server. Hiding the roster from a
- * teacher and the "new teacher" button from coordination are screen
- * conveniences — the enforcing check is the role declared on the route in
- * `apps/api` (CLAUDE.md §8).
+ * Tab, search, filters and paging live in the URL and run in Postgres
+ * (OOC-78): this server component reads them from `searchParams` and fetches
+ * exactly the page asked for; the client view only rewrites the URL. Hiding
+ * the roster from a teacher and the "new teacher" button from coordination are
+ * screen conveniences — the enforcing check is the role declared on the route
+ * in `apps/api` (CLAUDE.md §8).
  */
 export default async function TeachersPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { locale } = await params
   setRequestLocale(locale)
@@ -55,20 +55,37 @@ export default async function TeachersPage({
     )
   }
 
+  const query = parseTeacherDirectoryQuery(await searchParams)
+  const [directory, courses] = await Promise.all([listTeachers(query), listCatalogCourses()])
+
+  /* API down or erroring. An honest failure screen, never an empty roster —
+     "no teachers" and "could not load" are different facts. */
+  if (!directory || !courses) {
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={t('teachers.title')} />
+        <EmptyState
+          icon="alert"
+          title={t('teachers.load_error_title')}
+          body={t('teachers.load_error_body')}
+        />
+      </div>
+    )
+  }
+
   /* The languages a teacher may be cleared for are the catalog's, not a list of
      their own: a new language is a course row, never a code branch
      (CLAUDE.md §1). */
-  const languages = [
-    ...new Map(
-      listCourses().map((course) => [course.language.id, course.language]),
-    ).values(),
-  ].sort((a, b) => a.name.localeCompare(b.name)) satisfies CourseLanguage[]
+  const languages = [...new Set(courses.map((course) => course.language.name))]
+    .sort((a, b) => a.localeCompare(b))
+    .map(toLanguage)
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('teachers.title')} />
       <TeachersView
-        rows={listTeachers()}
+        directory={directory}
+        query={query}
         languages={languages}
         canCreate={canCreateTeacher(staff.role)}
       />

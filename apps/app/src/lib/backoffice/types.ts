@@ -816,40 +816,20 @@ export interface TeacherRow {
   activeClassGroups: number
   /** Seats taken across those class groups — the teaching load, in people. */
   studentCount: number
-  /** Final grades still open across the class groups they run. */
-  pendingGrades: number
-  /** Finished class groups of theirs still owing a certificate. */
-  pendingCertificates: number
+  /** `YYYY-MM-DD` — the day the file was registered. */
   joinedAt: string
 }
 
 /**
- * Full teacher file. The class groups are the ones already allocated to them;
- * the availability is what the next allocation is drawn from — the two are read
- * together, which is why the file carries both.
+ * Full teacher file, as `GET /api/v1/teachers/:id` answers it (OOC-78). The
+ * class groups are the ones allocated through `teacher_id`; the availability
+ * is what the next allocation is drawn from — the two are read together, which
+ * is why the file carries both.
  */
 export interface TeacherDetail extends TeacherRow {
   availability: AvailabilitySlot[]
-  classGroups: ClassGroupRow[]
+  classGroups: ClassGroupItem[]
 }
-
-/** What the creation form fills in. The rest is derived from the class groups. */
-export type NewTeacher = Pick<
-  TeacherRow,
-  | 'firstName'
-  | 'lastName'
-  | 'nationalIdType'
-  | 'nationalId'
-  | 'email'
-  | 'phone'
-  | 'nationality'
-  | 'country'
-  | 'region'
-  | 'city'
-  | 'addressLine'
-  | 'languages'
-  | 'contract'
-> & { availability: AvailabilitySlot[] }
 
 /* -------------------------------------------------------------------------- */
 /* Payments — the ledger, the human decision and the validation parameters     */

@@ -1322,7 +1322,6 @@
       "col_teacher": "Teacher",
       "col_languages": "Languages",
       "col_class_groups": "Class groups",
-      "col_pending": "Pending",
       "col_status": "Status",
       "free": "Free",
       "pending_grades": "{count, plural, one {# grade} other {# grades}}",
@@ -1359,7 +1358,11 @@
       "tab_inactive": "Inactive",
       "empty_inactive_title": "No inactive teacher",
       "empty_inactive_body": "The whole roster is still active.",
-      "contract_inactive": "The contract is only watched while the teacher is active."
+      "contract_inactive": "The contract is only watched while the teacher is active.",
+      "load_error_title": "The teacher roster could not be loaded",
+      "load_error_body": "The system did not respond. Reload the page; if nothing changes, let the tech team know.",
+      "save_error_duplicate": "A teacher is already registered with this document.",
+      "save_error_generic": "Could not save. Try again in a moment."
     },
     "teacher_status": {
       "active": "Active",
@@ -1408,7 +1411,8 @@
       "none_body": "With no windows there is nothing to allocate a class group into.",
       "legend_free": "Free window",
       "legend_allocated": "Allocated class group",
-      "legend_outside": "Class group outside the window"
+      "legend_outside": "Class group outside the window",
+      "overlap": "Overlaps another window on the same day"
     },
     "teacher_home": {
       "metric_class_groups": "Active class groups",
