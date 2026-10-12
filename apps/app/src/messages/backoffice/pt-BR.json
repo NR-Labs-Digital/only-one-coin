@@ -987,7 +987,18 @@
       "edit_title": "Editar turma",
       "save_changes": "Salvar alterações",
       "invalid_time_range": "O horário de término deve ser depois do de início.",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "teacher_none": "Sem docente atribuído",
+      "teacher_off_roster": "{name} (fora do quadro ou do idioma)",
+      "teacher_load_error": "Não foi possível carregar o quadro de docentes. Tente de novo mais tarde.",
+      "teacher_none_for_language": "Nenhum docente ativo ensina {language}. Adicione o idioma na ficha do docente.",
+      "teacher_legacy_hint": "Antes constava: {name}",
+      "teacher_outside_availability": "O horário está fora da disponibilidade que o docente declarou. Dá para salvar mesmo assim.",
+      "teacher_schedule_clash": "O docente já tem turma no mesmo horário neste período: {codes}. Dá para salvar mesmo assim.",
+      "teacher_unassigned": "Sem docente",
+      "filter_unassigned": "Só turmas sem docente",
+      "unassigned_banner": "{count, plural, one {# turma em andamento está sem docente do quadro atribuído.} other {# turmas em andamento estão sem docente do quadro atribuído.}}",
+      "unassigned_show": "Ver quais"
     },
     "periods": {
       "label": "Período",
@@ -1742,7 +1753,9 @@
       "waitlist_student_not_found": "Não encontramos esse aluno.",
       "waitlist_entry_closed": "Esse aluno já saiu da lista.",
       "waitlist_entry_not_found": "Esse registro de espera não existe mais.",
-      "entry_not_found": "Esse item não existe mais no catálogo."
+      "entry_not_found": "Esse item não existe mais no catálogo.",
+      "class_group_teacher_unavailable": "Esse docente não está mais no quadro ativo. Escolha outro.",
+      "class_group_teacher_language": "Esse docente não ensina o idioma do curso. Escolha outro ou adicione o idioma na ficha dele."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",

@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { CatalogErrorKey, ClassGroupItem, ClassGroupStatus, CourseRow } from '@/lib/backoffice/types'
+import type {
+  CatalogErrorKey,
+  ClassGroupItem,
+  ClassGroupStatus,
+  CourseRow,
+  TeacherOption,
+} from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import { NEXT_CLASS_GROUP_STATUS } from '@/lib/backoffice/class-group-status'
 import { Card } from '@/components/backoffice/ui'
@@ -37,7 +43,7 @@ function editBaseline(group: ClassGroupItem): string {
   return JSON.stringify([
     group.courseId,
     group.code,
-    group.teacherName,
+    group.teacherId,
     group.slots,
     group.capacity,
     group.seatsTaken,
@@ -67,10 +73,13 @@ type Confirming = 'advance' | 'retire' | 'restore' | null
 export function ClassGroupActions({
   group,
   courses,
+  teachers,
   canManage,
 }: {
   group: ClassGroupItem
   courses: CourseRow[]
+  /** The roster for the edit form's teacher picker; null when unreadable. */
+  teachers: TeacherOption[] | null
   canManage: boolean
 }) {
   const t = useTranslations('bo')
@@ -264,6 +273,7 @@ export function ClassGroupActions({
               mode="edit"
               courses={courses}
               periods={[]}
+              teachers={teachers}
               initial={group}
               onDone={saved}
               onCancel={() => setEditing(false)}

@@ -2,6 +2,7 @@ import { classGroups, courses, planPrices, plans } from "@ooc/db";
 import { and, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "./sellableClassGroup.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 export interface PublicCatalogCourse {
   id: string;
@@ -107,7 +108,7 @@ export class GetPublicCatalogQuery {
         id: classGroups.id,
         courseId: classGroups.courseId,
         code: classGroups.code,
-        teacherName: classGroups.teacherName,
+        teacherName: classGroupTeacherName,
         slots: classGroups.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,

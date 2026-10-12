@@ -18,6 +18,7 @@ import { FakeAcademicPeriodRepository, FakeAuditLogRepository, FakeClassGroupRep
 
 const ACTOR = "usr_coord";
 const COURSE_ID = uuid();
+const TEACHER_ID = uuid();
 const SLOTS = [{ weekday: "mon" as const, startTime: "18:00", endTime: "19:30" }];
 
 let periods: FakeAcademicPeriodRepository;
@@ -57,7 +58,8 @@ beforeEach(async () => {
       courseId: COURSE_ID,
       academicPeriodId: source.id,
       code: "ING-0101",
-      teacherName: "Ana Torres",
+      teacherId: TEACHER_ID,
+      legacyTeacherName: "",
       slots: SLOTS,
       startsOn: new Date("2026-08-03T05:00:00Z"),
       endsOn: new Date("2026-10-31T05:00:00Z"),
@@ -74,7 +76,6 @@ beforeEach(async () => {
       courseId: COURSE_ID,
       academicPeriodId: source.id,
       code: "ING-0102",
-      teacherName: "Luis Rojas",
       slots: SLOTS,
       capacity: 30,
     }),
@@ -83,7 +84,6 @@ beforeEach(async () => {
     courseId: COURSE_ID,
     academicPeriodId: source.id,
     code: "ING-0103",
-    teacherName: "",
     slots: SLOTS,
     capacity: 20,
   });
@@ -111,6 +111,9 @@ describe("DuplicateClassGroupsUseCase", () => {
     const bySource = new Map(copies.map((copy) => [copy.sourceClassGroupId, copy]));
     expect(bySource.get(running.id)?.capacity).toBe(running.capacity);
     expect(bySource.get(draft.id)?.capacity).toBe(draft.capacity);
+    // Same teacher in the new period (CLAUDE.md §1); nobody stays nobody.
+    expect(bySource.get(running.id)?.teacherId).toBe(TEACHER_ID);
+    expect(bySource.get(draft.id)?.teacherId).toBeNull();
     expect(bySource.size).toBe(2);
   });
 

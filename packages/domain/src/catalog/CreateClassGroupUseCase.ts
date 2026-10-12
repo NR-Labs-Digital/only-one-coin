@@ -5,6 +5,8 @@ import { CourseNotFoundError, PeriodNotFoundError } from "./errors.js";
 import type { IAcademicPeriodRepository } from "./ports/IAcademicPeriodRepository.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
+import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
+import { assertAssignableTeacher } from "./assignableTeacher.js";
 
 export interface CreateClassGroupInput {
   actorId: string;
@@ -18,6 +20,7 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
     private readonly courses: ICourseRepository,
     private readonly periods: IAcademicPeriodRepository,
     private readonly classGroups: IClassGroupRepository,
+    private readonly teachers: ITeacherRepository,
     private readonly auditLog: IAuditLogRepository,
   ) {
     super();
@@ -30,6 +33,9 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
     const period = await this.periods.findById(input.classGroup.academicPeriodId);
     if (!period || period.isDeleted) throw new PeriodNotFoundError();
 
+    const teacherId = input.classGroup.teacherId ?? null;
+    if (teacherId !== null) await assertAssignableTeacher(this.teachers, teacherId, course.language);
+
     const group = ClassGroup.create(input.classGroup);
     if (input.publish) group.advanceTo("enrolling");
 
@@ -39,7 +45,7 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
       actorId: input.actorId,
       action: "catalog.class_group.created",
       targetId: created.id,
-      metadata: { courseId: course.id, academicPeriodId: period.id, status: created.status },
+      metadata: { courseId: course.id, academicPeriodId: period.id, status: created.status, teacherId },
       at: created.createdAt,
     });
 

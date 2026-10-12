@@ -1,14 +1,17 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups, courses, teacherContracts } from "@ooc/db";
-import { Teacher, TeacherAlreadyRegisteredError, type CreateTeacherDTO } from "@ooc/domain";
-import { sql } from "drizzle-orm";
+import { ClassGroup, Teacher, TeacherAlreadyRegisteredError, type CreateTeacherDTO } from "@ooc/domain";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { DrizzleClassGroupRepository } from "@/infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
 import { DrizzleTeacherRepository } from "./DrizzleTeacherRepository.js";
 import { GetTeacherQuery } from "./GetTeacherQuery.js";
+import { ListTeacherOptionsQuery } from "./ListTeacherOptionsQuery.js";
 import { ListTeachersQuery } from "./ListTeachersQuery.js";
 
 /**
@@ -31,6 +34,7 @@ type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 class RolledBack extends Error {}
 
 const PERIOD = "018f2b5c-9000-7000-8000-000000000001";
+const PERIOD_NEXT = "018f2b5c-9000-7000-8000-000000000003";
 const COURSE = "018f2b5c-9000-7000-8000-000000000002";
 const UPLOADER = "usr_teacher_integration";
 
@@ -102,12 +106,18 @@ async function seedCatalog(tx: Tx): Promise<void> {
     startsOn: new Date("2026-03-01T00:00:00.000Z"),
     endsOn: new Date("2026-07-31T00:00:00.000Z"),
   });
+  await tx.insert(academicPeriods).values({
+    id: PERIOD_NEXT,
+    name: "Ciclo siguiente (teacher integration)",
+    startsOn: new Date("2026-08-01T00:00:00.000Z"),
+    endsOn: new Date("2026-12-31T00:00:00.000Z"),
+  });
   await tx.insert(courses).values({ id: COURSE, name: "Curso (teacher integration)", language: "Prueba", minAge: 12 });
 }
 
 let groupSequence = 0;
 
-async function allocate(tx: Db, teacherId: string, status: string, seatsTaken: number): Promise<string> {
+async function allocate(tx: Db, teacherId: string | null, status: string, seatsTaken: number): Promise<string> {
   groupSequence += 1;
   const [row] = await tx
     .insert(classGroups)
@@ -283,6 +293,95 @@ describe("GetTeacherQuery", () => {
       expect(file?.classGroups.map((item) => item.id)).toEqual([group]);
 
       expect(await get.run("018f2b5c-9000-7000-8000-00000000ffff")).toBeNull();
+    });
+  });
+});
+
+describe("Class group allocation (OOC-80)", () => {
+  const SLOT = { weekday: "tue" as const, startTime: "19:00", endTime: "20:30" };
+
+  it("writes teacher_id, reads the name from the file, and carries it into a duplicated period", async () => {
+    await rolledBack(async (tx) => {
+      const ana = await new DrizzleTeacherRepository(tx).create(Teacher.create(ANA));
+      const repository = new DrizzleClassGroupRepository(tx);
+      const list = new ListClassGroupsQuery(tx);
+
+      const group = await repository.create(
+        ClassGroup.create({ courseId: COURSE, academicPeriodId: PERIOD, code: "OOC80-A", slots: [SLOT], capacity: 20, teacherId: ana.id }),
+      );
+      const [item] = await list.run({ id: group.id });
+      expect(item).toEqual(
+        expect.objectContaining({ teacherId: ana.id, teacherName: "Ana Docente", legacyTeacherName: "" }),
+      );
+      // The search finds the class group by the teacher's file name.
+      expect((await list.run({ q: "Ana Docente" })).map((row) => row.id)).toContain(group.id);
+
+      const { copyable } = await repository.listForCopy(PERIOD);
+      await repository.insertCopies(PERIOD, PERIOD_NEXT, copyable.map((source) => ClassGroup.copyInto(source, PERIOD_NEXT)));
+      const copies = await list.run({ periodId: PERIOD_NEXT });
+      expect(copies.map((row) => row.teacherId)).toEqual([ana.id]);
+    });
+  });
+
+  it("flags the class groups still on the typed name and clears it once someone is allocated", async () => {
+    await rolledBack(async (tx) => {
+      const ana = await new DrizzleTeacherRepository(tx).create(Teacher.create(ANA));
+      const repository = new DrizzleClassGroupRepository(tx);
+      const list = new ListClassGroupsQuery(tx);
+
+      const legacyId = await allocate(tx, null, "enrolling", 0);
+      await tx.update(classGroups).set({ teacherName: "Prof. Ana (texto)" }).where(eq(classGroups.id, legacyId));
+      const linkedId = await allocate(tx, ana.id, "enrolling", 0);
+
+      const unassigned = await list.run({ periodId: PERIOD, unassigned: true });
+      expect(unassigned.map((row) => row.id)).toEqual([legacyId]);
+      expect(unassigned[0]).toEqual(expect.objectContaining({ teacherId: null, teacherName: "", legacyTeacherName: "Prof. Ana (texto)" }));
+
+      // Everywhere else the typed name still prints until someone is allocated.
+      const [printed] = await tx
+        .select({ name: classGroupTeacherName })
+        .from(classGroups)
+        .where(eq(classGroups.id, legacyId));
+      expect(printed?.name).toBe("Prof. Ana (texto)");
+
+      const legacy = (await repository.findById(legacyId))!;
+      legacy.update({ teacherId: ana.id });
+      await repository.update(legacy);
+
+      const [row] = await tx.select().from(classGroups).where(eq(classGroups.id, legacyId));
+      expect(row).toEqual(expect.objectContaining({ teacherId: ana.id, teacherName: "" }));
+      expect((await list.run({ periodId: PERIOD, unassigned: true })).map((item) => item.id)).toEqual([]);
+      expect((await list.run({ id: linkedId }))[0]?.teacherName).toBe("Ana Docente");
+    });
+  });
+});
+
+describe("ListTeacherOptionsQuery", () => {
+  it("lists the roster with languages, week and the class groups still ahead", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const ana = await teachers.create(Teacher.create(ANA));
+      const gone = Teacher.create(LUIS);
+      gone.leaveRoster();
+      await teachers.create(gone);
+
+      const ahead = await allocate(tx, ana.id, "enrolling", 0);
+      await allocate(tx, ana.id, "finished", 0);
+
+      const options = await new ListTeacherOptionsQuery(tx).run();
+      const mine = options.filter((option) => option.id === ana.id || option.id === gone.id);
+      expect(mine).toHaveLength(1);
+      expect(mine[0]).toEqual(
+        expect.objectContaining({
+          firstName: "Ana",
+          languages: ["Italiano (prueba)"],
+          availability: [
+            { weekday: "mon", startTime: "09:00", endTime: "12:00" },
+            { weekday: "tue", startTime: "19:00", endTime: "21:00" },
+          ],
+        }),
+      );
+      expect(mine[0]?.classGroups.map((group) => group.id)).toEqual([ahead]);
     });
   });
 });

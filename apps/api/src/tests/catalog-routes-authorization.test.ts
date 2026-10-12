@@ -38,6 +38,11 @@ const CASES: [string, string, Role][] = [
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "analyst"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
+  // The teacher picker (OOC-80) follows who opens class groups — reading the
+  // directory is not enough, and the roster carries no contact.
+  ["GET", "/api/v1/catalog/teacher-options", "analyst"],
+  ["GET", "/api/v1/catalog/teacher-options", "academic_supervisor"],
+  ["GET", "/api/v1/catalog/teacher-options", "teacher"],
   ["POST", `/api/v1/catalog/waitlist/${ID}/leave`, "support"],
 ];
 
