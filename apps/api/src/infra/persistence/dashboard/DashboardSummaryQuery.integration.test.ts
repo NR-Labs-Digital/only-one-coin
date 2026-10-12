@@ -167,6 +167,8 @@ async function seedEnrollment(tx: Tx, seed: EnrollmentSeed): Promise<string> {
       status: (seed.seatStatus ?? "confirmed") === "confirmed" ? "approved" : "pending",
       method: "yape",
       amountCents: 15000,
+      // A decided payment always says when (payments_decided_at_check).
+      decidedAt: (seed.seatStatus ?? "confirmed") === "confirmed" ? (seed.approvedAt ?? new Date()) : null,
     })
     .returning({ id: payments.id });
   if (seed.approvedAt) {
