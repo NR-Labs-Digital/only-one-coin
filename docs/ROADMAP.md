@@ -123,7 +123,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
 | 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | 🟡 Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. Falta MFA (OOC-29) |
-| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | 🟡 Fila real em Pagos (OOC-55): imagem por URL assinada, leitura da IA, veredito do semáforo, aprovar/rejeitar. Faltam ordenação por confiança, atalhos e reprocessar |
+| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | 🟡 Fila real em Pagos (OOC-55): imagem por URL assinada, leitura da IA, veredito do semáforo, aprovar/rejeitar. O livro abre em Abertos, com abas Abertos · Resolvidos · Todos e contador do servidor (OOC-114). Faltam ordenação por confiança, atalhos e reprocessar |
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
 | 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Em review: busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75). Faltam suspensão, exportação e a medição com 30k |
 | 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 e OOC-104 |
@@ -201,7 +201,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Consentimento do apoderado para aluno cadastrado pelo backoffice | OOC-72 | 21/09/2026 |
 | Livro de reclamações | OOC-58, OOC-63 | — |
 | Índice único de documento e consolidação de duplicatas | sem ticket | 21/09/2026 |
-| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113, OOC-114, OOC-115, OOC-118 | 12/10/2026 |
+| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113, OOC-114 (Pagos abre em Abertos — feito), OOC-115, OOC-116, OOC-118 | 12/10/2026 |
 | Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92, OOC-68 (convite de docente sem o seletor mock — feito), OOC-67 (home e badge de Pagos — feito) | — |
 
 ---
