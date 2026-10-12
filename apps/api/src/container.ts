@@ -27,6 +27,10 @@ import {
   ExpireSeatHoldsUseCase,
   PromoteUserRoleUseCase,
   RegisterStudentUseCase,
+  RegisterTeacherUseCase,
+  SetTeacherRosterStatusUseCase,
+  UpdateTeacherAvailabilityUseCase,
+  UpdateTeacherUseCase,
   UpdateStudentUseCase,
   SaveGuardianUseCase,
   RenamePlanUseCase,
@@ -78,6 +82,7 @@ import {
   type IStaffPasswordSetter,
   type IStaffUserLookup,
   type IStudentRepository,
+  type ITeacherRepository,
   type IUserRoleRepository,
 } from "@ooc/domain";
 import { loadConfig, type Config } from "./config.js";
@@ -125,6 +130,9 @@ import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
 import { StudentActivityQuery } from "./infra/persistence/student/StudentActivityQuery.js";
+import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTeacherRepository.js";
+import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
+import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
@@ -164,6 +172,7 @@ export interface AppRepositories {
   plan: IPlanRepository;
   student: IStudentRepository;
   guardian: IGuardianRepository;
+  teacher: ITeacherRepository;
   enrollment: IEnrollmentRepository;
   publicEnrollment: IPublicEnrollmentRepository;
   seatHold: ISeatHoldRepository;
@@ -187,6 +196,12 @@ export interface AppRepositories {
 }
 
 export interface AppUseCases {
+  teacher: {
+    register: RegisterTeacherUseCase;
+    update: UpdateTeacherUseCase;
+    updateAvailability: UpdateTeacherAvailabilityUseCase;
+    setRosterStatus: SetTeacherRosterStatusUseCase;
+  };
   student: {
     register: RegisterStudentUseCase;
     update: UpdateStudentUseCase;
@@ -268,6 +283,8 @@ export interface AppQueries {
   studentPortal: StudentPortalQuery;
   studentEnrollmentHistory: StudentEnrollmentHistoryQuery;
   studentActivity: StudentActivityQuery;
+  listTeachers: ListTeachersQuery;
+  getTeacher: GetTeacherQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
@@ -353,6 +370,7 @@ function buildContainer(): AppContainer {
   // Repositories
   const studentRepository = new DrizzleStudentRepository(db);
   const guardianRepository = new DrizzleGuardianRepository(db);
+  const teacherRepository = new DrizzleTeacherRepository(db);
   const enrollmentRepository = new DrizzleEnrollmentRepository(db);
   const publicEnrollmentRepository = new DrizzlePublicEnrollmentRepository(db);
   const planPriceLookup = new DrizzlePlanPriceLookup(db);
@@ -394,6 +412,9 @@ function buildContainer(): AppContainer {
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const updateStudent = new UpdateStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const saveGuardian = new SaveGuardianUseCase(studentRepository, guardianRepository, auditLogRepository);
+  const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
+  const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
+  const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
   const createManualEnrollment = new CreateManualEnrollmentUseCase(
     enrollmentRepository,
     planPriceLookup,
@@ -425,6 +446,11 @@ function buildContainer(): AppContainer {
   const completeInvite = new CompleteStaffInviteUseCase(staffInviteRepository, staffAccountProvisioner, auditLogRepository);
   const removeAccess = new RemoveStaffAccessUseCase(staffAccessRepository, auditLogRepository);
   const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, auditLogRepository);
+  const setTeacherRosterStatus = new SetTeacherRosterStatusUseCase(
+    teacherRepository,
+    staffAccessRepository,
+    auditLogRepository,
+  );
   const createPasswordReset = new CreateStaffPasswordResetUseCase(staffPasswordResetRepository, auditLogRepository);
   const renewPasswordReset = new RenewStaffPasswordResetUseCase(staffPasswordResetRepository);
   const cancelPasswordReset = new CancelStaffPasswordResetUseCase(staffPasswordResetRepository);
@@ -512,6 +538,8 @@ function buildContainer(): AppContainer {
   const getCourse = new GetCourseQuery(db);
   const listPeriods = new ListPeriodsQuery(db);
   const listClassGroups = new ListClassGroupsQuery(db);
+  const listTeachers = new ListTeachersQuery(db);
+  const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
   const listWaitlist = new ListWaitlistQuery(db);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
@@ -550,6 +578,7 @@ function buildContainer(): AppContainer {
       plan: planRepository,
       student: studentRepository,
       guardian: guardianRepository,
+      teacher: teacherRepository,
       enrollment: enrollmentRepository,
       publicEnrollment: publicEnrollmentRepository,
       seatHold: seatHoldRepository,
@@ -564,6 +593,12 @@ function buildContainer(): AppContainer {
       platformSettings: platformSettingsRepository,
     },
     useCases: {
+      teacher: {
+        register: registerTeacher,
+        update: updateTeacher,
+        updateAvailability: updateTeacherAvailability,
+        setRosterStatus: setTeacherRosterStatus,
+      },
       student: {
         register: registerStudent,
         update: updateStudent,
@@ -631,6 +666,8 @@ function buildContainer(): AppContainer {
       studentPortal,
       studentEnrollmentHistory,
       studentActivity,
+      listTeachers,
+      getTeacher,
       listEnrollments,
       listPayments,
       listPaymentReviewQueue,
