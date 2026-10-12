@@ -8,6 +8,7 @@ import type {
   ClassGroupItem,
   ClassGroupStatus,
   CourseRow,
+  TeacherOption,
 } from '@/lib/backoffice/types'
 import {
   Card,
@@ -55,12 +56,15 @@ export function ClassGroupsView({
   items,
   courses,
   periods,
+  teachers,
   selectedPeriodId,
   canManage,
 }: {
   items: ClassGroupItem[]
   courses: CourseRow[]
   periods: AcademicPeriodItem[]
+  /** The roster for the form's teacher picker; null when unreadable or not needed. */
+  teachers: TeacherOption[] | null
   selectedPeriodId: string | null
   canManage: boolean
 }) {
@@ -72,6 +76,8 @@ export function ClassGroupsView({
   const [language, setLanguage] = useState(ALL)
   const [status, setStatus] = useState<ClassGroupStatus | typeof ALL>(ALL)
   const [sort, setSort] = useState<Sort>('newest')
+  /** Only the class groups nobody is allocated to yet (OOC-80). */
+  const [unassigned, setUnassigned] = useState(false)
   /**
    * Language groups the user opened. Everything starts closed: with ~10
    * languages the open list is longer than a screen, and the first thing you
@@ -89,7 +95,9 @@ export function ClassGroupsView({
     [items],
   )
 
-  const activeFilters = (language !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0)
+  const activeFilters = (language !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + (unassigned ? 1 : 0)
+  /** Still being sold or taught with nobody allocated — what coordination has to resolve. */
+  const unassignedCount = items.filter((row) => row.active && ACTIVE.has(row.status) && !row.teacherId).length
   const narrowed = query.trim() !== '' || activeFilters > 0
 
   const filtered = useMemo(() => {
@@ -97,10 +105,14 @@ export function ClassGroupsView({
     return items.filter((row) => {
       if (language !== ALL && row.language !== language) return false
       if (status !== ALL && row.status !== status) return false
+      if (unassigned && row.teacherId) return false
       if (!needle) return true
-      return [row.courseName, row.code, row.teacherName].join(' ').toLowerCase().includes(needle)
+      return [row.courseName, row.code, row.teacherName, row.legacyTeacherName]
+        .join(' ')
+        .toLowerCase()
+        .includes(needle)
     })
-  }, [items, query, language, status])
+  }, [items, query, language, status, unassigned])
 
   /** By start date; a draft without dates goes last either way, then by code. */
   const sorted = useMemo(() => {
@@ -164,6 +176,7 @@ export function ClassGroupsView({
   function clearFilters() {
     setLanguage(ALL)
     setStatus(ALL)
+    setUnassigned(false)
   }
 
   function created(_id: string, outcome: ClassGroupFormOutcome) {
@@ -245,6 +258,16 @@ export function ClassGroupsView({
             </select>
           </label>
 
+          <label className="flex min-h-tap items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={unassigned}
+              onChange={(event) => setUnassigned(event.target.checked)}
+              className="size-4 accent-brand-blue"
+            />
+            {t('class_groups.filter_unassigned')}
+          </label>
+
           {activeFilters > 0 && (
             <button
               type="button"
@@ -299,11 +322,28 @@ export function ClassGroupsView({
             mode="create"
             courses={courses}
             periods={periods}
+            teachers={teachers}
             defaultPeriodId={selectedPeriodId}
             onDone={created}
             onCancel={() => setCreating(false)}
           />
         ))}
+
+      {unassignedCount > 0 && !unassigned && (
+        <Card className="flex flex-wrap items-center gap-3 p-4">
+          <p className="flex flex-1 items-start gap-2 text-sm text-ink">
+            <BoIcon name="alert" size={16} className="mt-0.5 shrink-0 text-amber-700" />
+            {t('class_groups.unassigned_banner', { count: unassignedCount })}
+          </p>
+          <button
+            type="button"
+            onClick={() => setUnassigned(true)}
+            className="inline-flex min-h-tap items-center rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+          >
+            {t('class_groups.unassigned_show')}
+          </button>
+        </Card>
+      )}
 
       {/* Drafts, enrolling and running, folded by language */}
       <section className="flex flex-col gap-3">

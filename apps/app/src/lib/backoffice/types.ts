@@ -511,7 +511,15 @@ export interface ClassGroupItem {
   courseActive: boolean
   academicPeriodId: string
   academicPeriodName: string
+  /** The teacher allocated from the roster (OOC-80); null = nobody yet. */
+  teacherId: string | null
+  /** The allocated teacher's name, from their file; empty when unallocated. */
   teacherName: string
+  /**
+   * The free text typed before teachers had a file. Only a hint for whoever
+   * links the class group to a real teacher — never shown as the teacher.
+   */
+  legacyTeacherName: string
   slots: WeeklySlotItem[]
   /** Null only on a draft. */
   startsOn: string | null
@@ -525,6 +533,22 @@ export interface ClassGroupItem {
   /** False once retired from the catalog — the row stays, off sale. */
   active: boolean
   waitlistCount: number
+}
+
+/**
+ * A teacher the class group form can allocate (OOC-80, `GET /catalog/teacher-options`):
+ * the roster only, with what the form needs to filter by language and to warn
+ * about the schedule — no document, contact or contract.
+ */
+export interface TeacherOption {
+  id: string
+  firstName: string
+  lastName: string
+  /** Catalog text, the same as `ClassGroupItem.language`. */
+  languages: string[]
+  availability: WeeklySlotItem[]
+  /** Their class groups not yet finished, closed or retired. */
+  classGroups: { id: string; code: string; academicPeriodId: string; slots: WeeklySlotItem[] }[]
 }
 
 /** A sales period: its own class groups, start dates and seats (CLAUDE.md §1). */
@@ -627,6 +651,8 @@ export type CatalogErrorKey =
   | 'waitlist_entry_closed'
   | 'waitlist_entry_not_found'
   | 'entry_not_found'
+  | 'class_group_teacher_unavailable'
+  | 'class_group_teacher_language'
 
 export interface PlanPriceItem {
   id: string

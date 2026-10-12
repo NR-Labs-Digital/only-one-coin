@@ -8,9 +8,11 @@ import type {
   ClassGroupItem,
   ClassGroupStatus,
   CourseRow,
+  TeacherOption,
   Weekday,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
+import { allocationWarnings, teachersForLanguage } from '@/lib/backoffice/teacher-allocation'
 import {
   isoToLimaDate,
   isoToLimaDateTime,
@@ -86,12 +88,18 @@ const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : nu
  * is a Lima date-time; an emptied field is sent as `null`, which the API reads
  * as "clear it". The edit sends only what changed against what was loaded.
  *
+ * The teacher comes from the roster (OOC-80): only active teachers who teach
+ * the course's language are offered, and the API repeats that check. A
+ * schedule outside the teacher's declared week, or on top of another of their
+ * class groups in the same period, is warned about — never refused.
+ *
  * Every write goes through `apps/api` — the browser never decides (CLAUDE.md §8).
  */
 export function ClassGroupForm({
   mode,
   courses,
   periods,
+  teachers,
   initial,
   defaultPeriodId,
   onDone,
@@ -100,6 +108,8 @@ export function ClassGroupForm({
   mode: 'create' | 'edit'
   courses: CourseRow[]
   periods: AcademicPeriodItem[]
+  /** The roster for the picker; null when it could not be read. */
+  teachers: TeacherOption[] | null
   initial?: ClassGroupItem
   /** The period on screen — what a new class group belongs to unless changed. */
   defaultPeriodId?: string | null
@@ -121,7 +131,8 @@ export function ClassGroupForm({
       '',
   )
   const [code, setCode] = useState(initial?.code ?? '')
-  const [teacherName, setTeacherName] = useState(initial?.teacherName ?? '')
+  /** '' = nobody allocated yet. */
+  const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '')
   const [weekdays, setWeekdays] = useState<Weekday[]>(loaded.weekdays)
   const [startTime, setStartTime] = useState(loaded.startTime)
   const [endTime, setEndTime] = useState(loaded.endTime)
@@ -182,7 +193,7 @@ export function ClassGroupForm({
     const patch: Record<string, unknown> = {}
     if (courseId !== initial.courseId) patch.courseId = courseId
     if (code.trim() !== initial.code) patch.code = code.trim()
-    if (teacherName.trim() !== initial.teacherName) patch.teacherName = teacherName.trim()
+    if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
     if (scheduleTouched) patch.slots = slots
     if (capacity !== initial.capacity) patch.capacity = capacity
     if (startsOn !== loaded.startsOn) patch.startsOn = dateOrNull(startsOn)
@@ -206,7 +217,7 @@ export function ClassGroupForm({
         courseId,
         academicPeriodId: periodId,
         code: code.trim(),
-        teacherName: teacherName.trim(),
+        teacherId: teacherId || null,
         slots,
         capacity,
         startsOn: dateOrNull(startsOn),
@@ -284,6 +295,30 @@ export function ClassGroupForm({
     )
   }
 
+  const courseLanguage = catalog.find((item) => item.id === courseId)?.language.name ?? ''
+  const offered = teachers ? teachersForLanguage(teachers, courseLanguage) : []
+  /** The one already on the class group stays visible even if they left the roster or the language. */
+  const currentOffRoster =
+    initial?.teacherId && !offered.some((teacher) => teacher.id === initial.teacherId)
+      ? initial
+      : null
+  const chosen = offered.find((teacher) => teacher.id === teacherId)
+  const warnings = chosen
+    ? allocationWarnings(chosen, slots, {
+        academicPeriodId: initial?.academicPeriodId ?? periodId,
+        classGroupId: initial?.id,
+      })
+    : null
+
+  function changeCourse(next: string) {
+    setCourseId(next)
+    // A teacher who does not teach the new course's language is not carried over.
+    const language = catalog.find((item) => item.id === next)?.language.name ?? ''
+    if (teachers && teacherId && !teachersForLanguage(teachers, language).some((item) => item.id === teacherId)) {
+      setTeacherId('')
+    }
+  }
+
   const languages = [...new Map(catalog.map((item) => [item.language.id, item.language])).values()].sort(
     (a, b) => a.name.localeCompare(b.name),
   )
@@ -301,7 +336,7 @@ export function ClassGroupForm({
               language is a heading here, not a second field to fill in. */}
           <select
             value={courseId}
-            onChange={(event) => setCourseId(event.target.value)}
+            onChange={(event) => changeCourse(event.target.value)}
             disabled={courseLocked}
             className={fieldClass}
           >
@@ -347,11 +382,36 @@ export function ClassGroupForm({
 
         <label className="flex flex-col gap-1">
           <span className={labelClass}>{t('class_groups.field_teacher')}</span>
-          <input
-            value={teacherName}
-            onChange={(event) => setTeacherName(event.target.value)}
+          <select
+            value={teacherId}
+            onChange={(event) => setTeacherId(event.target.value)}
+            disabled={teachers === null}
             className={fieldClass}
-          />
+          >
+            <option value="">{t('class_groups.teacher_none')}</option>
+            {currentOffRoster && (
+              <option value={currentOffRoster.teacherId ?? ''}>
+                {t('class_groups.teacher_off_roster', { name: currentOffRoster.teacherName })}
+              </option>
+            )}
+            {offered.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {`${teacher.firstName} ${teacher.lastName}`}
+              </option>
+            ))}
+          </select>
+          {teachers === null ? (
+            <span className="text-xs text-red-700">{t('class_groups.teacher_load_error')}</span>
+          ) : offered.length === 0 ? (
+            <span className="text-xs text-muted-foreground">
+              {t('class_groups.teacher_none_for_language', { language: courseLanguage })}
+            </span>
+          ) : null}
+          {!teacherId && initial?.legacyTeacherName && (
+            <span className="text-xs text-muted-foreground">
+              {t('class_groups.teacher_legacy_hint', { name: initial.legacyTeacherName })}
+            </span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1">
@@ -443,6 +503,19 @@ export function ClassGroupForm({
           })}
         </div>
       </fieldset>
+
+      {warnings?.outsideAvailability && (
+        <p className="mt-3 flex items-start gap-2 text-xs text-amber-700">
+          <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+          {t('class_groups.teacher_outside_availability')}
+        </p>
+      )}
+      {warnings && warnings.clashes.length > 0 && (
+        <p className="mt-3 flex items-start gap-2 text-xs text-amber-700">
+          <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+          {t('class_groups.teacher_schedule_clash', { codes: warnings.clashes.join(', ') })}
+        </p>
+      )}
 
       {timeInvalid && (
         <p className="mt-3 text-xs text-red-700">{t('class_groups.invalid_time_range')}</p>

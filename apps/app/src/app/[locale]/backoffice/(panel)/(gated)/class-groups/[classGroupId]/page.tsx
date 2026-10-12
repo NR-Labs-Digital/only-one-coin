@@ -9,6 +9,7 @@ import {
   getCatalogClassGroup,
   listCatalogCourses,
   listCatalogWaitlist,
+  listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { slotsLabel } from '@/lib/backoffice/schedule'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
@@ -37,6 +38,7 @@ import { classGroupTone, seatPressureTone } from '@/components/backoffice/status
 import { BoIcon } from '@/components/backoffice/icons'
 import { ClassGroupCertificates } from './class-group-certificates'
 import { ClassGroupActions } from './class-group-actions'
+import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
@@ -75,9 +77,10 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [waitlist, courses] = await Promise.all([
+  const [waitlist, courses, teachers] = await Promise.all([
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
+    canManage ? listTeacherOptions() : Promise.resolve(null),
   ])
   const schedule = slotsLabel(group.slots, t)
 
@@ -128,7 +131,9 @@ export default async function ClassGroupDetailPage({
           <Field label={t('class_group.field_code')}>
             <span className="tabular-nums">{group.code}</span>
           </Field>
-          <Field label={t('class_group.field_teacher')}>{group.teacherName}</Field>
+          <Field label={t('class_group.field_teacher')}>
+            <TeacherCell row={group} />
+          </Field>
           <Field label={t('class_group.field_schedule')}>
             <span className="tabular-nums">{schedule}</span>
           </Field>
@@ -179,6 +184,7 @@ export default async function ClassGroupDetailPage({
       <ClassGroupActions
         group={group}
         courses={courses ?? []}
+        teachers={teachers}
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
       />

@@ -23,6 +23,8 @@ const KNOWN: ReadonlySet<CatalogErrorKey> = new Set<CatalogErrorKey>([
   'waitlist_entry_not_found',
   // Retire/restore of any catalog entry (course, plan, class group, period).
   'entry_not_found',
+  'class_group_teacher_unavailable',
+  'class_group_teacher_language',
 ])
 
 /** `catalog.price_in_past` → `price_in_past`; anything unknown → `generic`. */

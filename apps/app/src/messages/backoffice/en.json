@@ -987,7 +987,18 @@
       "edit_title": "Edit class group",
       "save_changes": "Save changes",
       "invalid_time_range": "The end time must come after the start time.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "teacher_none": "No teacher assigned",
+      "teacher_off_roster": "{name} (off the roster or the language)",
+      "teacher_load_error": "The teacher roster could not be loaded. Try again later.",
+      "teacher_none_for_language": "No active teacher teaches {language}. Add the language on the teacher file.",
+      "teacher_legacy_hint": "Previously listed: {name}",
+      "teacher_outside_availability": "The schedule falls outside the availability the teacher declared. You can save anyway.",
+      "teacher_schedule_clash": "The teacher already has a class group at the same time in this period: {codes}. You can save anyway.",
+      "teacher_unassigned": "No teacher",
+      "filter_unassigned": "Only class groups without a teacher",
+      "unassigned_banner": "{count, plural, one {# ongoing class group has no teacher from the roster assigned.} other {# ongoing class groups have no teacher from the roster assigned.}}",
+      "unassigned_show": "Show them"
     },
     "periods": {
       "label": "Period",
@@ -1742,7 +1753,9 @@
       "waitlist_student_not_found": "We couldn't find that student.",
       "waitlist_entry_closed": "That student already left the list.",
       "waitlist_entry_not_found": "That waitlist entry no longer exists.",
-      "entry_not_found": "That catalog entry no longer exists."
+      "entry_not_found": "That catalog entry no longer exists.",
+      "class_group_teacher_unavailable": "That teacher is no longer on the active roster. Pick another one.",
+      "class_group_teacher_language": "That teacher does not teach the course language. Pick another one or add the language on their file."
     },
     "audit_action": {
       "student_registered": "Student registered",

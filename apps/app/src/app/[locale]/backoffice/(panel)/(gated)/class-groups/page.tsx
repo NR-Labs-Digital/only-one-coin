@@ -5,6 +5,7 @@ import {
   listCatalogClassGroups,
   listCatalogCourses,
   listCatalogPeriods,
+  listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
@@ -72,6 +73,8 @@ export default async function ClassGroupsPage({
   const items =
     periods && courses ? await listCatalogClassGroups(selectedPeriodId ?? undefined) : null
   const canManage = canCreateClassGroup(staff.role)
+  // Only who opens class groups reads the roster picker (the API gates it the same way).
+  const teachers = canManage ? await listTeacherOptions() : null
 
   return (
     <div className="flex flex-col gap-5">
@@ -97,6 +100,7 @@ export default async function ClassGroupsPage({
             items={items}
             courses={courses}
             periods={periods}
+            teachers={teachers}
             selectedPeriodId={selectedPeriodId}
             canManage={canManage}
           />
