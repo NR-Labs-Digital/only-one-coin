@@ -17,6 +17,7 @@ export const createCourseRoute = RouteBuilder.post("/catalog/courses")
   .response(201, IdResponseSchema)
   .response(400, ErrorResponseSchema)
   .response(403, ErrorResponseSchema)
+  .response(409, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const course = await container.useCases.catalog.createCourse.run({
       actorId: request.currentUser!.id,

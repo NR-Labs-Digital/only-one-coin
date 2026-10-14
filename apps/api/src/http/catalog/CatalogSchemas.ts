@@ -1,4 +1,4 @@
-import { CertificateRuleSchema, ClassGroupStatusSchema, WeeklySlotSchema as ValidWeeklySlotSchema } from "@ooc/domain";
+import { CertificateRuleSchema, ClassGroupStatusSchema, LandingCourseKeySchema, WeeklySlotSchema as ValidWeeklySlotSchema } from "@ooc/domain";
 import { z } from "zod";
 
 export const IdParamsSchema = z.object({ id: z.string().uuid() });
@@ -18,6 +18,7 @@ export const CourseListItemSchema = z.object({
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
   allowsTransfer: z.boolean(),
+  landingKey: LandingCourseKeySchema.nullable(),
   active: z.boolean(),
   classGroupCount: z.number().int(),
   planCount: z.number().int(),

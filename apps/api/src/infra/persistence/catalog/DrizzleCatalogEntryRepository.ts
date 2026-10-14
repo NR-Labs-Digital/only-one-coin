@@ -1,11 +1,14 @@
-import type {
-  CatalogEntryKind,
-  CatalogEntryState,
-  ICatalogEntryRepository,
+import {
+  LandingKeyTakenError,
+  type CatalogEntryKind,
+  type CatalogEntryState,
+  type ICatalogEntryRepository,
 } from "@ooc/domain";
 import { academicPeriods, classGroups, courses, enrollments, planPrices, plans } from "@ooc/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
+import { COURSE_LANDING_KEY_INDEX } from "./DrizzleCourseRepository.js";
 
 /**
  * The four catalog tables behind one port. The kind→table switch lives here
@@ -47,10 +50,18 @@ export class DrizzleCatalogEntryRepository implements ICatalogEntryRepository {
   async restore(kind: CatalogEntryKind, id: string): Promise<void> {
     const table = tableFor(kind);
 
-    await this.db
-      .update(table)
-      .set({ deletedAt: null, updatedAt: new Date() })
-      .where(eq(table.id, id));
+    try {
+      await this.db
+        .update(table)
+        .set({ deletedAt: null, updatedAt: new Date() })
+        .where(eq(table.id, id));
+    } catch (error) {
+      // A retired course let go of its landing key; if another live course
+      // took it meanwhile, bringing this one back would put two courses
+      // behind one enroll button (OOC-117). Unlink one of them first.
+      if (isUniqueViolation(error, COURSE_LANDING_KEY_INDEX)) throw new LandingKeyTakenError({ cause: error });
+      throw error;
+    }
   }
 
   private selectEntry(kind: CatalogEntryKind, id: string) {

@@ -1,5 +1,6 @@
 import { classGroups, courses, planPrices, plans } from "@ooc/db";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import type { LandingCourseKey } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 
 export interface CourseListItem {
@@ -14,6 +15,8 @@ export interface CourseListItem {
   certificateRule: "automatic" | "exam_required";
   allowsFreeze: boolean;
   allowsTransfer: boolean;
+  /** The landing page whose enroll button opens the checkout on it (OOC-117). */
+  landingKey: LandingCourseKey | null;
   /** Not retired. The backoffice lists both — taking a course off the shelf is reversible. */
   active: boolean;
   /** Class groups opened on it that are not retired themselves. */
@@ -73,6 +76,7 @@ export function toCourseListItem(row: typeof courses.$inferSelect, counts: Cours
     certificateRule: row.certificateRule as CourseListItem["certificateRule"],
     allowsFreeze: row.allowsFreeze,
     allowsTransfer: row.allowsTransfer,
+    landingKey: row.landingKey as LandingCourseKey | null,
     active: row.deletedAt === null,
     ...counts,
   };

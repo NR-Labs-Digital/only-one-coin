@@ -1,3 +1,4 @@
+import { LandingCourseKeySchema } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
@@ -14,6 +15,7 @@ const GetPublicCatalogResponseSchema = z.object({
       minAge: z.number().int(),
       modules: z.number().int(),
       totalHours: z.number().int(),
+      landingKey: LandingCourseKeySchema.nullable(),
     }),
   ),
   plans: z.array(
@@ -112,6 +114,7 @@ export const getPublicCatalogRoute = RouteBuilder.get("/catalog")
         minAge: course.minAge,
         modules: course.modules,
         totalHours: course.totalHours,
+        landingKey: course.landingKey,
       })),
       plans: catalog.plans.map((plan) => ({ ...plan, currency: "PEN" as const })),
       classGroups: catalog.classGroups.map((group) => ({
