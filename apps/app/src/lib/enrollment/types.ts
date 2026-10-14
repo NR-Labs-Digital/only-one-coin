@@ -9,6 +9,7 @@
  * copy — every label is resolved from the `enrollment` i18n namespace.
  */
 
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type { NationalIdType, PaymentRail } from '@/lib/portal/types'
 
 export type { NationalIdType, PaymentRail }
@@ -57,6 +58,8 @@ export interface CatalogCourse {
   minAge: number
   modules: number
   totalHours: number
+  /** Which landing page sells it — `?course=` from the static landing (OOC-117). */
+  landingKey: LandingCourseKey | null
 }
 
 /**
