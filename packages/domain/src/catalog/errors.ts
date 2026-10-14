@@ -132,3 +132,17 @@ export class WaitlistEntryNotFoundError extends NotFoundError {
     super({ reason: "catalog.waitlist_entry_not_found", message: "No waitlist entry with that id.", ...params });
   }
 }
+
+/**
+ * Another live course already answers to that landing key (OOC-117). Two
+ * courses behind one enroll button would leave the checkout to guess.
+ */
+export class LandingKeyTakenError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.landing_key_taken",
+      message: "Another live course is already linked to that landing page.",
+      ...params,
+    });
+  }
+}

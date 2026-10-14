@@ -402,6 +402,7 @@ export {
   WaitlistStudentNotFoundError,
   WaitlistEntryClosedError,
   WaitlistEntryNotFoundError,
+  LandingKeyTakenError,
 } from "./catalog/errors.js";
 export {
   AcademicPeriod,
@@ -460,12 +461,18 @@ export {
   CertificateRuleSchema,
   CourseOptionsSchema,
   CreateCourseSchema,
+  LandingCourseKeySchema,
   UpdateCourseSchema,
   type CertificateRule,
   type CourseProps,
   type CreateCourseDTO,
   type UpdateCourseDTO,
 } from "./catalog/Course.js";
+export {
+  LANDING_COURSE_KEYS,
+  isLandingCourseKey,
+  type LandingCourseKey,
+} from "./catalog/landingCourseKeys.js";
 export type { ICourseRepository } from "./catalog/ports/ICourseRepository.js";
 export { CreateCourseUseCase, type CreateCourseInput } from "./catalog/CreateCourseUseCase.js";
 export { UpdateCourseUseCase, type UpdateCourseInput } from "./catalog/UpdateCourseUseCase.js";

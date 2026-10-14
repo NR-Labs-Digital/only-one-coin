@@ -197,6 +197,13 @@
       "when": 1791827888534,
       "tag": "0027_payment_decision",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791835708475,
+      "tag": "0028_course_landing_key",
+      "breakpoints": true
     }
   ]
 }
