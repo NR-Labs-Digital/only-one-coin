@@ -1,10 +1,11 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups } from "@ooc/db";
-import { Course, Plan, PlanPrice } from "@ooc/domain";
+import { Course, LandingKeyTakenError, Plan, PlanPrice } from "@ooc/domain";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
+import { DrizzleCatalogEntryRepository } from "./DrizzleCatalogEntryRepository.js";
 import { DrizzleCourseRepository } from "./DrizzleCourseRepository.js";
 import { DrizzlePlanRepository } from "./DrizzlePlanRepository.js";
 import { GetCourseQuery } from "./GetCourseQuery.js";
@@ -159,6 +160,54 @@ describe("course catalog storage", () => {
   it("answers null for a course not on file", async () => {
     await inRolledBackTransaction(async (tx) => {
       expect(await new GetCourseQuery(tx).run("018f2b5c-1000-7000-8000-0000000000ff")).toBeNull();
+    });
+  });
+});
+
+/**
+ * OOC-117: one live course per landing key is the partial unique index's job
+ * when two writes race past the usecase's check — and retiring lets go of the
+ * key. Each refused write runs in a savepoint (nested transaction): a unique
+ * violation aborts the transaction it happens in, and the test still needs to
+ * read afterwards.
+ */
+describe("course landing key storage", () => {
+  it("round-trips the key and finds the live holder", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const repository = new DrizzleCourseRepository(tx);
+      const created = await repository.create(Course.create({ ...aCourse(), landingKey: "russian" }));
+
+      expect((await repository.findById(created.id))?.landingKey).toBe("russian");
+      expect((await repository.findLiveByLandingKey("russian"))?.id).toBe(created.id);
+    });
+  });
+
+  it("refuses a second live course on the same key", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await new DrizzleCourseRepository(tx).create(Course.create({ ...aCourse(), landingKey: "russian" }));
+
+      await expect(
+        tx.transaction((savepoint) =>
+          new DrizzleCourseRepository(savepoint as unknown as Db).create(Course.create({ ...aCourse(), landingKey: "russian" })),
+        ),
+      ).rejects.toBeInstanceOf(LandingKeyTakenError);
+    });
+  });
+
+  it("frees the key on retirement, and refuses to bring the old holder back over the new one", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const repository = new DrizzleCourseRepository(tx);
+      const entries = new DrizzleCatalogEntryRepository(tx);
+      const old = await repository.create(Course.create({ ...aCourse(), landingKey: "russian" }));
+      await entries.retire("course", old.id, new Date());
+
+      expect(await repository.findLiveByLandingKey("russian")).toBeNull();
+      const replacement = await repository.create(Course.create({ ...aCourse(), landingKey: "russian" }));
+      expect((await repository.findLiveByLandingKey("russian"))?.id).toBe(replacement.id);
+
+      await expect(
+        tx.transaction((savepoint) => new DrizzleCatalogEntryRepository(savepoint as unknown as Db).restore("course", old.id)),
+      ).rejects.toBeInstanceOf(LandingKeyTakenError);
     });
   });
 });

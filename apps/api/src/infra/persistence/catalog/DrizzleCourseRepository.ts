@@ -1,7 +1,16 @@
-import { Course, type CertificateRule, type ICourseRepository } from "@ooc/domain";
+import { Course, LandingKeyTakenError, type CertificateRule, type ICourseRepository, type LandingCourseKey } from "@ooc/domain";
 import { courses } from "@ooc/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
+
+/** One live course per landing key — the net under the usecase's own check. */
+export const COURSE_LANDING_KEY_INDEX = "courses_landing_key_live_uidx";
+
+function landingKeyRace(error: unknown): never {
+  if (isUniqueViolation(error, COURSE_LANDING_KEY_INDEX)) throw new LandingKeyTakenError({ cause: error });
+  throw error;
+}
 
 type CourseRow = typeof courses.$inferSelect;
 
@@ -18,6 +27,7 @@ export function courseFromRow(row: CourseRow): Course {
     certificateRule: row.certificateRule as CertificateRule,
     allowsFreeze: row.allowsFreeze,
     allowsTransfer: row.allowsTransfer,
+    landingKey: row.landingKey as LandingCourseKey | null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -42,14 +52,25 @@ export class DrizzleCourseRepository implements ICourseRepository {
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,
         allowsTransfer: course.allowsTransfer,
+        landingKey: course.landingKey,
       })
-      .returning();
+      .returning()
+      .catch(landingKeyRace);
     if (!row) throw new Error("Insert into courses returned no row");
     return courseFromRow(row);
   }
 
   async findById(id: string): Promise<Course | null> {
     const [row] = await this.db.select().from(courses).where(eq(courses.id, id)).limit(1);
+    return row ? courseFromRow(row) : null;
+  }
+
+  async findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null> {
+    const [row] = await this.db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.landingKey, key), isNull(courses.deletedAt)))
+      .limit(1);
     return row ? courseFromRow(row) : null;
   }
 
@@ -69,10 +90,12 @@ export class DrizzleCourseRepository implements ICourseRepository {
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,
         allowsTransfer: course.allowsTransfer,
+        landingKey: course.landingKey,
         updatedAt: course.updatedAt,
       })
       .where(eq(courses.id, course.id))
-      .returning();
+      .returning()
+      .catch(landingKeyRace);
     if (!row) throw new Error("Update of courses matched no row");
     return courseFromRow(row);
   }

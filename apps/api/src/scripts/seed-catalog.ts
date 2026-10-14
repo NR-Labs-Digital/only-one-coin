@@ -1,4 +1,5 @@
 import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/db";
+import type { LandingCourseKey } from "@ooc/domain";
 import { eq } from "drizzle-orm";
 import { container } from "@/container.js";
 
@@ -18,18 +19,20 @@ interface SeedCourse {
   modules: number;
   totalHours: number;
   amountCents: number | null;
+  /** The landing page that links here (OOC-117), so local/staging prefill works out of the box. */
+  landingKey: LandingCourseKey;
 }
 
 const SEED_COURSES: SeedCourse[] = [
-  { name: "Inglés", language: "Inglés", level: "Básico (A1–A2)", modules: 4, totalHours: 80, amountCents: 6990 },
-  { name: "Inglés — Cambridge B1", language: "Inglés", level: "Intermedio (B1)", modules: 4, totalHours: 0, amountCents: null },
-  { name: "Francés", language: "Francés", level: "Básico (A1)", modules: 4, totalHours: 80, amountCents: 8000 },
-  { name: "Francés — Avanzado", language: "Francés", level: "Intermedio / Avanzado (B1–B2 aprox.)", modules: 4, totalHours: 0, amountCents: null },
-  { name: "Italiano", language: "Italiano", level: "Básico inicial (A1)", modules: 6, totalHours: 60, amountCents: 8000 },
-  { name: "Alemán", language: "Alemán", level: "Introductorio (A1 inicial)", modules: 4, totalHours: 16, amountCents: 3000 },
-  { name: "Portugués", language: "Portugués", level: "Básico (A1–A2 inicial)", modules: 4, totalHours: 80, amountCents: 8000 },
-  { name: "Chino Mandarín", language: "Chino Mandarín", level: "Básico inicial (HSK 1 aprox.)", modules: 5, totalHours: 60, amountCents: 9500 },
-  { name: "Coreano", language: "Coreano", level: "Básico a A2 (intermedio inicial)", modules: 10, totalHours: 0, amountCents: 6000 },
+  { name: "Inglés", landingKey: "english", language: "Inglés", level: "Básico (A1–A2)", modules: 4, totalHours: 80, amountCents: 6990 },
+  { name: "Inglés — Cambridge B1", landingKey: "cambridge-b1", language: "Inglés", level: "Intermedio (B1)", modules: 4, totalHours: 0, amountCents: null },
+  { name: "Francés", landingKey: "french", language: "Francés", level: "Básico (A1)", modules: 4, totalHours: 80, amountCents: 8000 },
+  { name: "Francés — Avanzado", landingKey: "french-advanced", language: "Francés", level: "Intermedio / Avanzado (B1–B2 aprox.)", modules: 4, totalHours: 0, amountCents: null },
+  { name: "Italiano", landingKey: "italian", language: "Italiano", level: "Básico inicial (A1)", modules: 6, totalHours: 60, amountCents: 8000 },
+  { name: "Alemán", landingKey: "german", language: "Alemán", level: "Introductorio (A1 inicial)", modules: 4, totalHours: 16, amountCents: 3000 },
+  { name: "Portugués", landingKey: "portuguese", language: "Portugués", level: "Básico (A1–A2 inicial)", modules: 4, totalHours: 80, amountCents: 8000 },
+  { name: "Chino Mandarín", landingKey: "mandarin-chinese", language: "Chino Mandarín", level: "Básico inicial (HSK 1 aprox.)", modules: 5, totalHours: 60, amountCents: 9500 },
+  { name: "Coreano", landingKey: "korean", language: "Coreano", level: "Básico a A2 (intermedio inicial)", modules: 10, totalHours: 0, amountCents: 6000 },
 ];
 
 // Rotated across courses only for visual variety in the picker — same
@@ -71,6 +74,7 @@ async function main() {
         level: seedCourse.level,
         modules: seedCourse.modules,
         totalHours: seedCourse.totalHours,
+        landingKey: seedCourse.landingKey,
       })
       .returning();
 

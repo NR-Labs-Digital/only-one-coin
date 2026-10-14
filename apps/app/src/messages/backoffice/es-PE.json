@@ -1316,6 +1316,30 @@
       "save": "Guardar",
       "cancel": "Cancelar"
     },
+    "landing_key": {
+      "label": "Página en la web",
+      "none": "Ninguna — la web no enlaza a este curso",
+      "taken_by": "{page} (ya enlazada a {course})",
+      "hint": "El botón de matrícula de esa página abre el checkout con este curso elegido. Si recreas el curso, enlaza el nuevo aquí.",
+      "unlinked_title": "Páginas de la web sin curso enlazado",
+      "unlinked_body": "El botón de matrícula de estas páginas abre el checkout sin curso elegido. Enlázalas desde las opciones del curso.",
+      "pages": {
+        "english": "Inglés — jóvenes y adultos",
+        "english-kids": "Inglés — kids",
+        "english-intermediate": "Inglés intermedio / avanzado",
+        "cambridge-b1": "Inglés — Cambridge B1",
+        "cambridge-b2": "Inglés — Cambridge B2",
+        "french": "Francés",
+        "french-advanced": "Francés avanzado",
+        "italian": "Italiano",
+        "german": "Alemán",
+        "portuguese": "Portugués",
+        "mandarin-chinese": "Chino mandarín",
+        "korean": "Coreano",
+        "japanese": "Japonés",
+        "russian": "Ruso"
+      }
+    },
     "certificate_rule": {
       "automatic": "Nota mínima",
       "exam_required": "Examen de certificación"
@@ -1778,7 +1802,8 @@
       "waitlist_entry_not_found": "Ese registro de espera ya no existe.",
       "entry_not_found": "Ese registro ya no existe en el catálogo.",
       "class_group_teacher_unavailable": "Ese docente ya no está en el plantel activo. Elige otro.",
-      "class_group_teacher_language": "Ese docente no enseña el idioma del curso. Elige otro o agrega el idioma en su ficha."
+      "class_group_teacher_language": "Ese docente no enseña el idioma del curso. Elige otro o agrega el idioma en su ficha.",
+      "landing_key_taken": "Otro curso del catálogo ya está enlazado a esa página de la web."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",

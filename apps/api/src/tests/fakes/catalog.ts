@@ -10,6 +10,7 @@ import {
   type IAuditLogRepository,
   type IClassGroupRepository,
   type ICourseRepository,
+  type LandingCourseKey,
   type IPlanRepository,
   type IWaitlistRepository,
   type Plan,
@@ -45,6 +46,10 @@ export class FakeCourseRepository implements ICourseRepository {
   async update(course: Course): Promise<Course> {
     this.rows.set(course.id, course);
     return course;
+  }
+
+  async findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null> {
+    return [...this.rows.values()].find((row) => row.landingKey === key && !row.isDeleted) ?? null;
   }
 }
 

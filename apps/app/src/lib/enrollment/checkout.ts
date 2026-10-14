@@ -82,13 +82,20 @@ export function resolveCampaign(
  * trusted: an id that names nothing, or a class group that does not belong to
  * the course, resolves to nothing and the person picks for themselves. The link
  * can preselect; it can never assert.
+ *
+ * `course` is either a course id (the seller's link, copied from the
+ * backoffice) or a landing key (the static landing, which cannot know an id
+ * minted per environment — OOC-117). A course with no open class group is not
+ * in the public catalog, so its key resolves to nothing too.
  */
 export function resolvePrefill(
   catalog: PublicCatalog,
   params: Record<string, string | undefined>,
 ): CourseDraft {
-  const course =
-    catalog.courses.find((item) => item.id === params[QUERY_KEYS.course]) ?? null
+  const wanted = params[QUERY_KEYS.course]
+  const course = wanted
+    ? (catalog.courses.find((item) => item.id === wanted || item.landingKey === wanted) ?? null)
+    : null
   if (!course) {
     return { languageId: null, courseId: null, startDate: null, classGroupId: null }
   }

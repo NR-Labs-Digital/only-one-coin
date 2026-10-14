@@ -2,16 +2,19 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type {
   CatalogErrorKey,
   CourseLanguage,
   CourseOptions,
+  CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { CourseOptionFields, DEFAULT_COURSE_OPTIONS } from './course-option-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { LandingKeyField } from './landing-key-field'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -33,10 +36,13 @@ const labelClass =
  */
 export function NewCourseForm({
   languages,
+  courses,
   onCancel,
   onCreated,
 }: {
   languages: CourseLanguage[]
+  /** The catalog — the landing page picker greys out the pages already linked. */
+  courses: CourseRow[]
   onCancel: () => void
   onCreated: () => void
 }) {
@@ -46,6 +52,7 @@ export function NewCourseForm({
   const [language, setLanguage] = useState('')
   const [level, setLevel] = useState('')
   const [summary, setSummary] = useState('')
+  const [landingKey, setLandingKey] = useState<LandingCourseKey | null>(null)
   const [draftOptions, setDraftOptions] = useState<CourseOptions>(DEFAULT_COURSE_OPTIONS)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
@@ -65,6 +72,7 @@ export function NewCourseForm({
       language: language.trim(),
       level: level.trim(),
       summary: summary.trim(),
+      landingKey,
       ...options,
     })
     setSaving(false)
@@ -128,6 +136,8 @@ export function NewCourseForm({
             className={`${fieldClass} resize-y`}
           />
         </label>
+
+        <LandingKeyField value={landingKey} onChange={setLandingKey} courses={courses} />
       </AutoGrid>
 
       <div className="mt-5 border-t border-line pt-5">

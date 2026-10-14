@@ -1,7 +1,7 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import type { Course, UpdateCourseDTO } from "./Course.js";
-import { CourseNotFoundError } from "./errors.js";
+import { CourseNotFoundError, LandingKeyTakenError } from "./errors.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
 
 export interface UpdateCourseInput {
@@ -30,6 +30,11 @@ export class UpdateCourseUseCase extends BaseUseCase<UpdateCourseInput, Course> 
 
     const changed = course.update(input.patch);
     if (changed.length === 0) return course;
+
+    if (changed.includes("landingKey") && course.landingKey) {
+      const holder = await this.courses.findLiveByLandingKey(course.landingKey);
+      if (holder && holder.id !== course.id) throw new LandingKeyTakenError();
+    }
 
     const saved = await this.courses.update(course);
 

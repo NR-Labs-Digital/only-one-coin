@@ -120,9 +120,18 @@ export const courses = pgTable(
     // Which paid procedures the course offers (docs/REGRAS-NEGOCIO.md §5).
     allowsFreeze: boolean("allows_freeze").notNull().default(true),
     allowsTransfer: boolean("allows_transfer").notNull().default(false),
+    // Which landing page's enroll button opens the checkout on this course
+    // (OOC-117) — a key from LANDING_COURSE_KEYS (@ooc/domain), not an id: the
+    // landing is static and cannot know a UUID minted per environment. Null
+    // is a course no landing page links to.
+    landingKey: text("landing_key"),
     ...softDeletable(),
   },
   (table) => [
+    // One live course per landing page; a retired course lets go of its key.
+    uniqueIndex("courses_landing_key_live_uidx")
+      .on(table.landingKey)
+      .where(sql`${table.landingKey} is not null and ${table.deletedAt} is null`),
     check(
       "courses_certificate_rule_check",
       sql`${table.certificateRule} in ('automatic', 'exam_required')`,

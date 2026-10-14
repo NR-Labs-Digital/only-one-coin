@@ -8,6 +8,7 @@
  * resolved to text through the `bo` i18n namespace.
  */
 
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type {
   DocumentStatus,
   DocumentType,
@@ -602,6 +603,11 @@ export interface CourseRow {
   /** Administrative procedures the course offers (`docs/REGRAS-NEGOCIO.md` §5). */
   allowsFreeze: boolean
   allowsTransfer: boolean
+  /**
+   * The landing page whose enroll button opens the checkout on this course
+   * (OOC-117). Null: no landing page links here.
+   */
+  landingKey: LandingCourseKey | null
   /** Out of the catalog does not delete anything — running class groups stay. */
   active: boolean
   /** Class groups already opened from this course. */
@@ -655,6 +661,7 @@ export type CatalogErrorKey =
   | 'entry_not_found'
   | 'class_group_teacher_unavailable'
   | 'class_group_teacher_language'
+  | 'landing_key_taken'
 
 export interface PlanPriceItem {
   id: string

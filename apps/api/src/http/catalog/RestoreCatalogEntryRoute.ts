@@ -31,6 +31,8 @@ export const restoreCatalogEntryRoute = RouteBuilder.post("/catalog/:kind/:id/re
   .response(200, CatalogEntryStateSchema)
   .response(403, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)
+  // A course whose landing key another live course took meanwhile (OOC-117).
+  .response(409, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const result = await container.useCases.catalog.restore.run({
       actorId: request.currentUser!.id,

@@ -10,6 +10,7 @@
       "default": "./dist/index.js"
     },
     "./fields": "./src/student/fields.ts",
+    "./landing-course-keys": "./src/catalog/landingCourseKeys.ts",
     "./password-policy": "./src/identity/StudentPasswordPolicy.ts"
   },
   "scripts": {

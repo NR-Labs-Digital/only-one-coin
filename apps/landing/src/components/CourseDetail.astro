@@ -3,7 +3,7 @@ import type { CourseSlug } from "../i18n/ui";
 import { audienceAnchors, bundles, courseParent, coursePrices, extraPlans, hasKidsProgram, htmlLang, levelsOf, lowestSessionPrice, monthlyPrices, monthlySessionPrices, org, sessionPrices, whatsappUrl } from "../i18n/ui";
 import type { BundleId, ExtraPlanId } from "../i18n/ui";
 import { getLangFromUrl, useTranslations, withLang, formatPEN } from "../i18n/utils";
-import { courseIdBySlug, englishKidsCourseId, enrollmentHref } from "../data/checkout";
+import { courseKeyOf, englishKidsCourseKey, enrollmentHref } from "../data/checkout";
 import { courseContent } from "../i18n/courses-content";
 import CourseProgramDetail from "./CourseProgramDetail.astro";
 import LanguageFlag from "./LanguageFlag.astro";
@@ -132,12 +132,12 @@ const familyRoot = parentSlug ?? slug;
 // e é a página do idioma que o hospeda. Todo o resto — os outros idiomas e os
 // níveis acima do básico — é de 13 anos em diante e diz isso num selo.
 const showsKids = hasKidsProgram(slug);
-// O OOC Kids não é um nível desta página: é OUTRO curso, com id próprio no
+// O OOC Kids não é um nível desta página: é OUTRO curso, com chave própria no
 // catálogo do checkout. Quem sai daqui matriculando uma criança tem que cair
 // no curso dela — o mesmo botão dos níveis levaria ao curso de jovens e
 // adultos, que é justamente o engano que esta seção existe para desfazer.
 const kidsEnrollHref = enrollmentHref(withLang(lang, "/enrollment"), {
-  courseId: englishKidsCourseId,
+  courseKey: englishKidsCourseKey,
   content: "course_page_kids",
 });
 const siblings = [familyRoot, ...levelsOf(familyRoot)];
@@ -167,7 +167,7 @@ const levelPanels = siblings.map((levelSlug) => {
     program: levelProgram,
     options: paymentOptions(levelSlug),
     enrollHref: enrollmentHref(withLang(lang, "/enrollment"), {
-      courseId: courseIdBySlug[levelSlug],
+      courseKey: courseKeyOf(levelSlug),
       content: "course_page",
     }),
     current: levelSlug === slug,
