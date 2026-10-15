@@ -184,8 +184,7 @@ describe("authorization plugin", () => {
     expect(response.statusCode).toBe(200);
   });
 
-  /* Second owners' domain, added 17/09/2026 (CLAUDE.md §8) because the
-     account actually used as the team's production login carries it. */
+  /* Second owners' domain, added 17/09/2026 (CLAUDE.md §8). */
   it("allows an .owners() route to the second owners' domain whatever the cargo", async () => {
     const app = await buildTestApp();
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({

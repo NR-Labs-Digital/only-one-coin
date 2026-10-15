@@ -499,8 +499,9 @@ variável na Vercel.
 **Quem abre: só os donos da plataforma.** Não é cargo — são os domínios do
 e-mail (`isOwnerEmail`, `packages/domain/src/identity/Role.ts`,
 `MASTER_EMAIL_DOMAINS = ["nrlabsdigital.com", "admin.com"]` — o segundo entrou
-17/09/2026, junto do fix de §8.8, porque a conta que a equipe realmente usa
-como login de produção carrega esse domínio, não o outro). O que a plataforma
+17/09/2026, junto do fix de §8.8, pela premissa de que a conta de login da
+equipe em produção carregava esse domínio — premissa corrigida em 14/10/2026:
+não há conta em `admin.com` em produção, `CLAUDE.md` §8). O que a plataforma
 admite existir é decisão de quem opera a plataforma, não de quem administra a
 escola: um `admin` da Asociación autoriza tudo o que é acadêmico e nada disto.
 Na API isso é uma declaração de rota própria, `.owners()`, ao lado de
