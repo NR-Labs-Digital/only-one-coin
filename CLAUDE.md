@@ -111,7 +111,7 @@ Se algo parecer exigir um desses, **pare e pergunte**.
 | Hospedagem | **Vercel** (landing + app) · **Fly.io** (`apps/api`, GRU/São Paulo, VM always-on, deploy blue-green) | deploy por GitHub Actions a cada push em `main` |
 | Banco | **Postgres** gerenciado — **Neon** (`sa-east-1`), Drizzle ORM + Drizzle Kit | em uso |
 | Storage | **Tigris** (Fly.io, S3-compatible) — comprovantes e backups | em uso |
-| Auth | **Better Auth**, embutido em `apps/api`, nunca instanciado em `apps/app` | em uso (staff e aluno); MFA não configurado (OOC-29) |
+| Auth | **Better Auth**, embutido em `apps/api`, nunca instanciado em `apps/app` | em uso (staff e aluno); MFA do staff por código de e-mail (OOC-29) |
 | Fila | **Redis self-hospedado no Fly.io** (`redis-nrlabs`, repo NR-Labs/services) **+ BullMQ**, chaves sob `ooc:` (`QUEUE_PREFIX`) | em uso |
 | Rate limit + idempotência | **Mesmo Redis**, aplicado **dentro de `apps/api`** (a borda da Vercel não alcança a rede privada do Fly) | em uso (OOC-24) |
 | Captcha | **Cloudflare Turnstile** | em uso (checkout e recuperação de senha) |
@@ -283,7 +283,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 - Bucket de comprovantes privado, signed URL de 5 min, caminho escopado por aluno, acesso registrado
 - Docente vê só as próprias turmas — checagem explícita no usecase (`teacher_id` do usuário autenticado comparado ao dado), nunca um filtro montado a partir de input do cliente
 - Nenhum id vindo do cliente é confiado (anti-IDOR)
-- MFA obrigatório: `master`, `admin`, `billing`
+- MFA obrigatório: `master`, `admin`, `billing`; opcional para o resto do staff (OOC-29, 14/10/2026). **Por código enviado ao e-mail** (decisão do dono — app autenticador fica para depois), com 10 códigos de recuperação. Sem "confiar neste navegador": o código é pedido em todo login. Para os três cargos não há como desligar, e a API recusa a sessão deles em toda rota até ativarem — mecanismo em `apps/api/CLAUDE.md`, "MFA do staff"
 - Anti-enumeração: login e recuperação de senha respondem igual para conta existente e inexistente
 - Upload validado por **magic bytes**, re-encode da imagem, teto de tamanho
 - Headers: CSP, HSTS, X-Frame-Options, Referrer-Policy
