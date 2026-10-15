@@ -162,6 +162,7 @@ import { DrizzleWaitlistRepository } from "./infra/persistence/catalog/DrizzleWa
 import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.js";
 import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroupsQuery.js";
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
+import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
@@ -306,6 +307,7 @@ export interface AppQueries {
   listPeriods: ListPeriodsQuery;
   listClassGroups: ListClassGroupsQuery;
   listWaitlist: ListWaitlistQuery;
+  classGroupRoster: ClassGroupRosterQuery;
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
@@ -574,6 +576,7 @@ function buildContainer(): AppContainer {
   const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
   const listTeacherOptions = new ListTeacherOptionsQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
+  const classGroupRoster = new ClassGroupRosterQuery(db);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
@@ -719,6 +722,7 @@ function buildContainer(): AppContainer {
       listPeriods,
       listClassGroups,
       listWaitlist,
+      classGroupRoster,
       listStaff,
       listStaffRoleChanges,
       getPasswordChangedAt,

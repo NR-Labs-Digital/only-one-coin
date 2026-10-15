@@ -38,6 +38,10 @@ const CASES: [string, string, Role][] = [
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "analyst"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
+  // The roster: a teacher gets their own students through their own scope,
+  // never through the catalog; billing sees no academic data.
+  ["GET", `/api/v1/catalog/class-groups/${ID}/roster`, "teacher"],
+  ["GET", `/api/v1/catalog/class-groups/${ID}/roster`, "billing"],
   // The teacher picker (OOC-80) follows who opens class groups — reading the
   // directory is not enough, and the roster carries no contact.
   ["GET", "/api/v1/catalog/teacher-options", "analyst"],
