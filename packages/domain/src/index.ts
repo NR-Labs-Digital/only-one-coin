@@ -232,7 +232,7 @@ export {
 } from "./enrollment/SubmitPublicEnrollmentUseCase.js";
 
 export type { Role } from "./identity/Role.js";
-export { MASTER_EMAIL_DOMAINS, canHoldMaster, isOwnerEmail } from "./identity/Role.js";
+export { MASTER_EMAIL_DOMAINS, MFA_REQUIRED_ROLES, canHoldMaster, isOwnerEmail, requiresMfa } from "./identity/Role.js";
 export type { AuthenticatedUser } from "./identity/AuthenticatedUser.js";
 export {
   NotFreshlyAuthenticatedError,
@@ -240,6 +240,11 @@ export {
   CannotActOnSelfError,
   CurrentPasswordIncorrectError,
   NewPasswordRejectedError,
+  MfaEnrollmentRequiredError,
+  MfaRequiredForRoleError,
+  MfaAlreadyEnabledError,
+  MfaNotEnabledError,
+  MfaCodeRejectedError,
 } from "./identity/errors.js";
 export { STAFF_PASSWORD_MIN_LENGTH, meetsStaffPasswordPolicy } from "./identity/StaffPasswordPolicy.js";
 export {
@@ -274,6 +279,12 @@ export type {
 export type { IStaffPasswordResetLinkBuilder } from "./identity/ports/IStaffPasswordResetLinkBuilder.js";
 export type { IStaffPasswordSetter } from "./identity/ports/IStaffPasswordSetter.js";
 export type { IStaffSessionRevoker } from "./identity/ports/IStaffSessionRevoker.js";
+export type {
+  IStaffSecondFactor,
+  StaffMfaState,
+  MfaCodeFailure,
+  ConfirmMfaEnrollmentResult,
+} from "./identity/ports/IStaffSecondFactor.js";
 export {
   PromoteUserRoleUseCase,
   type PromoteUserRoleInput,
@@ -336,6 +347,19 @@ export {
   type ChangeOwnPasswordInput,
   type ChangeOwnPasswordOutput,
 } from "./identity/ChangeOwnPasswordUseCase.js";
+export { StartOwnMfaEnrollmentUseCase, type StartOwnMfaEnrollmentInput } from "./identity/StartOwnMfaEnrollmentUseCase.js";
+export {
+  ConfirmOwnMfaEnrollmentUseCase,
+  type ConfirmOwnMfaEnrollmentInput,
+  type ConfirmOwnMfaEnrollmentOutput,
+} from "./identity/ConfirmOwnMfaEnrollmentUseCase.js";
+export {
+  RegenerateOwnRecoveryCodesUseCase,
+  type RegenerateOwnRecoveryCodesInput,
+  type RegenerateOwnRecoveryCodesOutput,
+} from "./identity/RegenerateOwnRecoveryCodesUseCase.js";
+export { DisableOwnMfaUseCase, type DisableOwnMfaInput } from "./identity/DisableOwnMfaUseCase.js";
+export { STAFF_MFA_CODE_TTL_MINUTES, staffMfaCodeEmail } from "./identity/staffMfaEmail.js";
 
 export type {
   FeatureFlagOverride,

@@ -38,14 +38,14 @@ entra aqui ou vira sessão nova.
 
 ---
 
-## Resumo (revisado em 07/10/2026)
+## Resumo (revisado em 14/10/2026)
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
 | 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
-| 3 — Backoffice | 1 | 4 | 5 | Alunos, turmas, Pagos, equipe e docentes reais; área do docente, notas, conciliação e relatórios ainda mock |
+| 3 — Backoffice | 2 | 3 | 5 | Alunos, turmas, Pagos, equipe e docentes reais; área do docente, notas, conciliação e relatórios ainda mock |
 | 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32); faltam enlace da aula, módulos/mensalidade, trâmites pagos e documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
@@ -122,7 +122,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
-| 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | 🟡 Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. Falta MFA (OOC-29) |
+| 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | ✅ Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. MFA por código de e-mail (OOC-29, 14/10/2026): obrigatório para `master`/`admin`/`billing` — a API recusa esses cargos em toda rota até ativarem — e opcional para o resto, com códigos de recuperação. App autenticador fica para depois |
 | 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | 🟡 Fila real em Pagos (OOC-55): imagem por URL assinada, leitura da IA, veredito do semáforo, aprovar/rejeitar. O livro abre em Abertos, com abas Abertos · Resolvidos · Todos e contador do servidor (OOC-114). Faltam ordenação por confiança, atalhos e reprocessar |
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
 | 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Em review: busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75), abas Ativos · Ex-alunos · Sem matrícula com ativo = matrícula vigente (OOC-116). Faltam suspensão, exportação e a medição com 30k |

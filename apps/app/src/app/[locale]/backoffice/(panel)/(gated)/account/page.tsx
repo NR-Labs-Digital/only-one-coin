@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getPasswordChangedAt } from '@/lib/backoffice/account-server'
+import { getOwnMfaState, getPasswordChangedAt } from '@/lib/backoffice/account-server'
 import { initials, type Locale } from '@/lib/format'
 import {
   Card,
@@ -14,12 +14,13 @@ import { AutoGrid } from '@/components/layout/auto-grid'
 import { Link } from '@/i18n/navigation'
 import { AccountPassword } from './account-password'
 import { AccountLanguage } from './account-language'
+import { AccountMfa } from './account-mfa'
 
 /**
  * The one screen in the panel that is about the reader rather than about the
  * institution: their own access. It manages what a person can change about
- * themselves without asking anybody — password, plus the language the panel
- * speaks to them in.
+ * themselves without asking anybody — password, second factor (OOC-29), plus
+ * the language the panel speaks to them in.
  *
  * What it deliberately does not edit: name, login e-mail and role. Those are
  * identity, not access. The role in particular is written only by the dedicated
@@ -41,7 +42,7 @@ export default async function AccountPage({
   const t = await getTranslations('bo')
 
   const user = await getStaffSession()
-  const passwordChangedAt = await getPasswordChangedAt()
+  const [passwordChangedAt, mfa] = await Promise.all([getPasswordChangedAt(), getOwnMfaState()])
   const fullName = `${user.firstName} ${user.lastName}`
 
   return (
@@ -96,6 +97,10 @@ export default async function AccountPage({
 
       <Card>
         <AccountPassword updatedAt={passwordChangedAt} locale={locale} />
+      </Card>
+
+      <Card>
+        <AccountMfa initial={mfa} email={user.email} />
       </Card>
 
       <p className="flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">

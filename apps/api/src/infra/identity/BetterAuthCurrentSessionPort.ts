@@ -29,6 +29,9 @@ export class BetterAuthCurrentSessionPort implements ICurrentSessionPort {
       email: user.email,
       name: user.name,
       role: (user as unknown as { role: Role }).role,
+      // Read from the row on every request like `role` — no cookie cache is
+      // configured, so turning the factor on or off is seen on the next call.
+      twoFactorEnabled: user.twoFactorEnabled === true,
     };
   }
 }

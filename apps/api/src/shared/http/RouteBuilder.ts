@@ -99,6 +99,20 @@ export class RouteBuilder<
     return this;
   }
 
+  /**
+   * Lets a cargo that must have the second factor reach this route before
+   * turning it on (CLAUDE.md §8) — only for the routes that turn it on. Every
+   * other session-gated route refuses that account with
+   * `auth.mfa_enrollment_required`. Call after `.roles()`/`.owners()`.
+   */
+  allowBeforeMfa() {
+    if (!this.auth || this.auth.public) {
+      throw new Error("allowBeforeMfa() only applies after .roles(...) or .owners().");
+    }
+    this.auth = { ...this.auth, beforeMfa: true };
+    return this;
+  }
+
   /** Explicitly marks the route as open to unauthenticated callers — the
    * only other way to satisfy the deny-by-default requirement. */
   public() {

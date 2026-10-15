@@ -78,7 +78,7 @@ A maior parte já está coberta pelos mecanismos do `CLAUDE.md` §6/§8 (tabela 
 
 O documento de origem propõe rebaixar dois itens hoje fechados no `CLAUDE.md` para Fase 2, achando que a versão MVP mais barata já cobre o risco:
 
-- **MFA completo** (`admin`, `treasury`) — hoje `CLAUDE.md` §8 lista como obrigatório e fechado. Proposta: reautenticação por senha cobre o MVP, MFA completo (app autenticador) entra depois, quando houver tempo de engenharia pra operar sem gerar fricção de suporte (recuperação de acesso perdido, etc.).
+- ~~**MFA completo**~~ — **resolvido em 14/10/2026 (OOC-29):** MFA real para o staff, por **código enviado ao e-mail** (decisão do dono — app autenticador fica para depois). Obrigatório para `master`/`admin`/`billing`, opcional para os demais, com códigos de recuperação. Mecanismo em `apps/api/CLAUDE.md`, "MFA do staff".
 - **Captcha** (Cloudflare Turnstile) — hoje `CLAUDE.md` §3 lista como stack fechada. Proposta: começar só com rate limit por IP, evoluir pra captcha se houver abuso real observado em produção.
 
 **Isso não está decidido.** `CLAUDE.md` continua valendo como está até essa confirmação acontecer — ver seção 9 do `CLAUDE.md` ("avise antes de executar" quando um pedido contradiz o que está fechado).
@@ -195,7 +195,7 @@ Detalhe completo do padrão de integração (fronteira com `packages/domain`, co
 
 **Adapter implementado.** `better-auth` roda dentro de `apps/api` (`infra/auth/betterAuth.ts`, Postgres via `pg.Pool`/`DATABASE_URL`), a rota catch-all `/api/auth/*` (`http/auth/AuthCatchAllRoute.ts`) converte Fastify ↔ Web Request/Response, `ICurrentSessionPort` está implementada (`infra/identity/BetterAuthCurrentSessionPort.ts`, reconstrói o header `Cookie` a partir do valor opaco recebido) e o proxy same-origin existe em `apps/app/src/app/api/auth/[...all]/route.ts` (repassa via `API_INTERNAL_URL`, env server-only em `src/server-env.ts`). Sign-up/sign-in/get-session testados ponta a ponta local (browser→`apps/app`→`apps/api`→Postgres), incluindo confirmar que `role` no payload de signup é ignorado (`input:false` segurando na prática). Migration do Better Auth (`user`/`session`/`account`/`verification`) versionada em `packages/db/migrations/0001_better_auth_core.sql`, com `default`/`CHECK` em `user.role` espelhando `packages/domain/src/identity/Role.ts` além do que o CLI gerou.
 
-**Ainda não implementado, propositalmente:** os adapters concretos de `IUserRoleRepository`/`IAuditLogRepository`/`IFreshAuthVerifier` e o wiring de `PromoteUserRoleUseCase` — o bloqueio real é só `audit_log` (Sessão 7 do `ROADMAP.md`): a promoção de papel escreve `role` + `audit_log` na mesma transação (§ acima), e sem a tabela de audit log essa transação não existe ainda. O login do staff e o do aluno são reais; o MFA do staff ainda está pendente. O auto-cadastro do Better Auth está fechado (`disableSignUp`) e as contas são gravadas por `apps/api/src/infra/auth/credentialAccount.ts`; o aluno entra por `POST /api/v1/portal/sign-in` (`docs/superpowers/specs/2026-10-05-student-auth-design.md`).
+**Ainda não implementado, propositalmente:** os adapters concretos de `IUserRoleRepository`/`IAuditLogRepository`/`IFreshAuthVerifier` e o wiring de `PromoteUserRoleUseCase` — o bloqueio real é só `audit_log` (Sessão 7 do `ROADMAP.md`): a promoção de papel escreve `role` + `audit_log` na mesma transação (§ acima), e sem a tabela de audit log essa transação não existe ainda. O login do staff e o do aluno são reais; o MFA do staff (código por e-mail, plugin `twoFactor`) é real desde a OOC-29 — `apps/api/CLAUDE.md`, "MFA do staff". O auto-cadastro do Better Auth está fechado (`disableSignUp`) e as contas são gravadas por `apps/api/src/infra/auth/credentialAccount.ts`; o aluno entra por `POST /api/v1/portal/sign-in` (`docs/superpowers/specs/2026-10-05-student-auth-design.md`).
 
 **Docs interativas.** `better-auth` roda com o plugin `openAPI()` (`infra/auth/betterAuth.ts`), e `infra/plugins/authSwagger.ts` reprefixa (`/api/auth/...`) e funde o schema gerado por ele no mesmo documento do `@fastify/swagger` — os ~30 endpoints do auth aparecem lado a lado com o resto da API em `/docs`, um só lugar, sem precisar visitar a página `/api/auth/reference` própria do better-auth. É um monkey-patch deliberado em `app.swagger()` (as rotas do auth não são rotas Fastify com schema Zod, então `@fastify/swagger` nunca as vê sozinho) — só registrado fora de produção, junto do resto do Swagger. `trustedOrigins` inclui a própria origem local de `apps/api` fora de produção (além de `APP_PUBLIC_URLS`, lista separada por vírgula — os dois domínios de `apps/app`, `apps/app/CLAUDE.md` "Dois domínios, um deploy") só pra "try it out" funcionar direto em `/docs`, sem passar pelo proxy de `apps/app`.
 
@@ -499,8 +499,9 @@ variável na Vercel.
 **Quem abre: só os donos da plataforma.** Não é cargo — são os domínios do
 e-mail (`isOwnerEmail`, `packages/domain/src/identity/Role.ts`,
 `MASTER_EMAIL_DOMAINS = ["nrlabsdigital.com", "admin.com"]` — o segundo entrou
-17/09/2026, junto do fix de §8.8, porque a conta que a equipe realmente usa
-como login de produção carrega esse domínio, não o outro). O que a plataforma
+17/09/2026, junto do fix de §8.8, pela premissa de que a conta de login da
+equipe em produção carregava esse domínio — premissa corrigida em 14/10/2026:
+não há conta em `admin.com` em produção, `CLAUDE.md` §8). O que a plataforma
 admite existir é decisão de quem opera a plataforma, não de quem administra a
 escola: um `admin` da Asociación autoriza tudo o que é acadêmico e nada disto.
 Na API isso é uma declaração de rota própria, `.owners()`, ao lado de

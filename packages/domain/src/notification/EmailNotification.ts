@@ -65,6 +65,12 @@ export interface EmailTemplateVars {
     recipientName: string;
     code: string;
   };
+  /** The staff panel's second-factor code (OOC-29), at sign-in or while turning
+   * the factor on. Plain text in `outbox.vars` only until the row's final transition. */
+  staff_mfa_code: {
+    recipientName: string;
+    code: string;
+  };
 }
 
 export type EmailTemplateKey = keyof EmailTemplateVars;
@@ -78,6 +84,7 @@ export const EMAIL_TEMPLATE_KEYS = [
   "staff_password_reset",
   "portal_password_reset",
   "email_verification_code",
+  "staff_mfa_code",
 ] as const satisfies readonly EmailTemplateKey[];
 
 /** One message to one recipient — the shape of one `outbox` row. A union over

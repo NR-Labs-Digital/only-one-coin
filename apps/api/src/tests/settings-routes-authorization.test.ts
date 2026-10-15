@@ -32,7 +32,7 @@ afterAll(async () => {
 
 describe("settings routes refuse undeclared roles", () => {
   it.each(CASES)("%s %s refuses %s", async (method, url, role) => {
-    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role };
+    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role, twoFactorEnabled: true };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
 
     const response = await app.inject({

@@ -36,7 +36,7 @@ que muda a tela.
 | Checkout público (`/enrollment`) | **Real**: hold de vaga, verificação do Gmail do aluno por código de 6 dígitos, upload por URL assinada, Turnstile, submit |
 | Login do aluno (`/login`, `/forgot-password`, `/access/[token]`) | **Real**: e-mail ou documento, definir/recuperar senha por link |
 | Portal do aluno (`/portal/*`) | **Real** (OOC-32): sessão (`GET /portal/me`) e dados (`GET /portal/overview`) — ficha, apoderado, matrículas, pagamentos, próxima aula, comprovante por URL assinada. Sem backend ainda, chegam vazios: módulos/mensalidade/cadeado, documentos, trâmites pagos, avisos, ofertas de continuação. Perfil só leitura |
-| Login, convite e senha do staff | **Real** (Better Auth). Falta MFA — OOC-29 |
+| Login, convite e senha do staff | **Real** (Better Auth), com MFA por código de e-mail (OOC-29): desafio no login, código de recuperação, ativação obrigatória para `master`/`admin`/`billing` |
 | Alunos (`/backoffice/students`) | **Real**: diretório com busca/filtros no servidor, abre em Ativos (matrícula vigente), com abas Ativos · Ex-alunos · Sem matrícula · Todos e contador (OOC-116), cadastro, ficha com matrículas, edição de aluno e apoderado, aba Atividade. Faltam documentos emitidos e trâmites (OOC-33), suspensão e exportação |
 | Matrículas (`/backoffice/enrollments`) | **Real**: só vaga confirmada; abre em Vigentes (turma em inscrição ou em andamento), com abas Vigentes · Encerradas · Todas e contador do servidor (OOC-115); abertura manual manda pra Pagos |
 | Pagos e fila de revisão (`/backoffice/payments*`) | **Real**: livro (abre em Abertos; abas Abertos · Resolvidos · Todos com contador, Resolvidos por data de decisão — OOC-114), fila, comprovante por URL assinada, leitura da IA, semáforo, aprovar/rejeitar (cria a conta do portal). Faltam lote, ordenação por confiança e atalhos |
@@ -45,7 +45,7 @@ que muda a tela.
 | Docentes (`/backoffice/teachers`) | **Real** (OOC-78): diretório com abas, busca e filtros no servidor; cadastro, edição de dados, disponibilidade e saída/volta ao quadro gravando na API. Contrato só é lido — upload e download são o OOC-81. O docente lendo a própria ficha espera o vínculo da conta (OOC-79) |
 | Equipe (`/backoffice/team`) | **Real**: contas, convite, troca de cargo com bitácora. Convite de docente sai como qualquer cargo, sem vínculo com a ficha em Docentes até a tela de Docentes ser ligada às tabelas `teachers` (OOC-78+, OOC-68) |
 | Funcionalidades (`/backoffice/features`) | **Real** |
-| Conta (`/backoffice/account`) | **Real**: troca da própria senha. MFA e sessões são mock |
+| Conta (`/backoffice/account`) | **Real**: troca da própria senha e verificação em dois passos (ativar, gerar códigos de recuperação, desativar onde é opcional). Sessões são mock |
 | Configuração (`/backoffice/settings`) | Parcial: reais só a reserva durante o pagamento, a tolerância de valor e o limite de rejeição do comprovante — OOC-41 |
 | Home do backoffice | **Real** (OOC-67): KPIs, prévia da fila, vagas sob pressão e badge de Pagos, cada bloco só para o cargo que a API serve. A home do docente segue mock |
 | E-mails (`/backoffice/emails*`) | Mock — OOC-42, OOC-88 |

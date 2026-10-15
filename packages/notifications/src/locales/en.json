@@ -76,6 +76,15 @@
         "{code}",
         "The code expires in 10 minutes. If you are not enrolling, ignore this e-mail."
       ]
+    },
+    "staff_mfa_code": {
+      "subject": "Your panel access code: {code}",
+      "preheader": "Type it into the Only One Coin panel. It expires in 10 minutes.",
+      "paragraphs": [
+        "Someone who knows the password of your Only One Coin panel account is signing in or turning on two-step verification. To continue, type this code:",
+        "{code}",
+        "The code expires in 10 minutes and works only once. If this was not you, do not share it with anyone and change your password: without this code nobody gets into your account."
+      ]
     }
   }
 }

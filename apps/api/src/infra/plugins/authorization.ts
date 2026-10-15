@@ -1,8 +1,10 @@
 import {
   InsufficientPrivilegeError,
+  MfaEnrollmentRequiredError,
   NotAPlatformOwnerError,
   UnauthorizedError,
   isOwnerEmail,
+  requiresMfa,
   type AuthenticatedUser,
   type Role,
 } from "@ooc/domain";
@@ -11,11 +13,15 @@ import fp from "fastify-plugin";
 import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 
-/** The three ways a route may declare who it answers to — each one a session check. */
+/**
+ * The three ways a route may declare who it answers to — each one a session
+ * check. `beforeMfa` marks the handful of routes a cargo that must have the
+ * second factor can still reach before turning it on: the ones that turn it on.
+ */
 export type RouteAuth =
   | { public: true }
-  | { public: false; roles: Role[] }
-  | { public: false; owners: true };
+  | { public: false; roles: Role[]; beforeMfa?: true }
+  | { public: false; owners: true; beforeMfa?: true };
 
 declare module "fastify" {
   interface FastifyContextConfig {
@@ -122,6 +128,18 @@ async function authorizationPlugin(app: FastifyInstance) {
       }
     } else if (!auth.roles.includes(user.role)) {
       throw new InsufficientPrivilegeError({ path: request.url });
+    }
+
+    /**
+     * The second factor is not optional for master/admin/billing (CLAUDE.md
+     * §8). Once it is on, Better Auth itself never opens a session without
+     * the code. This covers the account before that: a password alone still
+     * opens a session there — an account that never enrolled, one just
+     * promoted into the cargo — and that session reaches nothing but the
+     * routes that turn the factor on.
+     */
+    if (requiresMfa(user.role) && !user.twoFactorEnabled && !auth.beforeMfa) {
+      throw new MfaEnrollmentRequiredError({ path: request.url });
     }
 
     request.currentUser = user;

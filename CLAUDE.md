@@ -111,7 +111,7 @@ Se algo parecer exigir um desses, **pare e pergunte**.
 | Hospedagem | **Vercel** (landing + app) · **Fly.io** (`apps/api`, GRU/São Paulo, VM always-on, deploy blue-green) | deploy por GitHub Actions a cada push em `main` |
 | Banco | **Postgres** gerenciado — **Neon** (`sa-east-1`), Drizzle ORM + Drizzle Kit | em uso |
 | Storage | **Tigris** (Fly.io, S3-compatible) — comprovantes e backups | em uso |
-| Auth | **Better Auth**, embutido em `apps/api`, nunca instanciado em `apps/app` | em uso (staff e aluno); MFA não configurado (OOC-29) |
+| Auth | **Better Auth**, embutido em `apps/api`, nunca instanciado em `apps/app` | em uso (staff e aluno); MFA do staff por código de e-mail (OOC-29) |
 | Fila | **Redis self-hospedado no Fly.io** (`redis-nrlabs`, repo NR-Labs/services) **+ BullMQ**, chaves sob `ooc:` (`QUEUE_PREFIX`) | em uso |
 | Rate limit + idempotência | **Mesmo Redis**, aplicado **dentro de `apps/api`** (a borda da Vercel não alcança a rede privada do Fly) | em uso (OOC-24) |
 | Captcha | **Cloudflare Turnstile** | em uso (checkout e recuperação de senha) |
@@ -283,7 +283,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 - Bucket de comprovantes privado, signed URL de 5 min, caminho escopado por aluno, acesso registrado
 - Docente vê só as próprias turmas — checagem explícita no usecase (`teacher_id` do usuário autenticado comparado ao dado), nunca um filtro montado a partir de input do cliente
 - Nenhum id vindo do cliente é confiado (anti-IDOR)
-- MFA obrigatório: `master`, `admin`, `billing`
+- MFA obrigatório: `master`, `admin`, `billing`; opcional para o resto do staff (OOC-29, 14/10/2026). **Por código enviado ao e-mail** (decisão do dono — app autenticador fica para depois), com 10 códigos de recuperação. Sem "confiar neste navegador": o código é pedido em todo login. Para os três cargos não há como desligar, e a API recusa a sessão deles em toda rota até ativarem — mecanismo em `apps/api/CLAUDE.md`, "MFA do staff"
 - Anti-enumeração: login e recuperação de senha respondem igual para conta existente e inexistente
 - Upload validado por **magic bytes**, re-encode da imagem, teto de tamanho
 - Headers: CSP, HSTS, X-Frame-Options, Referrer-Policy
@@ -294,7 +294,8 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 **Papéis (quadro redefinido pelo dono, 07/09/2026):** `master`, `admin`, `analyst`, `enrollment_supervisor`, `academic_supervisor`, `teacher`, `sales`, `support`, `billing`. Aluno e apoderado: `student`, `guardian`. Substituiu o quadro antigo (`coordinator`, `treasury`, `mass_approver` deixaram de existir; grosso modo: coordinator → enrollment_supervisor, treasury → billing, mass_approver extinto — aprovação é de admin/billing).
 
 - **`master`** é o cargo dos donos da plataforma: vê e faz tudo, e **só conta em `@nrlabsdigital.com` ou `@admin.com`** pode carregá-lo (`canHoldMaster`, `apps/app/src/lib/backoffice/permissions.ts`). Os mesmos domínios — e não o cargo — são o que abre a seção **Funcionalidades** (§5): lá quem decide é `isOwnerEmail`, então um `admin` da Asociación é recusado e um dono passa com qualquer cargo.
-  - **`admin.com` entrou na lista em 17/09/2026**, decisão do dono, junto do fix do incidente de Funcionalidades (§5): a conta que a equipe de fato usa como login de produção carrega esse domínio, não `nrlabsdigital.com`, e sem isso ela nunca teria como abrir Funcionalidades — nem pra reverter um flag que ela mesma derrubou. `MASTER_EMAIL_DOMAINS` (plural agora, `packages/domain/src/identity/Role.ts` e o espelho em `apps/app/src/lib/backoffice/permissions.ts`) é lista, não string única. Isso não reabre `docs/REGRAS-NEGOCIO.md`/seed: `admin@admin.com` **continua** sendo a credencial do script `seed-admin.ts` (§8, "Bootstrap"), que segue proibido apontar pra staging/produção — a conta em produção com esse domínio tem senha própria, gerada à parte, não a do seed.
+  - **`admin.com` entrou na lista em 17/09/2026**, decisão do dono, junto do fix do incidente de Funcionalidades (§5): a conta que a equipe de fato usa como login de produção carrega esse domínio, não `nrlabsdigital.com`, e sem isso ela nunca teria como abrir Funcionalidades — nem pra reverter um flag que ela mesma derrubou. `MASTER_EMAIL_DOMAINS` (plural agora, `packages/domain/src/identity/Role.ts` e o espelho em `apps/app/src/lib/backoffice/permissions.ts`) é lista, não string única. Isso não reabre `docs/REGRAS-NEGOCIO.md`/seed: `admin@admin.com` **continua** sendo a credencial do script `seed-admin.ts` (§8, "Bootstrap"), que segue proibido apontar pra staging/produção.
+  - **Correção (14/10/2026, dono):** a conta de produção em `admin.com` descrita acima **não existe** — não há conta nesse domínio em produção. O domínio continua na lista. Desde o MFA (OOC-29), conta de `master`/`admin`/`billing` precisa de uma caixa de e-mail real para receber o código, e em produção não há redirecionamento para a allowlist: uma conta futura em `admin.com` só funciona se esse endereço receber e-mail.
 - **`admin`** vê tudo e autoriza. **`analyst`** (assistente/analista da administração) observa todas as áreas e propõe solução, mas **não aprova nem edita nada**.
 - **`enrollment_supervisor`** cuida do lado acadêmico das matrículas (alunos, matrículas manuais, cursos/turmas); **`academic_supervisor`** supervisiona os docentes.
 - **`sales`** (vendedor) e **`support`** (atenção ao cliente) leem alunos/matrículas; **`billing`** (facturación) liquida dinheiro e não vê dado acadêmico não financeiro.
