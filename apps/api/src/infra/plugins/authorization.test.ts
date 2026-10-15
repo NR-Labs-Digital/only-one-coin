@@ -39,6 +39,25 @@ async function buildTestApp(): Promise<FastifyInstance> {
   );
 
   provider.route(
+    RouteBuilder.get("/admin-only")
+      .roles("master", "admin", "billing")
+      .response(200, z.object({ ok: z.boolean() }))
+      .handler(async (_request, reply) => {
+        reply.send({ ok: true });
+      }),
+  );
+
+  provider.route(
+    RouteBuilder.get("/admin-enrollment")
+      .roles("admin")
+      .allowBeforeMfa()
+      .response(200, z.object({ ok: z.boolean() }))
+      .handler(async (_request, reply) => {
+        reply.send({ ok: true });
+      }),
+  );
+
+  provider.route(
     RouteBuilder.get("/open")
       .public()
       .response(200, z.object({ ok: z.boolean() }))
@@ -90,6 +109,7 @@ describe("authorization plugin", () => {
       email: "t@example.com",
       name: "Treasury User",
       role: "billing",
+      twoFactorEnabled: false,
     };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(billingUser);
 
@@ -109,6 +129,7 @@ describe("authorization plugin", () => {
       email: "c@example.com",
       name: "Coordinator User",
       role: "enrollment_supervisor",
+      twoFactorEnabled: false,
     };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(supervisorUser);
 
@@ -132,6 +153,7 @@ describe("authorization plugin", () => {
       email: "admin@onlyonecoin.edu.pe",
       name: "Admin de la Asociación",
       role: "admin",
+      twoFactorEnabled: false,
     } satisfies AuthenticatedUser);
 
     const response = await app.inject({
@@ -150,6 +172,7 @@ describe("authorization plugin", () => {
       email: "rick@nrlabsdigital.com",
       name: "Owner",
       role: "support",
+      twoFactorEnabled: false,
     } satisfies AuthenticatedUser);
 
     const response = await app.inject({
@@ -170,12 +193,92 @@ describe("authorization plugin", () => {
       email: "team@admin.com",
       name: "Owner via admin.com",
       role: "support",
+      twoFactorEnabled: false,
     } satisfies AuthenticatedUser);
 
     const response = await app.inject({
       method: "GET",
       url: "/owners-only",
       cookies: { [SESSION_COOKIE_NAME]: "some-valid-token" },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  /* The second factor is mandatory for master/admin/billing (CLAUDE.md §8,
+     OOC-29): a password-only session of one of those cargos reaches only the
+     routes that turn the factor on. */
+  it.each(["master", "admin", "billing"] as const)(
+    "refuses a %s session without the second factor, on a route its cargo is allowed",
+    async (role) => {
+      const app = await buildTestApp();
+      vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({
+        id: "u6",
+        email: "a@example.com",
+        name: "Privileged",
+        role,
+        twoFactorEnabled: false,
+      } satisfies AuthenticatedUser);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/admin-only",
+        cookies: { [SESSION_COOKIE_NAME]: "t" },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json().reason).toBe("auth.mfa_enrollment_required");
+    },
+  );
+
+  it("lets an admin with the second factor on through", async () => {
+    const app = await buildTestApp();
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({
+      id: "u7",
+      email: "a@example.com",
+      name: "Admin",
+      role: "admin",
+      twoFactorEnabled: true,
+    } satisfies AuthenticatedUser);
+
+    const response = await app.inject({ method: "GET", url: "/admin-only", cookies: { [SESSION_COOKIE_NAME]: "t" } });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("lets an admin without the second factor reach a route that turns it on", async () => {
+    const app = await buildTestApp();
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({
+      id: "u8",
+      email: "a@example.com",
+      name: "Admin",
+      role: "admin",
+      twoFactorEnabled: false,
+    } satisfies AuthenticatedUser);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/admin-enrollment",
+      cookies: { [SESSION_COOKIE_NAME]: "t" },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("does not ask the second factor of a cargo where it is optional", async () => {
+    const app = await buildTestApp();
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({
+      id: "u9",
+      email: "s@example.com",
+      name: "Supervisor",
+      role: "enrollment_supervisor",
+      twoFactorEnabled: false,
+    } satisfies AuthenticatedUser);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/supervisor-only",
+      cookies: { [SESSION_COOKIE_NAME]: "t" },
     });
 
     expect(response.statusCode).toBe(200);

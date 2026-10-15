@@ -1,33 +1,40 @@
 import { sql } from "drizzle-orm";
+import { verifyPassword } from "better-auth/crypto";
 import type { IFreshAuthVerifier } from "@ooc/domain";
-import type { Auth } from "@/infra/auth/betterAuth.js";
 import type { Db } from "@/infra/db/client.js";
 
 /**
- * Confirms the acting admin's own password again, right now — the plugin
- * `admin` do Better Auth não garante isso sozinho (CLAUDE.md §8). Calls
- * `auth.api.signInEmail` directly (server-side, not over HTTP) purely to
- * check the password; whatever session it mints is never surfaced to the
- * caller, so the admin's real, already-open session is untouched.
+ * Confirms the acting user's own password again, right now — the plugin
+ * `admin` do Better Auth não garante isso sozinho (CLAUDE.md §8). Checks the
+ * typed password against the credential row's hash with Better Auth's own
+ * verifier (`better-auth/crypto`, the hasher `credentialAccount.ts` writes
+ * with).
+ *
+ * It used to call `auth.api.signInEmail` and discard the result. That minted a
+ * session on every check — left open in the "session" table, and counted as a
+ * sign-in by the team directory — and, once the account has the second factor
+ * on (OOC-29), a sign-in no longer returns a session at all: it opens a
+ * code challenge instead. A password check is not a sign-in.
  */
 export class BetterAuthFreshAuthVerifier implements IFreshAuthVerifier {
-  constructor(
-    private readonly auth: Auth,
-    private readonly db: Db,
-  ) {}
+  constructor(private readonly db: Db) {}
 
-  async verify(adminUserId: string, plainPassword: string): Promise<boolean> {
-    const rows = await this.db.execute<{ email: string }>(
-      sql`select "email" from "user" where "id" = ${adminUserId}`,
-    );
-    const email = rows.rows[0]?.email;
-    if (!email) {
+  async verify(userId: string, plainPassword: string): Promise<boolean> {
+    const rows = await this.db.execute<{ password: string | null }>(sql`
+      select a."password" as "password"
+      from "account" a
+      join "user" u on u."id" = a."userId"
+      where a."userId" = ${userId}
+        and a."providerId" = 'credential'
+        and coalesce(u."banned", false) = false
+    `);
+    const hash = rows.rows[0]?.password;
+    if (!hash || !plainPassword) {
       return false;
     }
 
     try {
-      await this.auth.api.signInEmail({ body: { email, password: plainPassword } });
-      return true;
+      return await verifyPassword({ hash, password: plainPassword });
     } catch {
       return false;
     }

@@ -49,7 +49,7 @@ afterEach(() => {
 
 describe("GET /students/:id", () => {
   it("sends the birth date as the calendar date it was written on", async () => {
-    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin" };
+    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin", twoFactorEnabled: true };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
     vi.spyOn(container.edge.rateLimiter, "hit").mockResolvedValue(null);
     vi.spyOn(container.queries.getStudent, "run").mockResolvedValue(STUDENT);

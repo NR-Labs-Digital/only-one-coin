@@ -40,6 +40,7 @@ const SAMPLE_VARS: EmailTemplateVars = {
     resetUrl: "https://backoffice.onlyonecoin.edu.pe/backoffice/reset-password/abc123",
   },
   email_verification_code: { recipientName: "Rosa", code: "042137" },
+  staff_mfa_code: { recipientName: "Rosa Quispe", code: "042137" },
 };
 
 const LOCALES = LocaleSchema.options;

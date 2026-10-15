@@ -85,7 +85,7 @@ describe("POST /enrollments/public refuses invalid fields", () => {
 
 describe("POST /students refuses invalid fields", () => {
   it("names each field and its code", async () => {
-    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin" };
+    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin", twoFactorEnabled: true };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
 
     const response = await app.inject({
@@ -109,7 +109,7 @@ describe("POST /students refuses invalid fields", () => {
   });
 
   it("does not hold the backoffice to the checkout's Gmail gate (OOC-65 decides)", async () => {
-    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin" };
+    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role: "admin", twoFactorEnabled: true };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
     const run = vi
       .spyOn(container.useCases.student.register, "run")

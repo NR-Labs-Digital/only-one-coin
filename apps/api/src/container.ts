@@ -5,6 +5,11 @@ import {
   SendEmailVerificationCodeUseCase,
   CancelStaffPasswordResetUseCase,
   ChangeOwnPasswordUseCase,
+  StartOwnMfaEnrollmentUseCase,
+  ConfirmOwnMfaEnrollmentUseCase,
+  RegenerateOwnRecoveryCodesUseCase,
+  DisableOwnMfaUseCase,
+  type IStaffSecondFactor,
   CompletePortalAccessUseCase,
   CompleteStaffInviteUseCase,
   CompleteStaffPasswordResetUseCase,
@@ -95,6 +100,9 @@ import { TurnstileCaptchaVerifier, type CaptchaVerifier } from "./infra/edge/Tur
 import { createAuth, type Auth } from "./infra/auth/betterAuth.js";
 import { BetterAuthCurrentSessionPort } from "./infra/identity/BetterAuthCurrentSessionPort.js";
 import { BetterAuthFreshAuthVerifier } from "./infra/identity/BetterAuthFreshAuthVerifier.js";
+import { BetterAuthStaffSecondFactor } from "./infra/identity/BetterAuthStaffSecondFactor.js";
+import { OutboxTwoFactorCodeSender } from "./infra/auth/OutboxTwoFactorCodeSender.js";
+import { recoveryCodeCipher } from "./infra/auth/recoveryCodes.js";
 import { PortalLinkBuilder } from "./infra/identity/PortalLinkBuilder.js";
 import { BackofficePasswordResetLinkBuilder } from "./infra/identity/BackofficePasswordResetLinkBuilder.js";
 import { BetterAuthStaffAccountProvisioner } from "./infra/identity/BetterAuthStaffAccountProvisioner.js";
@@ -241,6 +249,10 @@ export interface AppUseCases {
     completePasswordReset: CompleteStaffPasswordResetUseCase;
     requestPasswordReset: RequestStaffPasswordResetUseCase;
     changeOwnPassword: ChangeOwnPasswordUseCase;
+    startOwnMfaEnrollment: StartOwnMfaEnrollmentUseCase;
+    confirmOwnMfaEnrollment: ConfirmOwnMfaEnrollmentUseCase;
+    regenerateOwnRecoveryCodes: RegenerateOwnRecoveryCodesUseCase;
+    disableOwnMfa: DisableOwnMfaUseCase;
   };
   portal: {
     resolveSignInEmail: ResolvePortalSignInEmailUseCase;
@@ -308,6 +320,7 @@ export interface AppIdentity {
   staffAccountProvisioner: IStaffAccountProvisioner;
   staffUserLookup: IStaffUserLookup;
   staffPasswordSetter: IStaffPasswordSetter;
+  staffSecondFactor: IStaffSecondFactor;
 }
 
 /** What the e-mail workers need — the outbox and the (guarded) provider. */
@@ -352,9 +365,14 @@ function buildContainer(): AppContainer {
   const config = loadConfig();
   const logger = createLogger(config);
 
+  // Persistence — ahead of auth: the second-factor code is e-mailed through
+  // the outbox, so Better Auth needs the database handle to send it.
+  const db = createDb(config);
+
   // Auth
-  const auth = createAuth(config);
+  const auth = createAuth(config, { codeSender: new OutboxTwoFactorCodeSender(db) });
   const currentSession = new BetterAuthCurrentSessionPort(auth);
+  const staffSecondFactor = new BetterAuthStaffSecondFactor(auth, db, recoveryCodeCipher(config.BETTER_AUTH_SECRET));
 
   // Public-route protection
   const edgeRedis = createEdgeRedis(config.REDIS_URL, logger);
@@ -365,9 +383,7 @@ function buildContainer(): AppContainer {
     captcha: new TurnstileCaptchaVerifier(config.TURNSTILE_SECRET_KEY, logger),
   };
 
-  // Persistence
-  const db = createDb(config);
-  const freshAuthVerifier = new BetterAuthFreshAuthVerifier(auth, db);
+  const freshAuthVerifier = new BetterAuthFreshAuthVerifier(db);
 
   // Repositories
   const studentRepository = new DrizzleStudentRepository(db);
@@ -474,6 +490,14 @@ function buildContainer(): AppContainer {
     staffSessionRevoker,
     auditLogRepository,
   );
+  const startOwnMfaEnrollment = new StartOwnMfaEnrollmentUseCase(staffSecondFactor);
+  const confirmOwnMfaEnrollment = new ConfirmOwnMfaEnrollmentUseCase(staffSecondFactor, auditLogRepository);
+  const regenerateOwnRecoveryCodes = new RegenerateOwnRecoveryCodesUseCase(
+    freshAuthVerifier,
+    staffSecondFactor,
+    auditLogRepository,
+  );
+  const disableOwnMfa = new DisableOwnMfaUseCase(freshAuthVerifier, staffSecondFactor, auditLogRepository);
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
   const updateCheckoutHoldMinutes = new UpdateCheckoutHoldMinutesUseCase(platformSettingsRepository, auditLogRepository);
@@ -570,6 +594,7 @@ function buildContainer(): AppContainer {
       staffAccountProvisioner,
       staffUserLookup,
       staffPasswordSetter,
+      staffSecondFactor,
     },
     notifications: {
       outbox: outboxRepository,
@@ -643,6 +668,10 @@ function buildContainer(): AppContainer {
         completePasswordReset,
         requestPasswordReset,
         changeOwnPassword,
+        startOwnMfaEnrollment,
+        confirmOwnMfaEnrollment,
+        regenerateOwnRecoveryCodes,
+        disableOwnMfa,
       },
       portal,
       platform: {

@@ -37,6 +37,11 @@ export const RATE_LIMITS = {
   /** Every staff route, per account. Default of `.roles()`/`.owners()`. */
   staff: { name: "staff", by: "user", limit: 600, windowSeconds: 5 * MINUTE },
 
+  /** Turning on the second factor: mailing the code, per account — an inbox, not a budget. */
+  staffMfaSend: { name: "staff-mfa-send", by: "user", limit: 5, windowSeconds: 15 * MINUTE },
+  /** Turning on the second factor: typing the code (Better Auth also burns a code after 5 misses). */
+  staffMfaConfirm: { name: "staff-mfa-confirm", by: "user", limit: 20, windowSeconds: 15 * MINUTE },
+
   /** Better Auth's catch-all: sign-in, sign-out, session refresh. */
   auth: { name: "auth:ip", by: "ip", limit: 60, windowSeconds: 5 * MINUTE },
   /** Liveness probes and the root banner. */

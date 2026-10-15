@@ -29,6 +29,7 @@ interface StaffUserRow extends Record<string, unknown> {
   email: string;
   role: string;
   banned: boolean;
+  twoFactorEnabled: boolean;
   createdAt: string;
   lastAccessAt: string | null;
 }
@@ -40,10 +41,10 @@ interface StaffUserRow extends Record<string, unknown> {
  * invariant to protect, so it lives here rather than in packages/domain,
  * same call `ListStudentsQuery` already makes.
  *
- * `teacherId` is always null and `mfaEnrolled` is always false — there is no
- * `teachers` table yet (GetCurrentStaffRoute.ts already documents the same
- * gap) and Better Auth's `twoFactor` plugin isn't configured
- * (backoffice-login-form.tsx already flags this), so neither is faked here.
+ * `teacherId` is always null — nothing links a panel account to a teacher
+ * record yet (GetCurrentStaffRoute.ts documents the same gap), so it is not
+ * faked here. `mfaEnrolled` is the account's `twoFactorEnabled` (OOC-29); an
+ * invite has no account yet, so it is always false there.
  */
 export class ListStaffQuery {
   constructor(private readonly db: Db) {}
@@ -56,6 +57,7 @@ export class ListStaffQuery {
         u."email" as "email",
         u."role" as "role",
         u."banned" as "banned",
+        u."twoFactorEnabled" as "twoFactorEnabled",
         u."createdAt" as "createdAt",
         (select max(s."createdAt") from "session" s where s."userId" = u."id") as "lastAccessAt"
       from "user" u
@@ -72,7 +74,7 @@ export class ListStaffQuery {
         role: row.role,
         status: row.banned ? "inactive" : "active",
         teacherId: null,
-        mfaEnrolled: false,
+        mfaEnrolled: row.twoFactorEnabled,
         joinedAt: new Date(row.createdAt),
         lastAccessAt: row.lastAccessAt ? new Date(row.lastAccessAt) : null,
         inviteToken: null,
