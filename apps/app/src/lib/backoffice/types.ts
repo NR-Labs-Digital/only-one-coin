@@ -576,6 +576,31 @@ export interface WaitlistItem {
 }
 
 /**
+ * Who is enrolled in a class group (confirmed seats). `file` — national id and
+ * contact — comes only to who reads the student file; the API leaves it out
+ * for everyone else, and `view` says which of the two the reader got.
+ */
+export interface ClassGroupRoster {
+  view: 'full' | 'limited'
+  items: ClassGroupRosterItem[]
+}
+
+export interface ClassGroupRosterItem {
+  enrollmentId: string
+  studentId: string
+  studentName: string
+  planName: string
+  /** The enrollment's latest payment; null for a seat confirmed without one (seed, legacy import). */
+  paymentStatus: PaymentStatus | null
+  file: {
+    nationalIdType: NationalIdType
+    nationalId: string
+    email: string
+    phone: string
+  } | null
+}
+
+/**
  * A course as the catalog holds it. The class group is an instance of a course
  * with a schedule, a teacher and seats (`docs/REQUISITOS.md` RF09) — what lives
  * here is what every one of its class groups inherits.

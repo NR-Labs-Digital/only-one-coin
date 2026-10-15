@@ -2,6 +2,7 @@ import { apiFetch } from './api-client'
 import type {
   AcademicPeriodItem,
   ClassGroupItem,
+  ClassGroupRoster,
   CourseDetail,
   CourseRow,
   TeacherOption,
@@ -89,6 +90,19 @@ export async function getCatalogClassGroup(id: string): Promise<ClassGroupItem |
     const response = await apiFetch(`/api/v1/catalog/class-groups/${encodeURIComponent(id)}`)
     if (!response.ok) return null
     return (await response.json()) as ClassGroupItem
+  } catch {
+    return null
+  }
+}
+
+/** Who is enrolled in a class group. `null` = the API failed. */
+export async function getClassGroupRoster(id: string): Promise<ClassGroupRoster | null> {
+  try {
+    const response = await apiFetch(
+      `/api/v1/catalog/class-groups/${encodeURIComponent(id)}/roster`,
+    )
+    if (!response.ok) return null
+    return (await response.json()) as ClassGroupRoster
   } catch {
     return null
   }

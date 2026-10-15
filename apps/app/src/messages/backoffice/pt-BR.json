@@ -1150,6 +1150,20 @@
       "removed": "Aluno retirado da espera",
       "only_when_full": "A espera abre quando a turma lota."
     },
+    "roster": {
+      "title": "Matriculados",
+      "count": "{count, plural, one {# aluno} other {# alunos}}",
+      "empty": "Ainda não há matrículas confirmadas nesta turma.",
+      "load_error": "Não foi possível carregar a lista de matriculados. Recarregue a página.",
+      "col_student": "Aluno",
+      "col_document": "Documento",
+      "col_contact": "Contato",
+      "col_plan": "Plano",
+      "col_payment": "Pagamento",
+      "no_payment": "Sem pagamento registrado",
+      "open_file": "Ver ficha",
+      "limited_note": "Documento e contato só aparecem para a administração e a supervisão de matrículas."
+    },
     "teacher_groups": {
       "certificates_link": "Emissão de certificados",
       "grades_title": "Notas",
