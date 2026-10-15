@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { LanguageGlobe } from '@/components/language-globe'
 import { CheckCircleIcon, KeyIcon, ShieldIcon } from './icons'
-import { BackofficeLoginForm } from './backoffice-login-form'
+import { BackofficeLoginForm, type InitialLoginStep } from './backoffice-login-form'
 
 /**
  * Backoffice entry point — deliberately discreet: never linked from the landing
@@ -17,12 +17,27 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+/**
+ * `?mfa=` opens the form on a second-factor step: `challenge` after a password
+ * reset on an account with the factor on (Better Auth is holding the session
+ * for a code), `setup` when the panel was refused for a cargo that must turn
+ * it on (lib/backoffice/session.ts). Anything else is the plain login.
+ */
+const INITIAL_STEPS: Record<string, InitialLoginStep> = {
+  challenge: 'mfa',
+  setup: 'mfa_setup',
+}
+
 export default async function BackofficePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ mfa?: string | string[] }>
 }) {
   const { locale } = await params
+  const { mfa } = await searchParams
+  const initialStep = typeof mfa === 'string' ? INITIAL_STEPS[mfa] : undefined
   setRequestLocale(locale)
   const t = await getTranslations('backoffice')
 
@@ -115,7 +130,7 @@ export default async function BackofficePage({
 
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <BackofficeLoginForm />
+            <BackofficeLoginForm initialStep={initialStep} />
 
             <p className="mt-8 flex items-start gap-2 text-xs text-muted-foreground">
               <ShieldIcon size={14} className="mt-0.5 shrink-0 text-brand-blue" />

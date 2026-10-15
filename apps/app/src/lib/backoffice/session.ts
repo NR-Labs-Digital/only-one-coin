@@ -25,6 +25,10 @@ const DEMO_TEACHER_ID = 'tea_01'
  * backoffice login rather than returned as null, so every call site below
  * can keep assuming a `StaffUser` exists, same as when this read a mock.
  *
+ * A cargo that must have the second factor and has not turned it on yet is
+ * refused by apps/api on `/me` too (`auth.mfa_enrollment_required`, OOC-29):
+ * that one goes to the login's enrollment step, not back to the password.
+ *
  * Memoized per request (`cache`, same pattern as the feature-flag reads in
  * `lib/feature-flags/server.ts`): the panel's shell and its gate both need
  * it, on every screen, and that is one call to `/me` either way.
@@ -34,7 +38,10 @@ export const getStaffSession = cache(async (): Promise<StaffUser> => {
 
   if (!response.ok) {
     const locale = await getLocale()
-    redirect({ href: '/backoffice', locale })
+    const body = (await response.json().catch(() => null)) as { reason?: string } | null
+    const href =
+      body?.reason === 'auth.mfa_enrollment_required' ? '/backoffice?mfa=setup' : '/backoffice'
+    redirect({ href, locale })
     // redirect() throws NEXT_REDIRECT — unreachable, closes TS control flow.
     throw new Error('unreachable')
   }

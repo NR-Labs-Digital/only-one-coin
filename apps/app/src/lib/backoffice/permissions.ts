@@ -310,7 +310,8 @@ export function canConfigureSettings(role: StaffRole): boolean {
 /**
  * Whose second factor is not optional (CLAUDE.md §8). These cargos move money
  * or hand out roles, so the panel never offers them a switch to turn it off.
- * The enforcing check is the session policy in `apps/api`.
+ * Mirrors `MFA_REQUIRED_ROLES` (packages/domain); the enforcing check is the
+ * authorization hook in `apps/api`, which refuses them until it is on.
  */
 export function isMfaMandatory(role: StaffRole): boolean {
   return isManagement(role) || role === 'billing'

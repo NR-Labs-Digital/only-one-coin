@@ -106,10 +106,11 @@ export interface StaffMemberRow {
    */
   teacherId: string | null
   /**
-   * Whether the second factor is already set up on the account. Required for
-   * `admin`, `treasury` and `mass_approver` (CLAUDE.md §8) — which makes a
-   * pending one on those cargos a finding, not a preference somebody skipped.
-   * Enrolling it is the account owner's own action; nobody enrolls it for them.
+   * Whether the second factor is on (`twoFactorEnabled`, OOC-29). Required for
+   * `master`, `admin` and `billing` (CLAUDE.md §8) — apps/api refuses those
+   * cargos everywhere until it is on, so a pending one is an account that has
+   * not signed in since. Enrolling it is the account owner's own action, by a
+   * code e-mailed to them; nobody enrolls it for them.
    */
   mfaEnrolled: boolean
   /** ISO date the account was opened — the day the invite was completed. */
@@ -1331,8 +1332,8 @@ export interface GeneralSettings {
  * the rest is administration's to change.
  */
 
-/** The only second factor the panel offers — an authenticator app. */
-export type MfaMethod = 'totp'
+/** The only second factor the panel offers — a code e-mailed at sign-in (OOC-29). */
+export type MfaMethod = 'email'
 
 export interface AccountMfa {
   enabled: boolean
