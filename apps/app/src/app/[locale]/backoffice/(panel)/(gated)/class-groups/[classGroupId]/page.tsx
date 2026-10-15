@@ -7,6 +7,7 @@ import {
 } from '@/lib/backoffice/mock-data'
 import {
   getCatalogClassGroup,
+  getClassGroupRoster,
   listCatalogCourses,
   listCatalogWaitlist,
   listTeacherOptions,
@@ -40,6 +41,7 @@ import { ClassGroupCertificates } from './class-group-certificates'
 import { ClassGroupActions } from './class-group-actions'
 import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
+import { RosterCard } from './roster-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 type Translate = Awaited<ReturnType<typeof getTranslations<'bo'>>>
@@ -77,7 +79,9 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [waitlist, courses, teachers] = await Promise.all([
+  const [roster, waitlist, courses, teachers] = await Promise.all([
+    // Every catalog reader gets the roster; which columns is the API's call.
+    getClassGroupRoster(group.id),
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
     canManage ? listTeacherOptions() : Promise.resolve(null),
@@ -188,6 +192,8 @@ export default async function ClassGroupDetailPage({
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
       />
+
+      <RosterCard roster={roster} />
 
       {showWaitlist && (
         <WaitlistCard

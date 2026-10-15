@@ -1150,6 +1150,20 @@
       "removed": "Student removed from the waitlist",
       "only_when_full": "The waitlist opens once the class group is full."
     },
+    "roster": {
+      "title": "Enrolled students",
+      "count": "{count, plural, one {# student} other {# students}}",
+      "empty": "No confirmed enrollments in this class group yet.",
+      "load_error": "The list of enrolled students could not be loaded. Reload the page.",
+      "col_student": "Student",
+      "col_document": "ID document",
+      "col_contact": "Contact",
+      "col_plan": "Plan",
+      "col_payment": "Payment",
+      "no_payment": "No payment recorded",
+      "open_file": "Open file",
+      "limited_note": "ID document and contact are shown only to management and enrollment supervision."
+    },
     "teacher_groups": {
       "certificates_link": "Certificate issuing",
       "grades_title": "Grades",
