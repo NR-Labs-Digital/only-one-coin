@@ -41,3 +41,15 @@ export function isOwnerEmail(email: string): boolean {
 export function canHoldMaster(email: string): boolean {
   return isOwnerEmail(email);
 }
+
+/**
+ * The cargos whose second factor is not optional (CLAUDE.md §8): they approve
+ * payments, touch the money or hand out cargos. Mirrored by `isMfaMandatory`
+ * in apps/app/src/lib/backoffice/permissions.ts, which only decides what the
+ * panel offers — the enforcing check is apps/api's authorization hook.
+ */
+export const MFA_REQUIRED_ROLES = ["master", "admin", "billing"] as const satisfies readonly Role[];
+
+export function requiresMfa(role: Role): boolean {
+  return (MFA_REQUIRED_ROLES as readonly Role[]).includes(role);
+}

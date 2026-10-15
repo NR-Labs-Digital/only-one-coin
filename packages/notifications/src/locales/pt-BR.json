@@ -76,6 +76,15 @@
         "{code}",
         "O código vence em 10 minutos. Se você não está fazendo uma matrícula, ignore este e-mail."
       ]
+    },
+    "staff_mfa_code": {
+      "subject": "Seu código de acesso ao painel: {code}",
+      "preheader": "Digite-o no painel da Only One Coin. Ele vence em 10 minutos.",
+      "paragraphs": [
+        "Alguém que conhece a senha da sua conta no painel da Only One Coin está entrando ou ativando a verificação em duas etapas. Para continuar, digite este código:",
+        "{code}",
+        "O código vence em 10 minutos e só pode ser usado uma vez. Se não foi você, não o compartilhe com ninguém e troque sua senha: sem este código ninguém entra na sua conta."
+      ]
     }
   }
 }
