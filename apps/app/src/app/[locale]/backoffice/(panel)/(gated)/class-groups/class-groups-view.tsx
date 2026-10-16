@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import type {
   AcademicPeriodItem,
   ClassGroupItem,
@@ -17,6 +17,7 @@ import {
   Toolbar,
   toolbarSearchClass,
 } from '@/components/backoffice/ui'
+import { formatMonthLong, type Locale } from '@/lib/format'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
@@ -26,6 +27,9 @@ import { CLASS_GROUP_COLUMNS, ClassGroupTable, ClassGroupTableRow } from './clas
 type Sort = 'newest' | 'oldest'
 
 const ALL = 'all'
+
+/** The start filter's option for drafts that have no dates yet. */
+const NO_DATES = 'none'
 
 const STATUSES: ClassGroupStatus[] = ['draft', 'enrolling', 'in_progress', 'finished', 'closed']
 
@@ -47,7 +51,12 @@ const selectClass =
  * top, folded by language, and the finished ones in their own section below.
  *
  * The period already narrows the list to a few dozen rows, so search and the
- * language/status filters run in the browser over what the server sent.
+ * language/start/status filters run in the browser over what the server sent.
+ *
+ * The period and the start are two different questions (OOC-93): the period is
+ * the sales campaign a class group was sold in; the start is the month its
+ * classes begin. A period sells groups that start on several dates, so "which
+ * groups start in November" is the start filter, never the period.
  *
  * Creating writes through `apps/api` and re-reads the page — the browser never
  * builds a row it did not get from Postgres (CLAUDE.md §8).
@@ -69,11 +78,14 @@ export function ClassGroupsView({
   canManage: boolean
 }) {
   const t = useTranslations('bo')
+  const locale = useLocale() as Locale
   const router = useRouter()
   const pathname = usePathname()
 
   const [query, setQuery] = useState('')
   const [language, setLanguage] = useState(ALL)
+  /** A `2026-11` month key, `NO_DATES`, or `ALL`. */
+  const [start, setStart] = useState(ALL)
   const [status, setStatus] = useState<ClassGroupStatus | typeof ALL>(ALL)
   const [sort, setSort] = useState<Sort>('newest')
   /** Only the class groups nobody is allocated to yet (OOC-80). */
@@ -95,7 +107,19 @@ export function ClassGroupsView({
     [items],
   )
 
-  const activeFilters = (language !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + (unassigned ? 1 : 0)
+  /** The months class groups of this period start in, earliest first. */
+  const startMonths = useMemo(
+    () =>
+      [...new Set(items.flatMap((row) => (row.startsOn ? [row.startsOn.slice(0, 7)] : [])))].sort(),
+    [items],
+  )
+  const hasUndated = items.some((row) => row.startsOn === null)
+
+  const activeFilters =
+    (language !== ALL ? 1 : 0) +
+    (start !== ALL ? 1 : 0) +
+    (status !== ALL ? 1 : 0) +
+    (unassigned ? 1 : 0)
   /** Still being sold or taught with nobody allocated — what coordination has to resolve. */
   const unassignedCount = items.filter((row) => row.active && ACTIVE.has(row.status) && !row.teacherId).length
   const narrowed = query.trim() !== '' || activeFilters > 0
@@ -104,6 +128,10 @@ export function ClassGroupsView({
     const needle = query.trim().toLowerCase()
     return items.filter((row) => {
       if (language !== ALL && row.language !== language) return false
+      if (start !== ALL) {
+        const month = row.startsOn?.slice(0, 7) ?? NO_DATES
+        if (month !== start) return false
+      }
       if (status !== ALL && row.status !== status) return false
       if (unassigned && row.teacherId) return false
       if (!needle) return true
@@ -112,7 +140,7 @@ export function ClassGroupsView({
         .toLowerCase()
         .includes(needle)
     })
-  }, [items, query, language, status, unassigned])
+  }, [items, query, language, start, status, unassigned])
 
   /** By start date; a draft without dates goes last either way, then by code. */
   const sorted = useMemo(() => {
@@ -175,6 +203,7 @@ export function ClassGroupsView({
 
   function clearFilters() {
     setLanguage(ALL)
+    setStart(ALL)
     setStatus(ALL)
     setUnassigned(false)
   }
@@ -237,6 +266,25 @@ export function ClassGroupsView({
                   {item}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="flex min-w-40 flex-1 flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('class_groups.filter_start')}
+            </span>
+            <select
+              value={start}
+              onChange={(event) => setStart(event.target.value)}
+              className={selectClass}
+            >
+              <option value={ALL}>{t('class_groups.filter_all')}</option>
+              {startMonths.map((month) => (
+                <option key={month} value={month}>
+                  {formatMonthLong(month, locale)}
+                </option>
+              ))}
+              {hasUndated && <option value={NO_DATES}>{t('class_groups.no_dates')}</option>}
             </select>
           </label>
 

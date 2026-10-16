@@ -211,6 +211,18 @@ function compactDate(iso: string, locale: Locale, withYear: boolean): string {
     .join(' ')
 }
 
+/**
+ * A month, from a `2026-08` key, spelled out: `agosto de 2026`. For a filter
+ * option, where it is read alone and the short form would look like a typo.
+ */
+export function formatMonthLong(monthKey: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(intlLocale[locale], {
+    timeZone: 'UTC',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${monthKey}-01T00:00:00Z`))
+}
+
 export function formatDateRange(
   startIso: string,
   endIso: string,
