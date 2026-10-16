@@ -60,13 +60,15 @@ export default async function CourseDetailPage({
 
       <div className="grid gap-6 @4xl/page:grid-cols-3">
         <div className="flex flex-col gap-6 @4xl/page:col-span-2">
-          {/* About */}
-          <Card className="p-5 sm:p-6">
-            <SectionTitle>{t('course_detail.about_title')}</SectionTitle>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {course.summary}
-            </p>
-          </Card>
+          {/* About — blank on courses opened since OOC-107, which no longer ask for it */}
+          {course.summary.trim() !== '' && (
+            <Card className="p-5 sm:p-6">
+              <SectionTitle>{t('course_detail.about_title')}</SectionTitle>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {course.summary}
+              </p>
+            </Card>
+          )}
 
           {/* Schedule & class access */}
           <Card className="p-5 sm:p-6">

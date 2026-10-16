@@ -616,9 +616,9 @@ export interface CourseRow {
   /** Catalog label ("A1", "Inicial", "B1") — data, not an enum. */
   level: string
   /**
-   * What the course is, in the student's words. Written when the course is
-   * opened, because the portal shows it under "Sobre el curso" from the first
-   * class group onward — a course created without it reaches students blank.
+   * What the course is, in the student's words. No longer asked when the
+   * course is opened (OOC-107) — blank on new courses; the portal hides
+   * "Sobre el curso" when it is.
    */
   summary: string
   /** Minimum age, per course (`docs/REGRAS-NEGOCIO.md` §2). */
