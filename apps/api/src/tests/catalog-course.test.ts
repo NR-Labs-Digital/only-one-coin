@@ -55,8 +55,9 @@ describe("CreateCourseUseCase", () => {
     expect(() => Course.create({ ...A_COURSE, minAge: 0 })).toThrow(ZodError);
   });
 
-  it("refuses a blank summary", () => {
-    expect(() => Course.create({ ...A_COURSE, summary: "   " })).toThrow(ZodError);
+  it("opens a course without a summary (OOC-107)", () => {
+    const { summary: _summary, ...withoutSummary } = A_COURSE;
+    expect(Course.create(withoutSummary).summary).toBe("");
   });
 });
 

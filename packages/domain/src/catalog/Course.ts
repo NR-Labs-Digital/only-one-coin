@@ -50,12 +50,13 @@ export const CourseOptionsSchema = z.object({
 });
 
 /**
- * Opening a course. Level and summary are required here even though old rows
- * may lack them: a course created without a summary reaches students blank.
+ * Opening a course. Level is required here even though old rows may lack it.
+ * The summary is not (OOC-107): the backoffice form no longer asks for it, and
+ * the portal hides "Sobre el curso" when it is blank. The column stays.
  */
 export const CreateCourseSchema = CoursePropsSchema.omit(BASE_PROPS_KEYS).extend({
   level: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
+  summary: z.string().trim().default(""),
   landingKey: LandingCourseKeySchema.nullable().default(null),
 });
 
