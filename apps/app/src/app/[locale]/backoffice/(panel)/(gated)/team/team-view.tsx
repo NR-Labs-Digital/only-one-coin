@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, getPathname } from '@/i18n/navigation'
 import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
@@ -29,7 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { NewStaffForm } from './new-staff-form'
-import { RoleChangeDialog } from './role-change-dialog'
+import { RoleChangeDialog, roleChangeOutcome, type RoleChangeOutcome } from './role-change-dialog'
 
 /**
  * Accounts that still open the panel, accounts with an invite still waiting
@@ -62,14 +63,16 @@ const selectClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
 /**
- * Team directory. Search, filters and paging run in the browser because the
- * dataset is mocked; against the real API this becomes a server query.
+ * Team directory. `GET /api/v1/staff` hands over the whole list and search,
+ * filters and paging run in the browser — a panel team is tens of accounts,
+ * not thousands.
  *
- * Every write here is component state. The real ones are usecases in
- * `apps/api`: opening an account, and the dedicated promotion usecase that is
- * the only way a `role` ever moves — admin-only, behind fresh
- * re-authentication, and written to the append-only audit log in the same
- * transaction (CLAUDE.md §8). The browser never writes a cargo.
+ * Every write goes through `apps/api` — invites, access, password resets and
+ * the dedicated promotion usecase that is the only way a `role` ever moves:
+ * admin-only, behind fresh re-authentication, and written to the append-only
+ * audit log in the same transaction (CLAUDE.md §8). The browser never writes
+ * a cargo; it applies the confirmed change to the row on screen and refreshes
+ * the page so the cargo ledger below it picks up the new entry.
  */
 export function TeamView({
   rows,
@@ -84,6 +87,7 @@ export function TeamView({
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
 
   const [members, setMembers] = useState<StaffMemberRow[]>(rows)
   const [tab, setTab] = useState<Tab>('active')
@@ -145,27 +149,33 @@ export function TeamView({
    * The cargo moved. `PromoteStaffRoleRoute` writes the `role` column and the
    * `audit_log` entry in one call (CLAUDE.md §8) — this only applies the same
    * change to the row already on screen once the server confirms it.
-   * Returns whether it succeeded so the dialog knows whether to stay open
-   * (e.g. wrong re-auth password) or close.
+   * Returns the outcome so the dialog knows whether to close or which error
+   * to show — only the API's own verdict on the password reads as "wrong
+   * password"; a 403, a validation error or a 500 is something else.
    */
   async function applyRoleChange(
     member: StaffMemberRow,
     next: StaffRole,
     password: string,
-  ): Promise<boolean> {
+  ): Promise<RoleChangeOutcome> {
     const response = await fetch(`/api/v1/staff/${member.id}/role`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: next, password }),
-    })
-    if (!response.ok) return false
+    }).catch(() => null)
+    if (!response) return 'failed'
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { reason?: string } | null
+      return roleChangeOutcome(body?.reason)
+    }
 
     setMembers((current) =>
       current.map((row) => (row.id === member.id ? { ...row, role: next } : row)),
     )
     setChanging(null)
     setToast(t('team.changed_toast'))
-    return true
+    router.refresh()
+    return 'ok'
   }
 
   function applyAccessLocal(member: StaffMemberRow, status: StaffMemberRow['status']) {
@@ -391,6 +401,8 @@ export function TeamView({
             setTab('invited')
             setPage(0)
             setToast(t('team.created_toast'))
+            // The invite's cargo is a ledger entry too.
+            router.refresh()
           }}
         />
       )}

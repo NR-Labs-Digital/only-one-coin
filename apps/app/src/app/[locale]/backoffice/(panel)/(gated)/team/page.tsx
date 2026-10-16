@@ -1,9 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listStaff } from '@/lib/backoffice/staff'
+import { listStaff, listStaffRoleChanges } from '@/lib/backoffice/staff'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageStaff } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeamView } from './team-view'
+import { RoleChangeLog } from './role-change-log'
 
 /**
  * The team: every account that opens the backoffice, the cargo it opens it
@@ -41,7 +42,7 @@ export default async function TeamPage({
     )
   }
 
-  const rows = await listStaff()
+  const [rows, roleChanges] = await Promise.all([listStaff(), listStaffRoleChanges()])
 
   return (
     <div className="flex flex-col gap-5">
@@ -51,6 +52,7 @@ export default async function TeamPage({
         currentUserId={staff.id}
         currentUserName={`${staff.firstName} ${staff.lastName}`}
       />
+      <RoleChangeLog items={roleChanges} />
     </div>
   )
 }
