@@ -21,9 +21,8 @@ export default async function BackofficeGatedLayout({
 }: {
   children: ReactNode
 }) {
-  await requireFeature('backoffice')
-
-  const staff = await getStaffSession()
+  // Both reads are memoized per request and independent — asked together.
+  const [, staff] = await Promise.all([requireFeature('backoffice'), getStaffSession()])
 
   /* The docente panel is a surface of its own — the same app with the rail
      narrowed — and it can be off while the rest of the backoffice is on. A

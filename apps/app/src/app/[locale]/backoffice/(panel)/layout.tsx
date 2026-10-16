@@ -57,7 +57,9 @@ export default async function BackofficePanelLayout({
   // not here: this shell renders for `../features` too, off included — that
   // is the one screen the `backoffice` flag must never be able to hide
   // (CLAUDE.md §5).
-  const staff = await getStaffSession()
+  // The session and the flags are independent reads of apps/api — asked
+  // together, so the shell pays one round trip for both instead of two.
+  const [staff, flags] = await Promise.all([getStaffSession(), getFeatureFlags()])
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
@@ -75,8 +77,6 @@ export default async function BackofficePanelLayout({
    * `apps/api` (CLAUDE.md §8).
    */
   const restricted = isRestrictedToOwnClassGroups(staff.role)
-
-  const flags = await getFeatureFlags()
 
   /* The queue count behind the Payments badge, asked only by a cargo the API
      serves the queue to — anybody else would get a 403, and the badge would

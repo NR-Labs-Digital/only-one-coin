@@ -108,7 +108,7 @@ Se algo parecer exigir um desses, **pare e pergunte**.
 | Site público | **Astro** (estático) | no ar na Vercel; o domínio ainda aponta pro WordPress antigo (OOC-44) |
 | App (portal + backoffice + checkout) | **Next.js App Router**, next-intl, shadcn/ui sobre Tailwind v4 | no ar na Vercel |
 | API de domínio + workers | **Fastify** (`apps/api`) — HTTP e workers de fila num processo só | no ar no Fly.io |
-| Hospedagem | **Vercel** (landing + app) · **Fly.io** (`apps/api`, GRU/São Paulo, VM always-on, deploy blue-green) | deploy por GitHub Actions a cada push em `main` |
+| Hospedagem | **Vercel** (landing + app) · **Fly.io** (`apps/api`, GRU/São Paulo, VM always-on, deploy blue-green) | deploy por GitHub Actions a cada push em `main`. Funções do app em `gru1` (`apps/app/vercel.json`, OOC-119) — no padrão `iad1` cada chamada à API cruzava o continente |
 | Banco | **Postgres** gerenciado — **Neon** (`sa-east-1`), Drizzle ORM + Drizzle Kit | em uso |
 | Storage | **Tigris** (Fly.io, S3-compatible) — comprovantes e backups | em uso |
 | Auth | **Better Auth**, embutido em `apps/api`, nunca instanciado em `apps/app` | em uso (staff e aluno); MFA do staff por código de e-mail (OOC-29) |
@@ -128,7 +128,8 @@ Não trocar nada disso sem me perguntar. **Avaliados e descartados:** Clerk, Pin
 
 - **Vercel** (31/08/2026, revertendo Netlify): mesma conta/organização para um possível terceiro frontend. Hoje `apps/app` continua **um único Next.js** — desmembrar não está decidido.
 - **API e workers no mesmo processo** (31/08/2026): o Fly hospeda `apps/api` como uma VM always-on única, então dois entrypoints não compravam nada.
-- **Redis self-hospedado, sem Upstash** (03/10/2026): o pay-as-you-go cobra por comando e o BullMQ é conversador. Custo aceito: rajada contra a rota pública chega ao processo da API, que recusa com 429 antes do banco. Users de ACL do Redis precisam de `+info`, senão o BullMQ derruba o boot com `NOPERM` (incidente de 03/10/2026).
+- **Redis self-hospedado, sem Upstash** (03/10/2026). **Em aberto (OOC-119):** o `redis-nrlabs` roda em `iad` e a API em `gru`, então todo request paga ~140 ms de rate limit antes de qualquer SQL (até o `/health`). Mover ou ter um Redis em `gru` é decisão do repo NR-Labs/services, que é compartilhado.
+  O porquê do self-hospedado: o pay-as-you-go cobra por comando e o BullMQ é conversador. Custo aceito: rajada contra a rota pública chega ao processo da API, que recusa com 429 antes do banco. Users de ACL do Redis precisam de `+info`, senão o BullMQ derruba o boot com `NOPERM` (incidente de 03/10/2026).
 - **OCR via OpenRouter** (02/10/2026): o nível 2 exige outra família, e com uma chave só o nível vira um id de modelo (`RECEIPT_OCR_TIER1_MODEL`/`RECEIPT_OCR_TIER2_MODEL`); o boot recusa nível 2 da mesma família do 1. Custo: um intermediário a mais com dado pessoal (Ley 29733) — por isso a chamada exige **retenção zero** (`zdr`), sem coleta de dados e `require_parameters`. Detalhe em `apps/api/CLAUDE.md`.
 - **Google Workspace, não Zoho** (07/10/2026): o domínio já roda no Workspace; Brevo não hospeda caixa, então Brevo envia e o Workspace recebe.
 - **Better Auth** é biblioteca, não serviço: `role` travado contra escrita do cliente (`additionalFields.role`, `input:false`). Padrão de integração em `docs/ARCHITECTURE.md` §5.6.

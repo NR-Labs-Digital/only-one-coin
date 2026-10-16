@@ -168,8 +168,10 @@ export class ListStudentsQuery {
 
   /** Per-student enrollment figures, retired enrollments left out (CLAUDE.md §6).
    * A retired class group still counts — its seats happened, the same rule as
-   * the enrollment ledger. */
-  private enrollmentStats() {
+   * the enrollment ledger. `scope` narrows the students aggregated — the
+   * whole base costs a pass over every enrollment, which only the directory's
+   * counters actually need. */
+  private enrollmentStats(scope?: SQL) {
     return this.db
       .select({
         studentId: enrollments.studentId,
@@ -187,7 +189,7 @@ export class ListStudentsQuery {
       })
       .from(enrollments)
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
-      .where(isNull(enrollments.deletedAt))
+      .where(and(isNull(enrollments.deletedAt), scope))
       .groupBy(enrollments.studentId)
       .as("stats");
   }
@@ -298,7 +300,19 @@ export class ListStudentsQuery {
   /** The pickers' short match list — by partial name or document, under review included. */
   async search(q: string): Promise<StudentListRow[]> {
     const needle = `%${q.trim()}%`;
-    const stats = this.enrollmentStats();
+    const matching = and(
+      isNull(students.deletedAt),
+      or(ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, needle), ilike(students.nationalId, needle)),
+    );
+    // Ten rows come back, so only their enrollments are aggregated — not
+    // every student's, on every keystroke of the picker.
+    const matched = this.db
+      .select({ id: students.id })
+      .from(students)
+      .where(matching)
+      .orderBy(desc(students.createdAt), desc(students.id))
+      .limit(SEARCH_LIMIT);
+    const stats = this.enrollmentStats(inArray(enrollments.studentId, matched));
 
     const rows = await this.db
       .select({
@@ -323,12 +337,7 @@ export class ListStudentsQuery {
       })
       .from(students)
       .leftJoin(stats, eq(stats.studentId, students.id))
-      .where(
-        and(
-          isNull(students.deletedAt),
-          or(ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, needle), ilike(students.nationalId, needle)),
-        ),
-      )
+      .where(matching)
       .orderBy(desc(students.createdAt), desc(students.id))
       .limit(SEARCH_LIMIT);
 
