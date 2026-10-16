@@ -1025,7 +1025,10 @@
       "created_open": "Class group open for enrollment",
       "missing_to_publish": "Missing to open enrollment: start and end dates.",
       "no_courses": "Create a course before opening a class group.",
-      "no_periods": "Create a period before opening a class group.",
+      "period_new_option": "+ New period",
+      "new_period_name": "Period name",
+      "new_period_starts": "Period starts",
+      "new_period_ends": "Period ends",
       "waitlist_count": "{count, plural, one {# waiting} other {# waiting}}",
       "no_dates": "No dates",
       "retired": "Off the catalog",
@@ -1047,7 +1050,7 @@
       "unassigned_show": "Show them"
     },
     "periods": {
-      "label": "Period",
+      "label": "Showing class groups from",
       "new": "New period",
       "name": "Name",
       "name_placeholder": "Cycle 2027-I",

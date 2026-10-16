@@ -1025,7 +1025,10 @@
       "created_open": "Turma aberta para inscrições",
       "missing_to_publish": "Falta para abrir as inscrições: datas de início e término.",
       "no_courses": "Crie um curso antes de abrir uma turma.",
-      "no_periods": "Crie um período antes de abrir uma turma.",
+      "period_new_option": "+ Novo período",
+      "new_period_name": "Nome do período",
+      "new_period_starts": "Início do período",
+      "new_period_ends": "Término do período",
       "waitlist_count": "{count, plural, one {# na espera} other {# na espera}}",
       "no_dates": "Sem datas",
       "retired": "Fora do catálogo",
@@ -1047,7 +1050,7 @@
       "unassigned_show": "Ver quais"
     },
     "periods": {
-      "label": "Período",
+      "label": "Mostrando turmas de",
       "new": "Novo período",
       "name": "Nome",
       "name_placeholder": "Ciclo 2027-I",

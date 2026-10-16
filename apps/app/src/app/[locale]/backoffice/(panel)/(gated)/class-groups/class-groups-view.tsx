@@ -301,13 +301,14 @@ export function ClassGroupsView({
       </Toolbar>
 
       {creating &&
-        (activeCourses.length === 0 || periods.length === 0 ? (
+        (activeCourses.length === 0 ? (
           // Nothing to open a class group on: say what is missing instead of a
-          // form whose first select is empty.
+          // form whose first select is empty. A missing period is not this
+          // case — the form creates one.
           <Card className="flex flex-wrap items-center gap-3 p-4">
             <p className="flex flex-1 items-start gap-2 text-sm text-ink">
               <BoIcon name="alert" size={16} className="mt-0.5 shrink-0 text-amber-700" />
-              {t(activeCourses.length === 0 ? 'class_groups.no_courses' : 'class_groups.no_periods')}
+              {t('class_groups.no_courses')}
             </p>
             <button
               type="button"
