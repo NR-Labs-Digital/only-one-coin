@@ -211,6 +211,13 @@
       "when": 1792024129362,
       "tag": "0029_two_factor",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792113272831,
+      "tag": "0030_refresh_planner_statistics",
+      "breakpoints": true
     }
   ]
 }
