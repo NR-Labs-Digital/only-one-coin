@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { RecoveryCodes } from '@/components/backoffice/recovery-codes'
@@ -98,6 +98,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
   const [recoverError, setRecoverError] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const passwordId = useId()
   const opened = useRef(false)
 
   useEffect(() => {
@@ -578,9 +579,14 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
           </span>
         </label>
 
-        <label className={labelClass}>
+        {/* A <div>, not a <label>: a label hands its clicks to the first
+            labelable control inside it, and with the "forgot" button first
+            that control was the button — a tap on the lock icon or the edge
+            of the show/hide button opened password recovery. The label now
+            wraps only its text and points at the input by id. */}
+        <div className={labelClass}>
           <span className="flex items-center justify-between gap-2">
-            {t('password_label')}
+            <label htmlFor={passwordId}>{t('password_label')}</label>
             <button
               type="button"
               onClick={() => setStep('recover')}
@@ -591,6 +597,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
           </span>
           <span className={fieldWrapClass}>
             <input
+              id={passwordId}
               type={showPassword ? 'text' : 'password'}
               name="password"
               autoComplete="current-password"
@@ -610,7 +617,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
               {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
             </button>
           </span>
-        </label>
+        </div>
       </div>
 
       <button type="submit" disabled={pending} className={`${primaryButtonClass} mt-6`}>
