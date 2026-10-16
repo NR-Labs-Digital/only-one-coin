@@ -30,13 +30,15 @@ export default async function StudentDetailPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const staff = await getStaffSession()
-  if (!canBrowseStudents(staff.role)) notFound()
-
-  const [student, activity] = await Promise.all([
+  /* One wave of calls, not two: the file is fetched alongside the session.
+     A cargo that may not browse is refused by the API too (403 → null), and
+     its answer is never shown. */
+  const [staff, student, activity] = await Promise.all([
+    getStaffSession(),
     getStudent(studentId),
     getStudentActivity(studentId),
   ])
+  if (!canBrowseStudents(staff.role)) notFound()
   if (!student) notFound()
 
   const fullName = `${student.firstName} ${student.lastName}`
