@@ -1025,7 +1025,10 @@
       "created_open": "Aula abierta para matrícula",
       "missing_to_publish": "Falta para abrir la matrícula: fechas de inicio y término.",
       "no_courses": "Crea un curso antes de abrir un aula.",
-      "no_periods": "Crea un período antes de abrir un aula.",
+      "period_new_option": "+ Nuevo período",
+      "new_period_name": "Nombre del período",
+      "new_period_starts": "Inicio del período",
+      "new_period_ends": "Término del período",
       "waitlist_count": "{count, plural, one {# en espera} other {# en espera}}",
       "no_dates": "Sin fechas",
       "retired": "Fuera de catálogo",
@@ -1047,7 +1050,7 @@
       "unassigned_show": "Ver cuáles"
     },
     "periods": {
-      "label": "Período",
+      "label": "Mostrando aulas de",
       "new": "Nuevo período",
       "name": "Nombre",
       "name_placeholder": "Ciclo 2027-I",

@@ -38,7 +38,7 @@ entra aqui ou vira sessão nova.
 
 ---
 
-## Resumo (revisado em 14/10/2026)
+## Resumo (revisado em 15/10/2026)
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
@@ -201,7 +201,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Consentimento do apoderado para aluno cadastrado pelo backoffice | OOC-72 | 21/09/2026 |
 | Livro de reclamações | OOC-58, OOC-63 | — |
 | Índice único de documento e consolidação de duplicatas | sem ticket | 21/09/2026 |
-| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113, OOC-114 (Pagos abre em Abertos — feito), OOC-115 (Matrículas abre em Vigentes — feito), OOC-116 (Alunos abre em Ativos; ativo = matrícula vigente — feito), OOC-118 | 12/10/2026 |
+| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113 (feito), OOC-114 (Pagos abre em Abertos — feito), OOC-115 (Matrículas abre em Vigentes — feito), OOC-116 (Alunos abre em Ativos; ativo = matrícula vigente — feito), OOC-118 (roteiro de aceite da v1, da landing ao backoffice — validado ao longo da semana, fechado 15/10/2026) | 12/10/2026 |
 | Ajustes do formulário Nuevo curso (feedback do cliente) | OOC-106 (idioma em campo de texto, sem datalist — feito), OOC-107 (sem "Sobre el curso"; o portal esconde o bloco quando está vazio — feito) | 05/10/2026 |
 | Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92, OOC-68 (convite de docente sem o seletor mock — feito), OOC-67 (home e badge de Pagos — feito), OOC-71 (matriculados da turma na visão da coordenação, `GET /catalog/class-groups/:id/roster`, colunas por cargo — feito 15/10/2026; base para roster do docente, notas e lote de certificados) | — |
 

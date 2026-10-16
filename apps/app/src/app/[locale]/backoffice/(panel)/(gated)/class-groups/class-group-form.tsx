@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import type {
   AcademicPeriodItem,
@@ -23,6 +24,9 @@ import { formatDateRange, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+
+/** The period select's last option: name and dates typed right here, created on save. */
+const NEW_PERIOD = 'new'
 
 const WEEKDAYS: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
@@ -93,6 +97,13 @@ const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : nu
  * schedule outside the teacher's declared week, or on top of another of their
  * class groups in the same period, is warned about — never refused.
  *
+ * A new class group for a period that does not exist yet does not send anyone
+ * back to the period bar: "+ new period" in the period select takes its name
+ * and dates here, and saving creates the period first, then the class group.
+ * Two writes, like the period bar's copy — if the class group fails after the
+ * period exists, the period is reloaded and selected, so a retry never creates
+ * it twice.
+ *
  * Every write goes through `apps/api` — the browser never decides (CLAUDE.md §8).
  */
 export function ClassGroupForm({
@@ -118,6 +129,7 @@ export function ClassGroupForm({
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
 
   /** Off-catalog courses are not offered — except the one an edited group already runs. */
   const catalog = courses.filter((course) => course.active || course.id === initial?.courseId)
@@ -128,8 +140,12 @@ export function ClassGroupForm({
     initial?.academicPeriodId ??
       (periods.some((period) => period.id === defaultPeriodId) ? defaultPeriodId : null) ??
       periods[0]?.id ??
-      '',
+      NEW_PERIOD,
   )
+  const [newPeriodName, setNewPeriodName] = useState('')
+  const [newPeriodStartsOn, setNewPeriodStartsOn] = useState('')
+  const [newPeriodEndsOn, setNewPeriodEndsOn] = useState('')
+  const newPeriod = mode === 'create' && periodId === NEW_PERIOD
   const [code, setCode] = useState(initial?.code ?? '')
   /** '' = nobody allocated yet. */
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '')
@@ -174,7 +190,10 @@ export function ClassGroupForm({
 
   const ready =
     courseId !== '' &&
-    (mode === 'edit' || periodId !== '') &&
+    (mode === 'edit' ||
+      (newPeriod
+        ? newPeriodName.trim() !== '' && newPeriodStartsOn !== '' && newPeriodEndsOn !== ''
+        : periodId !== '')) &&
     (!codeRequired || code.trim() !== '') &&
     (!weekdaysRequired || weekdays.length > 0) &&
     !timeInvalid &&
@@ -210,12 +229,26 @@ export function ClassGroupForm({
     if (!ready || (publish && !hasDates)) return
     setSaving(true)
     setError(null)
+    let academicPeriodId = periodId
+    if (newPeriod) {
+      const period = await catalogWrite('/periods', 'POST', {
+        name: newPeriodName.trim(),
+        startsOn: limaDateToIso(newPeriodStartsOn),
+        endsOn: limaDateToIso(newPeriodEndsOn),
+      })
+      if (!period.ok) {
+        setSaving(false)
+        setError(period.error)
+        return
+      }
+      academicPeriodId = period.data.id
+    }
     const result = await catalogWrite<{ id: string; status: ClassGroupStatus }>(
       '/class-groups',
       'POST',
       {
         courseId,
-        academicPeriodId: periodId,
+        academicPeriodId,
         code: code.trim(),
         teacherId: teacherId || null,
         slots,
@@ -230,9 +263,14 @@ export function ClassGroupForm({
     setSaving(false)
     if (!result.ok) {
       setError(result.error)
+      if (academicPeriodId !== periodId) {
+        // The period exists now: select it and reload the list so it shows up.
+        setPeriodId(academicPeriodId)
+        router.refresh()
+      }
       return
     }
-    onDone(result.data.id, { status: result.data.status, academicPeriodId: periodId, courseId })
+    onDone(result.data.id, { status: result.data.status, academicPeriodId, courseId })
   }
 
   async function save() {
@@ -367,8 +405,41 @@ export function ClassGroupForm({
                   {`${period.name} · ${formatDateRange(period.startsOn, period.endsOn, locale)}`}
                 </option>
               ))}
+              <option value={NEW_PERIOD}>{t('class_groups.period_new_option')}</option>
             </select>
           </label>
+        )}
+
+        {newPeriod && (
+          <>
+            <label className="flex flex-col gap-1">
+              <span className={labelClass}>{t('class_groups.new_period_name')}</span>
+              <input
+                value={newPeriodName}
+                onChange={(event) => setNewPeriodName(event.target.value)}
+                placeholder={t('periods.name_placeholder')}
+                className={fieldClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className={labelClass}>{t('class_groups.new_period_starts')}</span>
+              <input
+                type="date"
+                value={newPeriodStartsOn}
+                onChange={(event) => setNewPeriodStartsOn(event.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className={labelClass}>{t('class_groups.new_period_ends')}</span>
+              <input
+                type="date"
+                value={newPeriodEndsOn}
+                onChange={(event) => setNewPeriodEndsOn(event.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </>
         )}
 
         <label className="flex flex-col gap-1">
