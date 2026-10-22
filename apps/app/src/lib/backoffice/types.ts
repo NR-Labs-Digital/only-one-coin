@@ -890,6 +890,8 @@ export interface TeacherRow {
 export interface TeacherDetail extends TeacherRow {
   availability: AvailabilitySlot[]
   classGroups: ClassGroupItem[]
+  /** The backoffice's contract alert window (OOC-41), for the badge. */
+  contractAlertDays: number
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1058,29 +1060,6 @@ export type ReviewDecision =
   | { kind: 'approve' }
   | { kind: 'reject'; reason: RejectionReason; note: string }
 
-/**
- * The parameters the payment pipeline reads instead of constants in the code.
- * Tolerance is required to live here (CLAUDE.md §5); the other two are the
- * numbers `CLAUDE.md` already fixes (the 5-day reservation, the confidence
- * that escalates) and still to be confirmed as editable.
- */
-export interface PaymentSettings {
-  /** How far ABOVE the frozen price a receipt may land and still be green — never below (CLAUDE.md §1, "Sem descontos"). */
-  toleranceCents: number
-  /** Below this percentage of the frozen price, rejection is suggested to the reviewer (1–99). */
-  rejectBelowPercent: number
-  /** Below this per-field confidence the ladder escalates, 0–1. */
-  escalationConfidence: number
-  /** Days a reserved seat survives without an approved payment. */
-  reservationDays: number
-  /**
-   * Minutes the public checkout holds a seat while the person goes off to pay
-   * (`CLAUDE.md` §5, "Dois relógios"). The short clock of the pair: it runs
-   * from the class group being chosen to the receipt arriving, and `reservationDays`
-   * takes over from there.
-   */
-  checkoutHoldMinutes: number
-}
 
 /* -------------------------------------------------------------------------- */
 /* Enrollments — who holds a seat, across every class group                    */
@@ -1331,33 +1310,6 @@ export interface EmailDeliveryIssue {
 /* Settings — the numbers and names the platform runs on                       */
 /* -------------------------------------------------------------------------- */
 
-/**
- * The academic thresholds the rules fix and the screens already read. They are
- * settings rather than constants for the same reason the payment tolerance is:
- * the Asociación changing what "approved" means must not need a deploy
- * (CLAUDE.md §5).
- */
-export interface AcademicSettings {
-  /** Minimum final grade on the 0–20 scale (`docs/REGRAS-NEGOCIO.md` §3). */
-  passingGrade: number
-  /** Business days to issue the free certificate after a class group ends (§6). */
-  certificateDeadlineBusinessDays: number
-  /** Fee for the constancia de matrícula, in cents — a paid procedure (§5). */
-  constanciaFeeCents: number
-  /** How early a teacher's contract starts showing as expiring (CLAUDE.md §1). */
-  contractAlertDays: number
-}
-
-/**
- * Everything the settings screen owns. Two groups because they answer for two
- * different things — what the academic rules count as, and what the receipt
- * pipeline approves on without a human — and one screen, because a number with
- * two homes is a number that drifts.
- */
-export interface GeneralSettings {
-  academic: AcademicSettings
-  receipts: PaymentSettings
-}
 
 /**
  * The account a staff member manages for themselves — access, not identity.

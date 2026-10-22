@@ -46,7 +46,7 @@ que muda a tela.
 | Equipe (`/backoffice/team`) | **Real**: contas, convite, troca de cargo com bitácora (histórico de cargos sob a lista, lido do `audit_log` — OOC-69). Convite de docente sai como qualquer cargo, ainda sem vínculo com a ficha em Docentes — é o OOC-79 |
 | Funcionalidades (`/backoffice/features`) | **Real** |
 | Conta (`/backoffice/account`) | **Real**: troca da própria senha e verificação em dois passos (ativar, gerar códigos de recuperação, desativar onde é opcional). Sessões são mock |
-| Configuração (`/backoffice/settings`) | Parcial: reais só a reserva durante o pagamento, a tolerância de valor e o limite de rejeição do comprovante — OOC-41 |
+| Configuração (`/backoffice/settings`) | **Real** (OOC-41): os nove parâmetros leem `GET /settings` e salvam num `PATCH` só, com `audit_log` por campo; API fora do ar mostra erro, nunca número inventado. Notas, certificados, constancia, contratos e a fila de Pagos leem daí |
 | Home do backoffice | **Real** (OOC-67): KPIs, prévia da fila, vagas sob pressão e badge de Pagos, cada bloco só para o cargo que a API serve. A home do docente segue mock |
 | E-mails (`/backoffice/emails*`) | Mock — OOC-42, OOC-88 |
 | Relatórios (`/backoffice/reports`) | Mock — OOC-40 |

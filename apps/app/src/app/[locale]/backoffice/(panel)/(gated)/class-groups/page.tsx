@@ -8,6 +8,7 @@ import {
   listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import {
   canBrowseCatalog,
   canCreateClassGroup,
@@ -48,14 +49,22 @@ export default async function ClassGroupsPage({
      scoped by the session's `teacherId` (CLAUDE.md §8) — and the check that
      enforces it is the usecase in `apps/api`, not this line. */
   if (restricted) {
+    // What "approved" means is the backoffice's (OOC-41). Without it the
+    // grade sheet cannot tell pass from fail, so it says it could not load.
+    const settings = await getPlatformSettings()
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('nav.my_class_groups')} />
-        <TeacherClassGroups
-          groups={listClassGroupRostersFor(staff)}
-          teacherName={`${staff.firstName} ${staff.lastName}`}
-          initialGroupId={group ?? null}
-        />
+        {settings ? (
+          <TeacherClassGroups
+            groups={listClassGroupRostersFor(staff)}
+            teacherName={`${staff.firstName} ${staff.lastName}`}
+            initialGroupId={group ?? null}
+            passingGrade={settings.passingGrade}
+          />
+        ) : (
+          <EmptyState icon="alert" title={t('settings.rules_load_error_title')} body={t('settings.rules_load_error_body')} />
+        )}
       </div>
     )
   }

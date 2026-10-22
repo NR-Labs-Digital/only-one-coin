@@ -68,6 +68,7 @@ export function ReviewQueueView({
   canReview,
   openReceiptId,
   renderedAt,
+  lowConfidencePercent,
 }: {
   items: PaymentReviewItem[]
   /** Open payments matching the query, across every page. */
@@ -83,6 +84,8 @@ export function ReviewQueueView({
   openReceiptId?: string | null
   /** When the server rendered the page — what the deadline is measured from. */
   renderedAt: number
+  /** The OCR confidence floor (`platform_settings`, OOC-41); null if unread. */
+  lowConfidencePercent: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -586,6 +589,7 @@ export function ReviewQueueView({
       <ReceiptReviewDialog
         payment={reviewing}
         renderedAt={renderedAt}
+        lowConfidencePercent={lowConfidencePercent}
         onClose={closeCase}
         onDecide={decide}
         onReread={reread}

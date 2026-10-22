@@ -23,14 +23,12 @@ import {
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import type { StaffUser } from '@/lib/backoffice/types'
-import {
-  addBusinessDays,
-  businessDaysUntil,
-  CERTIFICATE_DEADLINE_BUSINESS_DAYS,
-} from '@/lib/backoffice/certificates'
+import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import {
   Card,
+  EmptyState,
   Field,
   Meter,
   StatusBadge,
@@ -79,20 +77,22 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [roster, waitlist, courses, teachers] = await Promise.all([
+  const [roster, waitlist, courses, teachers, settings] = await Promise.all([
     // Every catalog reader gets the roster; which columns is the API's call.
     getClassGroupRoster(group.id),
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
     canManage ? listTeacherOptions() : Promise.resolve(null),
+    getPlatformSettings(),
   ])
   const schedule = slotsLabel(group.slots, t)
 
-  /* The free certificate is owed within 25 business days of the end
-     (`docs/REGRAS-NEGOCIO.md` §6) — only worth saying once classes are over. */
+  /* The free certificate is owed within the business days the backoffice sets
+     (`docs/REGRAS-NEGOCIO.md` §6, OOC-41) — only worth saying once classes are
+     over. Settings that could not be read say nothing rather than a guess. */
   const deadline =
-    group.status === 'finished' && group.endsOn
-      ? addBusinessDays(isoToLimaDate(group.endsOn), CERTIFICATE_DEADLINE_BUSINESS_DAYS)
+    group.status === 'finished' && group.endsOn && settings
+      ? addBusinessDays(isoToLimaDate(group.endsOn), settings.certificateDeadlineBusinessDays)
       : null
   const businessDaysLeft = deadline ? businessDaysUntil(deadline, new Date()) : 0
 
@@ -215,7 +215,7 @@ export default async function ClassGroupDetailPage({
  * Hiding the link would stop nobody — the id in the URL is guessable
  * (anti-IDOR, CLAUDE.md §8).
  */
-function TeacherClassGroupDetail({
+async function TeacherClassGroupDetail({
   staff,
   classGroupId,
   locale,
@@ -229,10 +229,20 @@ function TeacherClassGroupDetail({
   const group = getClassGroupFor(staff, classGroupId)
   if (!group) notFound()
 
-  const deadline = addBusinessDays(
-    group.endDate,
-    CERTIFICATE_DEADLINE_BUSINESS_DAYS,
-  )
+  /* The certificate rules — passing grade and deadline — are the backoffice's
+     (OOC-41). Without them the batch cannot be judged, so the page says so
+     instead of judging it on a guess. */
+  const settings = await getPlatformSettings()
+  if (!settings) {
+    return (
+      <div className="flex flex-col gap-5">
+        <BackToList t={t} />
+        <EmptyState icon="alert" title={t('settings.rules_load_error_title')} body={t('settings.rules_load_error_body')} />
+      </div>
+    )
+  }
+
+  const deadline = addBusinessDays(group.endDate, settings.certificateDeadlineBusinessDays)
   const businessDaysLeft = businessDaysUntil(deadline, new Date())
 
   return (
@@ -290,6 +300,7 @@ function TeacherClassGroupDetail({
         // Date only: the deadline is a calendar day, not an instant.
         deadlineIso={deadline.toISOString().slice(0, 10)}
         businessDaysLeft={businessDaysLeft}
+        passingGrade={settings.passingGrade}
       />
     </div>
   )

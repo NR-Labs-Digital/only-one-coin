@@ -523,6 +523,7 @@ export function TeacherFile({
                 <ContractBadge
                   contract={teacher.contract}
                   daysLeft={teacher.contractDaysLeft}
+                  alertDays={teacher.contractAlertDays}
                 />
               ) : (
                 <span className="text-xs text-muted-foreground">

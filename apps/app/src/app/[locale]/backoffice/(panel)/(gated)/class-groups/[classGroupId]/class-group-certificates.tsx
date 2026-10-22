@@ -9,7 +9,6 @@ import type {
   ClassGroupStudent,
   ProcedureAction,
 } from '@/lib/backoffice/types'
-import { PASSING_GRADE } from '@/lib/backoffice/mock-data'
 import { certificateBlockReason } from '@/lib/backoffice/certificates'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import {
@@ -38,7 +37,7 @@ import { ManageEnrollmentSheet } from './manage-enrollment-sheet'
  *
  * What it deliberately does NOT do is fire on its own when the end date passes.
  * Who passed and who did not is a coordination call: `docs/REGRAS-NEGOCIO.md`
- * §3 puts the bar at grade 14 and §6 requires a certification exam for Inglés
+ * §3 puts a bar on the final grade — the backoffice's number, `passingGrade` — and §6 requires a certification exam for Inglés
  * Básico. The system gets the list ready; a human presses the button.
  */
 export function ClassGroupCertificates({
@@ -47,12 +46,15 @@ export function ClassGroupCertificates({
   canManage,
   deadlineIso,
   businessDaysLeft,
+  passingGrade,
 }: {
   group: ClassGroupDetail
   classGroups: ClassGroupRow[]
   canManage: boolean
   deadlineIso: string
   businessDaysLeft: number
+  /** Minimum final grade, from `platform_settings` (OOC-41). */
+  passingGrade: number
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -83,7 +85,7 @@ export function ClassGroupCertificates({
 
   const rows = students.map((student) => ({
     student,
-    reason: certificateBlockReason(student, group.certificateRule),
+    reason: certificateBlockReason(student, group.certificateRule, passingGrade),
   }))
   const eligible = rows.filter((row) => row.reason === null)
   const blocked = rows.filter((row) => row.reason !== null && row.reason !== 'already_issued')
@@ -305,7 +307,7 @@ export function ClassGroupCertificates({
                       />
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        {t(`certificate_block.${reason}`, { min: PASSING_GRADE })}
+                        {t(`certificate_block.${reason}`, { min: passingGrade })}
                       </span>
                     )}
                   </td>

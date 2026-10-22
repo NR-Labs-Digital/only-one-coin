@@ -8,7 +8,6 @@ import type {
   ClassGroupStudent,
   GradeStatus,
 } from '@/lib/backoffice/types'
-import { PASSING_GRADE } from '@/lib/backoffice/mock-data'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import { EmptyState, StatusBadge } from '@/components/backoffice/ui'
 import {
@@ -51,11 +50,11 @@ function parseGrade(raw: string): number | null {
   return value <= 20 ? value : null
 }
 
-function statusOf(draft: GradeDraft): GradeStatus {
+function statusOf(draft: GradeDraft, passingGrade: number): GradeStatus {
   if (draft.da) return 'auto_failed'
   const grade = parseGrade(draft.final)
   if (grade === null) return 'pending'
-  return grade >= PASSING_GRADE ? 'approved' : 'failed'
+  return grade >= passingGrade ? 'approved' : 'failed'
 }
 
 function draftOf(student: ClassGroupStudent): GradeDraft {
@@ -92,10 +91,13 @@ export function TeacherClassGroups({
   groups,
   teacherName,
   initialGroupId,
+  passingGrade,
 }: {
   groups: ClassGroupDetail[]
   teacherName: string
   initialGroupId: string | null
+  /** Minimum final grade, from `platform_settings` (OOC-41). */
+  passingGrade: number
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -184,7 +186,7 @@ export function TeacherClassGroups({
       ...row,
       examGrade: draft.da ? null : parseGrade(draft.exam),
       finalGrade: draft.da ? null : parseGrade(draft.final),
-      gradeStatus: statusOf(draft),
+      gradeStatus: statusOf(draft, passingGrade),
     }))
     setDrafts((current) => {
       const rest = { ...current }
@@ -362,8 +364,8 @@ export function TeacherClassGroups({
                     {t('teacher_groups.grades_title')}
                   </h4>
                   <StatusBadge
-                    tone={gradeTone[statusOf(draft)]}
-                    label={t(`grade_status.${statusOf(draft)}`)}
+                    tone={gradeTone[statusOf(draft, passingGrade)]}
+                    label={t(`grade_status.${statusOf(draft, passingGrade)}`)}
                   />
                 </div>
 
@@ -435,7 +437,7 @@ export function TeacherClassGroups({
                     </div>
 
                     <p className="mt-3 text-xs text-muted-foreground">
-                      {t('class_group.grades_hint', { min: PASSING_GRADE })}
+                      {t('class_group.grades_hint', { min: passingGrade })}
                     </p>
                     {!editable && (
                       <p className="mt-2 text-xs text-muted-foreground">

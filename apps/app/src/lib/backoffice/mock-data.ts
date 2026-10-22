@@ -9,7 +9,6 @@ import type {
   EmailFlow,
   EmailMetrics,
   EmailSegment,
-  PaymentSettings,
   PlanPrice,
   StaffUser,
   StudentDetail,
@@ -35,19 +34,6 @@ import type {
  * different city: the screen only earns its place if there is something to
  * recognise — or not recognise — on it.
  */
-
-/**
- * Fee for the constancia de matrícula (`docs/REGRAS-NEGOCIO.md` §5: S/25).
- * A backoffice setting in the real system, never a constant in the code — the
- * same rule the payment tolerance follows (CLAUDE.md §5).
- */
-export const CONSTANCIA_FEE_CENTS = 2500
-
-/**
- * Minimum passing grade, 0–20 scale (`docs/REGRAS-NEGOCIO.md` §3: 14). Also a
- * backoffice setting later; it lives here so the batch preview has one source.
- */
-export const PASSING_GRADE = 14
 
 const students: StudentDetail[] = []
 
@@ -242,17 +228,6 @@ export function listClassGroupRostersFor(staff: StaffUser): ClassGroupDetail[] {
 /* Payments                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** Tolerance and the other pipeline parameters — settings, never constants
- *  in the code (CLAUDE.md §5). Editable from the backoffice. */
-export function getPaymentSettings(): PaymentSettings {
-  return {
-    toleranceCents: 0,
-    rejectBelowPercent: 50,
-    escalationConfidence: 0.75,
-    reservationDays: 5,
-    checkoutHoldMinutes: 15,
-  }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Enrollments — the ledger of seats, and the reservations still open          */
@@ -549,8 +524,8 @@ export function listEmailFlows(): EmailFlow[] {
       sample: studentSample,
     },
     {
-      /* 45 days out, the number the panel already watches
-         (`CONTRACT_ALERT_DAYS`, CLAUDE.md §1 — provisional). */
+      /* 45 days out — the default of the backoffice's contract alert
+         (`platform_settings.contract_alert_days`, CLAUDE.md §1 — provisional). */
       template: 'teacher_contract_expiring',
       audience: 'teacher',
       stage: null,

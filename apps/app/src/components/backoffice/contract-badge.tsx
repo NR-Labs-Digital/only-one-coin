@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import type { TeacherContract } from '@/lib/backoffice/types'
-import { contractAlert, CONTRACT_ALERT_DAYS } from '@/lib/backoffice/contract'
+import { contractAlert } from '@/lib/backoffice/contract'
 import { formatDate, type Locale } from '@/lib/format'
 import { StatusBadge, type Tone } from './ui'
 
@@ -25,13 +25,16 @@ const tone: Record<ReturnType<typeof contractAlert>, Tone> = {
 export function ContractBadge({
   contract,
   daysLeft,
+  alertDays,
 }: {
   contract: TeacherContract | null
   daysLeft: number | null
+  /** The backoffice's alert window, as the API answered it (OOC-41). */
+  alertDays: number
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
-  const alert = contractAlert(daysLeft)
+  const alert = contractAlert(daysLeft, alertDays)
 
   if (alert === 'missing' || contract === null) {
     return <StatusBadge tone="danger" label={t('teachers.contract_missing')} />
@@ -50,7 +53,7 @@ export function ContractBadge({
       tone={tone[alert]}
       dot={alert !== 'valid'}
       label={label}
-      title={t('teachers.contract_alert_hint', { days: CONTRACT_ALERT_DAYS })}
+      title={t('teachers.contract_alert_hint', { days: alertDays })}
     />
   )
 }

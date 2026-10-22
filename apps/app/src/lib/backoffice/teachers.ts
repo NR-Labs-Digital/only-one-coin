@@ -28,6 +28,9 @@ export interface TeacherDirectoryPage {
   pageSize: number
   /** The tabs over the search and language; the chips over those plus the tab. */
   counts: { active: number; inactive: number; free: number; contract: number }
+  /** The alert window the API's contract filter used (OOC-41) — the badge
+   * reads the same number, so the two never disagree. */
+  contractAlertDays: number
 }
 
 /**
