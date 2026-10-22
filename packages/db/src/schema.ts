@@ -1234,6 +1234,23 @@ export const platformSettings = pgTable(
     // OOC-21: below this percentage of the expected amount, rejection is
     // suggested to the reviewer. 50 is provisional (owner, 03/10/2026).
     receiptRejectBelowPercent: integer("receipt_reject_below_percent").notNull().default(50),
+    // OOC-41: the long clock — receipt sent → decision. One number for both
+    // what the checkout promises the student and the deadline Payments works
+    // to (owner, 22/10/2026).
+    reviewWindowDays: integer("review_window_days").notNull().default(5),
+    // OOC-41: below this confidence (whole percent) a field read by the OCR
+    // is flagged to the reviewer; level 2 escalates on it once it exists
+    // (Sessão 29). Whole percent, never a float.
+    ocrLowConfidencePercent: integer("ocr_low_confidence_percent").notNull().default(75),
+    // OOC-41: academic rules, on the 0–20 scale and in business days.
+    passingGrade: integer("passing_grade").notNull().default(14),
+    certificateDeadlineBusinessDays: integer("certificate_deadline_business_days").notNull().default(25),
+    // OOC-41: today's price of the constancia. A request will freeze the
+    // value it was asked at — changing this never reprices one already made.
+    constanciaFeeCents: integer("constancia_fee_cents").notNull().default(2500),
+    // OOC-41: how early a teacher's contract starts warning. 45 is
+    // provisional (CLAUDE.md §1).
+    contractAlertDays: integer("contract_alert_days").notNull().default(45),
     updatedBy: text("updated_by"),
     ...timestamps(),
   },
@@ -1251,5 +1268,20 @@ export const platformSettings = pgTable(
       "platform_settings_receipt_reject_below_percent_check",
       sql`${table.receiptRejectBelowPercent} between 1 and 99`,
     ),
+    check("platform_settings_review_window_days_check", sql`${table.reviewWindowDays} between 1 and 30`),
+    check(
+      "platform_settings_ocr_low_confidence_percent_check",
+      sql`${table.ocrLowConfidencePercent} between 50 and 95`,
+    ),
+    check("platform_settings_passing_grade_check", sql`${table.passingGrade} between 0 and 20`),
+    check(
+      "platform_settings_certificate_deadline_business_days_check",
+      sql`${table.certificateDeadlineBusinessDays} between 1 and 90`,
+    ),
+    check(
+      "platform_settings_constancia_fee_cents_check",
+      sql`${table.constanciaFeeCents} between 100 and 100000`,
+    ),
+    check("platform_settings_contract_alert_days_check", sql`${table.contractAlertDays} between 1 and 180`),
   ],
 );

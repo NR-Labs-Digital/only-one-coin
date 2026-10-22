@@ -56,10 +56,8 @@ import {
   SchedulePlanPriceUseCase,
   SetFeatureFlagOverrideUseCase,
   SubmitPublicEnrollmentUseCase,
-  UpdateCheckoutHoldMinutesUseCase,
-  UpdateReceiptAmountToleranceUseCase,
+  UpdatePlatformSettingsUseCase,
   ValidateReceiptUseCase,
-  UpdateReceiptRejectBelowPercentUseCase,
   UpdateCourseUseCase,
   type IAuditLogRepository,
   type ICatalogEntryRepository,
@@ -273,9 +271,7 @@ export interface AppUseCases {
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
-    updateCheckoutHoldMinutes: UpdateCheckoutHoldMinutesUseCase;
-    updateReceiptAmountTolerance: UpdateReceiptAmountToleranceUseCase;
-    updateReceiptRejectBelowPercent: UpdateReceiptRejectBelowPercentUseCase;
+    updateSettings: UpdatePlatformSettingsUseCase;
   };
   catalog: {
     retire: RetireCatalogEntryUseCase;
@@ -513,9 +509,7 @@ function buildContainer(): AppContainer {
   const disableOwnMfa = new DisableOwnMfaUseCase(freshAuthVerifier, staffSecondFactor, auditLogRepository);
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
-  const updateCheckoutHoldMinutes = new UpdateCheckoutHoldMinutesUseCase(platformSettingsRepository, auditLogRepository);
-  const updateReceiptAmountTolerance = new UpdateReceiptAmountToleranceUseCase(platformSettingsRepository, auditLogRepository);
-  const updateReceiptRejectBelowPercent = new UpdateReceiptRejectBelowPercentUseCase(platformSettingsRepository, auditLogRepository);
+  const updateSettings = new UpdatePlatformSettingsUseCase(platformSettingsRepository);
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
@@ -574,7 +568,7 @@ function buildContainer(): AppContainer {
   const studentActivity = new StudentActivityQuery(db);
   const listEnrollments = new ListEnrollmentsQuery(db);
   const listPayments = new ListPaymentsQuery(db);
-  const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db);
+  const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db, platformSettingsRepository);
   const dashboardSummary = new DashboardSummaryQuery(db);
   const paymentReceiptImage = new PaymentReceiptImageQuery(db, receiptObjectStore);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
@@ -583,7 +577,7 @@ function buildContainer(): AppContainer {
   const getCourse = new GetCourseQuery(db);
   const listPeriods = new ListPeriodsQuery(db);
   const listClassGroups = new ListClassGroupsQuery(db);
-  const listTeachers = new ListTeachersQuery(db);
+  const listTeachers = new ListTeachersQuery(db, platformSettingsRepository);
   const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
   const listTeacherOptions = new ListTeacherOptionsQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
@@ -692,9 +686,7 @@ function buildContainer(): AppContainer {
       portal,
       platform: {
         setFeatureFlag,
-        updateCheckoutHoldMinutes,
-        updateReceiptAmountTolerance,
-        updateReceiptRejectBelowPercent,
+        updateSettings,
       },
       catalog: {
         retire: retireCatalogEntry,

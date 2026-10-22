@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, teacherContracts } from "@ooc/db";
+import { academicPeriods, classGroups, courses, platformSettings, teacherContracts } from "@ooc/db";
 import { ClassGroup, Teacher, TeacherAlreadyRegisteredError, type CreateTeacherDTO } from "@ooc/domain";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -12,6 +12,7 @@ import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroup
 import { DrizzleTeacherRepository } from "./DrizzleTeacherRepository.js";
 import { GetTeacherQuery } from "./GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./ListTeacherOptionsQuery.js";
+import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { ListTeachersQuery } from "./ListTeachersQuery.js";
 
 /**
@@ -216,7 +217,7 @@ describe("ListTeachersQuery", () => {
   it("cuts the roster by tab and counts each chip over the search", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
-      const list = new ListTeachersQuery(tx);
+      const list = new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx));
 
       const ana = await teachers.create(Teacher.create(ANA));
       const luis = await teachers.create(Teacher.create(LUIS));
@@ -248,6 +249,16 @@ describe("ListTeachersQuery", () => {
       const chasing = await list.directory({ q: "Docente", contract: true });
       expect(chasing.items.map((row) => row.id)).toEqual([luis.id]);
 
+      // The alert window is the backoffice's (OOC-41). A renewal ending in
+      // 100 days is outside the default 45 — widen the window to 120 and it
+      // joins the chase, with no deploy.
+      await fileContract(tx, ana.id, new Date(Date.now() + 100 * DAY_MS));
+      const outsideWindow = await list.directory({ q: "Docente", contract: true });
+      expect(outsideWindow.items.map((row) => row.id)).toEqual([luis.id]);
+      await tx.update(platformSettings).set({ contractAlertDays: 120 });
+      const insideWindow = await list.directory({ q: "Docente", contract: true });
+      expect(insideWindow.items.map((row) => row.id).sort()).toEqual([ana.id, luis.id].sort());
+
       const italian = await list.directory({ q: "Docente", language: "Italiano (prueba)" });
       expect(italian.items.map((row) => row.id)).toEqual([ana.id]);
 
@@ -259,7 +270,7 @@ describe("ListTeachersQuery", () => {
   it("flags a contract inside the alert window and reads the latest filing", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
-      const list = new ListTeachersQuery(tx);
+      const list = new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx));
       const ana = await teachers.create(Teacher.create(ANA));
 
       // Filed later, the second is the one in force — ten days from its end.
@@ -280,7 +291,7 @@ describe("GetTeacherQuery", () => {
   it("reads the week and the class groups allocated to the teacher", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
-      const list = new ListTeachersQuery(tx);
+      const list = new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx));
       const get = new GetTeacherQuery(tx, list, new ListClassGroupsQuery(tx));
 
       const ana = await teachers.create(Teacher.create(ANA));

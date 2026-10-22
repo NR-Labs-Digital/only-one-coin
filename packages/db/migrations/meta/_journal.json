@@ -225,6 +225,13 @@
       "when": 1792695782319,
       "tag": "0031_receipt_rereads",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792699476573,
+      "tag": "0032_settings_parameters",
+      "breakpoints": true
     }
   ]
 }

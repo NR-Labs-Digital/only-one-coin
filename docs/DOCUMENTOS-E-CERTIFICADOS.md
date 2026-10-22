@@ -130,9 +130,12 @@ o prestou fica fora do lote, com o motivo na tela. Nota mínima **não** basta.
 
 ### Nota mínima e taxa: configuráveis
 
-`PASSING_GRADE` (14) e `CONSTANCIA_FEE_CENTS` (S/25) vivem hoje no mock. No
-sistema real são **configuração de backoffice**, não constante no código — mesma
-regra da tolerância de validação de pagamento (`CLAUDE.md` §5).
+Nota mínima (14), prazo do certificado (25 dias úteis) e taxa da constancia
+(S/25) são **configuração de backoffice** desde a OOC-41 (22/10/2026):
+`platform_settings.passing_grade`, `certificate_deadline_business_days` e
+`constancia_fee_cents`, editáveis em Configuração e lidos pelas telas de notas,
+certificados e documentos — nunca constante no código (`apps/api/CLAUDE.md`,
+"Configurações da plataforma").
 
 ---
 

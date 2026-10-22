@@ -357,6 +357,7 @@ export function TeachersView({
                         <ContractBadge
                           contract={row.contract}
                           daysLeft={row.contractDaysLeft}
+                          alertDays={directory.contractAlertDays}
                         />
                       </td>
                     )}

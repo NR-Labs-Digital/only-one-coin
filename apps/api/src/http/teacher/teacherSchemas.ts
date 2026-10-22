@@ -46,6 +46,8 @@ export const TeacherRowResponseSchema = z.object({
 export const TeacherDetailResponseSchema = TeacherRowResponseSchema.extend({
   availability: z.array(WeeklySlotResponseSchema),
   classGroups: z.array(ClassGroupItemSchema),
+  /** The backoffice's alert window (OOC-41), for the contract badge. */
+  contractAlertDays: z.number().int(),
 });
 
 /** What a write answers: the file as the server normalized it. */

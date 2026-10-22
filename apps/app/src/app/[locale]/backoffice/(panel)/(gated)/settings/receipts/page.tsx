@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getGeneralSettings } from '@/lib/backoffice/settings'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { canConfigureSettings } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
@@ -8,8 +7,9 @@ import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { ReceiptSettingsForm } from './receipts-form'
 
 /**
- * The receipt half of the settings section — the parameters the OCR ladder
- * approves on before it asks for a human, plus the seat's two clocks. The
+ * The receipt half of the settings section — what the traffic light calls
+ * green and red, the OCR confidence flagged to the reviewer, and the seat's two
+ * clocks. None of them approves anything: a person does. The
  * academic half lives at the section index; the tabs bind the two screens to
  * the one sidebar entry (same pattern as payments).
  *
@@ -44,37 +44,48 @@ export default async function ReceiptSettingsPage({
     )
   }
 
-  // What `apps/api` already enforces is read from there; the rest is still the
-  // screen-only defaults.
-  const platform = await getPlatformSettings()
-  const receipts = {
-    ...getGeneralSettings().receipts,
-    ...(platform
-      ? {
-          checkoutHoldMinutes: platform.checkoutHoldMinutes,
-          toleranceCents: platform.receiptAmountToleranceCents,
-          rejectBelowPercent: platform.receiptRejectBelowPercent,
-        }
-      : {}),
+  const tabs = (
+    <SectionTabs
+      tabs={[
+        {
+          href: '/backoffice/settings',
+          label: t('settings.academic_title'),
+          exact: true,
+        },
+        {
+          href: '/backoffice/settings/receipts',
+          label: t('settings.receipts_title'),
+        },
+      ]}
+    />
+  )
+
+  /* A failure is shown as a failure: a form filled with made-up numbers would
+     look saved, and saving it would overwrite the real ones. */
+  const settings = await getPlatformSettings()
+  if (!settings) {
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={t('settings.title')} />
+        {tabs}
+        <EmptyState icon="alert" title={t('settings.load_error_title')} body={t('settings.load_error_body')} />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('settings.title')} />
-      <SectionTabs
-        tabs={[
-          {
-            href: '/backoffice/settings',
-            label: t('settings.academic_title'),
-            exact: true,
-          },
-          {
-            href: '/backoffice/settings/receipts',
-            label: t('settings.receipts_title'),
-          },
-        ]}
+      {tabs}
+      <ReceiptSettingsForm
+        settings={{
+          receiptAmountToleranceCents: settings.receiptAmountToleranceCents,
+          receiptRejectBelowPercent: settings.receiptRejectBelowPercent,
+          ocrLowConfidencePercent: settings.ocrLowConfidencePercent,
+          checkoutHoldMinutes: settings.checkoutHoldMinutes,
+          reviewWindowDays: settings.reviewWindowDays,
+        }}
       />
-      <ReceiptSettingsForm settings={receipts} />
     </div>
   )
 }

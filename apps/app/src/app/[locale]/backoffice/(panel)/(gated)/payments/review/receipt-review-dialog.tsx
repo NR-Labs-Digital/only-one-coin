@@ -115,6 +115,7 @@ export function ReceiptReviewDialog({
   onReread,
   onNext,
   onPrev,
+  lowConfidencePercent,
 }: {
   payment: PaymentReviewItem | null
   /** When the server rendered the queue — what the deadline is measured from. */
@@ -127,6 +128,9 @@ export function ReceiptReviewDialog({
   /** The next and previous case in the queue — `null` when there is none. */
   onNext: (() => void) | null
   onPrev: (() => void) | null
+  /** Below this (whole percent) a field read is flagged (`platform_settings`,
+   * OOC-41); null when the settings could not be read — nothing is flagged. */
+  lowConfidencePercent: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -515,7 +519,11 @@ export function ReceiptReviewDialog({
 
               {payment.verdict && <VerdictNotice verdict={payment.verdict} />}
               {payment.reading && (
-                <ReadingSection reading={payment.reading} source={payment.readingSource} />
+                <ReadingSection
+                  reading={payment.reading}
+                  source={payment.readingSource}
+                  lowConfidencePercent={lowConfidencePercent}
+                />
               )}
 
               {/* A new reading of the same image (Sessão 32): when the first
@@ -739,10 +747,12 @@ function VerdictNotice({ verdict }: { verdict: ReviewVerdict }) {
 function ReadingSection({
   reading,
   source,
+  lowConfidencePercent,
 }: {
   reading: ReceiptReading
   /** A re-read says so: the reviewer asked for it, and should see it came back. */
   source: PaymentReviewItem['readingSource']
+  lowConfidencePercent: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -839,11 +849,19 @@ function ReadingSection({
               >
                 {row.text}
               </span>
-              {row.field.value !== null && (
-                <span className="block text-xs tabular-nums text-muted-foreground">
-                  {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
-                </span>
-              )}
+              {row.field.value !== null &&
+                (lowConfidencePercent !== null && row.field.confidence * 100 < lowConfidencePercent ? (
+                  // Below the backoffice's floor (OOC-41): the one field to
+                  // check against the image first. Only flags — never decides.
+                  <span className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800">
+                    <BoIcon name="alert" size={12} />
+                    {t('receipt_review.reading_low_confidence', { value: Math.round(row.field.confidence * 100) })}
+                  </span>
+                ) : (
+                  <span className="block text-xs tabular-nums text-muted-foreground">
+                    {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
+                  </span>
+                ))}
             </dd>
           </div>
         ))}

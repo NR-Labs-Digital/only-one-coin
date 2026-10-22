@@ -4,15 +4,16 @@ import type {
   ClassGroupDetail,
   ClassGroupStudent,
 } from './types'
-import { PASSING_GRADE } from './mock-data'
 
 /**
  * Certificate eligibility, in one place.
  *
- * The rules come from `docs/REGRAS-NEGOCIO.md`: minimum grade 14 (§3), DA when
- * a final exam is missed (§3), free certificate within 25 business days of the
- * course ending (§6), and Inglés Básico certifying only after the student sits
- * the certification exam (§6).
+ * The rules come from `docs/REGRAS-NEGOCIO.md`: a minimum grade (§3), DA when
+ * a final exam is missed (§3), a free certificate within a number of business
+ * days of the course ending (§6), and Inglés Básico certifying only after the
+ * student sits the certification exam (§6). The grade and the days are the
+ * backoffice's (`platform_settings`, OOC-41) and arrive as arguments — never
+ * a constant here.
  *
  * This is UI-side derivation for the mockup. The real decision belongs to a
  * usecase in `packages/domain` — the browser must never be the authority on who
@@ -37,13 +38,14 @@ export interface BatchPreview {
 export function certificateBlockReason(
   student: ClassGroupStudent,
   rule: CertificateRule,
+  passingGrade: number,
 ): CertificateBlockReason | null {
   if (student.certificateIssuedAt) return 'already_issued'
   if (student.paymentStatus !== 'approved') return 'payment_not_approved'
   if (student.enrollmentStatus !== 'completed') return 'enrollment_not_completed'
   if (student.gradeStatus === 'auto_failed') return 'auto_failed'
   if (student.gradeStatus === 'pending') return 'grade_pending'
-  if (student.finalGrade === null || student.finalGrade < PASSING_GRADE) {
+  if (student.finalGrade === null || student.finalGrade < passingGrade) {
     return 'grade_below_minimum'
   }
   if (rule === 'exam_required' && student.certificationExam !== 'approved') {
@@ -53,12 +55,12 @@ export function certificateBlockReason(
 }
 
 /** Splits the roster into who the batch would issue for and who it would skip. */
-export function batchPreview(group: ClassGroupDetail): BatchPreview {
+export function batchPreview(group: ClassGroupDetail, passingGrade: number): BatchPreview {
   const eligible: ClassGroupStudent[] = []
   const blocked: BlockedStudent[] = []
 
   for (const student of group.students) {
-    const reason = certificateBlockReason(student, group.certificateRule)
+    const reason = certificateBlockReason(student, group.certificateRule, passingGrade)
     if (reason === null) eligible.push(student)
     else blocked.push({ student, reason })
   }
@@ -101,6 +103,3 @@ export function businessDaysUntil(target: Date, from: Date): number {
   }
   return overdue ? -count : count
 }
-
-/** Free certificate, 25 business days after the course ends (§6). */
-export const CERTIFICATE_DEADLINE_BUSINESS_DAYS = 25

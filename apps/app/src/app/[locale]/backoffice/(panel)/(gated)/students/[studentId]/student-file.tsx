@@ -75,6 +75,7 @@ export function StudentFile({
   canViewPayments,
   canEdit,
   activity,
+  constanciaFeeCents,
 }: {
   student: StudentDetail
   /** Whether the reader's cargo opens Pagos — decides whether the file links there. */
@@ -83,6 +84,8 @@ export function StudentFile({
   canEdit: boolean
   /** First page of the timeline; null when the API could not answer. */
   activity: StudentActivityPage | null
+  /** Today's constancia fee (`platform_settings`, OOC-41); null when it could not be read. */
+  constanciaFeeCents: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -487,7 +490,7 @@ export function StudentFile({
         </Card>
       )}
 
-      {tab === 'documents' && <StudentDocuments student={student} />}
+      {tab === 'documents' && <StudentDocuments student={student} constanciaFeeCents={constanciaFeeCents} />}
 
       {tab === 'activity' && (
         <Card className="p-5">

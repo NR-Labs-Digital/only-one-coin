@@ -3,6 +3,7 @@ import { listPaymentReviewQueue, parseReviewQueueQuery } from '@/lib/backoffice/
 import { reviewQueueSearchParams } from '@/lib/backoffice/payment-ledger-query'
 import { redirect } from '@/i18n/navigation'
 import { getStaffSession } from '@/lib/backoffice/session'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { canReviewPayments, canViewPayments } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
@@ -71,7 +72,7 @@ export default async function PaymentsReviewPage({
   const raw = await searchParams
   const query = parseReviewQueueQuery(raw)
   const receipt = Array.isArray(raw.receipt) ? raw.receipt[0] : raw.receipt
-  const queue = await listPaymentReviewQueue(query)
+  const [queue, settings] = await Promise.all([listPaymentReviewQueue(query), getPlatformSettings()])
 
   /* A failure is shown as a failure: an empty queue would read as "nobody is
      waiting", which is exactly what a reviewer must never be told by accident. */
@@ -119,6 +120,9 @@ export default async function PaymentsReviewPage({
         canReview={canReviewPayments(staff.role)}
         openReceiptId={receipt ?? null}
         renderedAt={renderedAt}
+        // Settings that could not be read only lose the low-confidence flag;
+        // the queue itself still works.
+        lowConfidencePercent={settings?.ocrLowConfidencePercent ?? null}
       />
     </div>
   )

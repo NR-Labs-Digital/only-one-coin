@@ -9,6 +9,7 @@ import {
   planPrices,
   plans,
   paymentReceipts,
+  platformSettings,
   receiptRereads,
   receiptUploads,
   seatHolds,
@@ -19,7 +20,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
-import { ListPaymentReviewQueueQuery, REVIEW_WINDOW_DAYS } from "./ListPaymentReviewQueueQuery.js";
+import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
+import { ListPaymentReviewQueueQuery } from "./ListPaymentReviewQueueQuery.js";
 import { ListPaymentsQuery } from "./ListPaymentsQuery.js";
 
 /**
@@ -245,6 +247,11 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
 
 const READER = "usr_payment_queries_reader";
 
+/** The queue reads its review window from platform_settings (OOC-41). */
+function reviewQueue(tx: Tx): ListPaymentReviewQueueQuery {
+  return new ListPaymentReviewQueueQuery(tx as unknown as Db, new DrizzlePlatformSettingsRepository(tx as unknown as Db));
+}
+
 /**
  * One more open payment with a processed, read and judged receipt, for the
  * priority order (Sessão 32). `confidence` goes on the three fields the
@@ -332,7 +339,7 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("lists only open payments, oldest first, with receipt state, signals and deadline", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, sort: "oldest" });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.total).toBe(2);
       expect(queue.items.map((item) => item.id)).toEqual([seeded.pending, seeded.underReview]);
@@ -341,7 +348,8 @@ describe("ListPaymentReviewQueueQuery", () => {
       expect(queue.items[0]!.fraudSignals).toEqual([]);
       expect(queue.items[1]!.fraudSignals).toEqual(["identical_file"]);
       const item = queue.items[0]!;
-      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const { reviewWindowDays } = await new DrizzlePlatformSettingsRepository(tx as unknown as Db).get();
+      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(reviewWindowDays * 24 * 60 * 60 * 1000);
       expect(item.expectedAmountCents).toBe(15000);
       expect(item).toMatchObject({ classGroupName: "Lun/Mié 19:00", planName: "Paquete completo", status: "pending", currency: "PEN" });
     });
@@ -350,7 +358,7 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("carries the OCR reading of the latest receipt, field by field (OOC-20)", async () => {
     await rolledBack(async (tx) => {
       await seedPayments(tx, "read");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       // No receipt, nothing to read.
       expect(queue.items[0]!.reading).toBeNull();
@@ -371,12 +379,12 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("says when the OCR failed, and when it has not read the receipt yet", async () => {
     await rolledBack(async (tx) => {
       await seedPayments(tx, "failed");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
       expect(queue.items[1]!.reading).toMatchObject({ state: "failed", reason: "provider_unavailable" });
     });
     await rolledBack(async (tx) => {
       await seedPayments(tx, "none");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
       expect(queue.items[1]!.reading).toEqual({ state: "not_read" });
     });
   });
@@ -393,7 +401,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         })
         .where(eq(receiptUploads.paymentId, seeded.underReview));
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, sort: "oldest" });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.items[0]!.verdict).toBeNull();
       expect(queue.items[1]!.verdict).toEqual({ verdict: "reject_suggested", reason: "far_below" });
@@ -408,7 +416,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         .set({ validationVerdict: "review", validationDetail: { reason: "reason_from_a_later_version" }, validatedAt: new Date() })
         .where(eq(receiptUploads.paymentId, seeded.underReview));
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       expect(queue.items[1]!.verdict).toBeNull();
     });
@@ -417,12 +425,24 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("finds an open payment by its operation number", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({
+      const queue = await reviewQueue(tx).run({
         academicPeriodId: PERIOD,
         q: seeded.operationOf.underReview,
       });
 
       expect(queue.items.map((item) => item.id)).toEqual([seeded.underReview]);
+    });
+  });
+
+  it("measures the deadline with the review window set in the backoffice (OOC-41)", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      await tx.update(platformSettings).set({ reviewWindowDays: 9 });
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+
+      const item = queue.items[0]!;
+      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(9 * 24 * 60 * 60 * 1000);
     });
   });
 
@@ -433,7 +453,7 @@ describe("ListPaymentReviewQueueQuery", () => {
       const yellowSure = await seedJudgedPayment(tx, { tag: "c", minutesAgo: 30, verdict: "review", confidence: 0.95 });
       const yellowShaky = await seedJudgedPayment(tx, { tag: "d", minutesAgo: 20, verdict: "review", confidence: 0.3 });
       const red = await seedJudgedPayment(tx, { tag: "e", minutesAgo: 10, verdict: "reject_suggested", confidence: 0.9 });
-      const query = new ListPaymentReviewQueueQuery(tx as unknown as Db);
+      const query = reviewQueue(tx);
 
       const byPriority = await query.run({ academicPeriodId: PERIOD });
       expect(byPriority.items.map((item) => item.id)).toEqual([
@@ -462,7 +482,7 @@ describe("ListPaymentReviewQueueQuery", () => {
       const yellow = await seedJudgedPayment(tx, { tag: "f", minutesAgo: 1, verdict: "review", confidence: 0.5 });
       const green = await seedJudgedPayment(tx, { tag: "g", minutesAgo: 60, verdict: "approve", confidence: 0.2 });
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       // No verdict and no reading → confidence 0, ahead of the 0.5 yellow;
       // the green comes last however old and shaky it is.
@@ -493,7 +513,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         readAt: new Date(),
       });
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       // Green now: behind the yellow it used to be ahead of.
       expect(queue.items.map((item) => item.id)).toEqual([first.paymentId, reread.paymentId]);
@@ -519,7 +539,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         tier: 1,
       });
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       expect(queue.items[0]!.rereadRequestedAt).toBeInstanceOf(Date);
       expect(queue.items[0]!.readingSource).toBe("first");
@@ -667,7 +687,7 @@ describe("ListPaymentsQuery", () => {
     await rolledBack(async (tx) => {
       await seedPayments(tx);
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ state: "open" });
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({});
+      const queue = await reviewQueue(tx).run({});
 
       expect(ledger.counts.open).toBe(queue.total);
       expect(ledger.total).toBe(queue.total);

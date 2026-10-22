@@ -1,14 +1,7 @@
 import { classGroups, teacherContracts, teacherLanguages, teachers } from "@ooc/db";
-import type { TeacherStatus } from "@ooc/domain";
+import type { IPlatformSettingsRepository, TeacherStatus } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
-
-/**
- * When a contract starts being this quarter's errand (CLAUDE.md §1, provisional
- * number). Mirrors `CONTRACT_ALERT_DAYS` in `apps/app/src/lib/backoffice/contract.ts`
- * — apps/app cannot import apps/api, so the two are kept in step by hand.
- */
-export const CONTRACT_ALERT_DAYS = 45;
 
 /** One screen of the roster (`teachers-view.tsx` shows exactly this many). */
 export const TEACHER_DIRECTORY_PAGE_SIZE = 15;
@@ -77,6 +70,9 @@ export interface TeacherDirectoryPage {
    * those plus the tab — so each says what choosing it would give.
    */
   counts: { active: number; inactive: number; free: number; contract: number };
+  /** The alert window the `contract` filter used (OOC-41) — the badge on
+   * screen reads this same number, so the two never disagree. */
+  contractAlertDays: number;
 }
 
 /** `%`, `_` and the escape character itself are literal in what a person types. */
@@ -89,7 +85,10 @@ function escapeLike(term: string): string {
  * Read-only shaping, so it lives beside the repository and not in the domain.
  */
 export class ListTeachersQuery {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly settings: IPlatformSettingsRepository,
+  ) {}
 
   /** The latest filing per teacher — "contrato vigente" is the most recent (0025). */
   private latestContract() {
@@ -155,7 +154,10 @@ export class ListTeachersQuery {
         and ${classGroups.status} in ('enrolling', 'in_progress')
         and ${classGroups.deletedAt} is null
     )`;
-    const needsContract = sql`(${contract.endsOn} is null or ${this.daysLeft(contract)} <= ${CONTRACT_ALERT_DAYS})`;
+    // When a contract starts being this quarter's errand — the backoffice's
+    // number (OOC-41), the same one the badge on screen reads.
+    const { contractAlertDays } = await this.settings.get();
+    const needsContract = sql`(${contract.endsOn} is null or ${this.daysLeft(contract)} <= ${contractAlertDays})`;
 
     const base: SQL[] = [isNull(teachers.deletedAt)];
     const q = filters.q?.trim();
@@ -221,6 +223,7 @@ export class ListTeachersQuery {
       page,
       pageSize: TEACHER_DIRECTORY_PAGE_SIZE,
       counts: countsRow ?? { active: 0, inactive: 0, free: 0, contract: 0 },
+      contractAlertDays,
     };
   }
 
