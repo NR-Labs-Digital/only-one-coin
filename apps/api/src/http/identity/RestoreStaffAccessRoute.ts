@@ -17,6 +17,7 @@ export const restoreStaffAccessRoute = RouteBuilder.post("/staff/:userId/access/
   .params(RestoreStaffAccessParamsSchema)
   .response(204, z.void())
   .response(403, ErrorResponseSchema)
+  .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
     await container.useCases.staff.restoreAccess.run({
       actorId: request.currentUser!.id,

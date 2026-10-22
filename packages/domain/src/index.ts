@@ -247,6 +247,9 @@ export {
   MfaAlreadyEnabledError,
   MfaNotEnabledError,
   MfaCodeRejectedError,
+  TeacherInviteRefusedError,
+  TeacherRoleLockedError,
+  TeacherOffRosterAccessError,
 } from "./identity/errors.js";
 export { STAFF_PASSWORD_MIN_LENGTH, meetsStaffPasswordPolicy } from "./identity/StaffPasswordPolicy.js";
 export {

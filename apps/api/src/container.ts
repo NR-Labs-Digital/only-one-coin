@@ -142,6 +142,7 @@ import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTea
 import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
+import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
   DrizzleReceiptRereadRepository,
@@ -306,6 +307,7 @@ export interface AppQueries {
   listTeachers: ListTeachersQuery;
   getTeacher: GetTeacherQuery;
   listTeacherOptions: ListTeacherOptionsQuery;
+  listInvitableTeachers: ListInvitableTeachersQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
@@ -467,12 +469,22 @@ function buildContainer(): AppContainer {
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
   const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository);
   const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
-  const createInvite = new CreateStaffInviteUseCase(staffUserLookup, staffInviteRepository, auditLogRepository);
+  const createInvite = new CreateStaffInviteUseCase(
+    staffUserLookup,
+    staffInviteRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
   const renewInvite = new RenewStaffInviteUseCase(staffInviteRepository, auditLogRepository);
   const cancelInvite = new CancelStaffInviteUseCase(staffInviteRepository, auditLogRepository);
-  const completeInvite = new CompleteStaffInviteUseCase(staffInviteRepository, staffAccountProvisioner, auditLogRepository);
+  const completeInvite = new CompleteStaffInviteUseCase(
+    staffInviteRepository,
+    staffAccountProvisioner,
+    teacherRepository,
+    auditLogRepository,
+  );
   const removeAccess = new RemoveStaffAccessUseCase(staffAccessRepository, auditLogRepository);
-  const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, auditLogRepository);
+  const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, teacherRepository, auditLogRepository);
   const setTeacherRosterStatus = new SetTeacherRosterStatusUseCase(
     teacherRepository,
     staffAccessRepository,
@@ -580,6 +592,7 @@ function buildContainer(): AppContainer {
   const listTeachers = new ListTeachersQuery(db, platformSettingsRepository);
   const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
   const listTeacherOptions = new ListTeacherOptionsQuery(db);
+  const listInvitableTeachers = new ListInvitableTeachersQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
   const classGroupRoster = new ClassGroupRosterQuery(db);
   const listStaff = new ListStaffQuery(db);
@@ -715,6 +728,7 @@ function buildContainer(): AppContainer {
       listTeachers,
       getTeacher,
       listTeacherOptions,
+      listInvitableTeachers,
       listEnrollments,
       listPayments,
       listPaymentReviewQueue,

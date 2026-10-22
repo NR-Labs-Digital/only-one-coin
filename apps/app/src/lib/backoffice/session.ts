@@ -5,18 +5,6 @@ import { apiFetch } from './api-client'
 import type { StaffUser } from './types'
 
 /**
- * Mock bridge, front phase only: `/me` always answers `teacherId: null`
- * because the `teachers` table does not exist yet (the route says so,
- * `apps/api/src/http/identity/GetCurrentStaffRoute.ts`), and a null
- * `teacherId` scopes a teacher session down to nothing — every docente screen
- * would demo as an empty state. So a `teacher` session with no record behind
- * it is pinned to this mock roster row, the same way every other screen reads
- * invented rows. Dies with the mock layer: once the table exists, `/me`
- * carries the real link and this constant goes with it.
- */
-const DEMO_TEACHER_ID = 'tea_01'
-
-/**
  * The signed-in staff member, read from the real session — never a client
  * choice (CLAUDE.md §8).
  *
@@ -28,6 +16,10 @@ const DEMO_TEACHER_ID = 'tea_01'
  * A cargo that must have the second factor and has not turned it on yet is
  * refused by apps/api on `/me` too (`auth.mfa_enrollment_required`, OOC-29):
  * that one goes to the login's enrollment step, not back to the password.
+ *
+ * A `teacher` account carries the id of the teacher file it is linked to
+ * (`teachers.user_id`, OOC-79), or null when no file links to it — every
+ * docente screen then scopes them down to nothing.
  *
  * Memoized per request (`cache`, same pattern as the feature-flag reads in
  * `lib/feature-flags/server.ts`): the panel's shell and its gate both need
@@ -46,9 +38,5 @@ export const getStaffSession = cache(async (): Promise<StaffUser> => {
     throw new Error('unreachable')
   }
 
-  const staff = (await response.json()) as StaffUser
-  if (staff.role === 'teacher' && staff.teacherId === null) {
-    return { ...staff, teacherId: DEMO_TEACHER_ID }
-  }
-  return staff
+  return (await response.json()) as StaffUser
 })

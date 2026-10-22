@@ -37,6 +37,21 @@ export class FakeTeacherRepository implements ITeacherRepository {
     return null;
   }
 
+  async findByUserId(userId: string): Promise<Teacher | null> {
+    for (const teacher of this.rows.values()) {
+      if (teacher.userId === userId) return copy(teacher);
+    }
+    return null;
+  }
+
+  /** Mirrors the adapter: writes only onto a live file with no account yet. */
+  async linkAccount(teacherId: string, userId: string): Promise<boolean> {
+    const row = this.rows.get(teacherId);
+    if (!row || row.userId !== null) return false;
+    row.userId = userId;
+    return true;
+  }
+
   async update(teacher: Teacher): Promise<Teacher> {
     this.rows.set(teacher.id, copy(teacher));
     this.updated.push(teacher);

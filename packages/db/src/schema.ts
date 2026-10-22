@@ -1032,6 +1032,11 @@ export const staffInvites = pgTable(
     status: text("status").notNull().default("pending"),
     invitedBy: text("invited_by").notNull(),
     completedUserId: text("completed_user_id"),
+    // The teacher file a `teacher` invite opens an account for (OOC-79) —
+    // accepting it writes `teachers.user_id`. Only a `teacher` invite carries
+    // one, and a pending one must (CHECK below; invites older than 0033 have
+    // none, so it binds the pending ones only).
+    teacherId: uuid("teacher_id").references(() => teachers.id, { onDelete: "restrict" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ...timestamps(),
   },
@@ -1040,6 +1045,15 @@ export const staffInvites = pgTable(
     uniqueIndex("staff_invites_pending_email_uidx")
       .on(table.email)
       .where(sql`${table.status} = 'pending'`),
+    // One open invite per teacher file: two would race for the same
+    // `teachers.user_id` when accepted.
+    uniqueIndex("staff_invites_pending_teacher_uidx")
+      .on(table.teacherId)
+      .where(sql`${table.status} = 'pending'`),
+    check(
+      "staff_invites_teacher_check",
+      sql`(${table.teacherId} is null or ${table.role} = 'teacher') and (${table.role} <> 'teacher' or ${table.status} <> 'pending' or ${table.teacherId} is not null)`,
+    ),
     check(
       "staff_invites_role_check",
       sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'teacher', 'sales', 'support', 'billing')`,

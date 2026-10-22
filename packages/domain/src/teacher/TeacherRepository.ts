@@ -17,6 +17,16 @@ export interface ITeacherRepository {
   /** The live teacher behind a document, if any. */
   findByNationalId(params: { nationalIdType: NationalIdType; nationalId: string }): Promise<Teacher | null>;
 
+  /** The live teacher whose panel account this is (`teachers.user_id`, OOC-79), if any. */
+  findByUserId(userId: string): Promise<Teacher | null>;
+
+  /**
+   * Writes `teachers.user_id` onto a live file that has no account yet — the
+   * accepted teacher invite (OOC-79). Answers false, writing nothing, when the
+   * file is gone or already linked: a link never moves between accounts.
+   */
+  linkAccount(teacherId: string, userId: string): Promise<boolean>;
+
   /** Writes the entity's current fields, languages and availability over its rows. */
   update(teacher: Teacher): Promise<Teacher>;
 

@@ -232,6 +232,13 @@
       "when": 1792699476573,
       "tag": "0032_settings_parameters",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792701432755,
+      "tag": "0033_teacher_invite_link",
+      "breakpoints": true
     }
   ]
 }

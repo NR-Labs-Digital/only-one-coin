@@ -139,6 +139,18 @@ export type NewStaffMember = Pick<
 >
 
 /**
+ * A teacher file a `teacher` invite can be opened for (OOC-79): on the roster,
+ * with no panel account and no invite already open. Name and e-mail fill the
+ * invite form; the API checks the same rules again when it is sent.
+ */
+export interface InvitableTeacher {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+}
+
+/**
  * One line of the cargo ledger: every change of `role`, and the alta that gave
  * the account its first one. Append-only in the database — no grant of UPDATE
  * or DELETE, not even for admin (CLAUDE.md §8) — so this is read, never edited.

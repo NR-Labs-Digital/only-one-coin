@@ -200,6 +200,47 @@ describe("DrizzleTeacherRepository", () => {
     });
   });
 
+  it("links the account onto a file without one, and finds the file by it (OOC-79)", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const ana = await teachers.create(Teacher.create(ANA));
+
+      expect(await teachers.linkAccount(ana.id, UPLOADER)).toBe(true);
+
+      expect((await teachers.findById(ana.id))?.userId).toBe(UPLOADER);
+      expect((await teachers.findByUserId(UPLOADER))?.id).toBe(ana.id);
+    });
+  });
+
+  it("never moves a link onto another account", async () => {
+    await rolledBack(async (tx) => {
+      await tx.execute(
+        sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
+            values ('usr_teacher_integration_2', 'Otra', 'teacher.integration.2@test.local', true, 'teacher', now(), now())`,
+      );
+      const teachers = new DrizzleTeacherRepository(tx);
+      const ana = await teachers.create(Teacher.create(ANA));
+      await teachers.linkAccount(ana.id, UPLOADER);
+
+      expect(await teachers.linkAccount(ana.id, "usr_teacher_integration_2")).toBe(false);
+      expect((await teachers.findById(ana.id))?.userId).toBe(UPLOADER);
+    });
+  });
+
+  it("keeps the link when a file read before it is saved", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const ana = await teachers.create(Teacher.create(ANA));
+      const stale = (await teachers.findById(ana.id))!;
+      await teachers.linkAccount(ana.id, UPLOADER);
+
+      stale.rewrite({ ...ANA, phone: "+51900000009" });
+      await teachers.update(stale);
+
+      expect((await teachers.findById(ana.id))?.userId).toBe(UPLOADER);
+    });
+  });
+
   it("counts only class groups still enrolling or running", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
