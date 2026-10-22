@@ -50,13 +50,15 @@ const DENIED_BY_TRIGGER = "OOC01";
 /**
  * Tables where a row may never physically leave. `students` has `deleted_at`
  * to take its place, and so does `teachers` (a teacher leaves the staff, the
- * record stays); the other four are append-only by nature — money, receipt
- * kept for 5 years, Ley 29733 consent, audit trail (CLAUDE.md §1/§6).
+ * record stays); the others are append-only by nature — money, receipt
+ * readings kept with the payment (first reading and every re-read), Ley 29733
+ * consent, audit trail (CLAUDE.md §1/§6).
  */
 const DELETE_LOCKED = [
   "students",
   "payments",
   "payment_receipts",
+  "receipt_rereads",
   "consents",
   "audit_log",
   "teachers",

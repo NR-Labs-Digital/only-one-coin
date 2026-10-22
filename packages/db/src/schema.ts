@@ -921,6 +921,55 @@ export const receiptUploads = pgTable(
   ],
 );
 
+// A new level-1 reading of a receipt that already has one, asked for by a
+// reviewer in Payments (ROADMAP Sessão 32). The first reading stays in
+// payment_receipts, one per (upload, tier); every re-read is a row here, so
+// the history of what the model said is never overwritten. The row is born
+// with the request and filled once by the `receipt-reread` worker: the
+// reading (or its failure) and the traffic light's verdict on it, stamped
+// together. The verdict is guidance only — a re-read never moves the
+// payment's status (owner, 22/10/2026).
+export const receiptRereads = pgTable(
+  "receipt_rereads",
+  {
+    id: uuidPk(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id, { onDelete: "restrict" }),
+    receiptUploadId: uuid("receipt_upload_id")
+      .notNull()
+      .references(() => receiptUploads.id, { onDelete: "restrict" }),
+    // Better Auth's "user" is not modelled here; the FK is written by hand in
+    // the migration, as for payments.decided_by.
+    requestedBy: text("requested_by").notNull(),
+    tier: integer("tier").notNull(),
+    modelName: text("model_name"),
+    modelVersion: text("model_version"),
+    amountCents: integer("amount_cents"),
+    operationNumber: text("operation_number"),
+    extractedFields: jsonb("extracted_fields"),
+    failureReason: text("failure_reason"),
+    validationVerdict: text("validation_verdict"),
+    validationDetail: jsonb("validation_detail"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // One re-read in flight per receipt: a second click while the first is
+    // still with the model is a 409, not a second model call.
+    uniqueIndex("receipt_rereads_pending_uidx").on(table.receiptUploadId).where(sql`${table.readAt} is null`),
+    index("receipt_rereads_receipt_upload_id_idx").on(table.receiptUploadId, table.readAt),
+    // The relay's query: requests the worker has not answered yet.
+    index("receipt_rereads_pending_created_at_idx").on(table.createdAt).where(sql`${table.readAt} is null`),
+    check(
+      "receipt_rereads_validation_verdict_check",
+      sql`${table.validationVerdict} is null or ${table.validationVerdict} in ('approve', 'review', 'reject_suggested')`,
+    ),
+    // Read and judged in the same write: a finished row always has both.
+    check("receipt_rereads_read_stamp_check", sql`(${table.readAt} is null) = (${table.validationVerdict} is null)`),
+  ],
+);
+
 // One row per student waiting on a full class_group. Backoffice-only and
 // manual since OOC-35; the public checkout offering it is still Sessão 22.
 // FIFO by created_at; the partial unique pair stops the same student from
