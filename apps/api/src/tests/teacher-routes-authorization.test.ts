@@ -18,7 +18,8 @@ const NEVER: Role[] = ["support", "sales", "billing", "enrollment_supervisor", "
 
 const CASES: [string, string, Role[]][] = [
   ["GET", "/api/v1/teachers", NEVER],
-  ["GET", `/api/v1/teachers/${ID}`, NEVER],
+  // A teacher reads their own file only — the session check, not the role, refuses the rest (OOC-79).
+  ["GET", `/api/v1/teachers/${ID}`, NEVER.filter((role) => role !== "teacher")],
   ["PUT", `/api/v1/teachers/${ID}`, [...NEVER, "analyst"]],
   ["PUT", `/api/v1/teachers/${ID}/availability`, [...NEVER, "analyst"]],
   ["PUT", `/api/v1/teachers/${ID}/status`, [...NEVER, "analyst"]],

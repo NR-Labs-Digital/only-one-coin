@@ -97,6 +97,50 @@ describe("GET /me", () => {
   });
 });
 
+describe("GET /teachers/:teacherId as a teacher", () => {
+  const OTHER_ID = "018f2b5c-0000-7000-8000-000000000080";
+
+  it("reads the teacher's own file", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(teacherFile());
+    const read = vi.spyOn(container.queries.getTeacher, "run").mockResolvedValue(null);
+
+    await app.inject({ method: "GET", url: `/api/v1/teachers/${TEACHER_ID}`, cookies: { [SESSION_COOKIE_NAME]: "token" } });
+
+    expect(read).toHaveBeenCalledWith(TEACHER_ID);
+  });
+
+  it("answers 404 for another teacher's file, without reading it", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(teacherFile());
+    const read = vi.spyOn(container.queries.getTeacher, "run");
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/teachers/${OTHER_ID}`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 to a teacher account linked to no file", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(null);
+    const read = vi.spyOn(container.queries.getTeacher, "run");
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/teachers/${TEACHER_ID}`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(read).not.toHaveBeenCalled();
+  });
+});
+
 describe("GET /staff/invites/teacher-options", () => {
   it.each(REFUSED)("refuses %s", async (role) => {
     signIn(role);
