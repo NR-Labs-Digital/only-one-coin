@@ -3,15 +3,18 @@ import {
   RECEIPT_UPLOAD_RELAY_QUEUE,
   enqueueReceiptExtract,
   enqueueReceiptNormalize,
+  enqueueReceiptReread,
   enqueueReceiptScreen,
   enqueueReceiptValidate,
   type ReceiptExtractPayload,
   type ReceiptNormalizePayload,
+  type ReceiptRereadPayload,
   type ReceiptScreenPayload,
   type ReceiptValidatePayload, QUEUE_PREFIX } from "@ooc/queue";
 import { RECEIPT_EXTRACTION_TIER_PRIMARY } from "@ooc/domain";
 import type { FastifyBaseLogger } from "fastify";
 import type { IReceiptNormalizationStore } from "@/infra/persistence/enrollment/DrizzleReceiptUploadRepository.js";
+import type { IReceiptRereadRelayStore } from "@/infra/persistence/payment/DrizzleReceiptRereadRepository.js";
 
 /** Rows offered per sweep — same order-of-magnitude reasoning as
  * `RELAY_BATCH` in outbox-relay.worker.ts. */
@@ -39,6 +42,9 @@ const RELAY_BATCH = 200;
  * validate queue only once it is screened AND has its level-1 row (a
  * reading or a recorded failure). Without a model key nothing is ever read,
  * so nothing is ever offered — the pipeline stays as it was before OCR.
+ *
+ * Re-reads (Sessão 32) ride along: a request is a `receipt_rereads` row, and
+ * the sweep offers each unanswered one to the re-read queue.
  */
 export function startReceiptUploadRelayWorker(
   connection: ConnectionOptions,
@@ -49,6 +55,9 @@ export function startReceiptUploadRelayWorker(
     screenQueue: Queue<ReceiptScreenPayload>;
     extractQueue: Queue<ReceiptExtractPayload> | null;
     validateQueue: Queue<ReceiptValidatePayload>;
+    /** Re-reads asked for in Payments (Sessão 32). Absent with no model key,
+     * like `extractQueue`: the requests wait until one is configured. */
+    reread: { store: IReceiptRereadRelayStore; queue: Queue<ReceiptRereadPayload> } | null;
   },
 ): Worker {
   return new Worker(
@@ -77,6 +86,16 @@ export function startReceiptUploadRelayWorker(
         }
         if (extractable.length > 0) {
           logger.debug({ offered: extractable.length }, "receipt upload relay offered rows to extract");
+        }
+      }
+
+      if (deps.reread) {
+        const rereadable = await deps.reread.store.listPendingIds(RELAY_BATCH);
+        for (const rereadId of rereadable) {
+          await enqueueReceiptReread(deps.reread.queue, { rereadId });
+        }
+        if (rereadable.length > 0) {
+          logger.debug({ offered: rereadable.length }, "receipt upload relay offered re-reads");
         }
       }
 

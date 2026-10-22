@@ -113,7 +113,7 @@
     },
     "review": {
       "title": "Review queue",
-      "subtitle": "Payments waiting for your decision, with the AI's validation. Reviewed oldest first.",
+      "subtitle": "Payments waiting for your decision, with the AI check. The ones that most need your attention come first.",
       "col_student": "Student",
       "col_course": "Course",
       "col_amount": "Amount",
@@ -148,7 +148,12 @@
       "empty_search_body": "Try another student, course or operation number.",
       "page_prev": "Previous",
       "page_next": "Next",
-      "page_status": "Page {page} of {pages}"
+      "page_status": "Page {page} of {pages}",
+      "sort_priority": "Priority first",
+      "sort_oldest": "Oldest first",
+      "no_verdict": "Not checked",
+      "confidence": "{value}% confidence",
+      "reread_pending": "Reading again…"
     },
     "receipt_state": {
       "missing": "No receipt",
@@ -496,6 +501,8 @@
       "reading_not_found": "Not on the receipt",
       "reading_confidence": "{value}% confidence",
       "reading_read_at": "Read on {date}",
+      "reading_reread_at": "Read again on {date}, at the reviewer’s request",
+      "reading_reread_failed_at": "New reading requested by the reviewer, attempted on {date}",
       "verdict_title": "Automatic validation",
       "verdict_approve": "Amount, number and method match — awaiting your approval",
       "verdict_review": "Needs review",
@@ -513,7 +520,16 @@
       "decide_error": "The decision could not be recorded. Try again; if nothing changes, tell the tech team.",
       "notice_already_settled": "Someone else already decided this payment, so there is nothing left to decide here. The queue was refreshed.",
       "notice_not_found": "This payment is no longer in the queue. The queue was refreshed.",
-      "notice_seat_released": "This payment's seat was already released, so it cannot be approved. You can still reject it."
+      "notice_seat_released": "This payment's seat was already released, so it cannot be approved. You can still reject it.",
+      "prev_case": "Previous payment",
+      "next_case": "Next payment",
+      "image_zoom": "Enlarge the receipt",
+      "image_zoom_close": "Close the enlarged receipt",
+      "reread": "Read again",
+      "reread_pending": "New reading requested. It shows up here in a few seconds.",
+      "reread_not_rereadable": "This payment has no processed receipt to read again.",
+      "reread_error": "The new reading could not be requested. Try again; if it keeps failing, tell the technical team.",
+      "reread_note": "The AI reads the same image again. The payment’s status does not change: the decision is still yours."
     },
     "rejection_reason": {
       "amount_mismatch": "The amount does not match",
@@ -1866,6 +1882,27 @@
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
       "receipt_viewed": "Receipt viewed"
+    },
+    "shortcuts": {
+      "button": "Keyboard shortcuts",
+      "queue_title": "In the queue",
+      "case_title": "In a payment",
+      "note": "No shortcut does more than its button: A approves like the click, and R only opens the rejection, which asks for its own confirmation.",
+      "toggle": "Show or hide the shortcuts",
+      "queue_next": "Next payment",
+      "queue_prev": "Previous payment",
+      "queue_open": "Open the highlighted payment",
+      "queue_search": "Search",
+      "case_approve": "Approve payment",
+      "case_reject": "Reject (opens the reason)",
+      "case_reason": "Pick the rejection reason",
+      "case_note": "Write the rejection note",
+      "case_reject_confirm": "Confirm rejection",
+      "case_next": "Next payment",
+      "case_prev": "Previous payment",
+      "case_image": "Enlarge the receipt",
+      "case_reread": "Ask for a new reading",
+      "case_escape": "Step back / close"
     }
   }
 }

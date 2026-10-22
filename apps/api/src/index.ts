@@ -2,6 +2,7 @@ import {
   createOutboxRelayQueue,
   createReceiptExtractQueue,
   createReceiptNormalizeQueue,
+  createReceiptRereadQueue,
   createReceiptScreenQueue,
   createReceiptUploadRelayQueue,
   createReceiptValidateQueue,
@@ -12,13 +13,19 @@ import {
   scheduleReceiptUploadRelay,
   scheduleSeatHoldSweep,
 } from "@ooc/queue";
-import { ExtractReceiptUseCase, RECEIPT_EXTRACTION_TIER_PRIMARY, RECEIPT_EXTRACTION_TIER_SECONDARY } from "@ooc/domain";
+import {
+  ExtractReceiptUseCase,
+  RereadReceiptUseCase,
+  RECEIPT_EXTRACTION_TIER_PRIMARY,
+  RECEIPT_EXTRACTION_TIER_SECONDARY,
+} from "@ooc/domain";
 import { buildApp } from "./app.js";
 import { container } from "./container.js";
 import { createReceiptExtractor, receiptOcrModelFor } from "./infra/ocr/createReceiptExtractor.js";
 import { startOutboxRelayWorker } from "./workers/outbox-relay.worker.js";
 import { startReceiptExtractWorker } from "./workers/receipt-extract.worker.js";
 import { startReceiptNormalizeWorker } from "./workers/receipt-normalize.worker.js";
+import { startReceiptRereadWorker } from "./workers/receipt-reread.worker.js";
 import { startReceiptScreenWorker } from "./workers/receipt-screen.worker.js";
 import { startReceiptUploadRelayWorker } from "./workers/receipt-upload-relay.worker.js";
 import { startReceiptValidateWorker } from "./workers/receipt-validate.worker.js";
@@ -93,6 +100,9 @@ const receiptNormalizeQueue = createReceiptNormalizeQueue(connection);
 const receiptScreenQueue = createReceiptScreenQueue(connection);
 const receiptValidateQueue = createReceiptValidateQueue(connection);
 const receiptExtractQueue = receiptExtractor ? createReceiptExtractQueue(connection) : null;
+// Re-reads asked for in Payments (Sessão 32) use the same model, so they
+// exist only when it does.
+const receiptRereadQueue = receiptExtractor ? createReceiptRereadQueue(connection) : null;
 const receiptUploadRelayQueue = createReceiptUploadRelayQueue(connection);
 await scheduleReceiptUploadRelay(receiptUploadRelayQueue);
 const receiptNormalizeWorker = startReceiptNormalizeWorker(connection, logger, {
@@ -105,6 +115,7 @@ const receiptUploadRelayWorker = startReceiptUploadRelayWorker(connection, logge
   screenQueue: receiptScreenQueue,
   extractQueue: receiptExtractQueue,
   validateQueue: receiptValidateQueue,
+  reread: receiptRereadQueue ? { store: repositories.receiptReread, queue: receiptRereadQueue } : null,
 });
 const receiptScreenWorker = startReceiptScreenWorker(connection, logger, {
   screenReceiptUpload: useCases.enrollment.screenReceiptUpload,
@@ -121,6 +132,16 @@ const receiptExtractWorker = receiptExtractor
       ),
     })
   : null;
+const receiptRereadWorker = receiptExtractor
+  ? startReceiptRereadWorker(connection, logger, {
+      rereadReceipt: new RereadReceiptUseCase(
+        repositories.receiptReread,
+        { read: (objectKey) => storage.objectStore.getObject(objectKey) },
+        receiptExtractor,
+        repositories.platformSettings,
+      ),
+    })
+  : null;
 
 logger.info(
   {
@@ -134,7 +155,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -166,6 +187,7 @@ async function shutdown() {
   await receiptScreenWorker.close();
   await receiptValidateWorker.close();
   await receiptExtractWorker?.close();
+  await receiptRereadWorker?.close();
   await outboxRelayQueue.close();
   await sendEmailQueue.close();
   await seatHoldSweepQueue.close();
@@ -174,6 +196,7 @@ async function shutdown() {
   await receiptScreenQueue.close();
   await receiptValidateQueue.close();
   await receiptExtractQueue?.close();
+  await receiptRereadQueue?.close();
   await connection.quit();
   await edge.redis.quit();
   process.exit(0);

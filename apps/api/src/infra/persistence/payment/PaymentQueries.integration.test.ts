@@ -9,6 +9,7 @@ import {
   planPrices,
   plans,
   paymentReceipts,
+  receiptRereads,
   receiptUploads,
   seatHolds,
   students,
@@ -242,11 +243,96 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
   return { ...ids, operationOf };
 }
 
+const READER = "usr_payment_queries_reader";
+
+/**
+ * One more open payment with a processed, read and judged receipt, for the
+ * priority order (Sessão 32). `confidence` goes on the three fields the
+ * order looks at; `minutesAgo` sets its arrival.
+ */
+async function seedJudgedPayment(
+  tx: Tx,
+  params: { tag: string; minutesAgo: number; verdict: "approve" | "review" | "reject_suggested"; confidence: number },
+): Promise<{ paymentId: string; uploadId: string }> {
+  const stamp = `${Date.now()}${params.tag}`;
+  const [student] = await tx
+    .insert(students)
+    .values({
+      firstName: "Prioridad",
+      lastName: params.tag,
+      nationalIdType: "DNI",
+      nationalId: `PRIO${stamp}`,
+      email: `prio.${stamp}@gmail.com`,
+      phone: "+51900000000",
+      birthDate: new Date("2000-01-01T00:00:00.000Z"),
+      country: "PE",
+      city: "Lima",
+    })
+    .returning({ id: students.id });
+  const [enrollment] = await tx
+    .insert(enrollments)
+    .values({ studentId: student!.id, classGroupId: GROUP, planPriceId: PLAN_PRICE, seatStatus: "reserved" })
+    .returning({ id: enrollments.id });
+  const createdAt = new Date(Date.now() - params.minutesAgo * 60_000);
+  const [payment] = await tx
+    .insert(payments)
+    .values({
+      enrollmentId: enrollment!.id,
+      idempotencyKey: `payment-queries-priority-${stamp}`,
+      status: params.verdict === "approve" ? "pending" : "under_review",
+      method: "yape",
+      amountCents: 15000,
+      operationNumber: `OPPRIO${stamp}`,
+      createdAt,
+      updatedAt: createdAt,
+    })
+    .returning({ id: payments.id });
+  const [hold] = await tx
+    .insert(seatHolds)
+    .values({ classGroupId: GROUP, origin: "web", status: "consumed", enrollmentId: enrollment!.id, settledAt: new Date(), expiresAt: new Date() })
+    .returning({ id: seatHolds.id });
+  const [upload] = await tx
+    .insert(receiptUploads)
+    .values({
+      seatHoldId: hold!.id,
+      paymentId: payment!.id,
+      objectKey: `receipts/payment-queries-priority/${stamp}/raw.jpg`,
+      processedObjectKey: `receipts/payment-queries-priority/${stamp}/processed.jpg`,
+      status: "processed",
+      fraudSignals: [],
+      screenedAt: new Date(),
+      validationVerdict: params.verdict,
+      validationDetail: { reason: params.verdict === "approve" ? "exact" : params.verdict === "review" ? "underpaid" : "far_below" },
+      validatedAt: new Date(),
+    })
+    .returning({ id: receiptUploads.id });
+  await tx.insert(paymentReceipts).values({
+    paymentId: payment!.id,
+    receiptUploadId: upload!.id,
+    tier: 1,
+    modelName: "google/gemini-3.1-flash-lite",
+    amountCents: 15000,
+    operationNumber: `OPPRIO${stamp}`,
+    extractedFields: [
+      { field: "amount_cents", value: 15000, confidence: params.confidence },
+      { field: "operation_number", value: `OPPRIO${stamp}`, confidence: 0.99 },
+      { field: "payment_method", value: "yape", detail: null, confidence: 0.99 },
+    ],
+  });
+  return { paymentId: payment!.id, uploadId: upload!.id };
+}
+
+async function seedReader(tx: Tx): Promise<void> {
+  await tx.execute(
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values (${READER}, 'Revisora', ${`${READER}@example.com`}, true, 'billing')`,
+  );
+}
+
 describe("ListPaymentReviewQueueQuery", () => {
   it("lists only open payments, oldest first, with receipt state, signals and deadline", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.total).toBe(2);
       expect(queue.items.map((item) => item.id)).toEqual([seeded.pending, seeded.underReview]);
@@ -307,7 +393,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         })
         .where(eq(receiptUploads.paymentId, seeded.underReview));
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.items[0]!.verdict).toBeNull();
       expect(queue.items[1]!.verdict).toEqual({ verdict: "reject_suggested", reason: "far_below" });
@@ -337,6 +423,107 @@ describe("ListPaymentReviewQueueQuery", () => {
       });
 
       expect(queue.items.map((item) => item.id)).toEqual([seeded.underReview]);
+    });
+  });
+
+  it("orders by priority by default: red, yellow, green, least confident first (Sessão 32)", async () => {
+    await rolledBack(async (tx) => {
+      const greenSure = await seedJudgedPayment(tx, { tag: "a", minutesAgo: 50, verdict: "approve", confidence: 0.99 });
+      const greenShaky = await seedJudgedPayment(tx, { tag: "b", minutesAgo: 40, verdict: "approve", confidence: 0.4 });
+      const yellowSure = await seedJudgedPayment(tx, { tag: "c", minutesAgo: 30, verdict: "review", confidence: 0.95 });
+      const yellowShaky = await seedJudgedPayment(tx, { tag: "d", minutesAgo: 20, verdict: "review", confidence: 0.3 });
+      const red = await seedJudgedPayment(tx, { tag: "e", minutesAgo: 10, verdict: "reject_suggested", confidence: 0.9 });
+      const query = new ListPaymentReviewQueueQuery(tx as unknown as Db);
+
+      const byPriority = await query.run({ academicPeriodId: PERIOD });
+      expect(byPriority.items.map((item) => item.id)).toEqual([
+        red.paymentId,
+        yellowShaky.paymentId,
+        yellowSure.paymentId,
+        greenShaky.paymentId,
+        greenSure.paymentId,
+      ]);
+      expect(byPriority.items[1]!.confidence).toBeCloseTo(0.3);
+
+      const byArrival = await query.run({ academicPeriodId: PERIOD, sort: "oldest" });
+      expect(byArrival.items.map((item) => item.id)).toEqual([
+        greenSure.paymentId,
+        greenShaky.paymentId,
+        yellowSure.paymentId,
+        yellowShaky.paymentId,
+        red.paymentId,
+      ]);
+    });
+  });
+
+  it("puts a payment with no verdict among the yellows, as unread", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx, "none");
+      const yellow = await seedJudgedPayment(tx, { tag: "f", minutesAgo: 1, verdict: "review", confidence: 0.5 });
+      const green = await seedJudgedPayment(tx, { tag: "g", minutesAgo: 60, verdict: "approve", confidence: 0.2 });
+
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+
+      // No verdict and no reading → confidence 0, ahead of the 0.5 yellow;
+      // the green comes last however old and shaky it is.
+      expect(queue.items.map((item) => item.id)).toEqual([seeded.pending, seeded.underReview, yellow.paymentId, green.paymentId]);
+      expect(queue.items[0]!.confidence).toBeNull();
+    });
+  });
+
+  it("an answered re-read replaces the first reading and its verdict, and moves the order", async () => {
+    await rolledBack(async (tx) => {
+      await seedReader(tx);
+      const first = await seedJudgedPayment(tx, { tag: "h", minutesAgo: 20, verdict: "review", confidence: 0.9 });
+      const reread = await seedJudgedPayment(tx, { tag: "i", minutesAgo: 10, verdict: "review", confidence: 0.2 });
+      await tx.insert(receiptRereads).values({
+        paymentId: reread.paymentId,
+        receiptUploadId: reread.uploadId,
+        requestedBy: READER,
+        tier: 1,
+        modelName: "google/gemini-3.1-flash-lite",
+        amountCents: 15000,
+        extractedFields: [
+          { field: "amount_cents", value: 15000, confidence: 0.99 },
+          { field: "operation_number", value: "READAGAIN", confidence: 0.98 },
+          { field: "payment_method", value: "yape", detail: null, confidence: 0.97 },
+        ],
+        validationVerdict: "approve",
+        validationDetail: { reason: "exact" },
+        readAt: new Date(),
+      });
+
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+
+      // Green now: behind the yellow it used to be ahead of.
+      expect(queue.items.map((item) => item.id)).toEqual([first.paymentId, reread.paymentId]);
+      const item = queue.items[1]!;
+      expect(item.readingSource).toBe("reread");
+      expect(item.verdict).toEqual({ verdict: "approve", reason: "exact" });
+      expect(item.reading).toMatchObject({ state: "read", operationNumber: { value: "READAGAIN", confidence: 0.98 } });
+      expect(item.rereadRequestedAt).toBeNull();
+      // The re-read never moved the payment.
+      expect(item.status).toBe("under_review");
+      expect(queue.items[0]!.readingSource).toBe("first");
+    });
+  });
+
+  it("says when a re-read is still on its way, keeping the reading it has", async () => {
+    await rolledBack(async (tx) => {
+      await seedReader(tx);
+      const judged = await seedJudgedPayment(tx, { tag: "j", minutesAgo: 5, verdict: "review", confidence: 0.6 });
+      await tx.insert(receiptRereads).values({
+        paymentId: judged.paymentId,
+        receiptUploadId: judged.uploadId,
+        requestedBy: READER,
+        tier: 1,
+      });
+
+      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+
+      expect(queue.items[0]!.rereadRequestedAt).toBeInstanceOf(Date);
+      expect(queue.items[0]!.readingSource).toBe("first");
+      expect(queue.items[0]!.verdict).toEqual({ verdict: "review", reason: "underpaid" });
     });
   });
 });

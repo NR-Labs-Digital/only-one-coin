@@ -46,6 +46,7 @@ import {
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
   SettlePaymentUseCase,
+  RequestReceiptRereadUseCase,
   RemoveStaffAccessUseCase,
   RenewStaffInviteUseCase,
   RenewStaffPasswordResetUseCase,
@@ -77,6 +78,7 @@ import {
   type IPortalAccessRepository,
   type IPublicEnrollmentRepository,
   type IReceiptExtractionRepository,
+  type IReceiptRereadRepository,
   type IReceiptUploadRepository,
   type IEmailVerificationRepository,
   type ISeatHoldRepository,
@@ -143,6 +145,10 @@ import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
+import {
+  DrizzleReceiptRereadRepository,
+  type IReceiptRereadRelayStore,
+} from "./infra/persistence/payment/DrizzleReceiptRereadRepository.js";
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
 import { DashboardSummaryQuery } from "./infra/persistence/dashboard/DashboardSummaryQuery.js";
@@ -197,6 +203,9 @@ export interface AppRepositories {
    * submit route must never import the AI module (apps/api/CLAUDE.md) —
    * index.ts builds it next to the workers. */
   receiptExtraction: IReceiptExtractionRepository;
+  /** Re-reads asked for in Payments (Sessão 32): the request route and the
+   * `receipt-reread` worker use the port, the relay the pending list. */
+  receiptReread: IReceiptRereadRepository & IReceiptRereadRelayStore;
   planPriceLookup: IPlanPriceLookup;
   portalAccess: IPortalAccessRepository;
   staffInvite: IStaffInviteRepository;
@@ -235,6 +244,7 @@ export interface AppUseCases {
   };
   payment: {
     settlePayment: SettlePaymentUseCase;
+    requestReceiptReread: RequestReceiptRereadUseCase;
   };
   staff: {
     promoteRole: PromoteUserRoleUseCase;
@@ -399,6 +409,7 @@ function buildContainer(): AppContainer {
   const receiptUploadRepository = new DrizzleReceiptUploadRepository(db);
   const receiptScreeningRepository = new DrizzleReceiptScreeningRepository(db);
   const receiptExtractionRepository = new DrizzleReceiptExtractionRepository(db);
+  const receiptRereadRepository = new DrizzleReceiptRereadRepository(db);
   const platformSettingsRepository = new DrizzlePlatformSettingsRepository(db);
   const userRoleRepository = new DrizzleUserRoleRepository(db);
   const auditLogRepository = new DrizzleAuditLogRepository(db);
@@ -622,6 +633,7 @@ function buildContainer(): AppContainer {
       emailVerification: emailVerificationRepository,
       receiptUpload: receiptUploadRepository,
       receiptExtraction: receiptExtractionRepository,
+      receiptReread: receiptRereadRepository,
       planPriceLookup,
       portalAccess: portalAccessRepository,
       staffInvite: staffInviteRepository,
@@ -656,6 +668,7 @@ function buildContainer(): AppContainer {
       },
       payment: {
         settlePayment,
+        requestReceiptReread: new RequestReceiptRereadUseCase(receiptRereadRepository),
       },
       staff: {
         promoteRole,

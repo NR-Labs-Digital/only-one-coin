@@ -111,6 +111,8 @@ export {
   PaymentAlreadySettledError,
   PaymentNotFoundError,
   PaymentSeatReleasedError,
+  ReceiptNotRereadableError,
+  ReceiptRereadInProgressError,
   PlanPriceNotFoundError,
   ReceiptNotReadyError,
   ReceiptNotUploadedError,
@@ -518,6 +520,22 @@ export {
   type IPaymentSettlementRepository,
 } from "./enrollment/PaymentSettlement.js";
 export { SettlePaymentUseCase, type SettlePaymentInput, type SettlePaymentOutput } from "./enrollment/SettlePaymentUseCase.js";
+export type {
+  IReceiptRereadRepository,
+  ReceiptRereadResult,
+  ReceiptRereadSubject,
+} from "./enrollment/ReceiptRereadRepository.js";
+export {
+  RequestReceiptRereadUseCase,
+  type RequestReceiptRereadInput,
+  type RequestReceiptRereadOutput,
+} from "./enrollment/RequestReceiptRereadUseCase.js";
+export {
+  RereadReceiptUseCase,
+  type RereadReceiptInput,
+  type RereadReceiptOutput,
+  type RecordReceiptRereadFailureInput,
+} from "./enrollment/RereadReceiptUseCase.js";
 
 export {
   PORTAL_ACTIVATION_TTL_DAYS,

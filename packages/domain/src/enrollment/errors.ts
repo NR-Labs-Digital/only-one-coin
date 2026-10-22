@@ -135,6 +135,22 @@ export class PaymentSeatReleasedError extends ConflictError {
   }
 }
 
+/** A re-read needs the payment's latest receipt processed: there is no image
+ * for the model to look at otherwise (ROADMAP Sessão 32). */
+export class ReceiptNotRereadableError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "payment.receipt_not_rereadable", message: "The payment has no processed receipt to read again.", ...params });
+  }
+}
+
+/** The receipt is already with the model — a second request would be a
+ * second paid call for the same answer. */
+export class ReceiptRereadInProgressError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "payment.reread_in_progress", message: "A new reading of this receipt is already on its way.", ...params });
+  }
+}
+
 /** A code went out for this checkout less than a minute ago. */
 export class EmailVerificationCooldownError extends HttpError {
   constructor(params?: { path?: string; cause?: unknown }) {

@@ -38,14 +38,14 @@ entra aqui ou vira sessão nova.
 
 ---
 
-## Resumo (revisado em 18/10/2026)
+## Resumo (revisado em 22/10/2026)
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
 | 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
-| 3 — Backoffice | 2 | 4 | 4 | Alunos, turmas, Pagos, equipe e docentes reais. Semana de 19–23/10 fecha o operacional (abaixo); notas, conciliação e relatórios ficam para depois |
+| 3 — Backoffice | 3 | 3 | 4 | Alunos, turmas, Pagos, equipe e docentes reais. Semana de 19–23/10 fecha o operacional (abaixo); notas, conciliação e relatórios ficam para depois |
 | 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32); faltam enlace da aula, módulos/mensalidade, trâmites pagos e documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
@@ -135,7 +135,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
 | 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | ✅ Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. MFA por código de e-mail (OOC-29, 14/10/2026): obrigatório para `master`/`admin`/`billing` — a API recusa esses cargos em toda rota até ativarem — e opcional para o resto, com códigos de recuperação. App autenticador fica para depois |
-| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | 🟡 Fila real em Pagos (OOC-55): imagem por URL assinada, leitura da IA, veredito do semáforo, aprovar/rejeitar. O livro abre em Abertos, com abas Abertos · Resolvidos · Todos e contador do servidor (OOC-114). Faltam ordenação por confiança, atalhos e reprocessar (OOC-120) |
+| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | ✅ Fila real em Pagos (OOC-55, OOC-114). OOC-120: a fila abre por prioridade (vermelho → amarelo → verde, menor confiança primeiro; "mais antigos" a um clique), atalhos de teclado com legenda (`?`) e "Ler de novo", que reenfileira a OCR e recalcula o semáforo sem mexer no status (`receipt_rereads`, migration `0031`). 25 revisões seguidas só com teclado medidas no navegador em 22/10/2026 |
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
 | 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75), abas Ativos · Ex-alunos · Sem matrícula com ativo = matrícula vigente (OOC-116). Medido com 30k alunos e ~100k matrículas (Postgres local, 15/10/2026): diretório ~70 ms por aba, busca do seletor ~5 ms. Em produção a aba levava 6–14 s: `enrollments.deleted_at` sem estatística, plano em *nested loop* — `ANALYZE` na `0030` (OOC-119) — medido em produção depois: 14,4 s → 35 ms. Falta exportação (OOC-121); suspensão está sem regra de negócio definida e sem ticket |
 | 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 (filtro de início das aulas, período rotulado como período de matrícula) e OOC-104 |

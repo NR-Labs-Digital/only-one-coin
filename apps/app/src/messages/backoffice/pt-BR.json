@@ -113,7 +113,7 @@
     },
     "review": {
       "title": "Fila de revisão",
-      "subtitle": "Pagamentos que esperam a sua decisão, com a validação da IA. Revisados do mais antigo ao mais recente.",
+      "subtitle": "Pagamentos que esperam sua decisão, com a validação da IA. Primeiro os que mais precisam da sua atenção.",
       "col_student": "Aluno",
       "col_course": "Curso",
       "col_amount": "Valor",
@@ -148,7 +148,12 @@
       "empty_search_body": "Tente outro aluno, curso ou número de operação.",
       "page_prev": "Anteriores",
       "page_next": "Próximos",
-      "page_status": "Página {page} de {pages}"
+      "page_status": "Página {page} de {pages}",
+      "sort_priority": "Prioridade primeiro",
+      "sort_oldest": "Mais antigos primeiro",
+      "no_verdict": "Sem validação",
+      "confidence": "{value} % de confiança",
+      "reread_pending": "Lendo de novo…"
     },
     "receipt_state": {
       "missing": "Sem comprovante",
@@ -496,6 +501,8 @@
       "reading_not_found": "Não aparece",
       "reading_confidence": "{value}% de confiança",
       "reading_read_at": "Lido em {date}",
+      "reading_reread_at": "Lido de novo em {date}, a pedido da revisão",
+      "reading_reread_failed_at": "Nova leitura pedida pela revisão, tentada em {date}",
       "verdict_title": "Validação automática",
       "verdict_approve": "Valor, número e meio conferem — falta a sua aprovação",
       "verdict_review": "Precisa de revisão",
@@ -513,7 +520,16 @@
       "decide_error": "Não foi possível registrar a decisão. Tente de novo; se continuar igual, avise a equipe técnica.",
       "notice_already_settled": "Outra pessoa já decidiu este pagamento, então não há mais nada a decidir aqui. A fila já foi atualizada.",
       "notice_not_found": "Este pagamento não está mais na fila. A fila já foi atualizada.",
-      "notice_seat_released": "A vaga deste pagamento já foi liberada, então ele não pode ser aprovado. Ainda é possível rejeitá-lo."
+      "notice_seat_released": "A vaga deste pagamento já foi liberada, então ele não pode ser aprovado. Ainda é possível rejeitá-lo.",
+      "prev_case": "Pagamento anterior",
+      "next_case": "Próximo pagamento",
+      "image_zoom": "Ampliar o comprovante",
+      "image_zoom_close": "Fechar o comprovante ampliado",
+      "reread": "Ler de novo",
+      "reread_pending": "Nova leitura pedida. Aparece aqui em alguns segundos.",
+      "reread_not_rereadable": "Este pagamento não tem um comprovante processado para ler de novo.",
+      "reread_error": "Não foi possível pedir a nova leitura. Tente de novo; se continuar, avise a equipe técnica.",
+      "reread_note": "A IA lê a mesma imagem outra vez. Não muda o status do pagamento: a decisão continua sendo sua."
     },
     "rejection_reason": {
       "amount_mismatch": "O valor não corresponde",
@@ -1866,6 +1882,27 @@
       "payment_approved": "Pagamento aprovado",
       "payment_rejected": "Pagamento rejeitado",
       "receipt_viewed": "Comprovante consultado"
+    },
+    "shortcuts": {
+      "button": "Atalhos de teclado",
+      "queue_title": "Na fila",
+      "case_title": "Em um pagamento",
+      "note": "Nenhum atalho faz mais que o seu botão: A aprova como o clique, e R só abre a rejeição, que pede a própria confirmação.",
+      "toggle": "Mostrar ou esconder os atalhos",
+      "queue_next": "Próximo pagamento",
+      "queue_prev": "Pagamento anterior",
+      "queue_open": "Abrir o pagamento marcado",
+      "queue_search": "Buscar",
+      "case_approve": "Aprovar pagamento",
+      "case_reject": "Rejeitar (abre o motivo)",
+      "case_reason": "Escolher o motivo da rejeição",
+      "case_note": "Escrever a nota da rejeição",
+      "case_reject_confirm": "Confirmar rejeição",
+      "case_next": "Próximo pagamento",
+      "case_prev": "Pagamento anterior",
+      "case_image": "Ampliar o comprovante",
+      "case_reread": "Pedir uma nova leitura",
+      "case_escape": "Voltar um passo / fechar"
     }
   }
 }

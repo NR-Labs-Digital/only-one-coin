@@ -36,6 +36,7 @@ import { listPaymentReviewQueueRoute } from "@/http/payment/ListPaymentReviewQue
 import { getDashboardSummaryRoute } from "@/http/dashboard/GetDashboardSummaryRoute.js";
 import { getPaymentReceiptRoute } from "@/http/payment/GetPaymentReceiptRoute.js";
 import { approvePaymentRoute, rejectPaymentRoute } from "@/http/payment/SettlePaymentRoute.js";
+import { rereadPaymentReceiptRoute } from "@/http/payment/RereadPaymentReceiptRoute.js";
 import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
 import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { claimSeatHoldRoute } from "@/http/enrollment/ClaimSeatHoldRoute.js";
@@ -170,6 +171,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(approvePaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(rejectPaymentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(rereadPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(claimSeatHoldRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(releaseSeatHoldRoute);
