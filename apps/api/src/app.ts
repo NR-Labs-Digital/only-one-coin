@@ -84,6 +84,7 @@ import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesR
 import { createStaffInviteRoute } from "@/http/identity/CreateStaffInviteRoute.js";
 import { renewStaffInviteRoute } from "@/http/identity/RenewStaffInviteRoute.js";
 import { cancelStaffInviteRoute } from "@/http/identity/CancelStaffInviteRoute.js";
+import { listInvitableTeachersRoute } from "@/http/identity/ListInvitableTeachersRoute.js";
 import { getStaffInviteRoute } from "@/http/identity/GetStaffInviteRoute.js";
 import { completeStaffInviteRoute } from "@/http/identity/CompleteStaffInviteRoute.js";
 import { promoteStaffRoleRoute } from "@/http/identity/PromoteStaffRoleRoute.js";
@@ -216,6 +217,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renewStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(cancelStaffInviteRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listInvitableTeachersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(completeStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(promoteStaffRoleRoute);

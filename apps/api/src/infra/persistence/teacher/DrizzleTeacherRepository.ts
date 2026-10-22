@@ -103,12 +103,36 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
     }
   }
 
+  async findByUserId(userId: string): Promise<Teacher | null> {
+    // Served by teachers_user_id_uidx.
+    const [row] = await this.db
+      .select()
+      .from(teachers)
+      .where(and(eq(teachers.userId, userId), isNull(teachers.deletedAt)))
+      .limit(1);
+
+    return row ? this.hydrate(this.db, row) : null;
+  }
+
+  async linkAccount(teacherId: string, userId: string): Promise<boolean> {
+    const rows = await this.db
+      .update(teachers)
+      .set({ userId, updatedAt: sql`now()` })
+      .where(and(eq(teachers.id, teacherId), isNull(teachers.userId), isNull(teachers.deletedAt)))
+      .returning({ id: teachers.id });
+
+    return rows.length > 0;
+  }
+
   async update(teacher: Teacher): Promise<Teacher> {
     try {
       return await this.db.transaction(async (tx) => {
+        // `user_id` stays out: only linkAccount writes it, so a file read
+        // before an invite was accepted cannot unlink the account on save.
+        const { userId: _account, ...fields } = this.columns(teacher);
         const [row] = await tx
           .update(teachers)
-          .set({ ...this.columns(teacher), updatedAt: sql`now()` })
+          .set({ ...fields, updatedAt: sql`now()` })
           .where(and(eq(teachers.id, teacher.id), isNull(teachers.deletedAt)))
           .returning();
 
