@@ -37,3 +37,10 @@ export {
   createReceiptValidateQueue,
   enqueueReceiptValidate,
 } from "./producers/receipt-validate.producer.js";
+export { RECEIPT_REREAD_QUEUE, ReceiptRereadPayloadSchema } from "./jobs/receipt-reread.job.js";
+export type { ReceiptRereadPayload } from "./jobs/receipt-reread.job.js";
+export {
+  RECEIPT_REREAD_ATTEMPTS,
+  createReceiptRereadQueue,
+  enqueueReceiptReread,
+} from "./producers/receipt-reread.producer.js";
