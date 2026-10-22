@@ -5,15 +5,10 @@ import {
   ClassGroupNotFoundError,
   Enrollment,
   EnrollmentOriginInputSchema,
-  InvalidPlatformSettingError,
   SeatHoldExpiredError,
   SubmitPublicEnrollmentUseCase,
-  UpdateCheckoutHoldMinutesUseCase,
-  type AuditLogEntry,
   type ClaimSeatHoldResult,
   type EnrollmentOrigin,
-  type IAuditLogRepository,
-  type IPlatformSettingsRepository,
   type IPublicEnrollmentRepository,
   type IReceiptUploadRepository,
   type ISeatHoldRepository,
@@ -23,6 +18,7 @@ import {
   type SubmitPublicEnrollmentInput,
   type SubmitPublicEnrollmentParams,
 } from "@ooc/domain";
+import { FakePlatformSettings, TEST_SETTINGS } from "./fakes/platformSettings.js";
 
 /**
  * The checkout hold and the channel it carries (apps/api/CLAUDE.md, "Dois
@@ -71,33 +67,6 @@ class FakeSeatHolds implements ISeatHoldRepository {
 
   async expireDue() {
     return 0;
-  }
-}
-
-class FakeSettings implements IPlatformSettingsRepository {
-  writes: { minutes: number; actorId: string }[] = [];
-
-  constructor(public checkoutHoldMinutes = 15) {}
-
-  async get() {
-    return { checkoutHoldMinutes: this.checkoutHoldMinutes, receiptAmountToleranceCents: 0, receiptRejectBelowPercent: 50 };
-  }
-
-  async setCheckoutHoldMinutes(minutes: number, actorId: string) {
-    this.writes.push({ minutes, actorId });
-    this.checkoutHoldMinutes = minutes;
-  }
-
-  async setReceiptAmountToleranceCents() {}
-
-  async setReceiptRejectBelowPercent() {}
-}
-
-class FakeAuditLog implements IAuditLogRepository {
-  entries: AuditLogEntry[] = [];
-
-  async append(entry: AuditLogEntry) {
-    this.entries.push(entry);
   }
 }
 
@@ -202,7 +171,7 @@ describe("origin as a closed union", () => {
 describe("ClaimSeatHoldUseCase", () => {
   it("holds the seat for the minutes configured in the backoffice", async () => {
     const seatHolds = new FakeSeatHolds(null);
-    const useCase = new ClaimSeatHoldUseCase(seatHolds, new FakeSettings(25));
+    const useCase = new ClaimSeatHoldUseCase(seatHolds, new FakePlatformSettings({ ...TEST_SETTINGS, checkoutHoldMinutes: 25 }));
 
     const result = await useCase.run({ classGroupId: CLASS_GROUP_ID, origin: "whatsapp" });
 
@@ -211,14 +180,14 @@ describe("ClaimSeatHoldUseCase", () => {
   });
 
   it("refuses a full class group", async () => {
-    const useCase = new ClaimSeatHoldUseCase(new FakeSeatHolds(null, "full"), new FakeSettings());
+    const useCase = new ClaimSeatHoldUseCase(new FakeSeatHolds(null, "full"), new FakePlatformSettings());
     await expect(useCase.run({ classGroupId: CLASS_GROUP_ID, origin: "web" })).rejects.toBeInstanceOf(
       ClassGroupFullError,
     );
   });
 
   it("refuses a class group that is not on offer", async () => {
-    const useCase = new ClaimSeatHoldUseCase(new FakeSeatHolds(null, "not_found"), new FakeSettings());
+    const useCase = new ClaimSeatHoldUseCase(new FakeSeatHolds(null, "not_found"), new FakePlatformSettings());
     await expect(useCase.run({ classGroupId: CLASS_GROUP_ID, origin: "web" })).rejects.toBeInstanceOf(
       ClassGroupNotFoundError,
     );
@@ -262,41 +231,5 @@ describe("SubmitPublicEnrollmentUseCase and the hold", () => {
 
     await expect(useCase.run(SUBMIT)).rejects.toBeInstanceOf(SeatHoldExpiredError);
     expect(repository.params).toBeNull();
-  });
-});
-
-describe("UpdateCheckoutHoldMinutesUseCase", () => {
-  it("writes the new value and appends who moved it, from and to", async () => {
-    const settings = new FakeSettings(15);
-    const auditLog = new FakeAuditLog();
-    const useCase = new UpdateCheckoutHoldMinutesUseCase(settings, auditLog);
-
-    await useCase.run({ actorId: "staff-1", minutes: 20 });
-
-    expect(settings.writes).toEqual([{ minutes: 20, actorId: "staff-1" }]);
-    expect(auditLog.entries).toHaveLength(1);
-    expect(auditLog.entries[0]).toMatchObject({
-      actorId: "staff-1",
-      action: "platform_settings.checkout_hold_minutes",
-      metadata: { from: 15, to: 20 },
-    });
-  });
-
-  it("writes nothing and audits nothing when the value does not change", async () => {
-    const settings = new FakeSettings(15);
-    const auditLog = new FakeAuditLog();
-
-    await new UpdateCheckoutHoldMinutesUseCase(settings, auditLog).run({ actorId: "staff-1", minutes: 15 });
-
-    expect(settings.writes).toEqual([]);
-    expect(auditLog.entries).toEqual([]);
-  });
-
-  it.each([0, 4, 61, 15.5])("refuses %s minutes", async (minutes) => {
-    const settings = new FakeSettings(15);
-    const useCase = new UpdateCheckoutHoldMinutesUseCase(settings, new FakeAuditLog());
-
-    await expect(useCase.run({ actorId: "staff-1", minutes })).rejects.toBeInstanceOf(InvalidPlatformSettingError);
-    expect(settings.writes).toEqual([]);
   });
 });

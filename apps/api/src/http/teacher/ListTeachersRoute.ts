@@ -27,6 +27,7 @@ const TeacherDirectoryResponseSchema = z.object({
     free: z.number().int(),
     contract: z.number().int(),
   }),
+  contractAlertDays: z.number().int(),
 });
 
 export const listTeachersRoute = RouteBuilder.get("/teachers")

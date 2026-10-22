@@ -19,6 +19,7 @@ import {
   type PaymentMethod,
   type ReceiptExtractionFailureReason,
   type ReceiptFraudSignalKind,
+  type IPlatformSettingsRepository,
   type ReceiptVerdictOutcome,
 } from "@ooc/domain";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
@@ -44,13 +45,6 @@ export type ReviewQueueSort = "priority" | "oldest";
  * the lowest of them: one shaky field is what sends a reviewer back to the
  * image. */
 const CRITICAL_FIELDS = ["amount_cents", "operation_number", "payment_method"] as const;
-
-/**
- * How long an open payment may wait for a decision before the screen flags
- * it. Provisional — the same 5 days the reservation window had before it
- * left the enrollment ledger, pending confirmation from the business.
- */
-export const REVIEW_WINDOW_DAYS = 5;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -255,7 +249,13 @@ function criticalConfidence(fields: SQL): SQL<number> {
 }
 
 export class ListPaymentReviewQueueQuery {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    /** The review window — how long an open payment may wait before the
+     * screen flags it — is the backoffice's (OOC-41), the same days the
+     * checkout promises the student. */
+    private readonly settings: IPlatformSettingsRepository,
+  ) {}
 
   async run(
     filters: { q?: string; academicPeriodId?: string; page?: number; sort?: ReviewQueueSort } = {},
@@ -390,7 +390,7 @@ export class ListPaymentReviewQueueQuery {
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .where(where);
 
-    const [rows, counted] = await Promise.all([rowsPromise, totalPromise]);
+    const [rows, counted, { reviewWindowDays }] = await Promise.all([rowsPromise, totalPromise, this.settings.get()]);
 
     const items = rows.map((row): PaymentReviewItem => {
       const fromReread = row.rereadAt !== null;
@@ -440,7 +440,7 @@ export class ListPaymentReviewQueueQuery {
           ? receiptVerdict(row.rereadVerdict, row.rereadDetail)
           : receiptVerdict(row.validationVerdict, row.validationDetail),
         submittedAt: row.createdAt,
-        reviewDeadline: new Date(row.createdAt.getTime() + REVIEW_WINDOW_DAYS * DAY_MS),
+        reviewDeadline: new Date(row.createdAt.getTime() + reviewWindowDays * DAY_MS),
       };
     });
 

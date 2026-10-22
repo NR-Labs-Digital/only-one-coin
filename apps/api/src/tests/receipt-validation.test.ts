@@ -1,11 +1,11 @@
 import {
   ValidateReceiptUseCase,
-  type IPlatformSettingsRepository,
   type IReceiptValidationRepository,
   type PlatformSettings,
   type ReceiptValidationEffect,
   type ReceiptValidationSubject,
 } from "@ooc/domain";
+import { FakePlatformSettings, TEST_SETTINGS } from "./fakes/platformSettings.js";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -39,17 +39,7 @@ class FakeValidationRepository implements IReceiptValidationRepository {
   }
 }
 
-class FakeSettings implements IPlatformSettingsRepository {
-  constructor(private readonly current: PlatformSettings) {}
-  async get() {
-    return this.current;
-  }
-  async setCheckoutHoldMinutes() {}
-  async setReceiptAmountToleranceCents() {}
-  async setReceiptRejectBelowPercent() {}
-}
-
-const SETTINGS: PlatformSettings = { checkoutHoldMinutes: 15, receiptAmountToleranceCents: 0, receiptRejectBelowPercent: 50 };
+const SETTINGS: PlatformSettings = TEST_SETTINGS;
 
 function subject(overrides: Partial<ReceiptValidationSubject> = {}): ReceiptValidationSubject {
   return {
@@ -67,7 +57,7 @@ function subject(overrides: Partial<ReceiptValidationSubject> = {}): ReceiptVali
 }
 
 function useCase(repository: FakeValidationRepository, settings: PlatformSettings = SETTINGS) {
-  return new ValidateReceiptUseCase(repository, new FakeSettings(settings));
+  return new ValidateReceiptUseCase(repository, new FakePlatformSettings(settings));
 }
 
 describe("ValidateReceiptUseCase", () => {

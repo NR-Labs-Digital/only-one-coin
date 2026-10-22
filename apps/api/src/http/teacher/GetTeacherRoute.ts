@@ -17,8 +17,11 @@ export const getTeacherRoute = RouteBuilder.get("/teachers/:teacherId")
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const teacher = await container.queries.getTeacher.run(request.params.teacherId);
+    const [teacher, settings] = await Promise.all([
+      container.queries.getTeacher.run(request.params.teacherId),
+      container.repositories.platformSettings.get(),
+    ]);
     if (!teacher) throw new TeacherNotFoundError();
 
-    reply.status(200).send(serializeTeacherDetail(teacher));
+    reply.status(200).send({ ...serializeTeacherDetail(teacher), contractAlertDays: settings.contractAlertDays });
   });

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   ReceiptExtractionError,
   RereadReceiptUseCase,
-  type IPlatformSettingsRepository,
   type IReceiptExtractor,
   type IReceiptImageReader,
   type IReceiptRereadRepository,
@@ -11,6 +10,7 @@ import {
   type ReceiptImage,
   type ReceiptRereadSubject,
 } from "@ooc/domain";
+import { FakePlatformSettings, TEST_SETTINGS } from "./fakes/platformSettings.js";
 
 /**
  * Re-reading a receipt (ROADMAP Sessão 32) at the domain level: fakes, no
@@ -39,7 +39,7 @@ const READING: ReceiptExtraction = {
   ],
 };
 
-const SETTINGS: PlatformSettings = { checkoutHoldMinutes: 15, receiptAmountToleranceCents: 0, receiptRejectBelowPercent: 50 };
+const SETTINGS: PlatformSettings = TEST_SETTINGS;
 
 class FakeRereads implements IReceiptRereadRepository {
   recorded: Parameters<IReceiptRereadRepository["record"]>[0][] = [];
@@ -72,24 +72,8 @@ class FakeExtractor implements IReceiptExtractor {
   }
 }
 
-class FakeSettings implements IPlatformSettingsRepository {
-  constructor(private readonly current: PlatformSettings) {}
-  get(): Promise<PlatformSettings> {
-    return Promise.resolve(this.current);
-  }
-  setCheckoutHoldMinutes(): Promise<void> {
-    return Promise.resolve();
-  }
-  setReceiptAmountToleranceCents(): Promise<void> {
-    return Promise.resolve();
-  }
-  setReceiptRejectBelowPercent(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
 function useCase(rereads: FakeRereads, extractor: IReceiptExtractor, settings: PlatformSettings = SETTINGS) {
-  return new RereadReceiptUseCase(rereads, new FakeImages(), extractor, new FakeSettings(settings));
+  return new RereadReceiptUseCase(rereads, new FakeImages(), extractor, new FakePlatformSettings(settings));
 }
 
 describe("RereadReceiptUseCase", () => {

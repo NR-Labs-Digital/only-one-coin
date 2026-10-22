@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, platformSettings, seatHolds } from "@ooc/db";
+import { academicPeriods, auditLog, classGroups, courses, platformSettings, seatHolds } from "@ooc/db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -205,49 +205,85 @@ describe("DrizzleSeatHoldRepository.expireDue", () => {
 });
 
 describe("DrizzlePlatformSettingsRepository", () => {
-  it("reads the row migration 0014 created and writes over it", async () => {
-    const settings = new DrizzlePlatformSettingsRepository(db);
-    const before = await settings.get();
+  const ACTOR = "integration-test";
+  class RolledBack extends Error {}
 
+  /** audit_log is append-only (0011): every write here is rolled back. */
+  async function rolledBack(fn: (tx: Db) => Promise<void>): Promise<void> {
     try {
-      await settings.setCheckoutHoldMinutes(20, "integration-test");
-      expect(await settings.get()).toEqual({ ...before, checkoutHoldMinutes: 20 });
-
-      const rows = await db.select().from(platformSettings);
-      expect(rows).toHaveLength(1);
-    } finally {
-      await settings.setCheckoutHoldMinutes(before.checkoutHoldMinutes, "integration-test");
-    }
-  });
-
-  it("reads and writes the receipt traffic light's two numbers without touching the hold", async () => {
-    const settings = new DrizzlePlatformSettingsRepository(db);
-    const before = await settings.get();
-
-    try {
-      await settings.setReceiptAmountToleranceCents(50, "integration-test");
-      await settings.setReceiptRejectBelowPercent(70, "integration-test");
-      expect(await settings.get()).toEqual({
-        checkoutHoldMinutes: before.checkoutHoldMinutes,
-        receiptAmountToleranceCents: 50,
-        receiptRejectBelowPercent: 70,
+      await db.transaction(async (tx) => {
+        await fn(tx as unknown as Db);
+        throw new RolledBack();
       });
-    } finally {
-      await settings.setReceiptAmountToleranceCents(before.receiptAmountToleranceCents, "integration-test");
-      await settings.setReceiptRejectBelowPercent(before.receiptRejectBelowPercent, "integration-test");
+    } catch (error) {
+      if (!(error instanceof RolledBack)) throw error;
     }
+  }
+
+  const entry = (column: string, from: number, to: number) => ({
+    actorId: ACTOR,
+    action: `platform_settings.${column}`,
+    targetId: column,
+    metadata: { from, to },
+    at: new Date(),
   });
 
-  it("is refused by the database outside the tolerance and red-line bounds", async () => {
-    const settings = new DrizzlePlatformSettingsRepository(db);
-    await expect(settings.setReceiptAmountToleranceCents(5001, "integration-test")).rejects.toThrow();
-    await expect(settings.setReceiptAmountToleranceCents(-1, "integration-test")).rejects.toThrow();
-    await expect(settings.setReceiptRejectBelowPercent(0, "integration-test")).rejects.toThrow();
-    await expect(settings.setReceiptRejectBelowPercent(100, "integration-test")).rejects.toThrow();
+  it("reads the row migration 0014 created, with every OOC-41 column at its default", async () => {
+    const settings = await new DrizzlePlatformSettingsRepository(db).get();
+    expect(Object.keys(settings).sort()).toEqual(
+      [
+        "certificateDeadlineBusinessDays",
+        "checkoutHoldMinutes",
+        "constanciaFeeCents",
+        "contractAlertDays",
+        "ocrLowConfidencePercent",
+        "passingGrade",
+        "receiptAmountToleranceCents",
+        "receiptRejectBelowPercent",
+        "reviewWindowDays",
+      ].sort(),
+    );
   });
 
-  it("is refused by the database outside 5–60 minutes", async () => {
-    const settings = new DrizzlePlatformSettingsRepository(db);
-    await expect(settings.setCheckoutHoldMinutes(0, "integration-test")).rejects.toThrow();
+  it("writes only the changed columns over the one row, with their audit entries", async () => {
+    await rolledBack(async (tx) => {
+      const settings = new DrizzlePlatformSettingsRepository(tx);
+      const before = await settings.get();
+
+      await settings.update({
+        changes: { receiptAmountToleranceCents: 50, reviewWindowDays: 7 },
+        actorId: ACTOR,
+        audit: [entry("receipt_amount_tolerance_cents", before.receiptAmountToleranceCents, 50), entry("review_window_days", before.reviewWindowDays, 7)],
+      });
+
+      expect(await settings.get()).toEqual({ ...before, receiptAmountToleranceCents: 50, reviewWindowDays: 7 });
+      expect(await tx.select().from(platformSettings)).toHaveLength(1);
+      const trail = await tx
+        .select({ action: auditLog.action, metadata: auditLog.metadata })
+        .from(auditLog)
+        .where(eq(auditLog.actorId, ACTOR));
+      expect(trail.map((row) => row.action).sort()).toEqual([
+        "platform_settings.receipt_amount_tolerance_cents",
+        "platform_settings.review_window_days",
+      ]);
+    });
+  });
+
+  it.each([
+    ["checkoutHoldMinutes", 0],
+    ["receiptAmountToleranceCents", 5001],
+    ["receiptRejectBelowPercent", 100],
+    ["reviewWindowDays", 31],
+    ["ocrLowConfidencePercent", 96],
+    ["passingGrade", 21],
+    ["certificateDeadlineBusinessDays", 0],
+    ["constanciaFeeCents", 0],
+    ["contractAlertDays", 181],
+  ] as const)("is refused by the database: %s = %s", async (key, value) => {
+    await rolledBack(async (tx) => {
+      await expect(
+        new DrizzlePlatformSettingsRepository(tx).update({ changes: { [key]: value }, actorId: ACTOR, audit: [] }),
+      ).rejects.toThrow();
+    });
   });
 });
