@@ -1020,7 +1020,16 @@ export interface PaymentReviewItem {
   /** What the OCR read off the latest receipt; `null` while there is no
    * processed receipt to read. */
   reading: ReceiptReading | null
-  /** The traffic light's verdict on the latest receipt; `null` while it has not run. */
+  /** Whether `reading` and `verdict` are the first reading's or the latest
+   * re-read's (Sessão 32). */
+  readingSource: 'first' | 'reread'
+  /** When a re-read still on its way was asked for; `null` when none is. */
+  rereadRequestedAt: string | null
+  /** Lowest confidence (0–1) among amount, operation number and method — 0
+   * for a failed reading, `null` with no reading. What the queue sorts on. */
+  confidence: number | null
+  /** The traffic light's verdict on the latest receipt (or its latest
+   * re-read); `null` while it has not run. */
   verdict: ReviewVerdict | null
   submittedAt: string
   /** When the open payment overstays the review window. */

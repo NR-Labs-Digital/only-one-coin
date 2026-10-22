@@ -26,6 +26,8 @@ export type BoIconName =
   | 'alert'
   | 'clock'
   | 'chevron-right'
+  | 'chevron-left'
+  | 'refresh'
   | 'arrow-left'
   | 'external'
   | 'download'
@@ -84,6 +86,8 @@ const paths: Record<BoIconName, ReactElement> = {
   alert: <path d="M12 4 2.5 20h19zM12 10v4M12 17h.01" />,
   clock: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2" />,
   'chevron-right': <path d="m9 6 6 6-6 6" />,
+  'chevron-left': <path d="m15 6-6 6 6 6" />,
+  refresh: <path d="M20 11a8 8 0 0 0-14.9-3.9M4 5v3h3M4 13a8 8 0 0 0 14.9 3.9M20 19v-3h-3" />,
   'arrow-left': <path d="M19 12H5m0 0 6-6m-6 6 6 6" />,
   external: (
     <path d="M14 5h5v5M19 5l-8 8M12 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />

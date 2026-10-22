@@ -98,12 +98,17 @@ export function paymentLedgerSearchParams(query: PaymentLedgerQuery): URLSearchP
 }
 
 /**
- * What the reader narrowed the review queue to. The queue has one order —
- * oldest first, the order it is worked in — so only search and page travel.
+ * How the review queue is ordered (Sessão 32). `priority` is the default:
+ * suggested rejection, then review, then green, the least confident reading
+ * first within each. `oldest` is plain arrival order.
  */
+export type ReviewQueueSort = 'priority' | 'oldest'
+
+/** What the reader narrowed the review queue to — search, order and page. */
 export interface ReviewQueueQuery {
   page: number
   q: string
+  sort: ReviewQueueSort
 }
 
 /** Same rules as the ledger: whatever the API would refuse is dropped. */
@@ -111,13 +116,14 @@ export function parseReviewQueueQuery(
   params: Record<string, string | string[] | undefined>,
 ): ReviewQueueQuery {
   const { page, q } = parsePaymentLedgerQuery(params)
-  return { page, q }
+  return { page, q, sort: first(params.sort) === 'oldest' ? 'oldest' : 'priority' }
 }
 
 export function reviewQueueSearchParams(query: ReviewQueueQuery): URLSearchParams {
   const search = new URLSearchParams()
   if (query.page > 1) search.set('page', String(query.page))
   if (query.q) search.set('q', query.q)
+  if (query.sort !== 'priority') search.set('sort', query.sort)
   return search
 }
 
