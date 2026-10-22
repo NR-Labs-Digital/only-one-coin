@@ -176,7 +176,8 @@ describe("GET /staff/invites/teacher-options", () => {
 describe("POST /staff/invites", () => {
   it("refuses a teacher file on an invite for another cargo", async () => {
     signIn("admin");
-    const create = vi.spyOn(container.useCases.staff.createInvite, "run");
+    // Stubbed so a regression answers through the mock, never the real database.
+    const create = vi.spyOn(container.useCases.staff.createInvite, "run").mockRejectedValue(new Error("not reached"));
 
     const response = await app.inject({
       method: "POST",
