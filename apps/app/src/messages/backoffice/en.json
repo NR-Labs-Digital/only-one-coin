@@ -1568,6 +1568,7 @@
       "col_last_access": "Last sign-in",
       "you": "You",
       "teacher_file": "Open teacher file",
+      "teacher_unlinked": "No teacher file",
       "never_accessed": "Never signed in",
       "invite_sent": "Invite sent on {date}",
       "invite_expires": "Expires on {date}",
@@ -1598,7 +1599,11 @@
       "field_last_name": "Last name",
       "field_email": "E-mail",
       "field_role": "Role",
-      "teacher_hint": "For now, a teacher's account is not linked to their file in Teachers: type their name and e-mail as for any other role.",
+      "teacher_hint": "The account is linked to this file: once the invite is accepted, the teacher sees their own class groups. Name and e-mail come from the file and can be corrected.",
+      "field_teacher": "Teacher",
+      "field_teacher_placeholder": "Pick the teacher from the roster",
+      "teacher_none_available": "No teacher can receive an account: every active one already has an account or a pending invite. Register the teacher in Teachers first.",
+      "invite_teacher_unavailable": "This teacher can no longer receive an account: they already have one, have a pending invite, or left the roster. Reload the page and pick again.",
       "create": "Generate invite",
       "creating": "Generating…",
       "cancel": "Cancel",
@@ -1641,7 +1646,8 @@
       "removed_toast": "Access blocked",
       "cancel_invite_toast": "Invite cancelled",
       "action_failed": "Couldn't complete the action. Try again.",
-      "restored_toast": "Access unblocked"
+      "restored_toast": "Access unblocked",
+      "restore_teacher_inactive": "This account belongs to a teacher off the roster: access comes back when they rejoin it in Teachers."
     },
     "deliveries": {
       "title": "E-mails that did not land",

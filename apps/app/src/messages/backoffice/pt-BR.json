@@ -1568,6 +1568,7 @@
       "col_last_access": "Último acesso",
       "you": "Você",
       "teacher_file": "Ver ficha do docente",
+      "teacher_unlinked": "Sem ficha de docente",
       "never_accessed": "Nunca entrou",
       "invite_sent": "Convite enviado em {date}",
       "invite_expires": "Vence em {date}",
@@ -1598,7 +1599,11 @@
       "field_last_name": "Sobrenome",
       "field_email": "E-mail",
       "field_role": "Cargo",
-      "teacher_hint": "Por enquanto, a conta de um docente não fica ligada à ficha dele em Docentes: digite o nome e o e-mail como em qualquer outro cargo.",
+      "teacher_hint": "A conta fica ligada a esta ficha: ao aceitar o convite, o docente vê as próprias turmas. Nome e e-mail vêm da ficha e podem ser corrigidos.",
+      "field_teacher": "Docente",
+      "field_teacher_placeholder": "Escolha o docente no quadro",
+      "teacher_none_available": "Não há docentes que possam receber uma conta: todos os ativos já têm conta ou um convite pendente. Cadastre o docente em Docentes primeiro.",
+      "invite_teacher_unavailable": "Este docente não pode mais receber uma conta: já tem uma, tem um convite pendente ou saiu do quadro. Recarregue a página e escolha de novo.",
       "create": "Gerar convite",
       "creating": "Gerando…",
       "cancel": "Cancelar",
@@ -1641,7 +1646,8 @@
       "removed_toast": "Acesso bloqueado",
       "cancel_invite_toast": "Convite cancelado",
       "action_failed": "Não foi possível concluir a ação. Tente de novo.",
-      "restored_toast": "Acesso desbloqueado"
+      "restored_toast": "Acesso desbloqueado",
+      "restore_teacher_inactive": "Esta conta é de um docente fora do quadro: o acesso volta quando ele é reincorporado em Docentes."
     },
     "deliveries": {
       "title": "E-mails que não chegaram",

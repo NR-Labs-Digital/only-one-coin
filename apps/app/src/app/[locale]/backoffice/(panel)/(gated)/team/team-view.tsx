@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, getPathname } from '@/i18n/navigation'
-import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
+import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { buildInvitePath, isInviteExpired } from '@/lib/backoffice/invite'
 import { formatDate, formatDateTime, initials, type Locale } from '@/lib/format'
 import {
@@ -76,11 +76,14 @@ const selectClass =
  */
 export function TeamView({
   rows,
+  invitableTeachers,
   currentUserId,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
 }: {
   rows: StaffMemberRow[]
+  /** Teacher files that can still receive an account — the invite form's picker (OOC-79). */
+  invitableTeachers: InvitableTeacher[]
   /** The signed-in admin: nobody moves their own cargo or their own door. */
   currentUserId: string
   currentUserName: string
@@ -201,7 +204,16 @@ export function TeamView({
     try {
       const response = await fetch(`/api/v1/staff/${member.id}/access/restore`, { method: 'POST' })
       if (!response.ok) {
-        setToast(t('team.action_failed'))
+        // A teacher off the roster gets the door back by rejoining it, in
+        // Docentes — apps/api refuses it here (OOC-79).
+        const body = (await response.json().catch(() => null)) as { reason?: string } | null
+        setToast(
+          t(
+            body?.reason === 'staff_access.teacher_inactive'
+              ? 'team.restore_teacher_inactive'
+              : 'team.action_failed',
+          ),
+        )
         return
       }
       applyAccessLocal(member, 'active')
@@ -394,6 +406,7 @@ export function TeamView({
 
       {creating && (
         <NewStaffForm
+          teachers={invitableTeachers}
           onCancel={() => setCreating(false)}
           onCreate={(member) => {
             setMembers((current) => [member, ...current])
@@ -492,6 +505,15 @@ export function TeamView({
                                 <BoIcon name="chevron-right" size={12} />
                                 {t('team.teacher_file')}
                               </Link>
+                            )}
+                            {/* A docente account no file links to sees no class
+                                group at all — a finding, not a blank cell. Only
+                                accounts opened before OOC-79 can be in this state. */}
+                            {row.role === 'teacher' && !row.teacherId && (
+                              <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
+                                <BoIcon name="alert" size={12} />
+                                {t('team.teacher_unlinked')}
+                              </span>
                             )}
                           </span>
                         </span>

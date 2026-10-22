@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { getPathname } from '@/i18n/navigation'
-import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
+import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { canHoldMaster } from '@/lib/backoffice/permissions'
 import { buildInvitePath } from '@/lib/backoffice/invite'
 import { Card, RequiredMark } from '@/components/backoffice/ui'
@@ -39,20 +39,22 @@ const labelClass =
  * shows somebody else's password is a panel that has it. The second factor is
  * not set here either — the owner enrolls their own, on first sign-in.
  *
- * A `teacher` invite goes out like any other cargo (OOC-68). There is no
- * teacher table yet to pick the person from — the roster screen still reads
- * mock data — and the invite route has no `teacherId` to carry the pick
- * anyway. Linking the account to its roster record is its own ticket, once
- * that table exists.
+ * A `teacher` invite names the teacher file the account will belong to
+ * (OOC-79): the person is picked from the roster — files with no account and
+ * no invite already open — and the pick fills name and e-mail, still editable.
+ * Accepting the invite links the account to that file; apps/api checks the
+ * file again on both ends, so a stale list only costs a refusal here.
  *
  * Posts to `POST /api/v1/staff/invites` (same-origin `/api/v1/...` proxy, the
  * pattern `new-student-form.tsx` already established) — `CreateStaffInviteUseCase`
  * generates the token server-side; this form never assembles one itself.
  */
 export function NewStaffForm({
+  teachers,
   onCancel,
   onCreate,
 }: {
+  teachers: InvitableTeacher[]
   onCancel: () => void
   onCreate: (member: StaffMemberRow) => void
 }) {
@@ -64,12 +66,14 @@ export function NewStaffForm({
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<StaffRole>('enrollment_supervisor')
+  const [teacherId, setTeacherId] = useState('')
   const [created, setCreated] = useState<{ member: StaffMemberRow; link: string } | null>(
     null,
   )
   const [copied, setCopied] = useState(false)
   const [pending, setPending] = useState(false)
   const [emailTaken, setEmailTaken] = useState(false)
+  const [teacherRefused, setTeacherRefused] = useState(false)
   const [failed, setFailed] = useState(false)
 
   const isTeacher = role === 'teacher'
@@ -84,12 +88,24 @@ export function NewStaffForm({
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
     email.trim() !== '' &&
-    (role !== 'master' || allowMaster)
+    (role !== 'master' || allowMaster) &&
+    (!isTeacher || teacherId !== '')
+
+  /** Picking the file fills who the person is; the fields stay editable. */
+  function pickTeacher(id: string) {
+    setTeacherId(id)
+    const teacher = teachers.find((item) => item.id === id)
+    if (!teacher) return
+    setFirstName(teacher.firstName)
+    setLastName(teacher.lastName)
+    setEmail(teacher.email)
+  }
 
   async function submit() {
     if (!ready || pending) return
     setPending(true)
     setEmailTaken(false)
+    setTeacherRefused(false)
     setFailed(false)
 
     // Every exit from here — a rejected status, a body that doesn't parse, a
@@ -106,6 +122,7 @@ export function NewStaffForm({
           lastName: lastName.trim(),
           email: email.trim(),
           role,
+          ...(isTeacher ? { teacherId } : {}),
         }),
       })
 
@@ -116,6 +133,10 @@ export function NewStaffForm({
           .catch(() => undefined)
         if (reason === 'staff_invite.email_taken') {
           setEmailTaken(true)
+        } else if (reason?.startsWith('staff_invite.teacher_')) {
+          // The file got an account or an open invite, or left the roster,
+          // since the list was read (OOC-79).
+          setTeacherRefused(true)
         } else {
           setFailed(true)
         }
@@ -135,7 +156,7 @@ export function NewStaffForm({
         email: email.trim(),
         role,
         status: 'invited',
-        teacherId: null,
+        teacherId: isTeacher ? teacherId : null,
         // Nobody enrolls somebody else's second factor: the account starts
         // without one and the owner sets it up on first sign-in.
         mfaEnrolled: false,
@@ -221,12 +242,18 @@ export function NewStaffForm({
     <Card className="p-5">
       <p className="mb-1 text-sm font-semibold text-ink">{t('team.new_title')}</p>
 
-      {(emailTaken || failed) && (
+      {(emailTaken || teacherRefused || failed) && (
         <div
           role="alert"
           className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
-          {t(emailTaken ? 'team.invite_email_taken' : 'team.action_failed')}
+          {t(
+            emailTaken
+              ? 'team.invite_email_taken'
+              : teacherRefused
+                ? 'team.invite_teacher_unavailable'
+                : 'team.action_failed',
+          )}
         </div>
       )}
 
@@ -249,7 +276,31 @@ export function NewStaffForm({
           </Labelled>
         </AutoGrid>
 
-        {isTeacher && (
+        {isTeacher &&
+          (teachers.length > 0 ? (
+            <AutoGrid min="15rem" gap="gap-3" className="mt-3 max-w-3xl">
+              <Labelled label={t('team.field_teacher')} required>
+                <select
+                  value={teacherId}
+                  onChange={(event) => pickTeacher(event.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="" disabled>
+                    {t('team.field_teacher_placeholder')}
+                  </option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {`${teacher.firstName} ${teacher.lastName}`}
+                    </option>
+                  ))}
+                </select>
+              </Labelled>
+            </AutoGrid>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">{t('team.teacher_none_available')}</p>
+          ))}
+
+        {isTeacher && teachers.length > 0 && (
           <p className="mt-3 text-xs text-muted-foreground">{t('team.teacher_hint')}</p>
         )}
       </Block>
