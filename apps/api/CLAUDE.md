@@ -68,6 +68,13 @@ Escada de níveis:
 - Veredito em `receipt_uploads.validation_verdict` + `validation_detail` (motivo e os números daquele momento: esperado, lido, tolerância, X) + `validated_at`, uma vez só. Mudar a configuração não refaz veredito gravado.
 - Log: ids, veredito, motivo e efeito — nunca valor lido nem esperado.
 
+### Fila de Pagos e releitura (OOC-120, Sessão 32, 22/10/2026)
+
+- **Ordem da fila.** `GET /payments/review?sort=priority|oldest`, padrão `priority`: vermelho (`reject_suggested`) → amarelo (`review` **e** sem veredito ainda) → verde, e dentro de cada cor a **menor confiança** entre valor, nº de operação e meio de pagamento (campo ausente, valor nulo ou jsonb malformado vale 0; leitura falha vale 0), depois a chegada. Calculado em SQL (`criticalConfidence`, `ListPaymentReviewQueueQuery`); o item devolve `confidence` com a mesma regra. `oldest` é a ordem de chegada de antes.
+- **Releitura = linha nova, nunca sobrescreve.** `POST /payments/:id/reread` (`PAYMENT_SETTLE_ROLES`, 202) grava em `receipt_rereads` (migration `0031`) um pedido sobre o **upload mais recente** do pagamento — o mesmo que a fila mostra — e o `audit_log` `payment.receipt_reread_requested` (`{receiptUploadId, rereadId}`), na mesma transação. Recusas: pagamento decidido 409 `payment.already_settled`, inexistente 404, sem comprovante processado 422 `payment.receipt_not_rereadable`, pedido ainda pendente 409 `payment.reread_in_progress` (índice único parcial `receipt_rereads_pending_uidx`). A primeira leitura continua em `payment_receipts`, intocada.
+- **Nunca síncrono.** O `receipt-upload-relay` oferece os pedidos sem resposta à fila `receipt-reread` (`jobId` derivado da linha); o worker `receipt-reread` (`RereadReceiptUseCase`) usa o **mesmo extrator do nível 1**, as mesmas 4 tentativas (1r) e grava a falha como resposta quando elas acabam. Sem `OPENROUTER_API_KEY` nem a fila nem o worker sobem e os pedidos esperam, como os comprovantes.
+- **Semáforo recalculado, status intocado (decisão do dono, 22/10/2026).** A resposta grava leitura **e** veredito juntos (`decideReceiptVerdict` com as configurações do momento) na própria linha, uma vez (`read_at is null`). O veredito é só orientação: a releitura **nunca** move `payments.status` — verde pode ficar em `under_review`, vermelho pode ficar `pending`. Na fila, a releitura respondida mais recente substitui leitura e veredito da primeira (`readingSource: "reread"`); pedido pendente aparece em `rereadRequestedAt` e a tela consulta de novo a cada 4 s até a resposta chegar.
+
 ## Upload
 
 **Signed URL direto ao Storage (OOC-19, implementado 30/09/2026).** A imagem nunca passa pela função — é o que derruba tudo sob volume.

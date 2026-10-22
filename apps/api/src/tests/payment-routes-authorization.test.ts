@@ -26,6 +26,11 @@ const CASES: [string, string, Role][] = [
   ["POST", `/api/v1/payments/${ID}/approve`, "support"],
   ["POST", `/api/v1/payments/${ID}/reject`, "enrollment_supervisor"],
   ["POST", `/api/v1/payments/${ID}/reject`, "sales"],
+  // A re-read is a model call on a receipt only the settlers decide on (Sessão 32).
+  ["POST", `/api/v1/payments/${ID}/reread`, "analyst"],
+  ["POST", `/api/v1/payments/${ID}/reread`, "support"],
+  ["POST", `/api/v1/payments/${ID}/reread`, "enrollment_supervisor"],
+  ["POST", `/api/v1/payments/${ID}/reread`, "teacher"],
 ];
 
 let app: FastifyInstance;
