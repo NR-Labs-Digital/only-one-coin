@@ -370,30 +370,20 @@ export type {
 export type { IFeatureFlagOverrideRepository } from "./platform/ports/IFeatureFlagOverrideRepository.js";
 export { NotAPlatformOwnerError, InvalidPlatformSettingError } from "./platform/errors.js";
 export {
-  CHECKOUT_HOLD_MINUTES_MIN,
-  CHECKOUT_HOLD_MINUTES_MAX,
-  CheckoutHoldMinutesSchema,
-  RECEIPT_AMOUNT_TOLERANCE_CENTS_MIN,
-  RECEIPT_AMOUNT_TOLERANCE_CENTS_MAX,
-  RECEIPT_REJECT_BELOW_PERCENT_MIN,
-  RECEIPT_REJECT_BELOW_PERCENT_MAX,
-  ReceiptAmountToleranceCentsSchema,
-  ReceiptRejectBelowPercentSchema,
+  PLATFORM_SETTING_BOUNDS,
+  PLATFORM_SETTING_COLUMNS,
+  PLATFORM_SETTING_KEYS,
+  PlatformSettingsChangesSchema,
+  platformSettingSchema,
+  type PlatformSettingKey,
   type PlatformSettings,
+  type PlatformSettingsChanges,
 } from "./platform/PlatformSettings.js";
 export type { IPlatformSettingsRepository } from "./platform/ports/IPlatformSettingsRepository.js";
 export {
-  UpdateCheckoutHoldMinutesUseCase,
-  type UpdateCheckoutHoldMinutesInput,
-} from "./platform/UpdateCheckoutHoldMinutesUseCase.js";
-export {
-  UpdateReceiptAmountToleranceUseCase,
-  type UpdateReceiptAmountToleranceInput,
-} from "./platform/UpdateReceiptAmountToleranceUseCase.js";
-export {
-  UpdateReceiptRejectBelowPercentUseCase,
-  type UpdateReceiptRejectBelowPercentInput,
-} from "./platform/UpdateReceiptRejectBelowPercentUseCase.js";
+  UpdatePlatformSettingsUseCase,
+  type UpdatePlatformSettingsInput,
+} from "./platform/UpdatePlatformSettingsUseCase.js";
 export {
   SetFeatureFlagOverrideUseCase,
   type SetFeatureFlagOverrideInput,
