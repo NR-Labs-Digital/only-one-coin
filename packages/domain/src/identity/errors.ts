@@ -128,3 +128,55 @@ export class MfaCodeRejectedError extends UnableToProcessEntryError {
     });
   }
 }
+
+/**
+ * A `teacher` account belongs to one teacher file (OOC-79). The invite names a
+ * live file on the roster that has no account and no other open invite —
+ * re-checked when the invite is accepted, before any account is opened.
+ */
+export class TeacherInviteRefusedError extends UnableToProcessEntryError {
+  constructor(params: {
+    reason:
+      | "staff_invite.teacher_required"
+      | "staff_invite.teacher_not_found"
+      | "staff_invite.teacher_inactive"
+      | "staff_invite.teacher_has_account"
+      | "staff_invite.teacher_invite_pending";
+    path?: string;
+    cause?: unknown;
+  }) {
+    super({
+      message: "The teacher file named by this invite cannot receive a panel account.",
+      ...params,
+    });
+  }
+}
+
+/**
+ * The `teacher` cargo enters only through the invite and leaves only through
+ * the roster (OOC-79): a role change into or out of it would leave
+ * `teachers.user_id` pointing at an account of another cargo.
+ */
+export class TeacherRoleLockedError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "staff_role.teacher_account_locked",
+      message: "The teacher cargo is opened by invite and closed from the roster, never by a role change.",
+      ...params,
+    });
+  }
+}
+
+/**
+ * Leaving the roster closed this account (OOC-78); only rejoining the roster
+ * reopens it — not Equipe's "restore access".
+ */
+export class TeacherOffRosterAccessError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "staff_access.teacher_inactive",
+      message: "This account belongs to a teacher off the roster.",
+      ...params,
+    });
+  }
+}
