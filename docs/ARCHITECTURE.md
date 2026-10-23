@@ -629,9 +629,12 @@ desligado não vai no bundle.
 | `backoffice.staff` | backoffice | Equipe (cargos, MFA) |
 | `backoffice.settings` | backoffice | Configuração da plataforma |
 | `teacher` | docente | O portal do docente (`/docente`, login e shell próprios — mesma app) |
-| `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele. **`production: false`**: as turmas do docente ainda vêm do mock |
+| `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele (dado real desde a OOC-82). **`production: false`**: ligar é decisão do dono |
+| `teacher.grades` | docente | Ficha de notas (nota do exame final, DA, lote, observações, relatório CSV). **`production: false`** até OOC-38/OOC-102 — grava só na tela |
+| `teacher.notices` | docente | Avisos à turma. **`production: false`**, sem ticket — grava só na tela |
+| `teacher.class_links` | docente | Meet, Classroom, material do módulo e Classroom dos alunos. **`production: false`** até OOC-98/OOC-100/OOC-94 — sem dado na API |
 
-Todas as de cima, menos `teacher.agenda`, nasceram com `production: true` porque **já estavam no ar**: o
+Todas as de cima, menos as `teacher.*` filhas, nasceram com `production: true` porque **já estavam no ar**: o
 registro chegou para gerir o que se expõe, não para aposentar tela sem aviso.
 Desligar qualquer uma agora é um clique em Funcionalidades — e toda troca fica
 no `audit_log` (`feature_flag.override`, com o valor de antes e o de depois).
