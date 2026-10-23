@@ -55,6 +55,7 @@ export {
 export type { TeacherContractProps, FileTeacherContractDTO } from "./teacher/TeacherContract.js";
 export type { ITeacherContractRepository } from "./teacher/TeacherContractRepository.js";
 export type { ITeacherContractStorage, PresignedContractUpload } from "./teacher/TeacherContractStorage.js";
+export type { IPdfInspector } from "./teacher/PdfInspector.js";
 export {
   RequestTeacherContractUploadUseCase,
   FileTeacherContractUseCase,

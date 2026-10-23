@@ -5,8 +5,8 @@ export type PresignedContractUpload = PresignedReceiptUpload;
 
 /**
  * The bucket, as filing a contract needs it (OOC-81). The bytes go from the
- * browser straight to the bucket (CLAUDE.md §6); `apps/api` reads back only
- * the size and the first few bytes, enough to tell a PDF from anything else.
+ * browser straight to the bucket (CLAUDE.md §6). Filing reads the size first
+ * and only then the file — at most the size cap — to open it as a PDF.
  */
 export interface ITeacherContractStorage {
   /** A one-time upload target for `objectKey`, capped at `maxBytes` by the bucket's policy. */
@@ -16,11 +16,11 @@ export interface ITeacherContractStorage {
     maxBytes: number;
   }): Promise<PresignedContractUpload>;
 
-  /**
-   * What landed at `objectKey`: its size and its first `headBytes` bytes (a
-   * ranged GET, never the whole file). `null` when nothing is there.
-   */
-  inspect(objectKey: string, headBytes: number): Promise<{ byteSize: number; head: Uint8Array } | null>;
+  /** The size of what landed at `objectKey` (a HEAD). `null` when nothing is there. */
+  size(objectKey: string): Promise<number | null>;
+
+  /** The whole object. Called only after `size` said it is within the cap. */
+  read(objectKey: string): Promise<Uint8Array>;
 
   /** Removes an upload that was refused, so it does not sit in the bucket unfiled. */
   delete(objectKey: string): Promise<void>;

@@ -36,18 +36,19 @@ export class TigrisTeacherContractStorage implements ITeacherContractStorage {
     return { url, fields };
   }
 
-  async inspect(objectKey: string, headBytes: number): Promise<{ byteSize: number; head: Uint8Array } | null> {
+  async size(objectKey: string): Promise<number | null> {
     try {
       const head = await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: objectKey }));
-      const result = await this.s3.send(
-        new GetObjectCommand({ Bucket: this.bucket, Key: objectKey, Range: `bytes=0-${headBytes - 1}` }),
-      );
-      const bytes = result.Body ? await result.Body.transformToByteArray() : new Uint8Array();
-      return { byteSize: head.ContentLength ?? 0, head: bytes };
+      return head.ContentLength ?? 0;
     } catch (error) {
       if (isNotFound(error)) return null;
       throw error;
     }
+  }
+
+  async read(objectKey: string): Promise<Uint8Array> {
+    const result = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: objectKey }));
+    return result.Body ? await result.Body.transformToByteArray() : new Uint8Array();
   }
 
   async delete(objectKey: string): Promise<void> {

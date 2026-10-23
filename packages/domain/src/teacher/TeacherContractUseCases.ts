@@ -8,9 +8,9 @@ import {
   TeacherContractUploadMissingError,
   TeacherNotFoundError,
 } from "./errors.js";
+import type { IPdfInspector } from "./PdfInspector.js";
 import {
   looksLikePdf,
-  PDF_MAGIC,
   TEACHER_CONTRACT_CONTENT_TYPE,
   TEACHER_CONTRACT_MAX_BYTES,
   TeacherContract,
@@ -75,16 +75,19 @@ export interface FileTeacherContractInput {
  * filed: the paperwork for coming back is done before coming back.
  *
  * The object key is rebuilt from the teacher in the URL and the upload id, so a
- * filing can only claim an object uploaded for this teacher. The bytes are
- * checked here — a ranged read of five bytes, not a worker: a PDF is kept as
- * it came, with no re-encode to queue. A refused file is removed from the
- * bucket.
+ * filing can only claim an object uploaded for this teacher. The file is
+ * opened here, not in a worker: filing a contract is a rare staff action, the
+ * size is checked before a byte is read, and the PDF is kept as it came, with
+ * no re-encode to queue. It must open as a PDF with at least one page — five
+ * magic bytes alone let a truncated or empty file through. A refused file is
+ * removed from the bucket.
  */
 export class FileTeacherContractUseCase extends BaseUseCase<FileTeacherContractInput, TeacherContract> {
   constructor(
     private readonly teachers: ITeacherRepository,
     private readonly contracts: ITeacherContractRepository,
     private readonly storage: ITeacherContractStorage,
+    private readonly pdf: IPdfInspector,
     private readonly auditLog: IAuditLogRepository,
   ) {
     super();
@@ -95,10 +98,10 @@ export class FileTeacherContractUseCase extends BaseUseCase<FileTeacherContractI
     if (!teacher) throw new TeacherNotFoundError();
 
     const objectKey = teacherContractObjectKey(teacher.id, input.contractUploadId);
-    const landed = await this.storage.inspect(objectKey, PDF_MAGIC.length);
-    if (!landed) throw new TeacherContractUploadMissingError();
+    const byteSize = await this.storage.size(objectKey);
+    if (byteSize === null) throw new TeacherContractUploadMissingError();
 
-    if (landed.byteSize <= 0 || landed.byteSize > TEACHER_CONTRACT_MAX_BYTES || !looksLikePdf(landed.head)) {
+    if (byteSize <= 0 || byteSize > TEACHER_CONTRACT_MAX_BYTES || !(await this.opensAsPdf(objectKey))) {
       await this.storage.delete(objectKey);
       throw new TeacherContractInvalidFileError();
     }
@@ -109,7 +112,7 @@ export class FileTeacherContractUseCase extends BaseUseCase<FileTeacherContractI
       id: input.contractUploadId,
       teacherId: teacher.id,
       objectKey,
-      fileSizeBytes: landed.byteSize,
+      fileSizeBytes: byteSize,
       uploadedBy: input.actorId,
       contract: input.contract,
     });
@@ -125,6 +128,13 @@ export class FileTeacherContractUseCase extends BaseUseCase<FileTeacherContractI
     });
 
     return saved;
+  }
+
+  private async opensAsPdf(objectKey: string): Promise<boolean> {
+    const bytes = await this.storage.read(objectKey);
+    if (!looksLikePdf(bytes)) return false;
+    const pages = await this.pdf.pageCount(bytes);
+    return pages !== null && pages > 0;
   }
 }
 

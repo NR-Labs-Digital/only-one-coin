@@ -114,9 +114,15 @@ export class FakeTeacherContractStorage implements ITeacherContractStorage {
     return { url: "https://bucket.example.com", fields: { key: params.objectKey } };
   }
 
-  async inspect(objectKey: string, headBytes: number) {
-    const bytes = this.objects.get(objectKey);
-    return bytes ? { byteSize: bytes.length, head: bytes.slice(0, headBytes) } : null;
+  public readonly reads: string[] = [];
+
+  async size(objectKey: string) {
+    return this.objects.get(objectKey)?.length ?? null;
+  }
+
+  async read(objectKey: string) {
+    this.reads.push(objectKey);
+    return this.objects.get(objectKey) ?? new Uint8Array();
   }
 
   async delete(objectKey: string): Promise<void> {

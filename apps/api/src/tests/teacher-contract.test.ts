@@ -14,7 +14,9 @@ import {
   teacherContractObjectKey,
   type CreateTeacherDTO,
 } from "@ooc/domain";
-import { describe, expect, it } from "vitest";
+import { PDFDocument } from "pdf-lib";
+import { beforeAll, describe, expect, it } from "vitest";
+import { PdfLibInspector } from "@/infra/pdf/PdfLibInspector.js";
 import { contentDisposition } from "@/infra/storage/TigrisTeacherContractStorage.js";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
 import { FakeTeacherContractRepository, FakeTeacherContractStorage, FakeTeacherRepository } from "./fakes/teacher.js";
@@ -41,7 +43,20 @@ const ANA: CreateTeacherDTO = {
   availability: [],
 };
 
-const PDF = new TextEncoder().encode("%PDF-1.7\n...signed contract...");
+/** A real one-page PDF, built once. */
+let PDF: Uint8Array;
+/**
+ * A header with nothing behind it — byte for byte the 45-byte file the first
+ * cut of this feature accepted and filed. It starts with `%PDF-`, ends with
+ * `%%EOF`, and has no page to open.
+ */
+const HOLLOW_PDF = new TextEncoder().encode("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+
+beforeAll(async () => {
+  const document = await PDFDocument.create();
+  document.addPage();
+  PDF = await document.save();
+});
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const UPLOAD_ID = "018f2b5c-0000-7000-8000-0000000000aa";
 const FORM = { fileName: "Contrato Ana Quispe 2026.pdf", startsOn: "2026-03-01", endsOn: "2026-12-31" };
@@ -59,7 +74,7 @@ function setup() {
     audit,
     key: teacherContractObjectKey(teacher.id, UPLOAD_ID),
     request: new RequestTeacherContractUploadUseCase(teachers, storage),
-    file: new FileTeacherContractUseCase(teachers, contracts, storage, audit),
+    file: new FileTeacherContractUseCase(teachers, contracts, storage, new PdfLibInspector(), audit),
     open: new OpenTeacherContractUseCase(contracts, storage, audit),
   };
 }
@@ -149,6 +164,29 @@ describe("FileTeacherContractUseCase", () => {
     expect(storage.deleted).toEqual([key]);
     expect(contracts.rows).toHaveLength(0);
     expect(audit.appended).toHaveLength(0);
+  });
+
+  it("refuses and removes a file that claims to be a PDF but has no page to open", async () => {
+    const { file, storage, teacher, contracts, key } = setup();
+    expect(HOLLOW_PDF.length).toBe(45);
+    storage.objects.set(key, HOLLOW_PDF);
+
+    await expect(
+      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
+    ).rejects.toBeInstanceOf(TeacherContractInvalidFileError);
+    expect(storage.deleted).toEqual([key]);
+    expect(contracts.rows).toHaveLength(0);
+  });
+
+  it("refuses a file over the cap without reading it", async () => {
+    const { file, storage, teacher, key } = setup();
+    storage.objects.set(key, new Uint8Array(TEACHER_CONTRACT_MAX_BYTES + 1));
+
+    await expect(
+      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
+    ).rejects.toBeInstanceOf(TeacherContractInvalidFileError);
+    expect(storage.reads).toHaveLength(0);
+    expect(storage.deleted).toEqual([key]);
   });
 
   it("refuses a period that ends before it starts, keeping the upload for a corrected try", async () => {

@@ -138,6 +138,7 @@ import { createS3Client } from "./infra/storage/s3Client.js";
 import { TigrisReceiptStorage } from "./infra/storage/TigrisReceiptStorage.js";
 import { ReceiptObjectStore } from "./infra/storage/ReceiptObjectStore.js";
 import { TigrisTeacherContractStorage } from "./infra/storage/TigrisTeacherContractStorage.js";
+import { PdfLibInspector } from "./infra/pdf/PdfLibInspector.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
@@ -669,6 +670,7 @@ function buildContainer(): AppContainer {
           teacherRepository,
           teacherContractRepository,
           teacherContractStorage,
+          new PdfLibInspector(),
           auditLogRepository,
         ),
         openContract: new OpenTeacherContractUseCase(
