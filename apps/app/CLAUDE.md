@@ -169,6 +169,12 @@ Domínio dedicado não substitui a defesa real (RBAC em `apps/api`) nem some do
 Certificate Transparency log só por não estar linkado — é só mais uma camada,
 igual o path discreto já era.
 
+### Código compartilhado entre superfícies (23/10/2026)
+
+**Uma superfície nunca importa da pasta de rota de outra.** O que `/portal`, `/backoffice` e `/docente` usam em comum mora em `src/components/` ou `src/lib/` — nunca `import … from '../../../backoffice/(panel)/(gated)/…'` de dentro de `docente/`. A pasta de rota é da tela dela: renomear um segmento, um route group ou mover um arquivo ali não pode quebrar outra porta, e quem lê `backoffice/` não pode precisar saber que o docente depende daquilo. Server action também é por superfície (`backoffice/actions.ts`, `docente/actions.ts`). Peça que passa a servir uma segunda porta **muda de pasta no mesmo PR** — como a tela de conta (`components/backoffice/account/`) quando o portal do docente nasceu.
+
+**Dívida conhecida, a zerar na OOC-82:** `docente/page.tsx` ainda importa `backoffice/backoffice-login-form` (que puxa `backoffice/icons`, usado por mais cinco telas do backoffice) e `docente/(panel)/profile` importa `backoffice/…/teachers/[teacherId]/teacher-file` (que puxa `save-teacher`, `availability-fields` e `students/field-message`). Não acrescentar uma terceira.
+
 ## RBAC na UI
 
 A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts` — é gate de UI (esconder/mostrar), **não** o mecanismo de aceite; o mecanismo real é deny-by-default em `apps/api` (`apps/api/CLAUDE.md`). Quadro de papéis, o que cada um pode e o modelo de criação/promoção de staff: `CLAUDE.md` §8 (raiz) e `apps/api/CLAUDE.md` (gestão de cargos).
