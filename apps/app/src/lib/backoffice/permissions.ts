@@ -149,6 +149,16 @@ export function canEditTeachers(role: StaffRole): boolean {
 }
 
 /**
+ * Who downloads a filed contract (OOC-81) — the roster's readers, analyst
+ * included; the teacher does not, even on their own file. Mirrors
+ * `TEACHER_READ_ROLES` on `GET /teachers/:id/contracts/:id/file`. Filing one
+ * is an edit: `canEditTeachers`.
+ */
+export function canOpenTeacherContracts(role: StaffRole): boolean {
+  return canManageTeachers(role)
+}
+
+/**
  * Who registers a new teacher. Management only: a teacher record is an account
  * that will read student grades, and creating one is one step away from
  * creating staff — which `CLAUDE.md` §8 puts behind a dedicated usecase.

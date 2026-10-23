@@ -7,6 +7,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canEditTeachers,
   canManageTeachers,
+  canOpenTeacherContracts,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import { BoIcon } from '@/components/backoffice/icons'
@@ -67,6 +68,7 @@ export default async function TeacherDetailPage({
         teacher={teacher}
         catalogue={catalogue}
         canEdit={canEditTeachers(staff.role)}
+        canOpenContracts={canOpenTeacherContracts(staff.role)}
       />
     </div>
   )
