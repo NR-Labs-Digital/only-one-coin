@@ -17,9 +17,17 @@ export interface GradeReportLabels {
   statusOf: (status: ClassGroupStudent['gradeStatus']) => string
 }
 
+/**
+ * One CSV field. Text that opens with `=`, `+`, `-`, `@`, tab or CR is read by
+ * Excel as a formula, and the student's name is typed by the student on the
+ * public checkout — so such text goes out with a leading `'`, which the
+ * spreadsheet shows as plain text (CSV injection). Numbers are written as
+ * numbers: a grade is never negative.
+ */
 function cell(value: string | number | null): string {
   if (value === null) return ''
-  const text = String(value)
+  const raw = String(value)
+  const text = typeof value === 'string' && /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw
   return /[",\n\r;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
