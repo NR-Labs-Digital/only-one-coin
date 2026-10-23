@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getTeacher } from '@/lib/backoffice/teachers'
 import { getTeacherSession } from '@/lib/backoffice/session'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { TeacherFile } from '../../../backoffice/(panel)/(gated)/teachers/[teacherId]/teacher-file'
+import { TeacherFile } from '@/components/backoffice/teachers/teacher-file'
 
 /**
  * The teacher's own ficha, read-only: contact, languages, availability and the

@@ -39,9 +39,9 @@ import {
   teacherTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
-import { AvailabilityFields, slotsAreValid } from '../availability-fields'
-import { saveTeacher, type TeacherSaveFailure } from '../save-teacher'
-import { FieldMessage } from '../../students/field-message'
+import { AvailabilityFields, slotsAreValid } from './availability-fields'
+import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
+import { FieldMessage } from '../field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { WeekGrid } from '@/components/backoffice/week-grid'
 

@@ -13,7 +13,7 @@ import {
   flagEmoji,
 } from '@/lib/geo'
 import { AutoGrid } from '@/components/layout/auto-grid'
-import { FieldMessage } from '../field-message'
+import { FieldMessage } from '@/components/backoffice/field-message'
 import { saveFile, type SaveFailure } from './save-file'
 
 export interface EditableStudent {

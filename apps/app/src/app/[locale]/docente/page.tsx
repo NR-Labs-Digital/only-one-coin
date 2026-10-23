@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { LanguageGlobe } from '@/components/language-globe'
 import { BoIcon } from '@/components/backoffice/icons'
-import { BackofficeLoginForm } from '../backoffice/backoffice-login-form'
+import { StaffLoginForm } from '@/components/backoffice/staff-login-form'
 
 /**
  * The docente portal's own door. Teachers no longer sign in through the
@@ -96,7 +96,7 @@ export default async function TeacherLoginPage({
 
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <BackofficeLoginForm
+            <StaffLoginForm
               homeHref="/docente/home"
               heading={{ title: t('login_title'), subtitle: t('login_subtitle') }}
             />

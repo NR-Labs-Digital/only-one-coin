@@ -1,9 +1,9 @@
 import type { SVGProps } from 'react'
 
 /**
- * Minimal inline icons scoped to the backoffice — stroke-based, currentColor, so
- * the parent's text color drives them. Kept local (not a shared icon set) to
- * avoid coupling the backoffice to other frontend work.
+ * Minimal inline icons for the staff sign-in screens — the login form both
+ * staff doors share (`/backoffice`, `/docente`), the invite and the password
+ * reset. Stroke-based, currentColor, so the parent's text color drives them.
  */
 function Svg({ size = 20, children, ...props }: { size?: number } & SVGProps<SVGSVGElement>) {
   return (

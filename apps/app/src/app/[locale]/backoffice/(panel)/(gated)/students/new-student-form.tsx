@@ -31,7 +31,7 @@ import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { Toggle } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
-import { FieldMessage } from './field-message'
+import { FieldMessage } from '@/components/backoffice/field-message'
 import type { EditableStudent } from './[studentId]/student-edit-form'
 import type { EditableGuardian } from './[studentId]/guardian-edit-form'
 

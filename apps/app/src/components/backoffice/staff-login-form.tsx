@@ -22,7 +22,7 @@ import {
   EyeOffIcon,
   LockIcon,
   MailIcon,
-} from './icons'
+} from './auth-icons'
 
 type Step =
   | 'credentials'
@@ -83,7 +83,7 @@ function Heading({ title, subtitle }: { title: string; subtitle: string }) {
  * language. Only a request that never got that answer — network, 5xx — shows
  * an error.
  */
-export function BackofficeLoginForm({
+export function StaffLoginForm({
   initialStep,
   homeHref = '/backoffice/home',
   heading,
