@@ -101,7 +101,7 @@ substituída pelos bounded contexts reais acima.
 - **Persistência**: real via Drizzle sobre `@ooc/db` — todo repositório em
   `infra/persistence/` e `infra/identity/` fala com o Postgres, não existe
   implementação em memória. Ainda faltam bounded contexts inteiros: não há
-  upload de contrato de docente (OOC-81), de turma no lado da escrita (só
+  turma no lado da escrita (só
   leitura, `GET /class-groups`), de `payments` avulso fora do fluxo de
   matrícula, nem de `attendance`/`grades`/`materials`/`certificates`/`campaigns`.
 - **Índice único de documento** (`national_id_type` + `national_id`, CLAUDE.md
