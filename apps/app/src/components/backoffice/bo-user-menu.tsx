@@ -27,6 +27,7 @@ export function BoUserMenu({
   monogram,
   profileLabel,
   teacherFile,
+  accountHref = '/backoffice/account',
   logoutLabel,
   logout,
 }: {
@@ -36,6 +37,8 @@ export function BoUserMenu({
   profileLabel: string
   /** The teacher's own ficha on the roster — only a teacher session has one. */
   teacherFile: { href: string; label: string } | null
+  /** The reader's account page — each portal has its own. */
+  accountHref?: '/backoffice/account' | '/docente/account'
   logoutLabel: string
   logout: () => Promise<void>
 }) {
@@ -60,7 +63,7 @@ export function BoUserMenu({
 
       <DropdownMenuContent side="top" align="start" className="w-52">
         <DropdownMenuItem asChild>
-          <Link href="/backoffice/account" className="flex items-center gap-2">
+          <Link href={accountHref} className="flex items-center gap-2">
             <UserRound className="size-4" />
             {profileLabel}
           </Link>

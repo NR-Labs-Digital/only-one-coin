@@ -29,7 +29,8 @@
       "my_class_groups": "My class groups",
       "my_profile": "My profile",
       "account": "My account",
-      "profile": "Profile"
+      "profile": "Profile",
+      "agenda": "Agenda"
     },
     "role": {
       "master": "Master",
@@ -1822,7 +1823,8 @@
         "backoffice_reports": "Reports",
         "backoffice_staff": "Team",
         "backoffice_settings": "Settings",
-        "teacher": "Teacher panel"
+        "teacher": "Teacher panel",
+        "teacher_agenda": "Agenda"
       },
       "details_label": "Details for {name}",
       "source": {
@@ -1893,6 +1895,106 @@
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
       "receipt_viewed": "Receipt viewed"
+    },
+    "class_links": {
+      "meet": "Open Meet",
+      "classroom": "Open Classroom"
+    },
+    "grade_report": {
+      "download": "Download report",
+      "col_student": "Student",
+      "col_exam": "Final exam",
+      "col_status": "Status",
+      "file_name": "grade-report-{code}.csv"
+    },
+    "teacher_portal": {
+      "badge": "Teacher",
+      "brand_title": "Your classes, in one place.",
+      "highlight_grades": "Record and edit grades",
+      "highlight_schedule": "Your schedule and requests",
+      "highlight_classes": "Meet and Classroom for each class",
+      "login_title": "Teacher portal",
+      "login_subtitle": "Sign in with the account coordination gave you.",
+      "nav_group": "My teaching",
+      "panel_label": "Teacher portal",
+      "no_file_title": "Your file is not set up yet",
+      "no_file_body": "Coordination records your details, languages and availability. Once it does, they show up here."
+    },
+    "agenda": {
+      "today": "Today",
+      "previous": "Previous",
+      "next": "Next",
+      "view_week": "Week",
+      "view_month": "Month",
+      "close": "Close",
+      "open_class_group": "Open the class",
+      "more": "{count, plural, one {# more} other {# more}}",
+      "empty": "You have no classes to show on the agenda yet.",
+      "timezone": "Lima time (UTC−5)"
+    },
+    "class_resources": {
+      "materials": "Materials",
+      "for_students": "Classroom for students",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "publish": "Publish",
+      "classroom_invalid": "Paste an https://classroom.google.com/… link",
+      "students_see": "The class's students see this link in their portal.",
+      "students_none": "You have not published the Classroom for students yet.",
+      "saved_local_only": "Published on this screen only at {time}: sending it to the student portal is not connected yet.",
+      "published_short": "Published",
+      "not_published_short": "Not published",
+      "title": "Class access"
+    },
+    "class_notices": {
+      "title": "Notices to the class",
+      "subtitle": "Reaches every student in the class as a notification in the student portal.",
+      "placeholder": "Write a notice to the class…",
+      "count": "{count}/{max}",
+      "send": "Send notice",
+      "empty": "You have not sent this class any notice yet.",
+      "sent_local_only": "Notice recorded on this screen only: sending it to the student portal is not connected yet.",
+      "history": "History ({count})",
+      "closed": "Class closed: no more notices are sent."
+    },
+    "class_list": {
+      "back": "My classes",
+      "module": "Module {module}",
+      "pending_grades": "{count, plural, one {# grade pending} other {# grades pending}}",
+      "students_title": "Students ({count})",
+      "notes_button": "{count, plural, =0 {Notes} other {Notes (#)}}",
+      "final_warning": "Once posted, a grade cannot be changed.",
+      "cancel": "Cancel",
+      "post": "Post grade",
+      "grades_locked": "Posted grades cannot be changed.",
+      "col_class": "Class",
+      "col_pending": "Pending grades",
+      "confirm_cta": "Confirm",
+      "back_to_edit": "Back",
+      "posted_toast": "Grade posted",
+      "placeholder_grade": "0–20",
+      "student_label": "Student: {name}",
+      "did_not_sit": "Did not sit the final exam",
+      "batch_open": "Post class grades",
+      "batch_title": "Post class grades",
+      "batch_subtitle": "Fill in only what you have; empty cells are not posted.",
+      "batch_review_title": "Review before posting",
+      "batch_review_subtitle": "{count, plural, one {# student will get a grade.} other {# students will get a grade.}}",
+      "batch_review": "{count, plural, =0 {Review} other {Review (#)}}",
+      "batch_confirm": "{count, plural, one {Post # grade} other {Post # grades}}",
+      "batch_invalid": "Some cells are invalid: grades 0 to 20, up to two decimals.",
+      "batch_posted": "{count, plural, one {Grade posted} other {Grades posted for # students}}",
+      "did_not_sit_short": "Did not sit",
+      "add_grade": "Grade",
+      "add_grade_title": "Final exam grade",
+      "confirm_grade_title": "Confirm final exam grade",
+      "empty_title": "No classes right now",
+      "empty_body": "When coordination assigns you a class, it shows up here. Closed classes leave the list."
+    },
+    "class_facts": {
+      "code": "Class code",
+      "schedule": "Days and time",
+      "copy": "Copy code",
+      "copied": "Copied"
     },
     "shortcuts": {
       "button": "Keyboard shortcuts",

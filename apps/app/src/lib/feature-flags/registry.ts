@@ -130,12 +130,24 @@ export const FEATURE_FLAGS = {
   /* --------------------------------------------------------------- docente */
 
   /**
-   * The teacher's panel: the same app with the rail narrowed to their own
-   * class groups. It hangs off `backoffice` because it *is* the backoffice —
-   * a docente signs in through the same door (CLAUDE.md §8). Off, a teacher
-   * session meets a 404 instead of a panel; every other cargo is untouched.
+   * The docente portal (`/docente`): its own login and shell, same app and
+   * same auth as the backoffice — which is why it still hangs off
+   * `backoffice`. Off, `/docente` (login included) answers 404; every other
+   * cargo is untouched.
    */
   teacher: { surface: 'teacher', parent: 'backoffice', production: true },
+
+  /**
+   * Agenda: the teacher's classes on a calendar, week and month, derived
+   * from their class groups. Off in production until the class groups behind
+   * it come from the API rather than the mock.
+   */
+  'teacher.agenda': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+
 } as const satisfies Record<string, FeatureFlagSpec>
 
 /*

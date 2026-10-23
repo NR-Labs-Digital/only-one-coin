@@ -29,7 +29,8 @@
       "my_class_groups": "Mis aulas",
       "my_profile": "Mi ficha",
       "account": "Mi cuenta",
-      "profile": "Perfil"
+      "profile": "Perfil",
+      "agenda": "Agenda"
     },
     "role": {
       "master": "Master",
@@ -1822,7 +1823,8 @@
         "backoffice_reports": "Reportes",
         "backoffice_staff": "Equipo",
         "backoffice_settings": "Configuración",
-        "teacher": "Panel del docente"
+        "teacher": "Panel del docente",
+        "teacher_agenda": "Agenda"
       },
       "details_label": "Detalles de {name}",
       "source": {
@@ -1893,6 +1895,106 @@
       "payment_approved": "Pago aprobado",
       "payment_rejected": "Pago rechazado",
       "receipt_viewed": "Comprobante consultado"
+    },
+    "class_links": {
+      "meet": "Abrir Meet",
+      "classroom": "Abrir Classroom"
+    },
+    "grade_report": {
+      "download": "Descargar reporte",
+      "col_student": "Alumno",
+      "col_exam": "Examen final",
+      "col_status": "Situación",
+      "file_name": "reporte-notas-{code}.csv"
+    },
+    "teacher_portal": {
+      "badge": "Docente",
+      "brand_title": "Tus aulas, en un solo lugar.",
+      "highlight_grades": "Registra y edita notas",
+      "highlight_schedule": "Tu horario y tus solicitudes",
+      "highlight_classes": "Meet y Classroom de cada aula",
+      "login_title": "Portal del docente",
+      "login_subtitle": "Ingresa con la cuenta que te dio coordinación.",
+      "nav_group": "Mis clases",
+      "panel_label": "Portal del docente",
+      "no_file_title": "Tu ficha todavía no está cargada",
+      "no_file_body": "Coordinación registra tus datos, idiomas y disponibilidad. Cuando lo haga, aparecen aquí."
+    },
+    "agenda": {
+      "today": "Hoy",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "view_week": "Semana",
+      "view_month": "Mes",
+      "close": "Cerrar",
+      "open_class_group": "Abrir el aula",
+      "more": "{count, plural, one {# más} other {# más}}",
+      "empty": "Todavía no tienes aulas para mostrar en la agenda.",
+      "timezone": "Horario de Lima (UTC−5)"
+    },
+    "class_resources": {
+      "materials": "Materiales",
+      "for_students": "Classroom para los alumnos",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "publish": "Publicar",
+      "classroom_invalid": "Pega un enlace https://classroom.google.com/…",
+      "students_see": "Los alumnos del aula ven este enlace en su portal.",
+      "students_none": "Todavía no publicaste el Classroom para los alumnos.",
+      "saved_local_only": "Publicado solo en esta pantalla a las {time}: el envío al portal del alumno todavía no está conectado.",
+      "published_short": "Publicado",
+      "not_published_short": "Sin publicar",
+      "title": "Accesos del aula"
+    },
+    "class_notices": {
+      "title": "Avisos para el aula",
+      "subtitle": "Llega como notificación a todos los alumnos del aula, en el portal del alumno.",
+      "placeholder": "Escribe un aviso para el aula…",
+      "count": "{count}/{max}",
+      "send": "Enviar aviso",
+      "empty": "Todavía no enviaste avisos a esta aula.",
+      "sent_local_only": "Aviso registrado solo en esta pantalla: el envío al portal del alumno todavía no está conectado.",
+      "history": "Historial ({count})",
+      "closed": "Aula cerrada: ya no se envían avisos."
+    },
+    "class_list": {
+      "back": "Mis aulas",
+      "module": "Módulo {module}",
+      "pending_grades": "{count, plural, one {# nota pendiente} other {# notas pendientes}}",
+      "students_title": "Alumnos ({count})",
+      "notes_button": "{count, plural, =0 {Observaciones} other {Observaciones (#)}}",
+      "final_warning": "Una vez registrada, la nota no se puede cambiar.",
+      "cancel": "Cancelar",
+      "post": "Registrar nota",
+      "grades_locked": "Las notas registradas no se cambian.",
+      "col_class": "Aula",
+      "col_pending": "Notas pendientes",
+      "confirm_cta": "Confirmar",
+      "back_to_edit": "Volver",
+      "posted_toast": "Nota registrada",
+      "placeholder_grade": "0–20",
+      "student_label": "Alumno: {name}",
+      "did_not_sit": "No rindió el examen final",
+      "batch_open": "Registrar notas del aula",
+      "batch_title": "Registrar notas del aula",
+      "batch_subtitle": "Completa solo lo que tengas; las celdas vacías no se registran.",
+      "batch_review_title": "Revisa antes de registrar",
+      "batch_review_subtitle": "{count, plural, one {# alumno recibirá nota.} other {# alumnos recibirán nota.}}",
+      "batch_review": "{count, plural, =0 {Revisar} other {Revisar (#)}}",
+      "batch_confirm": "{count, plural, one {Registrar # nota} other {Registrar # notas}}",
+      "batch_invalid": "Hay celdas inválidas: notas de 0 a 20, con hasta dos decimales.",
+      "batch_posted": "{count, plural, one {Nota registrada} other {# alumnos con nota registrada}}",
+      "did_not_sit_short": "No rindió",
+      "add_grade": "Nota",
+      "add_grade_title": "Nota del examen final",
+      "confirm_grade_title": "Confirmar nota del examen final",
+      "empty_title": "Ninguna aula por ahora",
+      "empty_body": "Cuando coordinación te asigne un aula, aparece aquí. Las aulas cerradas salen de la lista."
+    },
+    "class_facts": {
+      "code": "Código del aula",
+      "schedule": "Días y hora",
+      "copy": "Copiar código",
+      "copied": "Copiado"
     },
     "shortcuts": {
       "button": "Atajos de teclado",

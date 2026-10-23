@@ -61,8 +61,9 @@ const students: StudentDetail[] = []
 type ClassGroupStudentSeed = Omit<ClassGroupStudent, 'examGrade' | 'notes'> &
   Partial<Pick<ClassGroupStudent, 'examGrade' | 'notes'>>
 
-type ClassGroupSeed = Omit<ClassGroupDetail, 'pendingGrades' | 'students'> & {
+type ClassGroupSeed = Omit<ClassGroupDetail, 'pendingGrades' | 'students' | 'notices'> & {
   students: ClassGroupStudentSeed[]
+  notices?: ClassGroupDetail['notices']
 }
 
 function serveStudents(students: ClassGroupStudentSeed[]): ClassGroupStudent[] {
@@ -116,8 +117,9 @@ function pendingGradesOf(group: ClassGroupSeed): number {
 
 export function listClassGroups(): ClassGroupRow[] {
   return classGroups.map((group) => {
-    const { students, ...row } = group
+    const { students, notices, ...row } = group
     void students
+    void notices
     return { ...row, pendingGrades: pendingGradesOf(group) }
   })
 }
@@ -128,6 +130,7 @@ export function getClassGroup(id: string): ClassGroupDetail | undefined {
   return {
     ...group,
     students: serveStudents(group.students),
+    notices: group.notices ?? [],
     pendingGrades: pendingGradesOf(group),
   }
 }
@@ -142,6 +145,7 @@ export function listClassGroupRosters(): ClassGroupDetail[] {
   return classGroups.map((group) => ({
     ...group,
     students: serveStudents(group.students),
+    notices: group.notices ?? [],
     pendingGrades: pendingGradesOf(group),
   }))
 }
@@ -194,7 +198,15 @@ export function getTeacher(id: string): TeacherWorkload | undefined {
 export function listClassGroupsFor(staff: StaffUser): ClassGroupRow[] {
   const rows = listClassGroups()
   if (staff.role !== 'teacher') return rows
-  return rows.filter((group) => group.teacherId === staff.teacherId)
+  return rows.filter((group) => ownsClassGroup(staff, group))
+}
+
+/**
+ * A teacher with no file linked (`teacherId: null`) owns nothing — compared
+ * bare, their null would match every class group still without a teacher.
+ */
+function ownsClassGroup(staff: StaffUser, group: Pick<ClassGroupRow, 'teacherId'>): boolean {
+  return staff.teacherId !== null && group.teacherId === staff.teacherId
 }
 
 /**
@@ -208,7 +220,7 @@ export function getClassGroupFor(
 ): ClassGroupDetail | undefined {
   const group = getClassGroup(id)
   if (!group) return undefined
-  if (staff.role === 'teacher' && group.teacherId !== staff.teacherId) return undefined
+  if (staff.role === 'teacher' && !ownsClassGroup(staff, group)) return undefined
   return group
 }
 
@@ -221,7 +233,7 @@ export function getClassGroupFor(
 export function listClassGroupRostersFor(staff: StaffUser): ClassGroupDetail[] {
   const rosters = listClassGroupRosters()
   if (staff.role !== 'teacher') return rosters
-  return rosters.filter((group) => group.teacherId === staff.teacherId)
+  return rosters.filter((group) => ownsClassGroup(staff, group))
 }
 
 /* -------------------------------------------------------------------------- */

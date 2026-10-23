@@ -29,7 +29,8 @@
       "my_class_groups": "Minhas turmas",
       "my_profile": "Minha ficha",
       "account": "Minha conta",
-      "profile": "Perfil"
+      "profile": "Perfil",
+      "agenda": "Agenda"
     },
     "role": {
       "master": "Master",
@@ -1822,7 +1823,8 @@
         "backoffice_reports": "Relatórios",
         "backoffice_staff": "Equipe",
         "backoffice_settings": "Configuração",
-        "teacher": "Painel do docente"
+        "teacher": "Painel do docente",
+        "teacher_agenda": "Agenda"
       },
       "details_label": "Detalhes de {name}",
       "source": {
@@ -1893,6 +1895,106 @@
       "payment_approved": "Pagamento aprovado",
       "payment_rejected": "Pagamento rejeitado",
       "receipt_viewed": "Comprovante consultado"
+    },
+    "class_links": {
+      "meet": "Abrir Meet",
+      "classroom": "Abrir Classroom"
+    },
+    "grade_report": {
+      "download": "Baixar relatório",
+      "col_student": "Aluno",
+      "col_exam": "Exame final",
+      "col_status": "Situação",
+      "file_name": "relatorio-notas-{code}.csv"
+    },
+    "teacher_portal": {
+      "badge": "Docente",
+      "brand_title": "Suas turmas, num só lugar.",
+      "highlight_grades": "Lance e edite notas",
+      "highlight_schedule": "Seus horários e solicitações",
+      "highlight_classes": "Meet e Classroom de cada turma",
+      "login_title": "Portal do docente",
+      "login_subtitle": "Entre com a conta que a coordenação te passou.",
+      "nav_group": "Minhas aulas",
+      "panel_label": "Portal do docente",
+      "no_file_title": "Sua ficha ainda não foi cadastrada",
+      "no_file_body": "A coordenação registra seus dados, idiomas e disponibilidade. Quando fizer, aparecem aqui."
+    },
+    "agenda": {
+      "today": "Hoje",
+      "previous": "Anterior",
+      "next": "Próximo",
+      "view_week": "Semana",
+      "view_month": "Mês",
+      "close": "Fechar",
+      "open_class_group": "Abrir a turma",
+      "more": "{count, plural, one {mais #} other {mais #}}",
+      "empty": "Você ainda não tem turmas para mostrar na agenda.",
+      "timezone": "Horário de Lima (UTC−5)"
+    },
+    "class_resources": {
+      "materials": "Materiais",
+      "for_students": "Classroom para os alunos",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "publish": "Publicar",
+      "classroom_invalid": "Cole um link https://classroom.google.com/…",
+      "students_see": "Os alunos da turma veem este link no portal deles.",
+      "students_none": "Você ainda não publicou o Classroom para os alunos.",
+      "saved_local_only": "Publicado só nesta tela às {time}: o envio ao portal do aluno ainda não está conectado.",
+      "published_short": "Publicado",
+      "not_published_short": "Não publicado",
+      "title": "Acessos da aula"
+    },
+    "class_notices": {
+      "title": "Avisos para a turma",
+      "subtitle": "Chega como notificação para todos os alunos da turma, no portal do aluno.",
+      "placeholder": "Escreva um aviso para a turma…",
+      "count": "{count}/{max}",
+      "send": "Enviar aviso",
+      "empty": "Você ainda não enviou avisos para esta turma.",
+      "sent_local_only": "Aviso registrado só nesta tela: o envio ao portal do aluno ainda não está conectado.",
+      "history": "Histórico ({count})",
+      "closed": "Turma encerrada: não se enviam mais avisos."
+    },
+    "class_list": {
+      "back": "Minhas turmas",
+      "module": "Módulo {module}",
+      "pending_grades": "{count, plural, one {# nota pendente} other {# notas pendentes}}",
+      "students_title": "Alunos ({count})",
+      "notes_button": "{count, plural, =0 {Observações} other {Observações (#)}}",
+      "final_warning": "Depois de lançada, a nota não pode ser alterada.",
+      "cancel": "Cancelar",
+      "post": "Lançar nota",
+      "grades_locked": "As notas lançadas não se alteram.",
+      "col_class": "Turma",
+      "col_pending": "Notas pendentes",
+      "confirm_cta": "Confirmar",
+      "back_to_edit": "Voltar",
+      "posted_toast": "Nota lançada",
+      "placeholder_grade": "0–20",
+      "student_label": "Aluno: {name}",
+      "did_not_sit": "Não fez o exame final",
+      "batch_open": "Lançar notas da turma",
+      "batch_title": "Lançar notas da turma",
+      "batch_subtitle": "Preencha só o que tiver; campos vazios não são lançados.",
+      "batch_review_title": "Revise antes de lançar",
+      "batch_review_subtitle": "{count, plural, one {# aluno vai receber nota.} other {# alunos vão receber nota.}}",
+      "batch_review": "{count, plural, =0 {Revisar} other {Revisar (#)}}",
+      "batch_confirm": "{count, plural, one {Lançar # nota} other {Lançar # notas}}",
+      "batch_invalid": "Há campos inválidos: notas de 0 a 20, com até duas casas decimais.",
+      "batch_posted": "{count, plural, one {Nota lançada} other {# alunos com nota lançada}}",
+      "did_not_sit_short": "Não fez",
+      "add_grade": "Nota",
+      "add_grade_title": "Nota do exame final",
+      "confirm_grade_title": "Confirmar nota do exame final",
+      "empty_title": "Nenhuma turma no momento",
+      "empty_body": "Quando a coordenação alocar uma turma para você, ela aparece aqui. Turmas fechadas saem da lista."
+    },
+    "class_facts": {
+      "code": "Código da turma",
+      "schedule": "Dias e horário",
+      "copy": "Copiar código",
+      "copied": "Copiado"
     },
     "shortcuts": {
       "button": "Atalhos de teclado",

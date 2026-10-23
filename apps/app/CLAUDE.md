@@ -147,11 +147,11 @@ A ponta do backend (rotas `.owners()`, `feature_flag_overrides`) está em `apps/
 
 ## Pontos de entrada separados (portal ≠ backoffice)
 
-Um **único backend de auth** (um só provedor de auth, um só registro de usuários) — a separação de acesso é a checagem de **`role`** em `apps/api`, nunca a tela. Mas **duas telas de login distintas**, pelo mesmo app Next.js (não são dois deploys):
+Um **único backend de auth** (um só provedor de auth, um só registro de usuários) — a separação de acesso é a checagem de **`role`** em `apps/api`, nunca a tela. Mas **três telas de login distintas**, pelo mesmo app Next.js (não são dois deploys):
 
 - **Portal do aluno** — `/` ou `/portal`, linkado da landing, indexável, sem MFA. **Sem auto-cadastro**: a aprovação do pagamento cria a conta e o aluno recebe por e-mail um link para definir a senha, não se registra. **Sessão real (05/10/2026):** toda página de `/portal` chama `getStudentSession` (`lib/portal/session.ts` → `GET /api/v1/portal/me`) e qualquer não-OK, inclusive sessão de staff, volta a `/login`. Telas `/login` (proxy same-origin para `/api/v1/portal/sign-in`), `/forgot-password` e `/access/[token]`; logout real por `lib/auth/sign-out.ts`, compartilhado com o backoffice. **Dados reais (OOC-32, 07/10/2026):** as telas leem `getPortalView` (`GET /api/v1/portal/overview`, memoizado por requisição); o que ainda não tem backend chega vazio, nunca como persona de exemplo — não existe mais mock no portal. Para o aluno, `pending` e `under_review` são um estado só (`lib/portal/overview.ts`): "pendente" ao lado de dinheiro já enviado vira "pague de novo", e a diferença é veredito do semáforo, que é do revisor.
 - **Backoffice** — path interno `/backoffice`, **nunca linkado na landing nem indexável**, MFA no fluxo (OOC-29): depois da senha, a tela pede o código enviado ao e-mail (ou um código de recuperação); conta de `master`/`admin`/`billing` sem o fator cai no passo de ativação (`/backoffice?mfa=setup`, para onde `getStaffSession` manda quem a API recusa com `auth.mfa_enrollment_required`). Ativar, regenerar códigos e desligar (só onde é opcional) ficam em *Mi cuenta*. A tela só guia — quem exige é a API. Esse caminho todo é defesa em profundidade, não a defesa.
-- **Docente** entra pelo backoffice, mas vê só as próprias turmas — checagem no usecase, não filtro solto.
+- **Portal do docente** — `/docente`, **porta própria** (antes o docente entrava pelo backoffice com o menu estreitado): login próprio, shell próprio, nunca linkado na landing nem indexável. Mesmo Better Auth, mesmo `/me` e o mesmo formulário de login (com os passos de MFA), que termina em `/docente/home` — a separação é o cargo lido no servidor: `teacher` em `/backoffice` vai para `/docente/home`, qualquer outro cargo em `/docente` volta para `/backoffice/home` (`getTeacherSession()`, `lib/backoffice/session.ts`). **Quem decide a porta é só o cargo, nunca o vínculo com a ficha:** conta `teacher` sem ficha (`teacherId: null`, aberta antes da OOC-79) fica no portal com escopo vazio — mandá-la ao backoffice criaria um loop de redirect, porque o backoffice devolve todo docente pra cá. Vê só as próprias turmas — checagem no usecase, não filtro solto. O portal inteiro responde à flag `teacher`.
 - **Redirect por `role` sempre server-side.** O cliente nunca escolhe "sou aluno/sou admin"; o `role` vem do banco, lido por `apps/api`.
 
 ### Dois domínios, um deploy (decisão 29/09/2026)
@@ -168,6 +168,12 @@ continua no domínio do backoffice, nunca expõe o path interno.
 Domínio dedicado não substitui a defesa real (RBAC em `apps/api`) nem some do
 Certificate Transparency log só por não estar linkado — é só mais uma camada,
 igual o path discreto já era.
+
+### Código compartilhado entre superfícies (23/10/2026)
+
+**Uma superfície nunca importa da pasta de rota de outra.** O que `/portal`, `/backoffice` e `/docente` usam em comum mora em `src/components/` ou `src/lib/` — nunca `import … from '../../../backoffice/(panel)/(gated)/…'` de dentro de `docente/`. A pasta de rota é da tela dela: renomear um segmento, um route group ou mover um arquivo ali não pode quebrar outra porta, e quem lê `backoffice/` não pode precisar saber que o docente depende daquilo. Server action também é por superfície (`backoffice/actions.ts`, `docente/actions.ts`). Peça que passa a servir uma segunda porta **muda de pasta no mesmo PR** — como a tela de conta (`components/backoffice/account/`) quando o portal do docente nasceu.
+
+**Dívida conhecida, a zerar na OOC-82:** `docente/page.tsx` ainda importa `backoffice/backoffice-login-form` (que puxa `backoffice/icons`, usado por mais cinco telas do backoffice) e `docente/(panel)/profile` importa `backoffice/…/teachers/[teacherId]/teacher-file` (que puxa `save-teacher`, `availability-fields` e `students/field-message`). Não acrescentar uma terceira.
 
 ## RBAC na UI
 

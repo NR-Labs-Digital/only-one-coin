@@ -1,12 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { redirect } from '@/i18n/navigation'
 import { listCatalogCourses } from '@/lib/backoffice/catalog'
 import { listTeachers, parseTeacherDirectoryQuery, toLanguage } from '@/lib/backoffice/teachers'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateTeacher,
   canManageTeachers,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeachersView } from './teachers-view'
@@ -34,13 +32,6 @@ export default async function TeachersPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-
-  /* A teacher has no roster — they have a ficha. Sending them to their own is
-     the honest answer to "Docentes" in their sidebar; the id comes from the
-     session, never from the URL (CLAUDE.md §8). */
-  if (isRestrictedToOwnClassGroups(staff.role) && staff.teacherId) {
-    redirect({ href: `/backoffice/teachers/${staff.teacherId}`, locale })
-  }
 
   if (!canManageTeachers(staff.role)) {
     return (

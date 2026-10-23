@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { redirect } from '@/i18n/navigation'
 import { logoutStaff } from '../actions'
 import {
   canBrowseCatalog,
@@ -14,7 +15,6 @@ import {
   canViewPayments,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import { getTeacher } from '@/lib/backoffice/mock-data'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
@@ -66,17 +66,13 @@ export default async function BackofficePanelLayout({
   // sidebar flashing open before hydration.
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
 
-  /**
-   * A teacher gets the panel narrowed to their own work: their class groups
-   * and their own ficha. The money, the student directory and the
-   * administration group are not theirs to open — and the sidebar says so by
-   * not offering them, rather than by letting the click fail.
-   *
-   * This is the screen honouring the rule, never enforcing it: the check that
-   * counts compares the authenticated `teacher_id` inside the usecase in
-   * `apps/api` (CLAUDE.md §8).
-   */
-  const restricted = isRestrictedToOwnClassGroups(staff.role)
+  /* The docente portal is its own door now (`/docente`, own login, own
+     shell): a teacher who lands on the backoffice is sent there. Decided
+     server-side from the role on the session, never from anything on the
+     screen (CLAUDE.md §8). */
+  if (isRestrictedToOwnClassGroups(staff.role)) {
+    redirect({ href: '/docente/home', locale })
+  }
 
   /* The queue count behind the Payments badge, asked only by a cargo the API
      serves the queue to — anybody else would get a 403, and the badge would
@@ -88,46 +84,9 @@ export default async function BackofficePanelLayout({
       : null
   const pendingReview = reviewQueue?.total ?? 0
 
-  /* The teacher's badge is their own queue — the final grades still open
-     across their class groups. Same role as the review-queue badge below:
-     it is what the panel gets opened for. */
-  const pendingGrades =
-    restricted && staff.teacherId
-      ? (getTeacher(staff.teacherId)?.pendingGrades ?? 0)
-      : 0
-
   /* A group whose every section is off is not an empty dropdown — it is not a
      group. Only `home` is unconditional: it is where the panel starts. */
-  const allGroups: BoNavGroup[] = restricted
-    ? [
-        {
-          key: 'home',
-          items: [
-            { key: 'dashboard', href: '/backoffice/home', label: t('nav.dashboard') },
-          ],
-        },
-        {
-          key: 'academic',
-          label: t('nav.group_academic'),
-          /* The teacher's class groups are the academic section, seen through
-             their own scope — so they answer to the same flag as everyone
-             else's. Off, the docente panel keeps only its dashboard. */
-          items: flags['backoffice.academic']
-            ? [
-                {
-                  key: 'class_groups' as const,
-                  href: '/backoffice/class-groups',
-                  label: t('nav.my_class_groups'),
-                  badge: pendingGrades,
-                },
-                /* No "Minha ficha" here: what belongs to the reader — their
-                   ficha, their account — lives in the user dropdown at the
-                   bottom of the rail, not among the work modules. */
-              ]
-            : [],
-        },
-      ]
-    : [
+  const allGroups: BoNavGroup[] = [
     {
       /* No label, so it renders loose above the dropdowns. Home is not a
          section of the panel — it is where the panel starts. */
@@ -310,14 +269,7 @@ export default async function BackofficePanelLayout({
       roleLabel={t(`role.${staff.role}`)}
       monogram={monogram}
       profileLabel={t('nav.profile')}
-      teacherFile={
-        restricted && staff.teacherId
-          ? {
-              href: `/backoffice/teachers/${staff.teacherId}`,
-              label: t('nav.my_profile'),
-            }
-          : null
-      }
+      teacherFile={null}
       logoutLabel={t('nav.logout')}
       logout={logoutStaff}
     />

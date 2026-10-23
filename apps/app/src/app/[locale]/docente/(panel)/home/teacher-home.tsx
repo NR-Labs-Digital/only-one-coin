@@ -1,9 +1,7 @@
-import type { ReactNode } from 'react'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import type { StaffUser } from '@/lib/backoffice/types'
 import { getTeacher, listClassGroupsFor } from '@/lib/backoffice/mock-data'
-import { isFeatureEnabled } from '@/lib/feature-flags/server'
 import { formatDateRange, type Locale } from '@/lib/format'
 import {
   Card,
@@ -31,31 +29,6 @@ import { AutoGrid } from '@/components/layout/auto-grid'
  * client sent; the enforcing check is the usecase in `apps/api`
  * (CLAUDE.md §8).
  */
-/**
- * The name of a class group. A door while the academic section is on the air,
- * plain text when it is not: the teacher still reads which group owes grades —
- * what the flag removes is the screen behind the name, not the fact
- * (CLAUDE.md §5).
- */
-function GroupName({
-  href,
-  open,
-  className,
-  children,
-}: {
-  href: string
-  open: boolean
-  className: string
-  children: ReactNode
-}) {
-  if (!open) return <span className={className}>{children}</span>
-  return (
-    <Link href={href} className={className}>
-      {children}
-    </Link>
-  )
-}
-
 export async function TeacherHome({
   staff,
   locale,
@@ -64,10 +37,10 @@ export async function TeacherHome({
   locale: Locale
 }) {
   const t = await getTranslations('bo')
-  const academic = await isFeatureEnabled('backoffice.academic')
 
   const teacher = staff.teacherId ? getTeacher(staff.teacherId) : undefined
-  const classGroups = listClassGroupsFor(staff)
+  /* Closed by coordination means gone from the portal (decision 08/10/2026). */
+  const classGroups = listClassGroupsFor(staff).filter((group) => group.status !== 'closed')
   const running = classGroups.filter(
     (group) => group.status === 'enrolling' || group.status === 'in_progress',
   )
@@ -135,13 +108,12 @@ export async function TeacherHome({
                   <div className="min-w-0">
                     {/* Grades are entered on the working screen — the card
                         opens that group's tab, not the certificate page. */}
-                    <GroupName
-                      href={`/backoffice/class-groups?group=${group.id}`}
-                      open={academic}
+                    <Link
+                      href={`/docente/class-groups?group=${group.id}`}
                       className="truncate text-sm font-semibold text-ink transition hover:text-brand-blue"
                     >
                       {group.courseName}
-                    </GroupName>
+                    </Link>
                     <p className="truncate text-xs tabular-nums text-muted-foreground">
                       {group.code}
                     </p>
@@ -177,13 +149,12 @@ export async function TeacherHome({
               <Card key={group.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <GroupName
-                      href={`/backoffice/class-groups/${group.id}`}
-                      open={academic}
+                    <Link
+                      href={`/docente/class-groups/${group.id}`}
                       className="truncate text-sm font-semibold text-ink transition hover:text-brand-blue"
                     >
                       {group.courseName}
-                    </GroupName>
+                    </Link>
                     <p className="truncate text-xs tabular-nums text-muted-foreground">
                       {group.code}
                     </p>
@@ -245,13 +216,12 @@ export async function TeacherHome({
                   <tr key={group.id}>
                     <td className={`${tdClass} whitespace-nowrap`}>
                       {/* Opens the group's tab on the working screen. */}
-                      <GroupName
-                        href={`/backoffice/class-groups?group=${group.id}`}
-                        open={academic}
+                      <Link
+                        href={`/docente/class-groups?group=${group.id}`}
                         className="font-semibold text-ink transition hover:text-brand-blue"
                       >
                         {group.courseName}
-                      </GroupName>
+                      </Link>
                       <p className="text-xs tabular-nums text-muted-foreground">
                         {group.code}
                       </p>

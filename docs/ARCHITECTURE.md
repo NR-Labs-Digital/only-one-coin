@@ -57,7 +57,7 @@ Isso não proíbe usar RLS depois como camada **extra** de defesa em profundidad
 | `student` | Portal do aluno | MVP | Vê os próprios dados, status de matrícula, materiais, certificados | Nunca acessa dado de outro aluno, nem manipulando URL |
 | `guardian` | Portal do aluno | MVP | Dá consentimento, acompanha dados do(s) menor(es) sob sua responsabilidade | Vinculado explicitamente ao(s) estudante(s); não é papel genérico |
 | `mass_approver` | Backoffice | **Fase 2** | Aprovação em lote de casos já validados com alta confiança pela IA | No MVP, aprovação é sempre individual por `treasury`/`coordinator`. Aprovação em lote sempre gera auditoria individual por caso, nunca um log agregado |
-| `teacher` (docente) | Backoffice (visão restrita) | **Fase 2** | Vê e edita **apenas as próprias turmas** (frequência, notas) | Não vê aluno/turma de outro docente — checagem no usecase, não escondida na tela |
+| `teacher` (docente) | Portal do docente (`/docente`, porta própria desde 07/10/2026) | **Fase 2** | Vê e edita **apenas as próprias turmas** (frequência, notas) | Não vê aluno/turma de outro docente — checagem no usecase, não escondida na tela |
 
 `mass_approver` e `teacher` não bloqueiam o lançamento: aprovação em lote é otimização de operação em escala, e gestão de frequência/notas pode ficar fora do primeiro lançamento se o produto inicial for só matrícula + acesso liberado. `guardian` fica no MVP porque consentimento do responsável é exigência legal desde o dia um (público menor de idade), não conveniência.
 
@@ -628,9 +628,10 @@ desligado não vai no bundle.
 | `backoffice.reports` | backoffice | Relatórios |
 | `backoffice.staff` | backoffice | Equipe (cargos, MFA) |
 | `backoffice.settings` | backoffice | Configuração da plataforma |
-| `teacher` | docente | O painel do docente (mesma app, rail estreita) |
+| `teacher` | docente | O portal do docente (`/docente`, login e shell próprios — mesma app) |
+| `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele. **`production: false`**: as turmas do docente ainda vêm do mock |
 
-Todas nascem aqui com `production: true` porque **todas já estão no ar**: o
+Todas as de cima, menos `teacher.agenda`, nasceram com `production: true` porque **já estavam no ar**: o
 registro chegou para gerir o que se expõe, não para aposentar tela sem aviso.
 Desligar qualquer uma agora é um clique em Funcionalidades — e toda troca fica
 no `audit_log` (`feature_flag.override`, com o valor de antes e o de depois).

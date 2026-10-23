@@ -7,7 +7,6 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canEditTeachers,
   canManageTeachers,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import { BoIcon } from '@/components/backoffice/icons'
 import { TeacherFile } from './teacher-file'
@@ -16,11 +15,10 @@ import { TeacherFile } from './teacher-file'
  * One teacher's file: contact, what they are cleared to teach, when they are
  * free, and the class groups already on them.
  *
- * A teacher may open their own and nobody else's. Answering with `notFound` for
- * somebody else's id, rather than hiding a link, is the point: the id in the
- * URL is guessable, and a hidden button stops nobody (anti-IDOR, CLAUDE.md §8).
- * The API enforces the same: `GET /teachers/:id` is the roster's readers only,
- * and a teacher reading their own file waits for the account link (OOC-79).
+ * Coordination's view. A teacher reads their own ficha in the docente portal
+ * (`/docente/profile`), where the id comes from the session and never from
+ * the URL — so this page has no teacher branch to guard (anti-IDOR,
+ * CLAUDE.md §8).
  */
 export default async function TeacherDetailPage({
   params,
@@ -32,10 +30,7 @@ export default async function TeacherDetailPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  const restricted = isRestrictedToOwnClassGroups(staff.role)
-
-  if (restricted && staff.teacherId !== teacherId) notFound()
-  if (!restricted && !canManageTeachers(staff.role)) notFound()
+  if (!canManageTeachers(staff.role)) notFound()
 
   const [teacher, courses] = await Promise.all([getTeacher(teacherId), listCatalogCourses()])
   if (!teacher) notFound()
@@ -48,17 +43,13 @@ export default async function TeacherDetailPage({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* A teacher has no roster to go back to — the link would land on their
-          own ficha again. */}
-      {!restricted && (
-        <Link
-          href="/backoffice/teachers"
-          className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
-        >
-          <BoIcon name="arrow-left" size={16} />
-          {t('teacher_file.back_to_list')}
-        </Link>
-      )}
+      <Link
+        href="/backoffice/teachers"
+        className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+      >
+        <BoIcon name="arrow-left" size={16} />
+        {t('teacher_file.back_to_list')}
+      </Link>
 
       {/* The identity header belongs to `TeacherFile`: the status is changed
           from it, and it is the client half that owns that state. */}

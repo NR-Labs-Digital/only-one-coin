@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
 import type {
   ClassGroupDetail,
   ClassGroupRow,
@@ -246,12 +245,9 @@ export function ClassGroupCertificates({
                 <tr key={student.studentId} className="transition hover:bg-sky-soft">
                   <td className={tdClass}>
                     <span className="flex flex-wrap items-center gap-2">
-                      <Link
-                        href={`/backoffice/students/${student.studentId}`}
-                        className="font-semibold text-ink transition hover:text-brand-blue"
-                      >
-                        {student.fullName}
-                      </Link>
+                      {/* Name only: the student's ficha is coordination's,
+                          not the teacher's (names, never personal data). */}
+                      <span className="font-semibold text-ink">{student.fullName}</span>
                       {student.procedure && (
                         <StatusBadge
                           tone="neutral"
