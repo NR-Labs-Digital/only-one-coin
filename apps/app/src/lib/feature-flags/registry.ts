@@ -139,10 +139,37 @@ export const FEATURE_FLAGS = {
 
   /**
    * Agenda: the teacher's classes on a calendar, week and month, derived
-   * from their class groups. Off in production until the class groups behind
-   * it come from the API rather than the mock.
+   * from their class groups — read from the API since OOC-82. Still off in
+   * production: turning it on is the owner's call, not a side effect of the
+   * data becoming real.
    */
   'teacher.agenda': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+
+  /*
+   * The class group's tools that came with the portal (PR #136) and still
+   * have no API: each one keeps its screen for us, but writes only on screen,
+   * so none of them may reach a teacher in production (OOC-82). The flag goes
+   * on in the PR that gives the tool its backend.
+   */
+
+  /** The grade sheet — final exam grade, DA, batch, observations, the CSV report — and the certificate batch. OOC-38, OOC-102, OOC-33. */
+  'teacher.grades': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+  /** Notices to the class group. No ticket yet. */
+  'teacher.notices': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+  /** Meet, Classroom, the module's material and the students' Classroom link. OOC-98, OOC-100, OOC-94. */
+  'teacher.class_links': {
     surface: 'teacher',
     parent: 'teacher',
     production: false,

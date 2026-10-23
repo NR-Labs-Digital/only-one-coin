@@ -6,7 +6,7 @@ import type { GuardianRelationship, NationalIdType } from '@/lib/backoffice/type
 import { BoIcon } from '@/components/backoffice/icons'
 import { PhoneField } from '@/components/backoffice/phone-field'
 import { AutoGrid } from '@/components/layout/auto-grid'
-import { FieldMessage } from '../field-message'
+import { FieldMessage } from '@/components/backoffice/field-message'
 import { saveFile, type SaveFailure } from './save-file'
 
 /**

@@ -48,6 +48,12 @@ export {
   type SetTeacherRosterStatusInput,
   type SetTeacherRosterStatusOutput,
 } from "./teacher/SetTeacherRosterStatusUseCase.js";
+export type { ITeachingReader, TeachingClassGroup, TeachingStudent } from "./teaching/TeachingReader.js";
+export { isOwnClassGroup, isTeaching } from "./teaching/teachingScope.js";
+export { ListOwnClassGroupsUseCase, type ListOwnClassGroupsInput } from "./teaching/ListOwnClassGroupsUseCase.js";
+export { GetOwnClassGroupUseCase, type GetOwnClassGroupInput } from "./teaching/GetOwnClassGroupUseCase.js";
+export { ListOwnClassGroupStudentsUseCase } from "./teaching/ListOwnClassGroupStudentsUseCase.js";
+export { GetTeachingSummaryUseCase, type TeachingSummary } from "./teaching/GetTeachingSummaryUseCase.js";
 export {
   Guardian,
   GuardianPropsSchema,

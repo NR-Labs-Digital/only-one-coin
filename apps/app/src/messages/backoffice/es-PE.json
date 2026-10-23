@@ -1189,15 +1189,7 @@
       "limited_note": "Documento y contacto solo los ven administración y supervisión de matrículas."
     },
     "teacher_groups": {
-      "certificates_link": "Emisión de certificados",
-      "grades_title": "Notas",
-      "exam_grade_label": "Nota del examen final",
-      "final_grade_label": "Nota final del módulo",
-      "save": "Guardar notas",
       "not_started": "El aula todavía no comienza — las notas se registran durante el módulo.",
-      "closed_readonly": "Aula cerrada: las notas quedan como historial.",
-      "locked_certificate": "Certificado ya emitido — la nota quedó cerrada con él.",
-      "locked_procedure": "El alumno salió del aula por un trámite; no se le registra nota.",
       "notes_title": "Anotaciones",
       "notes_placeholder": "Escribe una anotación sobre {name}…",
       "notes_add": "Agregar anotación",
@@ -1538,17 +1530,11 @@
       "metric_class_groups_hint": "{total} en total",
       "metric_students": "Alumnos",
       "metric_students_hint": "En las aulas que dictas ahora",
-      "metric_pending_grades": "Notas pendientes",
-      "metric_pending_grades_hint": "Alumnos sin nota final",
-      "metric_pending_certificates": "Certificados por emitir",
-      "metric_pending_certificates_hint": "25 días hábiles desde el fin del aula",
-      "owing_title": "Aulas con certificados pendientes",
-      "owing_subtitle": "Terminaron y todavía deben certificado.",
-      "class_groups_subtitle": "Todo lo que dictas, en curso y cerrado.",
-      "no_class_groups_title": "Sin aulas",
-      "no_class_groups_body": "Todavía no tienes aulas asignadas en este período.",
-      "grades_owing_title": "Aulas con notas pendientes",
-      "grades_owing_subtitle": "El certificado no sale mientras falte una nota final."
+      "class_groups_subtitle": "Lo que dictas ahora y lo que ya terminó, hasta que coordinación lo cierre.",
+      "no_active_title": "No tienes cursos activos",
+      "no_active_body": "Cuando coordinación te asigne un aula, aparece aquí. Las aulas cerradas salen del portal.",
+      "load_error_title": "No pudimos cargar tus aulas",
+      "load_error_body": "Vuelve a intentarlo en unos minutos. Si sigue igual, avisa a coordinación."
     },
     "team": {
       "title": "Equipo",
@@ -1824,7 +1810,10 @@
         "backoffice_staff": "Equipo",
         "backoffice_settings": "Configuración",
         "teacher": "Panel del docente",
-        "teacher_agenda": "Agenda"
+        "teacher_agenda": "Agenda",
+        "teacher_grades": "Notas y certificados",
+        "teacher_notices": "Avisos al aula",
+        "teacher_class_links": "Accesos del aula"
       },
       "details_label": "Detalles de {name}",
       "source": {
@@ -1910,9 +1899,9 @@
     "teacher_portal": {
       "badge": "Docente",
       "brand_title": "Tus aulas, en un solo lugar.",
-      "highlight_grades": "Registra y edita notas",
-      "highlight_schedule": "Tu horario y tus solicitudes",
-      "highlight_classes": "Meet y Classroom de cada aula",
+      "highlight_students": "Los alumnos de cada aula",
+      "highlight_schedule": "Tus días y horarios, aula por aula",
+      "highlight_profile": "Tu ficha, siempre a mano",
       "login_title": "Portal del docente",
       "login_subtitle": "Ingresa con la cuenta que te dio coordinación.",
       "nav_group": "Mis clases",
@@ -1958,8 +1947,6 @@
     },
     "class_list": {
       "back": "Mis aulas",
-      "module": "Módulo {module}",
-      "pending_grades": "{count, plural, one {# nota pendiente} other {# notas pendientes}}",
       "students_title": "Alumnos ({count})",
       "notes_button": "{count, plural, =0 {Observaciones} other {Observaciones (#)}}",
       "final_warning": "Una vez registrada, la nota no se puede cambiar.",
@@ -1967,7 +1954,6 @@
       "post": "Registrar nota",
       "grades_locked": "Las notas registradas no se cambian.",
       "col_class": "Aula",
-      "col_pending": "Notas pendientes",
       "confirm_cta": "Confirmar",
       "back_to_edit": "Volver",
       "posted_toast": "Nota registrada",
@@ -1986,9 +1972,7 @@
       "did_not_sit_short": "No rindió",
       "add_grade": "Nota",
       "add_grade_title": "Nota del examen final",
-      "confirm_grade_title": "Confirmar nota del examen final",
-      "empty_title": "Ninguna aula por ahora",
-      "empty_body": "Cuando coordinación te asigne un aula, aparece aquí. Las aulas cerradas salen de la lista."
+      "confirm_grade_title": "Confirmar nota del examen final"
     },
     "class_facts": {
       "code": "Código del aula",

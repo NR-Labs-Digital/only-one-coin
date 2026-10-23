@@ -1,10 +1,38 @@
-import type { GradeStatus } from '@/lib/backoffice/types'
+import type { GradeStatus, StudentNote } from '@/lib/backoffice/types'
+import type { TeachingStudent } from '@/lib/docente/teaching'
 
 /**
  * The grade sheet's rules, shared by the one-grade dialog and the batch one:
  * what a typed grade is, what DA is, and what a final grade means. No UI copy
  * here (CLAUDE.md §4).
  */
+
+/**
+ * One row of the grade sheet. Grades have no API yet (OOC-38), so the sheet is
+ * a working copy that lives on the screen and is drawn only behind
+ * `teacher.grades`, off in production (OOC-82). Keyed by enrollment: a grade
+ * belongs to the seat in this class group, not to the person.
+ */
+export interface GradeSheetRow {
+  enrollmentId: string
+  fullName: string
+  /** 0–20. Null while not posted, and on a DA. */
+  finalGrade: number | null
+  gradeStatus: GradeStatus
+  /** The teacher's observations, newest first. */
+  notes: StudentNote[]
+}
+
+/** The real roster with nothing posted on it — the only honest starting point while grades are not stored anywhere. */
+export function workingSheet(students: TeachingStudent[]): GradeSheetRow[] {
+  return students.map((student) => ({
+    enrollmentId: student.enrollmentId,
+    fullName: student.studentName,
+    finalGrade: null,
+    gradeStatus: 'pending',
+    notes: [],
+  }))
+}
 
 /**
  * The institution's mark for a student who did not sit the final exam

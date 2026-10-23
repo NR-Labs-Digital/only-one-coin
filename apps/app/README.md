@@ -52,11 +52,12 @@ que muda a tela.
 | Relatórios (`/backoffice/reports`) | Mock — OOC-40 |
 | Portal do docente — login e shell (`/docente`) | **Real**: login próprio (mesmo Better Auth e mesmos passos de MFA), porta decidida pelo cargo no servidor (`getTeacherSession`), flag `teacher` |
 | Portal do docente — ficha (`/docente/profile`) | **Real** (OOC-79): `GET /teachers/:id` com o `teacherId` da sessão, só leitura |
-| Portal do docente — home, turmas, notas, avisos, acessos (`/docente/home`, `/docente/class-groups*`) | **Mock** — OOC-82. Lista de turmas por idioma, ficha de notas (nota do exame final, DA, lote, travada depois de lançada), observações, avisos para a turma, Classroom dos alunos e relatório CSV gravam **só na tela**. Nota mínima e prazo do certificado já vêm de `GET /settings` (OOC-41) |
-| Portal do docente — agenda (`/docente/agenda`) | **Mock**, atrás de `teacher.agenda` (`production: false`) — semana e mês derivados das turmas do mock |
+| Portal do docente — home (`/docente/home`) | **Real** (OOC-82): `GET /teaching/summary` (turmas em inscrição ou em andamento, alunos confirmados nelas) e a tabela das turmas; sem turma, "No tienes cursos activos" (OOC-101). Notas e certificados pendentes entram quando existirem (OOC-38, OOC-33) |
+| Portal do docente — minhas turmas e turma (`/docente/class-groups`, `/docente/class-groups/[id]`) | **Real** (OOC-82): lista por idioma e a turma no próprio endereço — dados, semana, datas, vagas e os alunos (só nome), tudo de `/teaching/*`, escopo checado no usecase; turma de outro docente, fechada ou rascunho é 404. Atrás de flag, desligada em produção e gravando **só na tela**: ficha de notas, observações e relatório CSV (`teacher.grades`, OOC-38/OOC-102), acessos da turma (`teacher.class_links`, OOC-98/OOC-100/OOC-94) e avisos (`teacher.notices`). A emissão de certificados do PR #136 saiu do portal (precisava de pagamento e conclusão, que o docente não recebe) — fica para a OOC-33 |
+| Portal do docente — agenda (`/docente/agenda`) | **Real** (OOC-82), atrás de `teacher.agenda` (`production: false`) — semana e mês a partir dos horários reais das turmas, cada aula com a duração do horário |
 
-O papel `teacher` entra com o `teacherId` real que o `/me` devolve (OOC-79). As telas do
-portal `/docente` que ainda leem mock (home, turmas, notas, agenda) ficam vazias para ele até o OOC-82.
+O papel `teacher` entra com o `teacherId` real que o `/me` devolve (OOC-79). Conta `teacher`
+sem ficha vê o portal vazio — a API não lhe atribui turma nenhuma.
 
 ## Estrutura
 

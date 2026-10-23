@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { redirect } from '@/i18n/navigation'
 import { logoutStaff } from '../actions'
 import {
   canBrowseCatalog,
@@ -13,10 +12,9 @@ import {
   canManageFeatureFlags,
   canManageStaff,
   canViewPayments,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
-import { getStaffSession } from '@/lib/backoffice/session'
+import { getBackofficeSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { initials } from '@/lib/format'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
@@ -58,21 +56,14 @@ export default async function BackofficePanelLayout({
   // is the one screen the `backoffice` flag must never be able to hide
   // (CLAUDE.md §5).
   // The session and the flags are independent reads of apps/api — asked
-  // together, so the shell pays one round trip for both instead of two.
-  const [staff, flags] = await Promise.all([getStaffSession(), getFeatureFlags()])
+  // together, so the shell pays one round trip for both instead of two. A
+  // teacher is sent to the docente portal from inside the session read.
+  const [staff, flags] = await Promise.all([getBackofficeSession(), getFeatureFlags()])
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
   // sidebar flashing open before hydration.
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
-
-  /* The docente portal is its own door now (`/docente`, own login, own
-     shell): a teacher who lands on the backoffice is sent there. Decided
-     server-side from the role on the session, never from anything on the
-     screen (CLAUDE.md §8). */
-  if (isRestrictedToOwnClassGroups(staff.role)) {
-    redirect({ href: '/docente/home', locale })
-  }
 
   /* The queue count behind the Payments badge, asked only by a cargo the API
      serves the queue to — anybody else would get a 403, and the badge would

@@ -1,19 +1,13 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listClassGroupRostersFor } from '@/lib/backoffice/mock-data'
-import { getTeacherSession } from '@/lib/backoffice/session'
-import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
+import { listOwnClassGroups } from '@/lib/docente/teaching'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { TeacherClassGroups } from './teacher-class-groups'
+import { ClassGroupList } from './class-group-list'
 
 /**
- * A class group leaves the teacher's portal when coordination closes it
- * (decision 08/10/2026): while it is only finished it stays, because the
- * final exam's grades and the report come after the last class.
- *
- * The teacher's working screen: their class groups as tabs, and under the open
- * tab the whole management of that group, student by student. The rosters come
- * scoped by the session's `teacherId` (CLAUDE.md §8) — and the check that
- * enforces it is the usecase in `apps/api`, not this line.
+ * The teacher's class groups, from `GET /teaching/class-groups` — scoped by
+ * the session in the API's usecase (CLAUDE.md §8), which also leaves out the
+ * ones coordination closed (decision 08/10/2026). Nothing here filters: what
+ * the API answers is what the teacher may open.
  */
 export default async function TeacherClassGroupsPage({
   params,
@@ -24,25 +18,25 @@ export default async function TeacherClassGroupsPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const [staff, settings] = await Promise.all([getTeacherSession(), getPlatformSettings()])
+  const groups = await listOwnClassGroups()
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('nav.my_class_groups')} />
-      {/* What "approved" means is the backoffice's (OOC-41). Without it the
-          grade sheet cannot tell pass from fail, so it says it could not load. */}
-      {settings ? (
-        <TeacherClassGroups
-          groups={listClassGroupRostersFor(staff).filter((group) => group.status !== 'closed')}
-          teacherName={`${staff.firstName} ${staff.lastName}`}
-          passingGrade={settings.passingGrade}
-        />
-      ) : (
+      {groups === null ? (
         <EmptyState
           icon="alert"
-          title={t('settings.rules_load_error_title')}
-          body={t('settings.rules_load_error_body')}
+          title={t('teacher_home.load_error_title')}
+          body={t('teacher_home.load_error_body')}
         />
+      ) : groups.length === 0 ? (
+        <EmptyState
+          icon="courses"
+          title={t('teacher_home.no_active_title')}
+          body={t('teacher_home.no_active_body')}
+        />
+      ) : (
+        <ClassGroupList groups={groups} />
       )}
     </div>
   )

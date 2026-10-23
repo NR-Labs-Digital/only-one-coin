@@ -38,7 +38,7 @@ entra aqui ou vira sessão nova.
 
 ---
 
-## Resumo (revisado em 22/10/2026)
+## Resumo (revisado em 23/10/2026)
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
@@ -57,7 +57,7 @@ Fora desta semana, de propósito: notas e frequência (37), certificados (45, OO
 
 | Frente | Tickets | Prazo |
 | --- | --- | --- |
-| Docentes | ~~OOC-79 (conta ↔ ficha, fim do `DEMO_TEACHER_ID`)~~ ✅ → OOC-82 (portal `/docente` sobre o PR #136, com dado real) + OOC-101 · OOC-81 (contrato) | 21 · 23 · 22/10 |
+| Docentes | ~~OOC-79 (conta ↔ ficha, fim do `DEMO_TEACHER_ID`)~~ ✅ → ~~OOC-82 (portal `/docente` sobre o PR #136, com dado real) + OOC-101~~ ✅ · OOC-81 (contrato) | 21 · 23 · 22/10 |
 | Configurações e catálogo | OOC-41 (parâmetros reais) · OOC-70 (editar curso, aposentar plano, editar/aposentar período) · OOC-61 (flags desligados visíveis para os donos) | 21 · 20 · 20/10 |
 | Pagos, Alunos, Auditoria | OOC-120 (ordenação por confiança, atalhos, reprocessar) · OOC-121 (exportar alunos) · OOC-122 (tela de auditoria) | 22 · 23 · 23/10 |
 
@@ -139,7 +139,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
 | 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75), abas Ativos · Ex-alunos · Sem matrícula com ativo = matrícula vigente (OOC-116). Medido com 30k alunos e ~100k matrículas (Postgres local, 15/10/2026): diretório ~70 ms por aba, busca do seletor ~5 ms. Em produção a aba levava 6–14 s: `enrollments.deleted_at` sem estatística, plano em *nested loop* — `ANALYZE` na `0030` (OOC-119) — medido em produção depois: 14,4 s → 35 ms. Falta exportação (OOC-121); suspensão está sem regra de negócio definida e sem ticket |
 | 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 (filtro de início das aulas, período rotulado como período de matrícula) e OOC-104 |
-| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | 🟡 OOC-77 (tabelas, trava, entidade), OOC-78 (CRUD na API; diretório, cadastro, ficha, disponibilidade e saída do quadro reais), OOC-80 (turma aponta para o docente do cadastro; turmas sem vínculo destacadas) e OOC-79 (convite liga a conta à ficha, `/me` com o `teacherId` real, docente lê a própria ficha) feitos. O portal próprio `/docente` entrou com o PR #136 (decisão de 18/10/2026): login e shell próprios, porta decidida pelo cargo, ficha real (só leitura); home, turmas, ficha de notas, avisos e agenda (`teacher.agenda`, desligada em produção) ainda leem mock e gravam só na tela. Faltam OOC-81 (contrato) e OOC-82 (dado real no portal) |
+| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | 🟡 OOC-77 (tabelas, trava, entidade), OOC-78 (CRUD na API; diretório, cadastro, ficha, disponibilidade e saída do quadro reais), OOC-80 (turma aponta para o docente do cadastro; turmas sem vínculo destacadas) e OOC-79 (convite liga a conta à ficha, `/me` com o `teacherId` real, docente lê a própria ficha) feitos. O portal próprio `/docente` entrou com o PR #136 (decisão de 18/10/2026) e, com a OOC-82, lê dado real: home, minhas turmas, a turma e a agenda vêm de `/teaching/*` (`.roles('teacher')`, escopo checado no usecase). **Critério cumprido:** `Teaching.integration.test.ts` prova no Postgres que o docente A não lê turma nem alunos do docente B (404, mesmo trocando o id), e `teaching-routes.test.ts` que o docente leva 403 em Pagos e na coordenação. Ficha de notas, avisos e acessos da turma ficam atrás de flag desligada em produção (`teacher.grades`, `teacher.notices`, `teacher.class_links`) até OOC-38/OOC-102 e OOC-98/OOC-100/OOC-94; a agenda continua atrás de `teacher.agenda`. Falta OOC-81 (contrato) |
 | 37 | **Frequência e notas** | Registro por sessão, interface para celular do docente, tolerante a conexão ruim | Funciona em 3G lento; perda de conexão não perde o registro | ⬜ OOC-38, OOC-102 |
 | 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados | ⬜ OOC-39 |
 | 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40). Home do painel com dado real (OOC-67), agregada ao vivo — exceção decidida pelo dono em 11/10/2026: os relatórios desta sessão seguem em view noturna, a home não ("matrículas de hoje" numa view noturna seria sempre zero) |

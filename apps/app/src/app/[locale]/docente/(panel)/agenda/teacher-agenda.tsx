@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import type { ClassGroupRow } from '@/lib/backoffice/types'
+
 import {
   addDays,
   addMonths,
@@ -13,7 +13,8 @@ import {
   weekDays,
   weekdayOf,
   type AgendaEvent,
-} from '@/lib/backoffice/agenda'
+  type AgendaClassGroup,
+} from '@/lib/docente/agenda'
 import {
   formatDate,
   formatMonthYear,
@@ -29,11 +30,8 @@ import { ClassLinks } from '@/components/backoffice/class-links'
  * The teacher's agenda, the way a calendar app reads: a week as a grid of
  * hours, a month as a wall calendar. Every class is a class group's weekly
  * slot landed on a date between its first and last day — derived, never
- * stored, so the agenda cannot disagree with the class groups.
- *
- * A class group carries its start time but not its length yet, so a class is
- * drawn one hour tall. That is a picture, not a rule: once the class group has
- * an end time, the block takes it.
+ * stored, so the agenda cannot disagree with the class groups. Each block is
+ * as long as its slot.
  */
 
 const VIEWS = ['week', 'month'] as const
@@ -43,8 +41,6 @@ type View = (typeof VIEWS)[number]
 const HOUR_START = 6
 const HOUR_END = 22
 const HOUR_PX = 48
-/** Drawn length of a class until the class group carries its own. */
-const VISUAL_DURATION_MIN = 60
 /** Chips a month cell shows before folding the rest into "+N". */
 const MONTH_CHIPS = 3
 
@@ -54,19 +50,22 @@ const HOURS = Array.from(
 )
 
 function eventKey(event: AgendaEvent): string {
-  return `${event.group.id}:${event.day}`
+  return `${event.group.id}:${event.day}:${event.startTime}`
 }
 
 export function TeacherAgenda({
   groups,
   today,
   nowMinutes,
+  classLinks,
 }: {
-  groups: ClassGroupRow[]
+  groups: AgendaClassGroup[]
   /** Today in Lima, `YYYY-MM-DD` — from the server, so both renders agree. */
   today: string
   /** Minutes since midnight in Lima when the page was served. */
   nowMinutes: number
+  /** `teacher.class_links`: the Meet and Classroom doors have no API yet (OOC-98). */
+  classLinks: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -173,7 +172,7 @@ export function TeacherAgenda({
                 {selected.group.courseName}
               </p>
               <p className="text-sm tabular-nums text-muted-foreground">
-                {`${t(`weekday_long.${weekdayOf(selected.day)}`)}, ${formatDate(selected.day, locale)} · ${selected.startTime}`}
+                {`${t(`weekday_long.${weekdayOf(selected.day)}`)}, ${formatDate(selected.day, locale)} · ${t('class_groups.time_range', { start: selected.startTime, end: selected.endTime })}`}
               </p>
               <p className="text-xs tabular-nums text-muted-foreground">
                 {`${selected.group.code} · ${selected.group.academicPeriodName}`}
@@ -195,9 +194,9 @@ export function TeacherAgenda({
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <ClassLinks group={selected.group} />
+            {classLinks && <ClassLinks group={{ meetUrl: null, classroomUrl: null }} />}
             <Link
-              href={`/docente/class-groups?group=${selected.group.id}`}
+              href={`/docente/class-groups/${selected.group.id}`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-blue transition hover:text-brand-blue-deep"
             >
               {t('agenda.open_class_group')}
@@ -249,7 +248,7 @@ function WeekView({
   onSelect,
 }: {
   days: string[]
-  groups: ClassGroupRow[]
+  groups: AgendaClassGroup[]
   today: string
   nowMinutes: number
   selectedKey: string | null
@@ -309,7 +308,7 @@ function WeekView({
                       ? 'border border-brand-blue/40 bg-sky text-brand-blue-deep hover:bg-sky-soft'
                       : 'bg-brand-blue text-white hover:bg-brand-blue-deep'
                   } ${active ? 'ring-2 ring-brand-yellow ring-offset-1' : ''}`}
-                  style={{ top, height: (VISUAL_DURATION_MIN / 60) * HOUR_PX - 2 }}
+                  style={{ top, height: (event.durationMinutes / 60) * HOUR_PX - 2 }}
                 >
                   <span className="truncate font-semibold">{event.group.courseName}</span>
                   <span className="truncate tabular-nums opacity-80">
@@ -345,7 +344,7 @@ function MonthView({
   onOpenDay,
 }: {
   anchor: string
-  groups: ClassGroupRow[]
+  groups: AgendaClassGroup[]
   today: string
   selectedKey: string | null
   onSelect: (event: AgendaEvent) => void

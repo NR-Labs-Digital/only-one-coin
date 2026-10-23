@@ -9,7 +9,7 @@ import {
   canManageTeachers,
 } from '@/lib/backoffice/permissions'
 import { BoIcon } from '@/components/backoffice/icons'
-import { TeacherFile } from './teacher-file'
+import { TeacherFile } from '@/components/backoffice/teachers/teacher-file'
 
 /**
  * One teacher's file: contact, what they are cleared to teach, when they are

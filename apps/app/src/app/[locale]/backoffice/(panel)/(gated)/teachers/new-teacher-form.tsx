@@ -14,10 +14,10 @@ import {
 import { Card, OptionalMark, RequiredMark } from '@/components/backoffice/ui'
 import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { BoIcon } from '@/components/backoffice/icons'
-import { AvailabilityFields, slotsAreValid } from './availability-fields'
+import { AvailabilityFields, slotsAreValid } from '@/components/backoffice/teachers/availability-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
-import { FieldMessage } from '../students/field-message'
-import { saveTeacher, type TeacherSaveFailure } from './save-teacher'
+import { FieldMessage } from '@/components/backoffice/field-message'
+import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'

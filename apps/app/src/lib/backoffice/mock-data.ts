@@ -10,7 +10,6 @@ import type {
   EmailMetrics,
   EmailSegment,
   PlanPrice,
-  StaffUser,
   StudentDetail,
 } from './types'
 
@@ -124,17 +123,6 @@ export function listClassGroups(): ClassGroupRow[] {
   })
 }
 
-export function getClassGroup(id: string): ClassGroupDetail | undefined {
-  const group = classGroups.find((item) => item.id === id)
-  if (!group) return undefined
-  return {
-    ...group,
-    students: serveStudents(group.students),
-    notices: group.notices ?? [],
-    pendingGrades: pendingGradesOf(group),
-  }
-}
-
 /**
  * The class groups with their rosters attached — what `listClassGroups()`
  * deliberately strips. Read by anything that has to count across every roster
@@ -148,92 +136,6 @@ export function listClassGroupRosters(): ClassGroupDetail[] {
     notices: group.notices ?? [],
     pendingGrades: pendingGradesOf(group),
   }))
-}
-
-/* -------------------------------------------------------------------------- */
-/* Teachers                                                                    */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The signed-in teacher's own figures, for the teacher home and the menu badge
- * until the teacher area reads the API (OOC-79, OOC-82). The roster and the
- * teacher file already read `apps/api` (OOC-78); no teacher is seeded here, so
- * this answers for nobody.
- */
-export interface TeacherWorkload {
-  studentCount: number
-  pendingGrades: number
-  pendingCertificates: number
-}
-
-const teacherIds: string[] = []
-
-/** Still enrolling or running — what counts as load right now. */
-function isRunning(group: Pick<ClassGroupRow, 'status'>): boolean {
-  return group.status === 'enrolling' || group.status === 'in_progress'
-}
-
-export function getTeacher(id: string): TeacherWorkload | undefined {
-  if (!teacherIds.includes(id)) return undefined
-  const own = classGroups.filter((group) => group.teacherId === id)
-  return {
-    studentCount: own.filter(isRunning).reduce((sum, group) => sum + group.seatsTaken, 0),
-    pendingGrades: own.reduce((sum, group) => sum + pendingGradesOf(group), 0),
-    pendingCertificates: own.reduce((sum, group) => sum + group.pendingCertificates, 0),
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Scoped reads — a teacher sees their own class groups, nobody else's         */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The class groups a staff member may list. For a teacher that is their own and
- * only their own (`docs/ARCHITECTURE.md` §3): the filter is built from the
- * session's `teacherId`, never from anything the client sent (CLAUDE.md §8).
- *
- * Here it narrows a mocked array; in production the same rule is the usecase in
- * `packages/domain` behind `apps/api`, and that one is what enforces it.
- */
-export function listClassGroupsFor(staff: StaffUser): ClassGroupRow[] {
-  const rows = listClassGroups()
-  if (staff.role !== 'teacher') return rows
-  return rows.filter((group) => ownsClassGroup(staff, group))
-}
-
-/**
- * A teacher with no file linked (`teacherId: null`) owns nothing — compared
- * bare, their null would match every class group still without a teacher.
- */
-function ownsClassGroup(staff: StaffUser, group: Pick<ClassGroupRow, 'teacherId'>): boolean {
-  return staff.teacherId !== null && group.teacherId === staff.teacherId
-}
-
-/**
- * Reading one class group under the same rule. A teacher asking for somebody
- * else's gets nothing back — not a hidden button, nothing: guessing the id in
- * the URL is the whole point of the check (anti-IDOR, CLAUDE.md §8).
- */
-export function getClassGroupFor(
-  staff: StaffUser,
-  id: string,
-): ClassGroupDetail | undefined {
-  const group = getClassGroup(id)
-  if (!group) return undefined
-  if (staff.role === 'teacher' && !ownsClassGroup(staff, group)) return undefined
-  return group
-}
-
-/**
- * The rosters a staff member may read whole — the teacher's working screen
- * needs every student of every one of their class groups at once. Same rule
- * as the two reads above: the filter comes from the session, and the check
- * that counts is the usecase in `apps/api` (CLAUDE.md §8).
- */
-export function listClassGroupRostersFor(staff: StaffUser): ClassGroupDetail[] {
-  const rosters = listClassGroupRosters()
-  if (staff.role !== 'teacher') return rosters
-  return rosters.filter((group) => ownsClassGroup(staff, group))
 }
 
 /* -------------------------------------------------------------------------- */

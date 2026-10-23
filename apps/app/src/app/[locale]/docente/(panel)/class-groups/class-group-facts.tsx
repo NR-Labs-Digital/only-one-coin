@@ -2,22 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { ClassGroupRow } from '@/lib/backoffice/types'
+import type { TeachingClassGroup } from '@/lib/docente/teaching'
+import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDate, type Locale } from '@/lib/format'
 import { BoIcon } from '@/components/backoffice/icons'
 
 /**
  * The three facts that tell one class group from another, each under its own
  * label: the code (with a copy button — it is what the teacher pastes into
- * a message to coordination), the days and time, and the start and end of the
- * module the group is running. Shared by the list card and the open group's
- * header, so both read the same way.
+ * a message to coordination), the week's slots, and the start and end of the
+ * module the group is running.
  */
 export function ClassGroupFacts({
   group,
   className = '',
 }: {
-  group: Pick<ClassGroupRow, 'code' | 'weekdays' | 'startTime' | 'startDate' | 'endDate'>
+  group: Pick<TeachingClassGroup, 'code' | 'slots' | 'startsOn' | 'endsOn'>
   className?: string
 }) {
   const t = useTranslations('bo')
@@ -32,15 +32,13 @@ export function ClassGroupFacts({
         </span>
       </Fact>
       <Fact label={t('class_facts.schedule')}>
-        <span className="tabular-nums">
-          {`${group.weekdays.map((day) => t(`weekday.${day}`)).join(' · ')} · ${group.startTime}`}
-        </span>
+        <span className="tabular-nums">{slotsLabel(group.slots, t)}</span>
       </Fact>
       <Fact label={t('class_group.field_start')}>
-        <span className="tabular-nums">{formatDate(group.startDate, locale)}</span>
+        <span className="tabular-nums">{group.startsOn ? formatDate(group.startsOn, locale) : '—'}</span>
       </Fact>
       <Fact label={t('class_group.field_end')}>
-        <span className="tabular-nums">{formatDate(group.endDate, locale)}</span>
+        <span className="tabular-nums">{group.endsOn ? formatDate(group.endsOn, locale) : '—'}</span>
       </Fact>
     </dl>
   )

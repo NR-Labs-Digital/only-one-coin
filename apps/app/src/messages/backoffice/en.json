@@ -1189,15 +1189,7 @@
       "limited_note": "ID document and contact are shown only to management and enrollment supervision."
     },
     "teacher_groups": {
-      "certificates_link": "Certificate issuing",
-      "grades_title": "Grades",
-      "exam_grade_label": "Final exam grade",
-      "final_grade_label": "Module final grade",
-      "save": "Save grades",
       "not_started": "The class group has not started yet — grades are recorded during the module.",
-      "closed_readonly": "Class group closed: grades remain as history.",
-      "locked_certificate": "Certificate already issued — the grade closed with it.",
-      "locked_procedure": "The student left the class group through a procedure; no grade is recorded.",
       "notes_title": "Notes",
       "notes_placeholder": "Write a note about {name}…",
       "notes_add": "Add note",
@@ -1538,17 +1530,11 @@
       "metric_class_groups_hint": "{total} in total",
       "metric_students": "Students",
       "metric_students_hint": "In the class groups you run now",
-      "metric_pending_grades": "Pending grades",
-      "metric_pending_grades_hint": "Students with no final grade",
-      "metric_pending_certificates": "Certificates to issue",
-      "metric_pending_certificates_hint": "25 business days from the end of the class group",
-      "owing_title": "Class groups owing certificates",
-      "owing_subtitle": "They finished and still owe a certificate.",
-      "class_groups_subtitle": "Everything you run, current and closed.",
-      "no_class_groups_title": "No class groups",
-      "no_class_groups_body": "You have no class groups allocated this period.",
-      "grades_owing_title": "Class groups with pending grades",
-      "grades_owing_subtitle": "A certificate cannot go out while a final grade is missing."
+      "class_groups_subtitle": "What you teach now and what has finished, until coordination closes it.",
+      "no_active_title": "You have no active courses",
+      "no_active_body": "When coordination assigns you a class group, it shows up here. Closed class groups leave the portal.",
+      "load_error_title": "We could not load your class groups",
+      "load_error_body": "Try again in a few minutes. If it keeps happening, let coordination know."
     },
     "team": {
       "title": "Team",
@@ -1824,7 +1810,10 @@
         "backoffice_staff": "Team",
         "backoffice_settings": "Settings",
         "teacher": "Teacher panel",
-        "teacher_agenda": "Agenda"
+        "teacher_agenda": "Agenda",
+        "teacher_grades": "Grades and certificates",
+        "teacher_notices": "Notices to the class group",
+        "teacher_class_links": "Class group links"
       },
       "details_label": "Details for {name}",
       "source": {
@@ -1910,9 +1899,9 @@
     "teacher_portal": {
       "badge": "Teacher",
       "brand_title": "Your classes, in one place.",
-      "highlight_grades": "Record and edit grades",
-      "highlight_schedule": "Your schedule and requests",
-      "highlight_classes": "Meet and Classroom for each class",
+      "highlight_students": "The students of every class group",
+      "highlight_schedule": "Your days and times, class group by class group",
+      "highlight_profile": "Your file, always at hand",
       "login_title": "Teacher portal",
       "login_subtitle": "Sign in with the account coordination gave you.",
       "nav_group": "My teaching",
@@ -1958,8 +1947,6 @@
     },
     "class_list": {
       "back": "My classes",
-      "module": "Module {module}",
-      "pending_grades": "{count, plural, one {# grade pending} other {# grades pending}}",
       "students_title": "Students ({count})",
       "notes_button": "{count, plural, =0 {Notes} other {Notes (#)}}",
       "final_warning": "Once posted, a grade cannot be changed.",
@@ -1967,7 +1954,6 @@
       "post": "Post grade",
       "grades_locked": "Posted grades cannot be changed.",
       "col_class": "Class",
-      "col_pending": "Pending grades",
       "confirm_cta": "Confirm",
       "back_to_edit": "Back",
       "posted_toast": "Grade posted",
@@ -1986,9 +1972,7 @@
       "did_not_sit_short": "Did not sit",
       "add_grade": "Grade",
       "add_grade_title": "Final exam grade",
-      "confirm_grade_title": "Confirm final exam grade",
-      "empty_title": "No classes right now",
-      "empty_body": "When coordination assigns you a class, it shows up here. Closed classes leave the list."
+      "confirm_grade_title": "Confirm final exam grade"
     },
     "class_facts": {
       "code": "Class code",

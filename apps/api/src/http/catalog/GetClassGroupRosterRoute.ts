@@ -63,8 +63,8 @@ export function shapeRoster(role: Role, rows: ClassGroupRosterRow[]): z.infer<ty
 
 // Who is enrolled in a class group — the base the teacher view, grades,
 // procedures and the certificate batch build on. A teacher is not a catalog
-// reader: their roster comes with their own scope (Sessão 36), checked against
-// the authenticated teacher_id, never through this route.
+// reader: their roster is `/teaching/class-groups/:id/students` (OOC-82),
+// names only, checked against the session's teacher — never this route.
 // No rate limit yet (docs/ROADMAP.md Sessão 25).
 export const getClassGroupRosterRoute = RouteBuilder.get("/catalog/class-groups/:id/roster")
   .docs({

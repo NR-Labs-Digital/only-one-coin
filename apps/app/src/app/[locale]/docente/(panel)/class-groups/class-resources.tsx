@@ -21,10 +21,19 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  *
  * External links only, never an integration (CLAUDE.md §2), and each one is
  * checked against the Google host it claims before it becomes an `href`.
- * The write is screen-local, like the rest of the mock: the real one is a
- * usecase in `apps/api` that compares the authenticated `teacher_id` with the
- * class group's (CLAUDE.md §8).
+ * None of these links has an API yet (OOC-98, OOC-100, OOC-94), so the card is
+ * drawn only behind `teacher.class_links`, off in production, and the write is
+ * screen-local: the real one is a usecase in `apps/api` that compares the
+ * authenticated `teacher_id` with the class group's (CLAUDE.md §8).
  */
+export const NO_CLASS_LINKS = {
+  meetUrl: null,
+  classroomUrl: null,
+  moduleNumber: null,
+  moduleMaterialsUrl: null,
+  studentClassroomUrl: null,
+} as const
+
 export function ClassResources({
   group,
 }: {

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { ClassGroupStudent } from '@/lib/backoffice/types'
 import { formatNumber, type Locale } from '@/lib/format'
 import {
   Dialog,
@@ -13,11 +12,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { BoIcon } from '@/components/backoffice/icons'
-import { DA_MARK, parseGrade } from './grade-sheet'
+import { DA_MARK, parseGrade, type GradeSheetRow } from './grade-sheet'
 
 /** What the batch posts for one student — only the cells that were filled. */
 export interface BatchEntry {
-  studentId: string
+  enrollmentId: string
   /** The final exam's grade, or `'da'` for the exam not sat. */
   grade: number | 'da'
 }
@@ -45,7 +44,7 @@ export function BatchGrades({
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Students whose final-exam grade is still open. */
-  students: ClassGroupStudent[]
+  students: GradeSheetRow[]
   onPost: (entries: BatchEntry[]) => void
 }) {
   const t = useTranslations('bo')
@@ -63,13 +62,13 @@ export function BatchGrades({
     !row.da && row.grade.trim() !== '' && parseGrade(row.grade) === null
 
   const entries: BatchEntry[] = students.flatMap((student): BatchEntry[] => {
-    const row = rowOf(student.studentId)
-    if (row.da) return [{ studentId: student.studentId, grade: 'da' as const }]
+    const row = rowOf(student.enrollmentId)
+    if (row.da) return [{ enrollmentId: student.enrollmentId, grade: 'da' as const }]
     const grade = parseGrade(row.grade)
-    return grade === null ? [] : [{ studentId: student.studentId, grade }]
+    return grade === null ? [] : [{ enrollmentId: student.enrollmentId, grade }]
   })
 
-  const anyInvalid = students.some((student) => invalid(rowOf(student.studentId)))
+  const anyInvalid = students.some((student) => invalid(rowOf(student.enrollmentId)))
 
   function close() {
     onOpenChange(false)
@@ -82,7 +81,7 @@ export function BatchGrades({
     close()
   }
 
-  const nameOf = (id: string) => students.find((s) => s.studentId === id)?.fullName ?? ''
+  const nameOf = (id: string) => students.find((s) => s.enrollmentId === id)?.fullName ?? ''
 
   const cellClass = (invalid: boolean) =>
     `w-20 rounded-lg border bg-white px-2 py-1.5 text-center text-sm tabular-nums text-ink outline-none transition focus:ring-2 disabled:bg-slate-50 disabled:text-slate-400 ${
@@ -116,8 +115,8 @@ export function BatchGrades({
             <tbody>
               {reviewing
                 ? entries.map((entry) => (
-                    <tr key={entry.studentId} className="border-t border-line">
-                      <td className="py-2.5 pr-3 font-semibold text-ink">{nameOf(entry.studentId)}</td>
+                    <tr key={entry.enrollmentId} className="border-t border-line">
+                      <td className="py-2.5 pr-3 font-semibold text-ink">{nameOf(entry.enrollmentId)}</td>
                       <td
                         className={`py-2.5 text-center font-semibold tabular-nums ${
                           entry.grade === 'da' ? 'text-red-700' : 'text-ink'
@@ -128,9 +127,9 @@ export function BatchGrades({
                     </tr>
                   ))
                 : students.map((student) => {
-                    const row = rowOf(student.studentId)
+                    const row = rowOf(student.enrollmentId)
                     return (
-                      <tr key={student.studentId} className="border-t border-line">
+                      <tr key={student.enrollmentId} className="border-t border-line">
                         <td className="py-2 pr-3 font-semibold text-ink">{student.fullName}</td>
                         <td className="py-2 text-center">
                           <span className="inline-flex items-center gap-2">
@@ -142,13 +141,13 @@ export function BatchGrades({
                               disabled={row.da}
                               placeholder={t('class_list.placeholder_grade')}
                               aria-label={`${t('grade_report.col_exam')} — ${student.fullName}`}
-                              onChange={(event) => update(student.studentId, { grade: event.target.value })}
+                              onChange={(event) => update(student.enrollmentId, { grade: event.target.value })}
                               className={cellClass(invalid(row))}
                             />
                             <button
                               type="button"
                               aria-pressed={row.da}
-                              onClick={() => update(student.studentId, { da: !row.da })}
+                              onClick={() => update(student.enrollmentId, { da: !row.da })}
                               className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
                                 row.da
                                   ? 'border-red-200 bg-red-50 text-red-700'

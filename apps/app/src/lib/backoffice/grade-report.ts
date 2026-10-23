@@ -1,4 +1,4 @@
-import type { ClassGroupStudent } from './types'
+import type { GradeStatus } from './types'
 
 /**
  * The grade report of a finished class group, as a CSV the teacher downloads.
@@ -14,7 +14,7 @@ export interface GradeReportLabels {
   /** The final exam's grade — the module's one grade. */
   grade: string
   status: string
-  statusOf: (status: ClassGroupStudent['gradeStatus']) => string
+  statusOf: (status: GradeStatus) => string
 }
 
 /**
@@ -31,13 +31,18 @@ function cell(value: string | number | null): string {
   return /[",\n\r;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
+/** What the report reads of a student — and all it can write: the name and the grade. */
+export interface GradeReportRow {
+  fullName: string
+  finalGrade: number | null
+  gradeStatus: GradeStatus
+}
+
 export function gradeReportCsv(
-  roster: ClassGroupStudent[],
+  roster: GradeReportRow[],
   labels: GradeReportLabels,
 ): string {
   const rows = [...roster]
-    /* Somebody moved out by a procedure left the class, not a grade behind. */
-    .filter((student) => student.procedure === null)
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
     .map((student) =>
       [
