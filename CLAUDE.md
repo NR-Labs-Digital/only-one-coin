@@ -123,6 +123,7 @@ Se algo parecer exigir um desses, **pare e pergunte**.
 | DNS | **Cloudflare** (só DNS) | nameservers já no Cloudflare |
 | Backup | `pg_dump` → Tigris (`only-one-coin-backups`) **a cada deploy da API**, antes da migration; retenção de 30 dias | em uso. Backup agendado arquivado (07/10/2026) — o por deploy é a política |
 | Observabilidade | **Sentry** + **PostHog** (EU Cloud) | escolhidos, **não instalados** |
+| Templates editáveis (documentos, e-mail) | **LiquidJS**, embrulhado em `packages/templates` (decisão 23/10/2026, OOC-123) | engine pronta; ainda sem consumidor |
 
 Não trocar nada disso sem me perguntar. **Avaliados e descartados:** Clerk, Pinecone, Resend, Cloudflare CDN, Netlify, Upstash, Zoho Mail, chamada direta ao Google (`@google/genai`), o provedor de backend gerenciado que cobria Postgres + auth + storage. Realtime não tem uso hoje — decidir quando aparecer o primeiro.
 
@@ -133,6 +134,7 @@ Não trocar nada disso sem me perguntar. **Avaliados e descartados:** Clerk, Pin
 - **Redis self-hospedado, sem Upstash** (03/10/2026). **Em aberto (OOC-119):** o `redis-nrlabs` roda em `iad` e a API em `gru`, então todo request paga ~140 ms de rate limit antes de qualquer SQL (até o `/health`). Mover ou ter um Redis em `gru` é decisão do repo NR-Labs/services, que é compartilhado.
   O porquê do self-hospedado: o pay-as-you-go cobra por comando e o BullMQ é conversador. Custo aceito: rajada contra a rota pública chega ao processo da API, que recusa com 429 antes do banco. Users de ACL do Redis precisam de `+info`, senão o BullMQ derruba o boot com `NOPERM` (incidente de 03/10/2026).
 - **OCR via OpenRouter** (02/10/2026): o nível 2 exige outra família, e com uma chave só o nível vira um id de modelo (`RECEIPT_OCR_TIER1_MODEL`/`RECEIPT_OCR_TIER2_MODEL`); o boot recusa nível 2 da mesma família do 1. Custo: um intermediário a mais com dado pessoal (Ley 29733) — por isso a chamada exige **retenção zero** (`zdr`), sem coleta de dados e `require_parameters`. Detalhe em `apps/api/CLAUDE.md`.
+- **LiquidJS para template editável** (23/10/2026): LiquidJS ou Handlebars eram aceitos; LiquidJS ganhou por ser feito para texto editado pelo usuário final (sem código, limite de render) e por ter análise estática — o placeholder errado é recusado ao salvar, com linha e coluna, sem renderizar. **Todo template reutilizável do projeto passa por `packages/templates`**, nunca por um `new Liquid()` solto: é lá que vivem as travas (sem `include`/`render`/`layout`, escape, modo estrito) e os filtros `money`/`local_date`. Detalhe no `README.md` do pacote.
 - **Google Workspace, não Zoho** (07/10/2026): o domínio já roda no Workspace; Brevo não hospeda caixa, então Brevo envia e o Workspace recebe.
 - **Better Auth** é biblioteca, não serviço: `role` travado contra escrita do cliente (`additionalFields.role`, `input:false`). Padrão de integração em `docs/ARCHITECTURE.md` §5.6.
 - **Autorização na camada de aplicação, não em RLS** — motivo em `docs/ARCHITECTURE.md` §2. RLS pode voltar como defesa extra, nunca como o mecanismo de aceite.
@@ -150,9 +152,10 @@ packages/
   db/                schema + migrations (Drizzle Kit) + seed — mesma DATABASE_URL local/Neon
   notifications/     NotificationProvider, templates de e-mail trilíngues, adapter Brevo e guarda de allowlist
   ocr/               adapter OpenRouter do OCR (um por nível, só muda o modelo) atrás da porta IReceiptExtractor do domínio — só os workers de apps/api importam
+  templates/         engine de templates do projeto (LiquidJS travado): tipo de template = schema zod dos placeholders + amostra pro preview; check estático, render com escape e formatação nossa
 ```
 
-Hoje existem `domain/`, `queue/`, `notifications/`, `ocr/` e `db/`. `i18n` e `shared` não viraram pacote — cada app tem as próprias mensagens (`apps/*/src/i18n/`, `apps/*/src/messages/`) e não há tipo/utilitário cross-app que já justifique extrair um `packages/shared`.
+Hoje existem `domain/`, `queue/`, `notifications/`, `ocr/`, `templates/` e `db/`. `i18n` e `shared` não viraram pacote — cada app tem as próprias mensagens (`apps/*/src/i18n/`, `apps/*/src/messages/`) e não há tipo/utilitário cross-app que já justifique extrair um `packages/shared`.
 
 ---
 

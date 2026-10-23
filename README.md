@@ -16,6 +16,7 @@ Plataforma académica da **Only One Coin** (`INGLES POR UN SOL S.A.C.`, RUC 2061
 | `packages/queue` | Contrato de fila (jobs, producers) | — |
 | `packages/notifications` | Templates de e-mail trilíngues, adapter Brevo, allowlist | — |
 | `packages/ocr` | Adapter OpenRouter da leitura de comprovante | — |
+| `packages/templates` | Engine de templates editáveis (LiquidJS travado) — [como usar](packages/templates/README.md) | — |
 
 Stack e regras: [`CLAUDE.md`](CLAUDE.md), com um `CLAUDE.md` por app/pacote. Deploy automático a cada push em `main` (`.github/workflows/`).
 
