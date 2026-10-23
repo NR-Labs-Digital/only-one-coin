@@ -36,6 +36,10 @@ import {
   SetTeacherRosterStatusUseCase,
   UpdateTeacherAvailabilityUseCase,
   UpdateTeacherUseCase,
+  ListOwnClassGroupsUseCase,
+  GetOwnClassGroupUseCase,
+  ListOwnClassGroupStudentsUseCase,
+  GetTeachingSummaryUseCase,
   UpdateStudentUseCase,
   SaveGuardianUseCase,
   RenamePlanUseCase,
@@ -88,6 +92,7 @@ import {
   type IStaffUserLookup,
   type IStudentRepository,
   type ITeacherRepository,
+  type ITeachingReader,
   type IUserRoleRepository,
 } from "@ooc/domain";
 import { loadConfig, type Config } from "./config.js";
@@ -168,6 +173,7 @@ import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.j
 import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroupsQuery.js";
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
 import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
+import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
@@ -188,6 +194,8 @@ export interface AppRepositories {
   student: IStudentRepository;
   guardian: IGuardianRepository;
   teacher: ITeacherRepository;
+  /** The docente portal's reads (OOC-82) — scoped by the usecases, not here. */
+  teaching: ITeachingReader;
   enrollment: IEnrollmentRepository;
   publicEnrollment: IPublicEnrollmentRepository;
   seatHold: ISeatHoldRepository;
@@ -219,6 +227,13 @@ export interface AppUseCases {
     update: UpdateTeacherUseCase;
     updateAvailability: UpdateTeacherAvailabilityUseCase;
     setRosterStatus: SetTeacherRosterStatusUseCase;
+  };
+  /** The docente portal: every read scoped by the session's account (OOC-82). */
+  teaching: {
+    listOwnClassGroups: ListOwnClassGroupsUseCase;
+    getOwnClassGroup: GetOwnClassGroupUseCase;
+    listOwnClassGroupStudents: ListOwnClassGroupStudentsUseCase;
+    summary: GetTeachingSummaryUseCase;
   };
   student: {
     register: RegisterStudentUseCase;
@@ -595,6 +610,9 @@ function buildContainer(): AppContainer {
   const listInvitableTeachers = new ListInvitableTeachersQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
   const classGroupRoster = new ClassGroupRosterQuery(db);
+  const teachingReader = new DrizzleTeachingReader(db, classGroupRoster);
+  const listOwnClassGroups = new ListOwnClassGroupsUseCase(teacherRepository, teachingReader);
+  const getOwnClassGroup = new GetOwnClassGroupUseCase(teacherRepository, teachingReader);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
@@ -634,6 +652,7 @@ function buildContainer(): AppContainer {
       student: studentRepository,
       guardian: guardianRepository,
       teacher: teacherRepository,
+      teaching: teachingReader,
       enrollment: enrollmentRepository,
       publicEnrollment: publicEnrollmentRepository,
       seatHold: seatHoldRepository,
@@ -654,6 +673,12 @@ function buildContainer(): AppContainer {
         update: updateTeacher,
         updateAvailability: updateTeacherAvailability,
         setRosterStatus: setTeacherRosterStatus,
+      },
+      teaching: {
+        listOwnClassGroups,
+        getOwnClassGroup,
+        listOwnClassGroupStudents: new ListOwnClassGroupStudentsUseCase(getOwnClassGroup, teachingReader),
+        summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
       },
       student: {
         register: registerStudent,
