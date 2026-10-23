@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
 import type { Locale } from '@/lib/format'
-import { AccountScreen } from './account-screen'
+import { AccountScreen } from '@/components/backoffice/account/account-screen'
 
 /** The reader's own access, in the backoffice. See `AccountScreen`. */
 export default async function AccountPage({

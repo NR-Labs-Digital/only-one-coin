@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server'
 import { getTeacherSession } from '@/lib/backoffice/session'
 import type { Locale } from '@/lib/format'
-import { AccountScreen } from '../../../backoffice/(panel)/(gated)/account/account-screen'
+import { AccountScreen } from '@/components/backoffice/account/account-screen'
 
 /** The teacher's own access — the same screen as the backoffice's, own door. */
 export default async function TeacherAccountPage({

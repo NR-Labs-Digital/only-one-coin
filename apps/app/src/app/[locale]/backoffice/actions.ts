@@ -13,10 +13,3 @@ export async function logoutStaff() {
   const locale = await getLocale()
   redirect({ href: '/backoffice', locale })
 }
-
-/** Same sign-out, landing back on the docente portal's own login. */
-export async function logoutTeacher() {
-  await signOutSession()
-  const locale = await getLocale()
-  redirect({ href: '/docente', locale })
-}
