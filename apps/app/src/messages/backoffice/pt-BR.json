@@ -1189,15 +1189,7 @@
       "limited_note": "Documento e contato só aparecem para a administração e a supervisão de matrículas."
     },
     "teacher_groups": {
-      "certificates_link": "Emissão de certificados",
-      "grades_title": "Notas",
-      "exam_grade_label": "Nota do exame final",
-      "final_grade_label": "Nota final do módulo",
-      "save": "Salvar notas",
       "not_started": "A turma ainda não começou — as notas são registradas durante o módulo.",
-      "closed_readonly": "Turma encerrada: as notas ficam como histórico.",
-      "locked_certificate": "Certificado já emitido — a nota fechou com ele.",
-      "locked_procedure": "O aluno saiu da turma por um trâmite; não recebe nota.",
       "notes_title": "Anotações",
       "notes_placeholder": "Escreva uma anotação sobre {name}…",
       "notes_add": "Adicionar anotação",
@@ -1538,17 +1530,11 @@
       "metric_class_groups_hint": "{total} no total",
       "metric_students": "Alunos",
       "metric_students_hint": "Nas turmas que você dá agora",
-      "metric_pending_grades": "Notas pendentes",
-      "metric_pending_grades_hint": "Alunos sem nota final",
-      "metric_pending_certificates": "Certificados a emitir",
-      "metric_pending_certificates_hint": "25 dias úteis desde o fim da turma",
-      "owing_title": "Turmas com certificado pendente",
-      "owing_subtitle": "Terminaram e ainda devem certificado.",
       "class_groups_subtitle": "Tudo o que você dá, em andamento e fechado.",
-      "no_class_groups_title": "Sem turmas",
-      "no_class_groups_body": "Você ainda não tem turmas atribuídas neste período.",
-      "grades_owing_title": "Turmas com notas pendentes",
-      "grades_owing_subtitle": "O certificado não sai enquanto faltar nota final."
+      "no_active_title": "Você não tem cursos ativos",
+      "no_active_body": "Quando a coordenação te atribuir uma turma, ela aparece aqui. Turmas encerradas saem do portal.",
+      "load_error_title": "Não conseguimos carregar suas turmas",
+      "load_error_body": "Tente de novo em alguns minutos. Se continuar, avise a coordenação."
     },
     "team": {
       "title": "Equipe",
@@ -1824,7 +1810,10 @@
         "backoffice_staff": "Equipe",
         "backoffice_settings": "Configuração",
         "teacher": "Painel do docente",
-        "teacher_agenda": "Agenda"
+        "teacher_agenda": "Agenda",
+        "teacher_grades": "Notas e certificados",
+        "teacher_notices": "Avisos à turma",
+        "teacher_class_links": "Acessos da turma"
       },
       "details_label": "Detalhes de {name}",
       "source": {
@@ -1910,9 +1899,9 @@
     "teacher_portal": {
       "badge": "Docente",
       "brand_title": "Suas turmas, num só lugar.",
-      "highlight_grades": "Lance e edite notas",
-      "highlight_schedule": "Seus horários e solicitações",
-      "highlight_classes": "Meet e Classroom de cada turma",
+      "highlight_students": "Os alunos de cada turma",
+      "highlight_schedule": "Seus dias e horários, turma por turma",
+      "highlight_profile": "Sua ficha, sempre à mão",
       "login_title": "Portal do docente",
       "login_subtitle": "Entre com a conta que a coordenação te passou.",
       "nav_group": "Minhas aulas",
@@ -1958,8 +1947,6 @@
     },
     "class_list": {
       "back": "Minhas turmas",
-      "module": "Módulo {module}",
-      "pending_grades": "{count, plural, one {# nota pendente} other {# notas pendentes}}",
       "students_title": "Alunos ({count})",
       "notes_button": "{count, plural, =0 {Observações} other {Observações (#)}}",
       "final_warning": "Depois de lançada, a nota não pode ser alterada.",
@@ -1967,7 +1954,6 @@
       "post": "Lançar nota",
       "grades_locked": "As notas lançadas não se alteram.",
       "col_class": "Turma",
-      "col_pending": "Notas pendentes",
       "confirm_cta": "Confirmar",
       "back_to_edit": "Voltar",
       "posted_toast": "Nota lançada",
@@ -1986,9 +1972,7 @@
       "did_not_sit_short": "Não fez",
       "add_grade": "Nota",
       "add_grade_title": "Nota do exame final",
-      "confirm_grade_title": "Confirmar nota do exame final",
-      "empty_title": "Nenhuma turma no momento",
-      "empty_body": "Quando a coordenação alocar uma turma para você, ela aparece aqui. Turmas fechadas saem da lista."
+      "confirm_grade_title": "Confirmar nota do exame final"
     },
     "class_facts": {
       "code": "Código da turma",

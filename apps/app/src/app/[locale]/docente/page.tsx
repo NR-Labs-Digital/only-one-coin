@@ -24,10 +24,12 @@ export default async function TeacherLoginPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo.teacher_portal')
 
+  /* What the portal does today, no more: grades and the class's links are
+     not on the air yet (OOC-82), and a login page is no place to promise them. */
   const highlights = [
-    { icon: 'edit' as const, title: t('highlight_grades') },
+    { icon: 'students' as const, title: t('highlight_students') },
     { icon: 'clock' as const, title: t('highlight_schedule') },
-    { icon: 'video' as const, title: t('highlight_classes') },
+    { icon: 'teachers' as const, title: t('highlight_profile') },
   ]
 
   return (

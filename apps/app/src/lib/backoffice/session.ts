@@ -18,8 +18,8 @@ import type { StaffUser } from './types'
  * that one goes to the login's enrollment step, not back to the password.
  *
  * A `teacher` account carries the id of the teacher file it is linked to
- * (`teachers.user_id`, OOC-79), or null when no file links to it — every
- * docente screen then scopes them down to nothing.
+ * (`teachers.user_id`, OOC-79), or null when no file links to it — the API
+ * then scopes every docente read down to nothing (`/teaching`, OOC-82).
  *
  * Memoized per request (`cache`, same pattern as the feature-flag reads in
  * `lib/feature-flags/server.ts`): the panel's shell and its gate both need
@@ -44,6 +44,23 @@ export const getStaffSession = cache(
   return (await response.json()) as StaffUser
   },
 )
+
+/**
+ * The signed-in staff member, for the backoffice shell — the backoffice's side
+ * of the door. A teacher has nothing here: the docente portal is their door
+ * (`/docente`, own login, own shell), and they are sent there, decided from
+ * the role on the session, never from anything on the screen (CLAUDE.md §8).
+ * That redirect is the only place the backoffice names the teacher cargo.
+ */
+export const getBackofficeSession = cache(async (): Promise<StaffUser> => {
+  const staff = await getStaffSession()
+  if (staff.role === 'teacher') {
+    const locale = await getLocale()
+    redirect({ href: '/docente/home', locale })
+    throw new Error('unreachable')
+  }
+  return staff
+})
 
 /**
  * The signed-in teacher, for the docente portal (`/docente`). The portal is

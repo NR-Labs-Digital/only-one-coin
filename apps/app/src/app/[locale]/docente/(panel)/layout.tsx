@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutTeacher } from '../actions'
-import { getTeacher } from '@/lib/backoffice/mock-data'
 import { getTeacherSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { initials } from '@/lib/format'
@@ -44,9 +43,9 @@ export default async function TeacherPanelLayout({
   const [staff, flags] = await Promise.all([getTeacherSession(), getFeatureFlags()])
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
 
-  /* The badge is the teacher's own queue — the final grades still open
-     across their class groups. It is what the portal gets opened for. */
-  const pendingGrades = staff.teacherId ? (getTeacher(staff.teacherId)?.pendingGrades ?? 0) : 0
+  /* No badge on "My class groups" yet: what it would count — the final
+     grades still open — has no API until OOC-38. A zero would say "nothing
+     owed" about something nobody can record. */
 
   const groups: BoNavGroup[] = [
     {
@@ -61,7 +60,6 @@ export default async function TeacherPanelLayout({
           key: 'class_groups',
           href: '/docente/class-groups',
           label: t('nav.my_class_groups'),
-          badge: pendingGrades,
         },
         ...(flags['teacher.agenda']
           ? [
