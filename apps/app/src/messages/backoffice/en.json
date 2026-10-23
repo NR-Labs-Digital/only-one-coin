@@ -1530,7 +1530,7 @@
       "metric_class_groups_hint": "{total} in total",
       "metric_students": "Students",
       "metric_students_hint": "In the class groups you run now",
-      "class_groups_subtitle": "Everything you run, current and closed.",
+      "class_groups_subtitle": "What you teach now and what has finished, until coordination closes it.",
       "no_active_title": "You have no active courses",
       "no_active_body": "When coordination assigns you a class group, it shows up here. Closed class groups leave the portal.",
       "load_error_title": "We could not load your class groups",

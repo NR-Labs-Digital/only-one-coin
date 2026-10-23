@@ -1530,7 +1530,7 @@
       "metric_class_groups_hint": "{total} no total",
       "metric_students": "Alunos",
       "metric_students_hint": "Nas turmas que você dá agora",
-      "class_groups_subtitle": "Tudo o que você dá, em andamento e fechado.",
+      "class_groups_subtitle": "O que você dá agora e o que já terminou, até a coordenação encerrar.",
       "no_active_title": "Você não tem cursos ativos",
       "no_active_body": "Quando a coordenação te atribuir uma turma, ela aparece aqui. Turmas encerradas saem do portal.",
       "load_error_title": "Não conseguimos carregar suas turmas",

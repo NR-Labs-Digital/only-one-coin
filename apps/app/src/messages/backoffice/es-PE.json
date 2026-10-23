@@ -1530,7 +1530,7 @@
       "metric_class_groups_hint": "{total} en total",
       "metric_students": "Alumnos",
       "metric_students_hint": "En las aulas que dictas ahora",
-      "class_groups_subtitle": "Todo lo que dictas, en curso y cerrado.",
+      "class_groups_subtitle": "Lo que dictas ahora y lo que ya terminó, hasta que coordinación lo cierre.",
       "no_active_title": "No tienes cursos activos",
       "no_active_body": "Cuando coordinación te asigne un aula, aparece aquí. Las aulas cerradas salen del portal.",
       "load_error_title": "No pudimos cargar tus aulas",
