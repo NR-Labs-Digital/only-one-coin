@@ -3,13 +3,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getClassGroupFor, listClassGroupsFor } from '@/lib/backoffice/mock-data'
 import { getTeacherSession } from '@/lib/backoffice/session'
-import {
-  addBusinessDays,
-  businessDaysUntil,
-  CERTIFICATE_DEADLINE_BUSINESS_DAYS,
-} from '@/lib/backoffice/certificates'
+import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, type Locale } from '@/lib/format'
-import { Card, Field, Meter, StatusBadge } from '@/components/backoffice/ui'
+import { Card, EmptyState, Field, Meter, StatusBadge } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { ClassLinks } from '@/components/backoffice/class-links'
@@ -39,22 +36,43 @@ export default async function TeacherClassGroupDetailPage({
   /* A closed group is gone from the teacher's portal — by URL as well. */
   if (!group || group.status === 'closed') notFound()
 
-  /* The free certificate is owed within 25 business days of the end
-     (`docs/REGRAS-NEGOCIO.md` §6). Computed on the server: a client component
-     could disagree with it across a day boundary. */
-  const deadline = addBusinessDays(group.endDate, CERTIFICATE_DEADLINE_BUSINESS_DAYS)
+  const backLink = (
+    <Link
+      href="/docente/class-groups"
+      className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+    >
+      <BoIcon name="arrow-left" size={16} />
+      {t('class_group.back_to_list')}
+    </Link>
+  )
+
+  /* The certificate rules — passing grade and deadline — are the backoffice's
+     (OOC-41). Without them the batch cannot be judged, so the page says so
+     instead of judging it on a guess. */
+  const settings = await getPlatformSettings()
+  if (!settings) {
+    return (
+      <div className="flex flex-col gap-5">
+        {backLink}
+        <EmptyState
+          icon="alert"
+          title={t('settings.rules_load_error_title')}
+          body={t('settings.rules_load_error_body')}
+        />
+      </div>
+    )
+  }
+
+  /* The free certificate is owed within the configured business days of the
+     end (`docs/REGRAS-NEGOCIO.md` §6). Computed on the server: a client
+     component could disagree with it across a day boundary. */
+  const deadline = addBusinessDays(group.endDate, settings.certificateDeadlineBusinessDays)
   const businessDaysLeft = businessDaysUntil(deadline, new Date())
   const teaching = group.status === 'enrolling' || group.status === 'in_progress'
 
   return (
     <div className="flex flex-col gap-5">
-      <Link
-        href="/docente/class-groups"
-        className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
-      >
-        <BoIcon name="arrow-left" size={16} />
-        {t('class_group.back_to_list')}
-      </Link>
+      {backLink}
 
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -108,6 +126,7 @@ export default async function TeacherClassGroupDetailPage({
         // Date only: the deadline is a calendar day, not an instant.
         deadlineIso={deadline.toISOString().slice(0, 10)}
         businessDaysLeft={businessDaysLeft}
+        passingGrade={settings.passingGrade}
       />
     </div>
   )

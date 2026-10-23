@@ -72,6 +72,19 @@ export class ClassGroupCourseLockedError extends UnableToProcessEntryError {
   }
 }
 
+/** No teacher on the roster with that id — never filed, or left it (OOC-80). */
+export class ClassGroupTeacherUnavailableError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_teacher_unavailable", message: "Only an active teacher runs a class group.", ...params });
+  }
+}
+
+export class ClassGroupTeacherLanguageError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_teacher_language", message: "The teacher does not teach the course's language.", ...params });
+  }
+}
+
 export class PeriodAlreadyDuplicatedError extends ConflictError {
   constructor(params?: { path?: string; cause?: unknown }) {
     super({ reason: "catalog.period_already_duplicated", message: "That period was already copied into this one.", ...params });
@@ -117,5 +130,19 @@ export class WaitlistEntryClosedError extends ConflictError {
 export class WaitlistEntryNotFoundError extends NotFoundError {
   constructor(params?: { path?: string; cause?: unknown }) {
     super({ reason: "catalog.waitlist_entry_not_found", message: "No waitlist entry with that id.", ...params });
+  }
+}
+
+/**
+ * Another live course already answers to that landing key (OOC-117). Two
+ * courses behind one enroll button would leave the checkout to guess.
+ */
+export class LandingKeyTakenError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.landing_key_taken",
+      message: "Another live course is already linked to that landing page.",
+      ...params,
+    });
   }
 }

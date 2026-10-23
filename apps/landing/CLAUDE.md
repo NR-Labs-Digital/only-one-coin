@@ -112,4 +112,15 @@ Detalhe e histórico da decisão: `docs/ARCHITECTURE.md` §7.
 
 ---
 
+## Botão de matrícula → checkout (OOC-117, 12/10/2026)
+
+A regra (a landing manda a chave da página, o backoffice diz qual curso responde por ela) está no `CLAUDE.md` da raiz, §1. Aqui, o que é só da landing:
+
+- **Toda página de curso tem chave.** `src/data/checkout.ts` confere no build que cada `courseSlugs` está em `LANDING_COURSE_KEYS` (`@ooc/domain/landing-course-keys`) e derruba o `astro build` — e o CI, que builda a landing — se não estiver. Página nova = chave nova no domínio, no mesmo PR.
+- **A página é a própria chave** (`courseKeyOf`); a única chave que não é página é `english-kids`, o botão da seção kids da página de inglês.
+- Botão geral (header, herói, About, StepsFaq, CtaEnroll) continua indo a `/enrollment` sem curso, de propósito: quem clica ali ainda não escolheu.
+- **Em aberto — decisão do dono:** o que a página de um curso **sem turma aberta** mostra (o botão some, vira "avise-me" ou leva ao WhatsApp). Hoje o botão continua lá e o checkout abre sem curso escolhido, como abria antes. Não inventar a resposta.
+
+---
+
 Regras de negócio, trilíngue e o resto da arquitetura estão no `CLAUDE.md` da raiz — não duplicadas aqui.

@@ -6,6 +6,8 @@ export type PaymentErrorKey =
   | 'seat_released'
   | 'not_found'
   | 'receipt_not_found'
+  | 'reread_in_progress'
+  | 'receipt_not_rereadable'
   | 'generic'
 
 export type PaymentWriteResult<T> = { ok: true; data: T } | { ok: false; error: PaymentErrorKey }
@@ -15,6 +17,8 @@ const KNOWN: ReadonlySet<PaymentErrorKey> = new Set<PaymentErrorKey>([
   'seat_released',
   'not_found',
   'receipt_not_found',
+  'reread_in_progress',
+  'receipt_not_rereadable',
 ])
 
 /** `payment.already_settled` → `already_settled`; anything unknown → `generic`. */
@@ -82,6 +86,15 @@ export async function rejectPayment(
  * on the server, so it is asked for only when a reviewer opens the receipt —
  * never ahead of time for the list.
  */
+/**
+ * Asks for a new OCR reading of the payment's receipt (Sessão 32). The API
+ * only queues it: the reading and its verdict show up in the queue once the
+ * worker answers. Never changes the payment's status.
+ */
+export async function rereadReceipt(id: string): Promise<PaymentWriteResult<{ rereadId: string }>> {
+  return paymentCall(`${encodeURIComponent(id)}/reread`, { method: 'POST', body: {} })
+}
+
 export async function fetchReceiptUrl(id: string): Promise<PaymentWriteResult<{ url: string }>> {
   return paymentCall(`${encodeURIComponent(id)}/receipt`, { method: 'GET' })
 }

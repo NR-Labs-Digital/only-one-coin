@@ -38,18 +38,30 @@ entra aqui ou vira sessão nova.
 
 ---
 
-## Resumo (revisado em 07/10/2026)
+## Resumo (revisado em 22/10/2026)
 
 | Fase | ✅ | 🟡 | ⬜ | Leitura rápida |
 | --- | --- | --- | --- | --- |
-| 0 — Espinha dorsal | 9 | 4 | 0 | Falta `teachers`, as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
+| 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
-| 3 — Backoffice | 1 | 4 | 5 | Alunos, turmas, Pagos e equipe reais; docentes, notas, conciliação e relatórios ainda mock |
+| 3 — Backoffice | 3 | 3 | 4 | Alunos, turmas, Pagos, equipe e docentes reais. Semana de 19–23/10 fecha o operacional (abaixo); notas, conciliação e relatórios ficam para depois |
 | 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32); faltam enlace da aula, módulos/mensalidade, trâmites pagos e documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
 | 7 — Lançamento | 0 | 2 | 4 | Backup a cada deploy já roda; restauração nunca testada; Sentry/PostHog não instalados |
+
+### Foco da semana (19–23/10/2026): fechar o backoffice operacional
+
+Fora desta semana, de propósito: notas e frequência (37), certificados (45, OOC-33/OOC-59 movidos para P3), procedimentos pagos, mensual e e-mail.
+
+| Frente | Tickets | Prazo |
+| --- | --- | --- |
+| Docentes | ~~OOC-79 (conta ↔ ficha, fim do `DEMO_TEACHER_ID`)~~ ✅ → OOC-82 (portal `/docente` sobre o PR #136, com dado real) + OOC-101 · OOC-81 (contrato) | 21 · 23 · 22/10 |
+| Configurações e catálogo | OOC-41 (parâmetros reais) · OOC-70 (editar curso, aposentar plano, editar/aposentar período) · OOC-61 (flags desligados visíveis para os donos) | 21 · 20 · 20/10 |
+| Pagos, Alunos, Auditoria | OOC-120 (ordenação por confiança, atalhos, reprocessar) · OOC-121 (exportar alunos) · OOC-122 (tela de auditoria) | 22 · 23 · 23/10 |
+
+Esperando decisão: OOC-72 (como chega o consentimento do apoderado), quem exporta alunos (OOC-121) e quem vê a auditoria (OOC-122), a regra de suspensão de aluno, e as regras de nota que o PR #136 grava no `CLAUDE.md`.
 
 ---
 
@@ -63,8 +75,8 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 2 | **Config e ambiente** | Validação de env com zod no boot, `.env.example`, `.gitignore`, zero URL literal | App recusa subir com variável faltando, com mensagem clara | ✅ `apps/api/src/config.ts` |
 | 3 | **Banco Postgres local** | Postgres local rodando (Docker — staging/produção usam Neon), CLI de migrations configurado, migration vazia inicial aplicando | `reset` do banco roda do zero e reaplica as migrations | ✅ `compose.yml` + Drizzle Kit |
 | 4 | **Migration: modelo acadêmico** | `academic_periods`, `courses`, `plans`, `plan_prices`, `class_groups` com `CHECK (seats_taken <= capacity)` | `db reset` roda limpo; `plan_prices` versionado por vigência | ✅ `0003`; `plan_prices` append-only desde a `0017` |
-| 5 | **Migration: pessoas e papéis** | `students`, `guardians`, `consents`, `teachers`, `user_roles`, `pg_trgm` para busca | Busca por nome/DNI/telefone funciona; sem grant de DELETE em `students` | 🟡 Pessoas, `pg_trgm` e trava de DELETE (`0011`) prontos. Falta `teachers` (OOC-77). `user_roles` não vai existir: o papel é `user.role` do Better Auth |
-| 6 | **Migration: matrícula e pagamento** | `enrollments`, `payments` (idempotency key única, `amount_cents`), `payment_receipts`, `waitlist_entries` | Máquina de estados documentada; tentar inserir pagamento duplicado falha no banco | ✅ Máquina de estados em `apps/api/CLAUDE.md`. O índice de `image_phash` virou comum (`0016`, OOC-22) |
+| 5 | **Migration: pessoas e papéis** | `students`, `guardians`, `consents`, `teachers`, `user_roles`, `pg_trgm` para busca | Busca por nome/DNI/telefone funciona; sem grant de DELETE em `students` | ✅ Pessoas, `pg_trgm` e trava de DELETE (`0011`) prontos; `teachers` (com idiomas, disponibilidade e contratos) desde a `0025`/`0026` (OOC-77). `user_roles` não vai existir: o papel é `user.role` do Better Auth |
+| 6 | **Migration: matrícula e pagamento** | `enrollments`, `payments` (idempotency key única, `amount_cents`), `payment_receipts`, `waitlist_entries` | Máquina de estados documentada; tentar inserir pagamento duplicado falha no banco | ✅ Máquina de estados em `apps/api/CLAUDE.md`. O índice de `image_phash` virou comum (`0016`, OOC-22). Decisão em coluna própria (`decided_at`/`decided_by`/`rejection_reason`) desde a `0027` (OOC-112) |
 | 7 | **Migration: operação** | `outbox`, `campaigns`, `audit_log` (append-only), `attendance`, `grades`, `materials`, `certificates` | `audit_log` sem grant de UPDATE/DELETE nem para admin | 🟡 `outbox` (`0013`) e `audit_log` com trava (`0007`/`0011`) prontos. Faltam `campaigns`, `attendance`, `grades`, `materials`, `certificates` — entram com as sessões 37, 45 e 48 |
 | 8 | **Autorização deny-by-default + suíte de teste** | Middleware deny-by-default em `apps/api`, toda rota/usecase declara o papel exigido | Teste enumera rotas e falha se faltar declaração; teste com papel errado falha | ✅ Rota sem `.roles()`/`.owners()`/`.public()` derruba o **boot** (`infra/plugins/authorization.ts`) |
 | 9 | **Seed** | Script com dado fictício: 500 alunos, 3 períodos, ~40 turmas em vários idiomas, 200 comprovantes | Idempotente, com comando de reset. Zero dado real | 🟡 `seed:students`, `seed:enrollments`, `seed:catalog` e `seed-admin`, idempotentes, com `--confirm-host` e `--undo`. Falta o seed de comprovantes e o de carga (OOC-48) |
@@ -107,9 +119,9 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 26 | **OCR nível 1** | Worker chamando Gemini 3.1 Flash-Lite via OpenRouter com JSON schema, 5 campos, confiança por campo, `tier`/`model`/`version` | 20 comprovantes reais de amostra extraídos e conferidos à mão | 🟡 Worker no ar (OOC-20). Falta a medição na amostra real (`docs/OCR-AVALIACAO.md`, histórico vazio) |
 | 27 | **Semáforo e validação** | Comparação contra `plan_prices` vigente, tolerância configurável, três estados | Casos de teste: exato, centavos a menos, a mais, muito abaixo | ✅ OOC-21. Só valida, nunca aprova (decisão de 03/10/2026) |
 | 28 | **Antifraude** | pHash, bloqueio por número de operação, EXIF, cruzamento de titular | Mesmo comprovante recortado e reenviado é barrado | ✅ OOC-22. Quem barra é o nº de operação; pHash só registra. Regra em `apps/api/CLAUDE.md` |
-| 29 | **OCR nível 2** | Escalada para modelo de outra família em baixa confiança, critério de concordância, alarme de volume | Divergência entre modelos vai para fila humana; escalada nunca encadeia | ⬜ O modelo já se configura (`RECEIPT_OCR_TIER2_MODEL`), mas nada escala. Depende da medição da 26 |
+| 29 | **OCR nível 2** | Escalada para modelo de outra família em baixa confiança, critério de concordância, alarme de volume | Divergência entre modelos vai para fila humana; escalada nunca encadeia | ⬜ O modelo já se configura (`RECEIPT_OCR_TIER2_MODEL`), e o limiar de confiança também (`platform_settings.ocr_low_confidence_percent`, OOC-41 — hoje só marca o campo na revisão), mas nada escala. Depende da medição da 26 |
 | 30 | **E-mails da matrícula** | Templates de matrícula recebida, pago aprovado/em revisão/rejeitado, credenciais — via outbox | Todos trilíngues, disparados pela fila, nenhum no caminho síncrono | ✅ OOC-26 e OOC-28 (acesso ao portal por link de definir senha) |
-| 20a | **Porta de entrada na landing** | URL do app por env, CTA "Matricúlate" nos três idiomas, link do vendedor (`?course=&group=&src=whatsapp`) | Nenhuma URL literal; o CTA leva ao passo 1 e o link do vendedor ao passo 2 | ✅ CTAs relativos, com 302 do `vercel.json` |
+| 20a | **Porta de entrada na landing** | URL do app por env, CTA "Matricúlate" nos três idiomas, link do vendedor (`?course=&group=&src=whatsapp`) | Nenhuma URL literal; o CTA leva ao passo 1 e o link do vendedor ao passo 2 | ✅ CTAs relativos, com 302 do `vercel.json`. Desde a OOC-117 o botão de curso manda a chave da página (`?course=english`), ligada ao curso no backoffice — o mapa de ids nunca casou com o catálogo. Pendente: ligar os cursos de produção e decidir o que a página de curso sem turma aberta mostra |
 | 21a | **Nome do aluno no domínio** | `students.full_name` numa coluna só; `firstName`/`lastName` vira derivado ou some | Backoffice, portal e checkout leem o mesmo campo | ⬜ O banco ainda tem `first_name`/`last_name` |
 | 27a | **PayPal para aluno no exterior** | Confirmar com o cliente; se sim, estender `PaymentMethod` e conversão como preço versionado | Aluno no exterior conclui a matrícula sem passar pelo WhatsApp | ⬜ Hoje `other` + texto livre registra o meio, sem conversão. Aguarda o cliente |
 | 30a | **E-mail do aluno verificado** | Confirmar que o Gmail informado existe e é do aluno | — | 🟡 Em andamento (OOC-65) |
@@ -122,16 +134,16 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
-| 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | 🟡 Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. Falta MFA (OOC-29) |
-| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | 🟡 Fila real em Pagos (OOC-55): imagem por URL assinada, leitura da IA, veredito do semáforo, aprovar/rejeitar. Faltam ordenação por confiança, atalhos e reprocessar |
+| 31 | **Shell e autenticação** | Login, papéis, MFA para `admin`/`billing`, navegação, anti-enumeração | Docente logado não acessa rota de tesouraria, nem pela URL | ✅ Login, convite, recuperação (OOC-30) e troca de senha (OOC-31) reais. MFA por código de e-mail (OOC-29, 14/10/2026): obrigatório para `master`/`admin`/`billing` — a API recusa esses cargos em toda rota até ativarem — e opcional para o resto, com códigos de recuperação. App autenticador fica para depois |
+| 32 | **Bandeja de comprovantes** | Fila ordenada por confiança, comparação imagem × extração, aprovar/rejeitar, atalhos de teclado, reprocessar | 25 revisões seguidas sem usar o mouse | ✅ Fila real em Pagos (OOC-55, OOC-114). OOC-120: a fila abre por prioridade (vermelho → amarelo → verde, menor confiança primeiro; "mais antigos" a um clique), atalhos de teclado com legenda (`?`) e "Ler de novo", que reenfileira a OCR e recalcula o semáforo sem mexer no status (`receipt_rereads`, migration `0031`). 25 revisões seguidas só com teclado medidas no navegador em 22/10/2026 |
 | 33 | **Aprovação em massa** | Seleção dos casos verdes, ação em lote, confirmação de vaga, disparo de credenciais | Aprovar 100 pagamentos em uma ação, com auditoria de cada um | ⬜ Sem ticket. Se entrar, o lote continua sendo escolha de uma pessoa (decisão de 03/10/2026) |
-| 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Em review: busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75). Faltam suspensão, exportação e a medição com 30k |
-| 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 e OOC-104 |
-| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | ⬜ Quebrada em OOC-77 → 78 → 79 → 80 → 81 → 82 |
+| 34 | **Gestão de alunos** | Ficha única, busca `pg_trgm`, filtros, edição, suspensão, exportação | Busca por nome parcial e por DNI em < 300ms com 30k alunos no seed | 🟡 Busca e filtros no servidor (OOC-76), matrículas na ficha (OOC-73), edição (OOC-74), aba Atividade (OOC-75), abas Ativos · Ex-alunos · Sem matrícula com ativo = matrícula vigente (OOC-116). Medido com 30k alunos e ~100k matrículas (Postgres local, 15/10/2026): diretório ~70 ms por aba, busca do seletor ~5 ms. Em produção a aba levava 6–14 s: `enrollments.deleted_at` sem estatística, plano em *nested loop* — `ANALYZE` na `0030` (OOC-119) — medido em produção depois: 14,4 s → 35 ms. Falta exportação (OOC-121); suspensão está sem regra de negócio definida e sem ticket |
+| 35 | **Turmas e períodos** | CRUD de turmas, janela de inscrição, cupos, lista de espera, **duplicar período anterior** | Duplicar cria ~40 turmas zerando datas e vagas | ✅ OOC-35/OOC-36. Ajustes em OOC-70, OOC-93 (filtro de início das aulas, período rotulado como período de matrícula) e OOC-104 |
+| 36 | **Docentes** | Perfis, atribuição de turmas, acesso checado no usecase (`teacher_id` do usuário autenticado) | Docente vê exatamente as próprias turmas, comprovado por teste | 🟡 OOC-77 (tabelas, trava, entidade), OOC-78 (CRUD na API; diretório, cadastro, ficha, disponibilidade e saída do quadro reais), OOC-80 (turma aponta para o docente do cadastro; turmas sem vínculo destacadas) e OOC-79 (convite liga a conta à ficha, `/me` com o `teacherId` real, docente lê a própria ficha) feitos. Faltam OOC-81 (contrato) e OOC-82 — a área do docente sai como portal próprio em `/docente`, sobre o PR #136 (decisão de 18/10/2026) |
 | 37 | **Frequência e notas** | Registro por sessão, interface para celular do docente, tolerante a conexão ruim | Funciona em 3G lento; perda de conexão não perde o registro | ⬜ OOC-38, OOC-102 |
 | 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados | ⬜ OOC-39 |
-| 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40); home do painel em OOC-67 |
-| 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco | 🟡 A trava no banco existe (`0011`), e há bitácora de cargo e a aba Atividade do aluno. Falta a tela geral com filtro e exportação |
+| 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40). Home do painel com dado real (OOC-67), agregada ao vivo — exceção decidida pelo dono em 11/10/2026: os relatórios desta sessão seguem em view noturna, a home não ("matrículas de hoje" numa view noturna seria sempre zero) |
+| 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco | 🟡 A trava no banco existe (`0011`), e há bitácora de cargo na Equipe (OOC-69) e a aba Atividade do aluno. Falta a tela geral com filtro e exportação (OOC-122) |
 
 ---
 
@@ -143,7 +155,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 42 | **Painel do aluno** | Cursos, horário, data de início, enlace à aula, estado de matrícula e pagamento | Constancia visível na tela, sem depender do e-mail | 🟡 OOC-32: cursos, horário, data de início, próxima aula, estado de matrícula e pagamento leem `GET /portal/overview`. Faltam o enlace da aula (OOC-98), módulos/cadeado (OOC-94/OOC-85), mensalidade (OOC-86) e a constancia (OOC-33/OOC-83) |
 | 43 | **Materiais e reenvio** | Materiais e links de gravação, carga de novo comprovante pelo portal | Nenhum vídeo no Storage — só link externo | ⬜ O aluno já reabre o comprovante enviado (URL de 5 min, OOC-32); materiais e reenvio pelo portal ainda não — OOC-100, OOC-62 |
 | 44 | **Notas, frequência e perfil** | Visualização de notas e avanço, perfil editável, dados do apoderado | — | 🟡 Perfil e apoderado reais, só leitura (OOC-32); o aluno editar o próprio contato é o OOC-110; notas e avanço dependem da 37 |
-| 45 | **Certificados** | Constancia e certificado em PDF, código de verificação, página pública de validação | Página pública valida sem expor dado pessoal além do nome e curso | ⬜ OOC-33, OOC-59 |
+| 45 | **Certificados** | Constancia e certificado em PDF, código de verificação, página pública de validação | Página pública valida sem expor dado pessoal além do nome e curso | ⬜ OOC-33, OOC-59 (em P3, 23/11: dependem de notas) |
 
 > **Marco:** aprovação das Fases 3 e 4. Libera 25% do pagamento.
 
@@ -201,7 +213,9 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Consentimento do apoderado para aluno cadastrado pelo backoffice | OOC-72 | 21/09/2026 |
 | Livro de reclamações | OOC-58, OOC-63 | — |
 | Índice único de documento e consolidação de duplicatas | sem ticket | 21/09/2026 |
-| Tirar o mock do backoffice | OOC-66, OOC-41, OOC-92 | — |
+| Separar Alunos, Matrículas e Pagos: cada lista abre no que está aberto | OOC-112 (decisão do pagamento em coluna e índices das listas abertas — feito), OOC-113 (feito), OOC-114 (Pagos abre em Abertos — feito), OOC-115 (Matrículas abre em Vigentes — feito), OOC-116 (Alunos abre em Ativos; ativo = matrícula vigente — feito), OOC-118 (roteiro de aceite da v1, da landing ao backoffice — validado ao longo da semana, fechado 15/10/2026) | 12/10/2026 |
+| Ajustes do formulário Nuevo curso (feedback do cliente) | OOC-106 (idioma em campo de texto, sem datalist — feito), OOC-107 (sem "Sobre el curso"; o portal esconde o bloco quando está vazio — feito) | 05/10/2026 |
+| Tirar o mock do backoffice | OOC-66, OOC-41 (parâmetros reais em `platform_settings`, lidos por todo consumidor — feito 22/10/2026), OOC-70, OOC-92, OOC-69 (bitácora de cargo em Equipe — feito 16/10/2026), OOC-68 (convite de docente sem o seletor mock — feito), OOC-67 (home e badge de Pagos — feito), OOC-71 (matriculados da turma na visão da coordenação, `GET /catalog/class-groups/:id/roster`, colunas por cargo — feito 15/10/2026; base para roster do docente, notas e lote de certificados) | — |
 
 ---
 

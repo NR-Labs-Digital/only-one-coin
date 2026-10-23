@@ -8,6 +8,7 @@
  * resolved to text through the `bo` i18n namespace.
  */
 
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type {
   DocumentStatus,
   DocumentType,
@@ -105,10 +106,11 @@ export interface StaffMemberRow {
    */
   teacherId: string | null
   /**
-   * Whether the second factor is already set up on the account. Required for
-   * `admin`, `treasury` and `mass_approver` (CLAUDE.md §8) — which makes a
-   * pending one on those cargos a finding, not a preference somebody skipped.
-   * Enrolling it is the account owner's own action; nobody enrolls it for them.
+   * Whether the second factor is on (`twoFactorEnabled`, OOC-29). Required for
+   * `master`, `admin` and `billing` (CLAUDE.md §8) — apps/api refuses those
+   * cargos everywhere until it is on, so a pending one is an account that has
+   * not signed in since. Enrolling it is the account owner's own action, by a
+   * code e-mailed to them; nobody enrolls it for them.
    */
   mfaEnrolled: boolean
   /** ISO date the account was opened — the day the invite was completed. */
@@ -137,6 +139,18 @@ export type NewStaffMember = Pick<
 >
 
 /**
+ * A teacher file a `teacher` invite can be opened for (OOC-79): on the roster,
+ * with no panel account and no invite already open. Name and e-mail fill the
+ * invite form; the API checks the same rules again when it is sent.
+ */
+export interface InvitableTeacher {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+}
+
+/**
  * One line of the cargo ledger: every change of `role`, and the alta that gave
  * the account its first one. Append-only in the database — no grant of UPDATE
  * or DELETE, not even for admin (CLAUDE.md §8) — so this is read, never edited.
@@ -157,11 +171,13 @@ export interface StaffRoleChange {
 }
 
 /**
- * Derived, not a stored column: `active` = has at least one active enrollment,
- * `under_review` = has an enrollment/payment waiting on review, `inactive` =
- * neither. Kept as a UI concept until the rule is confirmed.
+ * Derived by `apps/api` from the student's seats, not a stored column
+ * (OOC-116): `active` = a current enrollment (confirmed seat in a class group
+ * enrolling or in progress), `former` = confirmed seats, none current,
+ * `under_review` = only a reserved seat (pickers only — Payments settles it),
+ * `no_enrollment` = nothing confirmed or reserved.
  */
-export type StudentStatus = 'active' | 'under_review' | 'inactive'
+export type StudentStatus = 'active' | 'former' | 'under_review' | 'no_enrollment'
 
 export type GuardianRelationship = 'mother' | 'father' | 'legal_guardian'
 
@@ -402,55 +418,6 @@ export interface StudentDetail extends StudentRow {
   attachments: StudentAttachment[]
 }
 
-/** Why a receipt landed in the human queue (CLAUDE.md §5 tier ladder). */
-export type ReviewFlag =
-  | 'amount_mismatch'
-  | 'low_confidence'
-  | 'illegible'
-  | 'duplicate_phash'
-  | 'model_divergence'
-
-export interface ReviewQueueItem {
-  id: string
-  studentId: string
-  studentName: string
-  courseName: string
-  method: PaymentMethod
-  /** What the receipt says vs. what the frozen plan price says. */
-  amountCents: number
-  expectedAmountCents: number
-  /** Null when the extraction could not read it — an illegible receipt. */
-  operationNumber: string | null
-  flag: ReviewFlag
-  /** OCR ladder tier that produced the extraction (0–3). */
-  tier: number
-  /** Lowest per-field confidence, 0–1. */
-  confidence: number
-  submittedAt: string
-}
-
-/** Headline numbers on the backoffice home. */
-export interface DashboardMetrics {
-  enrollmentsToday: number
-  enrollmentsTodayDelta: number
-  pendingReview: number
-  oldestPendingHours: number
-  activeStudents: number
-  activeStudentsDelta: number
-  seatsTaken: number
-  seatsCapacity: number
-}
-
-/** Seat pressure per class group — the "vagas" watchlist. */
-export interface SeatWatchItem {
-  id: string
-  courseName: string
-  classGroupName: string
-  startDate: string
-  seatsTaken: number
-  capacity: number
-}
-
 /* -------------------------------------------------------------------------- */
 /* Class groups — where certificates are issued in batch                       */
 /* -------------------------------------------------------------------------- */
@@ -586,7 +553,15 @@ export interface ClassGroupItem {
   courseActive: boolean
   academicPeriodId: string
   academicPeriodName: string
+  /** The teacher allocated from the roster (OOC-80); null = nobody yet. */
+  teacherId: string | null
+  /** The allocated teacher's name, from their file; empty when unallocated. */
   teacherName: string
+  /**
+   * The free text typed before teachers had a file. Only a hint for whoever
+   * links the class group to a real teacher — never shown as the teacher.
+   */
+  legacyTeacherName: string
   slots: WeeklySlotItem[]
   /** Null only on a draft. */
   startsOn: string | null
@@ -600,6 +575,22 @@ export interface ClassGroupItem {
   /** False once retired from the catalog — the row stays, off sale. */
   active: boolean
   waitlistCount: number
+}
+
+/**
+ * A teacher the class group form can allocate (OOC-80, `GET /catalog/teacher-options`):
+ * the roster only, with what the form needs to filter by language and to warn
+ * about the schedule — no document, contact or contract.
+ */
+export interface TeacherOption {
+  id: string
+  firstName: string
+  lastName: string
+  /** Catalog text, the same as `ClassGroupItem.language`. */
+  languages: string[]
+  availability: WeeklySlotItem[]
+  /** Their class groups not yet finished, closed or retired. */
+  classGroups: { id: string; code: string; academicPeriodId: string; slots: WeeklySlotItem[] }[]
 }
 
 /** A sales period: its own class groups, start dates and seats (CLAUDE.md §1). */
@@ -623,6 +614,31 @@ export interface WaitlistItem {
 }
 
 /**
+ * Who is enrolled in a class group (confirmed seats). `file` — national id and
+ * contact — comes only to who reads the student file; the API leaves it out
+ * for everyone else, and `view` says which of the two the reader got.
+ */
+export interface ClassGroupRoster {
+  view: 'full' | 'limited'
+  items: ClassGroupRosterItem[]
+}
+
+export interface ClassGroupRosterItem {
+  enrollmentId: string
+  studentId: string
+  studentName: string
+  planName: string
+  /** The enrollment's latest payment; null for a seat confirmed without one (seed, legacy import). */
+  paymentStatus: PaymentStatus | null
+  file: {
+    nationalIdType: NationalIdType
+    nationalId: string
+    email: string
+    phone: string
+  } | null
+}
+
+/**
  * A course as the catalog holds it. The class group is an instance of a course
  * with a schedule, a teacher and seats (`docs/REQUISITOS.md` RF09) — what lives
  * here is what every one of its class groups inherits.
@@ -638,9 +654,9 @@ export interface CourseRow {
   /** Catalog label ("A1", "Inicial", "B1") — data, not an enum. */
   level: string
   /**
-   * What the course is, in the student's words. Written when the course is
-   * opened, because the portal shows it under "Sobre el curso" from the first
-   * class group onward — a course created without it reaches students blank.
+   * What the course is, in the student's words. No longer asked when the
+   * course is opened (OOC-107) — blank on new courses; the portal hides
+   * "Sobre el curso" when it is.
    */
   summary: string
   /** Minimum age, per course (`docs/REGRAS-NEGOCIO.md` §2). */
@@ -651,6 +667,11 @@ export interface CourseRow {
   /** Administrative procedures the course offers (`docs/REGRAS-NEGOCIO.md` §5). */
   allowsFreeze: boolean
   allowsTransfer: boolean
+  /**
+   * The landing page whose enroll button opens the checkout on this course
+   * (OOC-117). Null: no landing page links here.
+   */
+  landingKey: LandingCourseKey | null
   /** Out of the catalog does not delete anything — running class groups stay. */
   active: boolean
   /** Class groups already opened from this course. */
@@ -702,6 +723,9 @@ export type CatalogErrorKey =
   | 'waitlist_entry_closed'
   | 'waitlist_entry_not_found'
   | 'entry_not_found'
+  | 'class_group_teacher_unavailable'
+  | 'class_group_teacher_language'
+  | 'landing_key_taken'
 
 export interface PlanPriceItem {
   id: string
@@ -907,40 +931,22 @@ export interface TeacherRow {
   activeClassGroups: number
   /** Seats taken across those class groups — the teaching load, in people. */
   studentCount: number
-  /** Final grades still open across the class groups they run. */
-  pendingGrades: number
-  /** Finished class groups of theirs still owing a certificate. */
-  pendingCertificates: number
+  /** `YYYY-MM-DD` — the day the file was registered. */
   joinedAt: string
 }
 
 /**
- * Full teacher file. The class groups are the ones already allocated to them;
- * the availability is what the next allocation is drawn from — the two are read
- * together, which is why the file carries both.
+ * Full teacher file, as `GET /api/v1/teachers/:id` answers it (OOC-78). The
+ * class groups are the ones allocated through `teacher_id`; the availability
+ * is what the next allocation is drawn from — the two are read together, which
+ * is why the file carries both.
  */
 export interface TeacherDetail extends TeacherRow {
   availability: AvailabilitySlot[]
-  classGroups: ClassGroupRow[]
+  classGroups: ClassGroupItem[]
+  /** The backoffice's contract alert window (OOC-41), for the badge. */
+  contractAlertDays: number
 }
-
-/** What the creation form fills in. The rest is derived from the class groups. */
-export type NewTeacher = Pick<
-  TeacherRow,
-  | 'firstName'
-  | 'lastName'
-  | 'nationalIdType'
-  | 'nationalId'
-  | 'email'
-  | 'phone'
-  | 'nationality'
-  | 'country'
-  | 'region'
-  | 'city'
-  | 'addressLine'
-  | 'languages'
-  | 'contract'
-> & { availability: AvailabilitySlot[] }
 
 /* -------------------------------------------------------------------------- */
 /* Payments — the ledger, the human decision and the validation parameters     */
@@ -1070,7 +1076,16 @@ export interface PaymentReviewItem {
   /** What the OCR read off the latest receipt; `null` while there is no
    * processed receipt to read. */
   reading: ReceiptReading | null
-  /** The traffic light's verdict on the latest receipt; `null` while it has not run. */
+  /** Whether `reading` and `verdict` are the first reading's or the latest
+   * re-read's (Sessão 32). */
+  readingSource: 'first' | 'reread'
+  /** When a re-read still on its way was asked for; `null` when none is. */
+  rereadRequestedAt: string | null
+  /** Lowest confidence (0–1) among amount, operation number and method — 0
+   * for a failed reading, `null` with no reading. What the queue sorts on. */
+  confidence: number | null
+  /** The traffic light's verdict on the latest receipt (or its latest
+   * re-read); `null` while it has not run. */
   verdict: ReviewVerdict | null
   submittedAt: string
   /** When the open payment overstays the review window. */
@@ -1099,29 +1114,6 @@ export type ReviewDecision =
   | { kind: 'approve' }
   | { kind: 'reject'; reason: RejectionReason; note: string }
 
-/**
- * The parameters the payment pipeline reads instead of constants in the code.
- * Tolerance is required to live here (CLAUDE.md §5); the other two are the
- * numbers `CLAUDE.md` already fixes (the 5-day reservation, the confidence
- * that escalates) and still to be confirmed as editable.
- */
-export interface PaymentSettings {
-  /** How far ABOVE the frozen price a receipt may land and still be green — never below (CLAUDE.md §1, "Sem descontos"). */
-  toleranceCents: number
-  /** Below this percentage of the frozen price, rejection is suggested to the reviewer (1–99). */
-  rejectBelowPercent: number
-  /** Below this per-field confidence the ladder escalates, 0–1. */
-  escalationConfidence: number
-  /** Days a reserved seat survives without an approved payment. */
-  reservationDays: number
-  /**
-   * Minutes the public checkout holds a seat while the person goes off to pay
-   * (`CLAUDE.md` §5, "Dois relógios"). The short clock of the pair: it runs
-   * from the class group being chosen to the receipt arriving, and `reservationDays`
-   * takes over from there.
-   */
-  checkoutHoldMinutes: number
-}
 
 /* -------------------------------------------------------------------------- */
 /* Enrollments — who holds a seat, across every class group                    */
@@ -1153,6 +1145,8 @@ export interface EnrollmentRow {
   language: CourseLanguage | null
   modality: ClassModality
   academicPeriodName: string
+  /** Which tab the row belongs to — shown as a column on the "all" tab. */
+  classGroupStatus: ClassGroupStatus
   status: EnrollmentStatus
   seatStatus: SeatStatus
   planName: string
@@ -1370,33 +1364,6 @@ export interface EmailDeliveryIssue {
 /* Settings — the numbers and names the platform runs on                       */
 /* -------------------------------------------------------------------------- */
 
-/**
- * The academic thresholds the rules fix and the screens already read. They are
- * settings rather than constants for the same reason the payment tolerance is:
- * the Asociación changing what "approved" means must not need a deploy
- * (CLAUDE.md §5).
- */
-export interface AcademicSettings {
-  /** Minimum final grade on the 0–20 scale (`docs/REGRAS-NEGOCIO.md` §3). */
-  passingGrade: number
-  /** Business days to issue the free certificate after a class group ends (§6). */
-  certificateDeadlineBusinessDays: number
-  /** Fee for the constancia de matrícula, in cents — a paid procedure (§5). */
-  constanciaFeeCents: number
-  /** How early a teacher's contract starts showing as expiring (CLAUDE.md §1). */
-  contractAlertDays: number
-}
-
-/**
- * Everything the settings screen owns. Two groups because they answer for two
- * different things — what the academic rules count as, and what the receipt
- * pipeline approves on without a human — and one screen, because a number with
- * two homes is a number that drifts.
- */
-export interface GeneralSettings {
-  academic: AcademicSettings
-  receipts: PaymentSettings
-}
 
 /**
  * The account a staff member manages for themselves — access, not identity.
@@ -1405,8 +1372,8 @@ export interface GeneralSettings {
  * the rest is administration's to change.
  */
 
-/** The only second factor the panel offers — an authenticator app. */
-export type MfaMethod = 'totp'
+/** The only second factor the panel offers — a code e-mailed at sign-in (OOC-29). */
+export type MfaMethod = 'email'
 
 export interface AccountMfa {
   enabled: boolean

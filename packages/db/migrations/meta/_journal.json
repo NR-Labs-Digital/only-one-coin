@@ -169,6 +169,76 @@
       "when": 1791417404084,
       "tag": "0023_email_verifications",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791732542726,
+      "tag": "0024_audit_log_action_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791739971971,
+      "tag": "0025_teacher_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791741247762,
+      "tag": "0026_teacher_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791827888534,
+      "tag": "0027_payment_decision",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791835708475,
+      "tag": "0028_course_landing_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792024129362,
+      "tag": "0029_two_factor",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792113272831,
+      "tag": "0030_refresh_planner_statistics",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792695782319,
+      "tag": "0031_receipt_rereads",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792699476573,
+      "tag": "0032_settings_parameters",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792701432755,
+      "tag": "0033_teacher_invite_link",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,10 @@ const CreateStaffInviteBodySchema = z
       "support",
       "billing",
     ]),
+    // The teacher file a `teacher` invite opens an account for (OOC-79).
+    // Required for that cargo — the usecase answers 422
+    // `staff_invite.teacher_required` — and refused on any other.
+    teacherId: z.string().uuid().nullish(),
   })
   .superRefine((body, ctx) => {
     // `master` is the owners' cargo: only their e-mail domain may be invited
@@ -29,6 +33,13 @@ const CreateStaffInviteBodySchema = z
         code: z.ZodIssueCode.custom,
         path: ["role"],
         message: "master_requires_owner_domain",
+      });
+    }
+    if (body.teacherId && body.role !== "teacher") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["teacherId"],
+        message: "teacher_only_for_teacher_role",
       });
     }
   });
@@ -61,6 +72,7 @@ export const createStaffInviteRoute = RouteBuilder.post("/staff/invites")
       firstName: request.body.firstName,
       lastName: request.body.lastName,
       role: request.body.role,
+      teacherId: request.body.teacherId ?? null,
     });
 
     reply.status(201).send({

@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { CASE_SHORTCUTS, KEY_CTRL, KEY_ENTER, Kbd, ShortcutList, isTypingTarget } from './shortcuts'
 
 /** Offered in the order a reviewer usually meets them. */
 const REASONS: RejectionReason[] = [
@@ -65,6 +66,22 @@ export type DecideOutcome =
   | { kind: 'notice'; notice: CaseNotice }
   | { kind: 'error' }
 
+/**
+ * What the dialog hears back from asking for a new reading (Sessão 32).
+ * `queued` and `in_progress` both mean a reading is on its way; the others
+ * say why none is.
+ */
+export type RereadOutcome =
+  | { kind: 'queued' }
+  | { kind: 'in_progress' }
+  | { kind: 'notice'; notice: CaseNotice }
+  | { kind: 'not_rereadable' }
+  | { kind: 'error' }
+
+/** Long enough for the queue to come back with the request on it; a worker
+ * that answered faster than that already shows the new reading. */
+const REREAD_ASKED_MS = 15_000
+
 /** Where the receipt image stands while the dialog is open. */
 type ImageState =
   | { kind: 'loading' }
@@ -84,12 +101,21 @@ type ImageState =
  *
  * A centred modal, the same shape the ledger opens a payment with: the queue
  * stays behind it, and the case gets the middle of the screen.
+ *
+ * Worked from the keyboard (Sessão 32, `./shortcuts`): each shortcut is the
+ * button it names and nothing more, so A approves exactly like the click,
+ * and R only opens the rejection form, which still asks for its own
+ * confirmation.
  */
 export function ReceiptReviewDialog({
   payment,
   renderedAt,
   onClose,
   onDecide,
+  onReread,
+  onNext,
+  onPrev,
+  lowConfidencePercent,
 }: {
   payment: PaymentReviewItem | null
   /** When the server rendered the queue — what the deadline is measured from. */
@@ -97,26 +123,55 @@ export function ReceiptReviewDialog({
   onClose: () => void
   /** Resolves once the API answered; the dialog stays disabled until then. */
   onDecide: (paymentId: string, decision: ReviewDecision) => Promise<DecideOutcome>
+  /** Asks for a new OCR reading; never changes the payment's status. */
+  onReread: (paymentId: string) => Promise<RereadOutcome>
+  /** The next and previous case in the queue — `null` when there is none. */
+  onNext: (() => void) | null
+  onPrev: (() => void) | null
+  /** Below this (whole percent) a field read is flagged (`platform_settings`,
+   * OOC-41); null when the settings could not be read — nothing is flagged. */
+  lowConfidencePercent: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
 
-  const [rejecting, setRejecting] = useState(false)
+  const [rejectingFor, setRejectingFor] = useState<string | null>(null)
   const [reason, setReason] = useState<RejectionReason>('amount_mismatch')
   const [note, setNote] = useState('')
   /** Keyed by the payment it belongs to, so a new case never shows the last one's image. */
   const [loaded, setLoaded] = useState<{ id: string; state: ImageState } | null>(null)
   const [failed, setFailed] = useState(false)
-  const [notice, setNotice] = useState<CaseNotice | null>(null)
+  const [noticeFor, setNoticeFor] = useState<{ id: string; notice: CaseNotice } | null>(null)
 
   /**
-   * Double-click guard. The state drives the disabled buttons; the ref is what
-   * actually stops a second click landing before React re-rendered them.
+   * Double-click guard, held by the payment it is sending for. The state
+   * drives the disabled buttons; the ref is what actually stops a second
+   * click landing before React re-rendered them. Per payment because a
+   * decision moves the dialog on to the next case before its own request has
+   * finished unwinding — a guard shared across cases swallowed the first key
+   * pressed on the new one.
    */
-  const [sending, setSending] = useState(false)
-  const inFlight = useRef(false)
+  const [sendingFor, setSendingFor] = useState<string | null>(null)
+  const inFlight = useRef<string | null>(null)
+
+  /** The image at full size, over the dialog (I, or a click on it). */
+  const [zoomed, setZoomed] = useState(false)
+  /** The case's own shortcut legend (?). */
+  const [legend, setLegend] = useState(false)
+  const noteRef = useRef<HTMLTextAreaElement>(null)
+
+  /** A re-read asked for from here, until the queue comes back with it. */
+  const [rereadAsked, setRereadAsked] = useState(false)
+  const [rereadSending, setRereadSending] = useState(false)
+  const [rereadError, setRereadError] = useState<'not_rereadable' | 'error' | null>(null)
 
   const paymentId = payment?.id ?? null
+  const sending = paymentId !== null && sendingFor === paymentId
+  // Held by the case they belong to, like `sendingFor`: on the render that
+  // opens the next case they already read as clear, before any effect runs.
+  const rejecting = paymentId !== null && rejectingFor === paymentId
+  const notice = noticeFor && noticeFor.id === paymentId ? noticeFor.notice : null
+  const setRejecting = (on: boolean) => setRejectingFor(on ? paymentId : null)
   const receiptReady = payment?.receipt === 'ready'
   const image: ImageState =
     loaded && loaded.id === paymentId ? loaded.state : { kind: 'loading' }
@@ -124,14 +179,31 @@ export function ReceiptReviewDialog({
   // The form follows whichever payment the dialog was opened on, and is thrown
   // away on close — a half-written rejection must not leak into the next case.
   useEffect(() => {
-    setRejecting(false)
+    setRejectingFor(null)
     setReason(payment?.fraudSignals.includes('identical_file') ? 'duplicate' : 'amount_mismatch')
     setNote('')
     setFailed(false)
-    setNotice(null)
+    setNoticeFor(null)
+    setZoomed(false)
+    setRereadAsked(false)
+    setRereadError(null)
     // Only a new case resets the form; a re-render of the same one does not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentId])
+
+  // Once the queue shows the request (or the worker already answered), the
+  // queue's own state speaks for it.
+  const rereadOnServer = payment?.rereadRequestedAt != null
+  useEffect(() => {
+    if (!rereadAsked) return
+    if (rereadOnServer) {
+      setRereadAsked(false)
+      return
+    }
+    const timer = setTimeout(() => setRereadAsked(false), REREAD_ASKED_MS)
+    return () => clearTimeout(timer)
+  }, [rereadAsked, rereadOnServer])
+  const rereadPending = rereadOnServer || rereadAsked
 
   // The signed URL is asked for once per opened case, and only when there is
   // an image to show. A late answer for a case already closed is dropped.
@@ -151,17 +223,18 @@ export function ReceiptReviewDialog({
   }, [paymentId, receiptReady])
 
   async function send(decision: ReviewDecision) {
-    if (!payment || inFlight.current) return
-    inFlight.current = true
-    setSending(true)
+    if (!payment || inFlight.current === payment.id) return
+    const id = payment.id
+    inFlight.current = id
+    setSendingFor(id)
     setFailed(false)
     try {
-      const outcome = await onDecide(payment.id, decision)
-      if (outcome.kind === 'notice') setNotice(outcome.notice)
+      const outcome = await onDecide(id, decision)
+      if (outcome.kind === 'notice') setNoticeFor({ id, notice: outcome.notice })
       if (outcome.kind === 'error') setFailed(true)
     } finally {
-      inFlight.current = false
-      setSending(false)
+      if (inFlight.current === id) inFlight.current = null
+      setSendingFor((current) => (current === id ? null : current))
     }
   }
 
@@ -172,19 +245,116 @@ export function ReceiptReviewDialog({
   const closed = notice === 'already_settled' || notice === 'not_found'
   const approveBlocked = sending || notice !== null
   const rejectBlocked = sending || closed
+  const rereadBlocked = !receiptReady || closed || rereadPending || rereadSending
+
+  async function reread() {
+    if (!payment || rereadBlocked) return
+    setRereadSending(true)
+    setRereadError(null)
+    try {
+      const outcome = await onReread(payment.id)
+      if (outcome.kind === 'queued' || outcome.kind === 'in_progress') setRereadAsked(true)
+      if (outcome.kind === 'notice') setNoticeFor({ id: payment.id, notice: outcome.notice })
+      if (outcome.kind === 'not_rereadable' || outcome.kind === 'error') setRereadError(outcome.kind)
+    } finally {
+      setRereadSending(false)
+    }
+  }
+
+  function rejectNow() {
+    if (!rejectBlocked) void send({ kind: 'reject', reason, note: note.trim() })
+  }
+
+  /**
+   * The case's keys. Rebuilt every render and read through a ref, so the one
+   * listener below always sees the current case and form.
+   */
+  function onKey(event: KeyboardEvent) {
+    if (event.defaultPrevented || event.repeat) return
+    // The one shortcut that works from inside the note: confirming it.
+    if (rejecting && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault()
+      rejectNow()
+      return
+    }
+    if (isTypingTarget(event.target) || event.ctrlKey || event.metaKey || event.altKey) return
+
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+    const handled = (() => {
+      switch (key) {
+        case 'a':
+          if (!rejecting && !approveBlocked) void send({ kind: 'approve' })
+          return true
+        case 'r':
+          if (!rejectBlocked) setRejecting(true)
+          return true
+        case 'n':
+          if (!rejecting) return false
+          noteRef.current?.focus()
+          return true
+        case 'j':
+        case 'ArrowRight':
+          if (!sending) onNext?.()
+          return true
+        case 'k':
+        case 'ArrowLeft':
+          if (!sending) onPrev?.()
+          return true
+        case 'i':
+          if (image.kind === 'shown') setZoomed((current) => !current)
+          return true
+        case 'l':
+          void reread()
+          return true
+        case '?':
+          setLegend((current) => !current)
+          return true
+        default: {
+          const index = Number.parseInt(key, 10) - 1
+          if (!rejecting || !(index >= 0 && index < REASONS.length)) return false
+          if (!rejectBlocked) setReason(REASONS[index]!)
+          return true
+        }
+      }
+    })()
+    if (handled) event.preventDefault()
+  }
+  const onKeyRef = useRef(onKey)
+  useEffect(() => {
+    onKeyRef.current = onKey
+  })
+
+  const open = payment !== null
+  useEffect(() => {
+    if (!open) return
+    const listener = (event: KeyboardEvent) => onKeyRef.current(event)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [open])
 
   const deadline = payment ? deadlineState(payment.reviewDeadline, renderedAt) : 'ok'
 
   return (
     <Dialog
-      open={payment !== null}
-      onOpenChange={(open) => {
-        if (!open && !inFlight.current) onClose()
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !inFlight.current) onClose()
       }}
     >
       <DialogContent
         closeLabel={t('receipt_review.close')}
         className="bg-white sm:max-w-xl"
+        // Esc steps back one layer before it closes the case: the enlarged
+        // image first, then the rejection form.
+        onEscapeKeyDown={(event) => {
+          if (zoomed) {
+            event.preventDefault()
+            setZoomed(false)
+          } else if (rejecting && !sending) {
+            event.preventDefault()
+            setRejecting(false)
+          }
+        }}
       >
         {payment && (
           <>
@@ -207,8 +377,56 @@ export function ReceiptReviewDialog({
                   tone={receiptStateTone[payment.receipt]}
                   label={t(`receipt_state.${payment.receipt}`)}
                 />
+                <span className="ml-auto flex items-center gap-1">
+                  <CaseStepButton
+                    icon="chevron-left"
+                    label={t('receipt_review.prev_case')}
+                    disabled={!onPrev || sending}
+                    onClick={() => onPrev?.()}
+                  />
+                  <CaseStepButton
+                    icon="chevron-right"
+                    label={t('receipt_review.next_case')}
+                    disabled={!onNext || sending}
+                    onClick={() => onNext?.()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLegend((current) => !current)}
+                    aria-expanded={legend}
+                    aria-label={t('shortcuts.button')}
+                    title={t('shortcuts.button')}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-line text-sm font-semibold text-muted-foreground transition hover:text-ink"
+                  >
+                    ?
+                  </button>
+                </span>
               </div>
             </DialogHeader>
+
+            {legend && (
+              <div className="border-b border-line bg-sky-soft px-5 py-4">
+                <ShortcutList title={t('shortcuts.case_title')} shortcuts={CASE_SHORTCUTS} />
+              </div>
+            )}
+
+            {zoomed && image.kind === 'shown' && (
+              // The receipt at full size, over the case. Any click, I or Esc
+              // puts it back.
+              <button
+                type="button"
+                onClick={() => setZoomed(false)}
+                aria-label={t('receipt_review.image_zoom_close')}
+                className="fixed inset-0 z-[60] grid cursor-zoom-out place-items-center bg-ink/85 p-4"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.url}
+                  alt={t('receipt_review.image_alt')}
+                  className="max-h-full max-w-full rounded-lg bg-white object-contain"
+                />
+              </button>
+            )}
 
             <div className="flex flex-col gap-6 p-5">
               <section>
@@ -222,13 +440,20 @@ export function ReceiptReviewDialog({
                   // `next/image` would proxy and cache a link that is meant to
                   // expire, so a plain <img> it is. The bucket origin is
                   // allowed in the CSP `img-src` (RECEIPT_IMAGE_ORIGIN).
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={image.url}
-                    alt={t('receipt_review.image_alt')}
-                    onError={() => setLoaded({ id: payment.id, state: { kind: 'unavailable' } })}
-                    className="mt-3 max-h-[28rem] w-full rounded-xl border border-line bg-sky-soft object-contain"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setZoomed(true)}
+                    aria-label={t('receipt_review.image_zoom')}
+                    className="mt-3 block w-full cursor-zoom-in"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.url}
+                      alt={t('receipt_review.image_alt')}
+                      onError={() => setLoaded({ id: payment.id, state: { kind: 'unavailable' } })}
+                      className="max-h-[28rem] w-full rounded-xl border border-line bg-sky-soft object-contain"
+                    />
+                  </button>
                 ) : (
                   <ImagePlaceholder
                     busy={payment.receipt === 'ready' && image.kind === 'loading'}
@@ -293,7 +518,49 @@ export function ReceiptReviewDialog({
               </section>
 
               {payment.verdict && <VerdictNotice verdict={payment.verdict} />}
-              {payment.reading && <ReadingSection reading={payment.reading} />}
+              {payment.reading && (
+                <ReadingSection
+                  reading={payment.reading}
+                  source={payment.readingSource}
+                  lowConfidencePercent={lowConfidencePercent}
+                />
+              )}
+
+              {/* A new reading of the same image (Sessão 32): when the first
+                  one failed, came out shaky, or the reviewer can see it is
+                  wrong. Queued, never waited on; the payment stays where it is. */}
+              {payment.receipt === 'ready' && (
+                <section className="-mt-3 flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void reread()}
+                      disabled={rereadBlocked}
+                      aria-busy={rereadSending}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <BoIcon name="refresh" size={14} />
+                      {t('receipt_review.reread')}
+                      <Kbd>L</Kbd>
+                    </button>
+                    {rereadPending && (
+                      <span role="status" className="text-xs text-muted-foreground">
+                        {t('receipt_review.reread_pending')}
+                      </span>
+                    )}
+                  </div>
+                  {rereadError && (
+                    <p role="alert" className="text-xs font-semibold text-red-600">
+                      {t(
+                        rereadError === 'not_rereadable'
+                          ? 'receipt_review.reread_not_rereadable'
+                          : 'receipt_review.reread_error',
+                      )}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{t('receipt_review.reread_note')}</p>
+                </section>
+              )}
 
               <section>
                 <SectionTitle icon="shield">{t('receipt_review.signals_title')}</SectionTitle>
@@ -322,7 +589,7 @@ export function ReceiptReviewDialog({
                   <div className="flex flex-col gap-3">
                     <SectionTitle icon="close">{t('receipt_review.reject_title')}</SectionTitle>
                     <div className="flex flex-col gap-1.5">
-                      {REASONS.map((value) => (
+                      {REASONS.map((value, index) => (
                         <label
                           key={value}
                           className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
@@ -340,7 +607,8 @@ export function ReceiptReviewDialog({
                             disabled={rejectBlocked}
                             className="accent-brand-blue"
                           />
-                          {t(`rejection_reason.${value}`)}
+                          <span className="flex-1">{t(`rejection_reason.${value}`)}</span>
+                          <Kbd>{String(index + 1)}</Kbd>
                         </label>
                       ))}
                     </div>
@@ -349,6 +617,7 @@ export function ReceiptReviewDialog({
                         {t('receipt_review.reject_note_label')}
                       </span>
                       <textarea
+                        ref={noteRef}
                         value={note}
                         onChange={(event) => setNote(event.target.value)}
                         rows={3}
@@ -363,11 +632,15 @@ export function ReceiptReviewDialog({
                         type="button"
                         disabled={rejectBlocked}
                         aria-busy={sending}
-                        onClick={() => void send({ kind: 'reject', reason, note: note.trim() })}
+                        onClick={rejectNow}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <BoIcon name="close" size={16} />
                         {t('receipt_review.reject_confirm')}
+                        <span className="ml-1 hidden items-center gap-0.5 sm:inline-flex">
+                          <Kbd>{KEY_CTRL}</Kbd>
+                          <Kbd>{KEY_ENTER}</Kbd>
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -390,6 +663,9 @@ export function ReceiptReviewDialog({
                     >
                       <BoIcon name="check" size={16} />
                       {t('receipt_review.approve')}
+                      <span className="ml-1 hidden sm:inline-flex">
+                        <Kbd>A</Kbd>
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -399,6 +675,9 @@ export function ReceiptReviewDialog({
                     >
                       <BoIcon name="close" size={16} />
                       {t('receipt_review.reject')}
+                      <span className="ml-1 hidden sm:inline-flex">
+                        <Kbd>R</Kbd>
+                      </span>
                     </button>
                   </div>
                 )}
@@ -465,7 +744,16 @@ function VerdictNotice({ verdict }: { verdict: ReviewVerdict }) {
  * receipts first (docs/OCR-AVALIACAO.md). The model id stays off screen — it is a technical id (CLAUDE.md §4) and lives
  * in the database for audit.
  */
-function ReadingSection({ reading }: { reading: ReceiptReading }) {
+function ReadingSection({
+  reading,
+  source,
+  lowConfidencePercent,
+}: {
+  reading: ReceiptReading
+  /** A re-read says so: the reviewer asked for it, and should see it came back. */
+  source: PaymentReviewItem['readingSource']
+  lowConfidencePercent: number | null
+}) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
 
@@ -487,6 +775,15 @@ function ReadingSection({ reading }: { reading: ReceiptReading }) {
             reason: t(`receipt_review.reading_failure_${reading.reason}`),
           })}
         />
+        {/* A failed re-read says it was one: the reviewer asked for it, and
+            must not read it as the first reading still standing. */}
+        {source === 'reread' && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('receipt_review.reading_reread_failed_at', {
+              date: formatDateTime(reading.readAt, locale),
+            })}
+          </p>
+        )}
       </section>
     )
   }
@@ -552,19 +849,55 @@ function ReadingSection({ reading }: { reading: ReceiptReading }) {
               >
                 {row.text}
               </span>
-              {row.field.value !== null && (
-                <span className="block text-xs tabular-nums text-muted-foreground">
-                  {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
-                </span>
-              )}
+              {row.field.value !== null &&
+                (lowConfidencePercent !== null && row.field.confidence * 100 < lowConfidencePercent ? (
+                  // Below the backoffice's floor (OOC-41): the one field to
+                  // check against the image first. Only flags — never decides.
+                  <span className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800">
+                    <BoIcon name="alert" size={12} />
+                    {t('receipt_review.reading_low_confidence', { value: Math.round(row.field.confidence * 100) })}
+                  </span>
+                ) : (
+                  <span className="block text-xs tabular-nums text-muted-foreground">
+                    {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
+                  </span>
+                ))}
             </dd>
           </div>
         ))}
       </dl>
       <p className="mt-2 text-xs text-muted-foreground">
-        {t('receipt_review.reading_read_at', { date: formatDateTime(reading.readAt, locale) })}
+        {t(source === 'reread' ? 'receipt_review.reading_reread_at' : 'receipt_review.reading_read_at', {
+          date: formatDateTime(reading.readAt, locale),
+        })}
       </p>
     </section>
+  )
+}
+
+/** Previous / next case, for the mouse; J and K do the same. */
+function CaseStepButton({
+  icon,
+  label,
+  disabled,
+  onClick,
+}: {
+  icon: 'chevron-left' | 'chevron-right'
+  label: string
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <BoIcon name={icon} size={16} />
+    </button>
   )
 }
 

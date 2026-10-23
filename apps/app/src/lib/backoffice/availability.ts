@@ -1,9 +1,9 @@
-import type { AvailabilitySlot, ClassGroupRow, Weekday } from './types'
+import type { AvailabilitySlot, ClassGroupItem, Weekday } from './types'
 
 /**
  * Weekly availability, as data. No UI copy here — the weekday codes are
  * resolved to words by the locale (CLAUDE.md §4), and the times are `HH:mm`
- * in America/Lima, the same shape `ClassGroupRow.startTime` already uses.
+ * in America/Lima, the same shape a class group's `slots` use.
  */
 
 /** Monday first, the way the schedule is read. */
@@ -30,8 +30,9 @@ export interface AllocatedClass {
   code: string
   courseName: string
   startTime: string
+  endTime: string
   /**
-   * The class group starts outside every window the teacher declared. Not an
+   * The meeting does not fit inside any window the teacher declared. Not an
    * error the screen may fix — availability is declared, allocation is decided,
    * and when they disagree a human has to know which one is stale.
    */
@@ -54,23 +55,27 @@ const byStart = (a: { startTime: string }, b: { startTime: string }) =>
  */
 export function weekColumns(
   availability: AvailabilitySlot[],
-  classGroups: ClassGroupRow[],
+  classGroups: ClassGroupItem[],
 ): DayColumn[] {
   return WEEK.map((weekday) => {
     const slots = availability.filter((slot) => slot.weekday === weekday).sort(byStart)
     const classes = classGroups
-      .filter((group) => group.weekdays.includes(weekday))
-      .map((group) => ({
-        id: group.id,
-        code: group.code,
-        courseName: group.courseName,
-        startTime: group.startTime,
-        outside: !slots.some(
-          (slot) =>
-            toMinutes(group.startTime) >= toMinutes(slot.startTime) &&
-            toMinutes(group.startTime) < toMinutes(slot.endTime),
-        ),
-      }))
+      .flatMap((group) =>
+        group.slots
+          .filter((meeting) => meeting.weekday === weekday)
+          .map((meeting) => ({
+            id: group.id,
+            code: group.code,
+            courseName: group.courseName,
+            startTime: meeting.startTime,
+            endTime: meeting.endTime,
+            outside: !slots.some(
+              (slot) =>
+                toMinutes(meeting.startTime) >= toMinutes(slot.startTime) &&
+                toMinutes(meeting.endTime) <= toMinutes(slot.endTime),
+            ),
+          })),
+      )
       .sort(byStart)
     return { weekday, slots, classes }
   })

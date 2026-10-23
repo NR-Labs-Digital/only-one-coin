@@ -87,6 +87,8 @@ describe("SettlePaymentUseCase", () => {
     expect(result).toEqual({ paymentId: PAYMENT, status: "approved", seatStatus: "confirmed", portalAccess: "created" });
     expect(repository.settled[0]!.to).toBe("approved");
     expect(repository.settled[0]!.audit).toMatchObject({ actorId: ACTOR, action: "payment.approved", targetId: PAYMENT });
+    // The row and the trail tell the same story, to the instant.
+    expect(repository.settled[0]!.decision).toEqual({ by: ACTOR, at: repository.settled[0]!.audit.at, rejectionReason: null });
   });
 
   it("asks for the student's portal account on approval, with a credentials e-mail behind a link", async () => {
@@ -144,6 +146,12 @@ describe("SettlePaymentUseCase", () => {
     expect(result.status).toBe("rejected");
     expect(result.seatStatus).toBe("released");
     expect(repository.settled[0]!.audit.metadata).toMatchObject({ reason: "amount_mismatch", note: "Pagó S/ 50" });
+    // The reason code goes on the payment too; the note stays in the trail only.
+    expect(repository.settled[0]!.decision).toEqual({
+      by: ACTOR,
+      at: repository.settled[0]!.audit.at,
+      rejectionReason: "amount_mismatch",
+    });
     expect(repository.settled[0]!.notifications[0]!.templateKey).toBe("payment_rejected");
   });
 

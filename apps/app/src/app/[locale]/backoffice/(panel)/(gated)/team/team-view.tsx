@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, getPathname } from '@/i18n/navigation'
-import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
+import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { buildInvitePath, isInviteExpired } from '@/lib/backoffice/invite'
 import { formatDate, formatDateTime, initials, type Locale } from '@/lib/format'
 import {
@@ -28,8 +29,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { NewStaffForm, type TeacherOption } from './new-staff-form'
-import { RoleChangeDialog } from './role-change-dialog'
+import { NewStaffForm } from './new-staff-form'
+import { RoleChangeDialog, roleChangeOutcome, type RoleChangeOutcome } from './role-change-dialog'
 
 /**
  * Accounts that still open the panel, accounts with an invite still waiting
@@ -62,31 +63,34 @@ const selectClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
 /**
- * Team directory. Search, filters and paging run in the browser because the
- * dataset is mocked; against the real API this becomes a server query.
+ * Team directory. `GET /api/v1/staff` hands over the whole list and search,
+ * filters and paging run in the browser — a panel team is tens of accounts,
+ * not thousands.
  *
- * Every write here is component state. The real ones are usecases in
- * `apps/api`: opening an account, and the dedicated promotion usecase that is
- * the only way a `role` ever moves — admin-only, behind fresh
- * re-authentication, and written to the append-only audit log in the same
- * transaction (CLAUDE.md §8). The browser never writes a cargo.
+ * Every write goes through `apps/api` — invites, access, password resets and
+ * the dedicated promotion usecase that is the only way a `role` ever moves:
+ * admin-only, behind fresh re-authentication, and written to the append-only
+ * audit log in the same transaction (CLAUDE.md §8). The browser never writes
+ * a cargo; it applies the confirmed change to the row on screen and refreshes
+ * the page so the cargo ledger below it picks up the new entry.
  */
 export function TeamView({
   rows,
-  teachers,
+  invitableTeachers,
   currentUserId,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
 }: {
   rows: StaffMemberRow[]
-  /** Teachers still on the roster — who an account may be opened over. */
-  teachers: TeacherOption[]
+  /** Teacher files that can still receive an account — the invite form's picker (OOC-79). */
+  invitableTeachers: InvitableTeacher[]
   /** The signed-in admin: nobody moves their own cargo or their own door. */
   currentUserId: string
   currentUserName: string
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
 
   const [members, setMembers] = useState<StaffMemberRow[]>(rows)
   const [tab, setTab] = useState<Tab>('active')
@@ -129,17 +133,6 @@ export function TeamView({
     [members],
   )
 
-  /* Only teachers who do not already hold an account: two doors for one person
-     is two sessions to remember to close. Computed here rather than on the
-     server so an account opened a second ago already counts. */
-  const availableTeachers = useMemo(
-    () =>
-      teachers.filter(
-        (teacher) => !members.some((row) => row.teacherId === teacher.id),
-      ),
-    [teachers, members],
-  )
-
   const activeFilters = role !== ALL ? 1 : 0
 
   /** A filter that shrinks the list can leave the page behind it. */
@@ -159,27 +152,33 @@ export function TeamView({
    * The cargo moved. `PromoteStaffRoleRoute` writes the `role` column and the
    * `audit_log` entry in one call (CLAUDE.md §8) — this only applies the same
    * change to the row already on screen once the server confirms it.
-   * Returns whether it succeeded so the dialog knows whether to stay open
-   * (e.g. wrong re-auth password) or close.
+   * Returns the outcome so the dialog knows whether to close or which error
+   * to show — only the API's own verdict on the password reads as "wrong
+   * password"; a 403, a validation error or a 500 is something else.
    */
   async function applyRoleChange(
     member: StaffMemberRow,
     next: StaffRole,
     password: string,
-  ): Promise<boolean> {
+  ): Promise<RoleChangeOutcome> {
     const response = await fetch(`/api/v1/staff/${member.id}/role`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: next, password }),
-    })
-    if (!response.ok) return false
+    }).catch(() => null)
+    if (!response) return 'failed'
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { reason?: string } | null
+      return roleChangeOutcome(body?.reason)
+    }
 
     setMembers((current) =>
       current.map((row) => (row.id === member.id ? { ...row, role: next } : row)),
     )
     setChanging(null)
     setToast(t('team.changed_toast'))
-    return true
+    router.refresh()
+    return 'ok'
   }
 
   function applyAccessLocal(member: StaffMemberRow, status: StaffMemberRow['status']) {
@@ -205,7 +204,16 @@ export function TeamView({
     try {
       const response = await fetch(`/api/v1/staff/${member.id}/access/restore`, { method: 'POST' })
       if (!response.ok) {
-        setToast(t('team.action_failed'))
+        // A teacher off the roster gets the door back by rejoining it, in
+        // Docentes — apps/api refuses it here (OOC-79).
+        const body = (await response.json().catch(() => null)) as { reason?: string } | null
+        setToast(
+          t(
+            body?.reason === 'staff_access.teacher_inactive'
+              ? 'team.restore_teacher_inactive'
+              : 'team.action_failed',
+          ),
+        )
         return
       }
       applyAccessLocal(member, 'active')
@@ -398,7 +406,7 @@ export function TeamView({
 
       {creating && (
         <NewStaffForm
-          teachers={availableTeachers}
+          teachers={invitableTeachers}
           onCancel={() => setCreating(false)}
           onCreate={(member) => {
             setMembers((current) => [member, ...current])
@@ -406,6 +414,8 @@ export function TeamView({
             setTab('invited')
             setPage(0)
             setToast(t('team.created_toast'))
+            // The invite's cargo is a ledger entry too.
+            router.refresh()
           }}
         />
       )}
@@ -495,6 +505,15 @@ export function TeamView({
                                 <BoIcon name="chevron-right" size={12} />
                                 {t('team.teacher_file')}
                               </Link>
+                            )}
+                            {/* A docente account no file links to sees no class
+                                group at all — a finding, not a blank cell. Only
+                                accounts opened before OOC-79 can be in this state. */}
+                            {row.role === 'teacher' && !row.teacherId && (
+                              <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
+                                <BoIcon name="alert" size={12} />
+                                {t('team.teacher_unlinked')}
+                              </span>
                             )}
                           </span>
                         </span>

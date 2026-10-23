@@ -7,10 +7,11 @@ const EnrollmentStatusSchema = z.enum(["under_review", "active", "completed", "r
 const SeatStatusSchema = z.enum(["reserved", "confirmed", "released"]);
 
 // Every filter the ledger screen offers, applied by Postgres. Absent means
-// "all". `q` keeps the same floor as the student search, so a one-letter
+// "all", except the tab, which opens on who is studying now (OOC-115). `q` keeps the same floor as the student search, so a one-letter
 // query does not turn into a full-ledger ILIKE on every keystroke.
 const ListEnrollmentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(100_000).default(1),
+  state: z.enum(["current", "ended", "all"]).default("current"),
   language: z.string().trim().min(1).max(100).optional(),
   period: z.string().uuid().optional(),
   q: z.string().trim().min(2).max(100).optional(),
@@ -29,6 +30,7 @@ const EnrollmentListRowSchema = z.object({
   language: z.object({ id: z.string(), name: z.string() }).nullable(),
   modality: z.literal("online"),
   academicPeriodName: z.string(),
+  classGroupStatus: z.enum(["draft", "enrolling", "in_progress", "finished", "closed"]),
   status: EnrollmentStatusSchema,
   seatStatus: SeatStatusSchema,
   planName: z.string(),
@@ -48,6 +50,7 @@ const EnrollmentListResponseSchema = z.object({
   items: z.array(EnrollmentListRowSchema),
   // Matching the filters, across every page.
   total: z.number().int(),
+  counts: z.object({ current: z.number().int(), ended: z.number().int(), all: z.number().int() }),
   page: z.number().int(),
   pageSize: z.number().int(),
   metrics: z.object({
@@ -73,16 +76,17 @@ export const listEnrollmentsRoute = RouteBuilder.get("/enrollments")
     tags: ["Enrollments"],
     summary: "List the enrollment ledger",
     description:
-      "Backs /backoffice/enrollments. One page at a time, filtered and searched server-side; the metrics count the whole ledger.",
+      "Backs /backoffice/enrollments. Opens on the current tab (class group enrolling or in progress); `counts` says how many each tab holds under the other filters. One page at a time, filtered and searched server-side; the metrics count the whole ledger.",
   })
   .roles("master", "admin", "enrollment_supervisor", "analyst", "sales", "support")
   .query(ListEnrollmentsQuerySchema)
   .response(200, EnrollmentListResponseSchema)
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { page, language, period, q, sort } = request.query;
+    const { page, state, language, period, q, sort } = request.query;
     const result = await container.queries.listEnrollments.run({
       page,
+      state: state === "all" ? undefined : state,
       language,
       academicPeriodId: period,
       q,
@@ -96,6 +100,7 @@ export const listEnrollmentsRoute = RouteBuilder.get("/enrollments")
         paidAt: row.paidAt?.toISOString() ?? null,
       })),
       total: result.total,
+      counts: result.counts,
       page: result.page,
       pageSize: result.pageSize,
       metrics: result.metrics,

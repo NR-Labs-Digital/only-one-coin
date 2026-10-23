@@ -10,14 +10,29 @@ import {
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import {
-  getDashboardMetrics,
-  getReviewQueue,
-  getSeatWatch,
-} from '@/lib/backoffice/mock-data'
+  getDashboardSummary,
+  getReviewQueueHead,
+  oldestWaitHours,
+  seatOccupancy,
+  seatsUnderPressure,
+} from '@/lib/backoffice/dashboard'
+import { listCatalogClassGroups } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
-import { formatDate, formatDateTime, formatMoney, type Locale } from '@/lib/format'
-import { reviewFlagTone, seatPressureTone } from '@/components/backoffice/status-tone'
+import { canBrowseCatalog, canViewPayments } from '@/lib/backoffice/permissions'
+import type { PaymentReviewItem } from '@/lib/backoffice/types'
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  formatSignedNumber,
+  type Locale,
+} from '@/lib/format'
+import {
+  receiptStateTone,
+  seatPressureTone,
+  verdictTone,
+} from '@/components/backoffice/status-tone'
 import { StatusPill, toneBar } from '@/components/backoffice/status-pill'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -35,7 +50,12 @@ import { AutoGrid } from '@/components/layout/auto-grid'
 /**
  * Backoffice home. Two jobs: surface what needs a human right now (the receipt
  * review queue and seat pressure — CLAUDE.md §5) and give one door per module.
- * Every number comes from the mock source; no backend is wired yet.
+ *
+ * Every block reads `apps/api` (OOC-67), and only for a cargo the API serves
+ * it to: the queue for who opens Payments, the class groups and the
+ * enrollment figures for who reads the catalog. A block the reader may not
+ * see is never asked for, and one whose read fails is left out — the home
+ * shows less, it never shows a 403 or a wrong zero.
  */
 export default async function BackofficeHomePage({
   params,
@@ -50,54 +70,72 @@ export default async function BackofficeHomePage({
   const staff = await getStaffSession()
 
   const flags = await getFeatureFlags()
-  const metrics = getDashboardMetrics()
-  const queue = getReviewQueue()
-  const seats = getSeatWatch()
+  const readsPayments = canViewPayments(staff.role)
+  const readsCatalog = canBrowseCatalog(staff.role)
 
-  const seatPct =
-    metrics.seatsCapacity === 0
-      ? 0
-      : Math.round((metrics.seatsTaken / metrics.seatsCapacity) * 100)
+  const [summary, queue, classGroups] = await Promise.all([
+    readsCatalog ? getDashboardSummary() : null,
+    readsPayments ? getReviewQueueHead() : null,
+    readsCatalog ? listCatalogClassGroups() : null,
+  ])
+
+  const preview = queue?.items.slice(0, 5) ?? []
+  const oldestHours = queue ? oldestWaitHours(queue) : null
+  const occupancy = classGroups ? seatOccupancy(classGroups) : null
+  const seats = classGroups ? seatsUnderPressure(classGroups) : []
 
   const stats: {
     label: string
     value: string
-    hint: string
+    hint?: string
     icon: LucideIcon
     accent: string
-  }[] = [
-    {
+  }[] = []
+
+  if (summary) {
+    stats.push({
       label: t('dashboard.metric_enrollments_today'),
-      value: String(metrics.enrollmentsToday),
-      hint: t('dashboard.metric_delta', { value: metrics.enrollmentsTodayDelta }),
+      value: String(summary.enrollmentsToday),
+      hint: t('dashboard.metric_delta', {
+        value: formatSignedNumber(summary.enrollmentsToday - summary.enrollmentsYesterday, locale),
+      }),
       icon: ClipboardList,
       accent: 'bg-sky text-brand-blue',
-    },
-    {
+    })
+  }
+  if (queue) {
+    stats.push({
       label: t('dashboard.metric_pending_review'),
-      value: String(metrics.pendingReview),
-      hint: t('dashboard.metric_oldest', { hours: metrics.oldestPendingHours }),
+      value: String(queue.total),
+      // Nothing waiting has no age: the line goes, as on the Payments header.
+      hint: oldestHours === null ? undefined : t('dashboard.metric_oldest', { hours: oldestHours }),
       icon: AlertTriangle,
       accent: 'bg-amber-50 text-amber-600',
-    },
-    {
+    })
+  }
+  if (summary) {
+    stats.push({
       label: t('dashboard.metric_active_students'),
-      value: String(metrics.activeStudents),
-      hint: t('dashboard.metric_delta', { value: metrics.activeStudentsDelta }),
+      value: String(summary.activeStudents),
+      hint: t('dashboard.metric_delta', {
+        value: formatSignedNumber(summary.activeStudents - summary.activeStudentsYesterday, locale),
+      }),
       icon: Users,
       accent: 'bg-emerald-50 text-emerald-600',
-    },
-    {
+    })
+  }
+  if (occupancy) {
+    stats.push({
       label: t('dashboard.metric_seats'),
-      value: `${seatPct}%`,
+      value: `${occupancy.capacity === 0 ? 0 : Math.round((occupancy.taken / occupancy.capacity) * 100)}%`,
       hint: t('dashboard.metric_seats_hint', {
-        taken: metrics.seatsTaken,
-        capacity: metrics.seatsCapacity,
+        taken: occupancy.taken,
+        capacity: occupancy.capacity,
       }),
       icon: Armchair,
       accent: 'bg-cream text-brand-yellow-deep',
-    },
-  ]
+    })
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -107,7 +145,8 @@ export default async function BackofficeHomePage({
         </h1>
       </header>
 
-      {/* Headline numbers */}
+      {/* Headline numbers — only the ones this cargo's reads produced. */}
+      {stats.length > 0 && (
       <AutoGrid as="section" min="15rem" gap="gap-3">
         {stats.map(({ label, value, hint, icon: Icon, accent }) => (
           <Card key={label} className="gap-0 py-4">
@@ -119,7 +158,7 @@ export default async function BackofficeHomePage({
                 <p className="mt-1.5 text-3xl font-semibold tracking-tight text-foreground">
                   {value}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+                {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
               </div>
               <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${accent}`}>
                 <Icon className="size-4.5" />
@@ -128,11 +167,12 @@ export default async function BackofficeHomePage({
           </Card>
         ))}
       </AutoGrid>
+      )}
 
       {/* Human review queue — the core of the backoffice (CLAUDE.md §5). It is
           Pagos seen from the door, so it answers to that flag: with the section
           off, the panel does not advertise a pile of work nobody can open. */}
-      {flags['backoffice.payments'] && (
+      {flags['backoffice.payments'] && queue && (
         <section>
           <Card className="gap-0 overflow-hidden py-0">
             <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
@@ -149,14 +189,14 @@ export default async function BackofficeHomePage({
                   seta diz que dá pra ir. */}
               <Button asChild size="lg" className="shrink-0 font-semibold">
                 <Link href="/backoffice/payments/review" aria-label={t('review.see_all')}>
-                  {t('review.pending_count', { count: metrics.pendingReview })}
+                  {t('review.pending_count', { count: queue.total })}
                   <ArrowRight data-icon="inline-end" />
                 </Link>
               </Button>
             </CardHeader>
 
             <CardContent className="px-0">
-              {queue.length === 0 ? (
+              {preview.length === 0 ? (
                 <div className="px-5 py-8 text-center">
                   <p className="text-sm font-semibold text-foreground">
                     {t('review.empty_title')}
@@ -173,7 +213,7 @@ export default async function BackofficeHomePage({
                       <TableHead className="pl-5">{t('review.col_student')}</TableHead>
                       <TableHead>{t('review.col_course')}</TableHead>
                       <TableHead>{t('review.col_amount')}</TableHead>
-                      <TableHead>{t('review.col_flag')}</TableHead>
+                      <TableHead>{t('review.col_verdict')}</TableHead>
                       <TableHead>{t('review.col_submitted')}</TableHead>
                       <TableHead className="pr-5 text-right">
                         <span className="sr-only">{t('common.actions')}</span>
@@ -181,8 +221,9 @@ export default async function BackofficeHomePage({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {queue.map((item) => {
-                      const mismatch = item.amountCents !== item.expectedAmountCents
+                    {preview.map((item) => {
+                      const read = readAmountCents(item)
+                      const mismatch = read !== null && read !== item.expectedAmountCents
                       return (
                         <TableRow key={item.id}>
                           <TableCell className="whitespace-nowrap pl-5 font-medium">
@@ -198,7 +239,9 @@ export default async function BackofficeHomePage({
                                   mismatch ? 'text-destructive' : ''
                                 }`}
                               >
-                                {formatMoney(item.amountCents, 'PEN', locale)}
+                                {/* What the receipt says when the OCR read it;
+                                    the price owed until then. */}
+                                {formatMoney(read ?? item.expectedAmountCents, 'PEN', locale)}
                               </span>
                               {mismatch && (
                                 <span className="text-xs text-muted-foreground">
@@ -214,10 +257,20 @@ export default async function BackofficeHomePage({
                             </span>
                           </TableCell>
                           <TableCell>
-                            <StatusPill
-                              tone={reviewFlagTone[item.flag]}
-                              label={t(`review_flag.${item.flag}`)}
-                            />
+                            {/* The traffic light once it ran; until then, where
+                                the receipt stands — the same column the queue
+                                shows. */}
+                            {item.verdict ? (
+                              <StatusPill
+                                tone={verdictTone[item.verdict.verdict]}
+                                label={t(`review.verdict_short.${item.verdict.verdict}`)}
+                              />
+                            ) : (
+                              <StatusPill
+                                tone={receiptStateTone[item.receipt]}
+                                label={t(`receipt_state.${item.receipt}`)}
+                              />
+                            )}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                             {formatDateTime(item.submittedAt, locale)}
@@ -247,12 +300,12 @@ export default async function BackofficeHomePage({
 
               {/* The door to the queue is the counter in the header — one per
                   card, or the eye stops trusting either. */}
-              {queue.length > 0 && (
+              {preview.length > 0 && (
                 <div className="border-t border-border px-5 py-3">
                   <p className="text-xs text-muted-foreground">
                     {t('review.showing', {
-                      shown: queue.length,
-                      total: metrics.pendingReview,
+                      shown: preview.length,
+                      total: queue.total,
                     })}
                   </p>
                 </div>
@@ -264,7 +317,7 @@ export default async function BackofficeHomePage({
 
       {/* Seat pressure per class group — the academic section summed up, and
           off with it: there would be nothing behind these cards to open. */}
-      {flags['backoffice.academic'] && (
+      {flags['backoffice.academic'] && classGroups && (
         <section>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -283,11 +336,15 @@ export default async function BackofficeHomePage({
               <ArrowRight className="size-3.5" />
             </Link>
           </div>
+          {seats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('seats.empty')}</p>
+          ) : (
           <AutoGrid min="20rem" gap="gap-3">
             {seats.map((group) => {
               const tone = seatPressureTone(group.seatsTaken, group.capacity)
               const full = group.seatsTaken >= group.capacity
-              const pct = Math.round((group.seatsTaken / group.capacity) * 100)
+              const pct =
+                group.capacity === 0 ? 0 : Math.round((group.seatsTaken / group.capacity) * 100)
               return (
                 <Card key={group.id} className="gap-0 py-4">
                   <CardContent className="px-4">
@@ -295,7 +352,7 @@ export default async function BackofficeHomePage({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">{group.courseName}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {group.classGroupName}
+                          {group.code}
                         </p>
                       </div>
                       <StatusPill
@@ -322,18 +379,28 @@ export default async function BackofficeHomePage({
                           capacity: group.capacity,
                         })}
                       </span>
-                      <span>
-                        {t('seats.starts', { date: formatDate(group.startDate, locale) })}
-                      </span>
+                      {/* A class group on sale always has its dates: only a
+                          draft may lack them. */}
+                      {group.startsOn && (
+                        <span>
+                          {t('seats.starts', { date: formatDate(group.startsOn, locale) })}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               )
             })}
           </AutoGrid>
+          )}
         </section>
       )}
 
     </div>
   )
+}
+
+/** The amount the OCR read off the latest receipt; `null` while nothing was read. */
+function readAmountCents(item: PaymentReviewItem): number | null {
+  return item.reading?.state === 'read' ? item.reading.amountCents.value : null
 }

@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { getTeacher, listCourses } from '@/lib/backoffice/mock-data'
+import { getTeacher } from '@/lib/backoffice/teachers'
 import { getTeacherSession } from '@/lib/backoffice/session'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeacherFile } from '../../../backoffice/(panel)/(gated)/teachers/[teacherId]/teacher-file'
@@ -9,6 +9,9 @@ import { TeacherFile } from '../../../backoffice/(panel)/(gated)/teachers/[teach
  * class groups on them. The id comes from the session, never from the URL —
  * there is no id in this address to guess (anti-IDOR, CLAUDE.md §8). Editing
  * the ficha is coordination's, in the backoffice.
+ *
+ * Read from `GET /teachers/:id`, which admits a teacher for the file linked to
+ * their own account and nobody else's (OOC-79).
  */
 export default async function TeacherProfilePage({
   params,
@@ -19,10 +22,11 @@ export default async function TeacherProfilePage({
   setRequestLocale(locale)
 
   const staff = await getTeacherSession()
-  const teacher = getTeacher(staff.teacherId)
+  const teacher = staff.teacherId ? await getTeacher(staff.teacherId) : null
 
-  /* An account with the teacher role but no ficha behind it yet — the roster
-     is filled by coordination. Saying so beats a 404 on the reader's own page. */
+  /* An account with the teacher role but no ficha linked to it — opened before
+     the invite named the file (OOC-79), or a read that failed. Saying so beats
+     a 404 on the reader's own page. */
   if (!teacher) {
     const t = await getTranslations('bo')
     return (
@@ -37,17 +41,14 @@ export default async function TeacherProfilePage({
     )
   }
 
-  const catalogue = [
-    ...new Map(
-      listCourses().map((course) => [course.language.id, course.language]),
-    ).values(),
-  ].sort((a, b) => a.name.localeCompare(b.name))
-
+  /* Read-only, so no catalog to pick languages from — the teacher does not
+     read the catalog (`CATALOG_READ_ROLES`), and the file lists the languages
+     they already hold on its own. */
   return (
     <div className="flex flex-col gap-5">
       <TeacherFile
         teacher={teacher}
-        catalogue={catalogue}
+        catalogue={[]}
         canEdit={false}
         classGroupBase="/docente/class-groups"
       />

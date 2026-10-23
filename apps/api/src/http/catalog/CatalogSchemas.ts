@@ -1,4 +1,4 @@
-import { CertificateRuleSchema, ClassGroupStatusSchema, WeeklySlotSchema as ValidWeeklySlotSchema } from "@ooc/domain";
+import { CertificateRuleSchema, ClassGroupStatusSchema, LandingCourseKeySchema, WeeklySlotSchema as ValidWeeklySlotSchema } from "@ooc/domain";
 import { z } from "zod";
 
 export const IdParamsSchema = z.object({ id: z.string().uuid() });
@@ -18,6 +18,7 @@ export const CourseListItemSchema = z.object({
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
   allowsTransfer: z.boolean(),
+  landingKey: LandingCourseKeySchema.nullable(),
   active: z.boolean(),
   classGroupCount: z.number().int(),
   planCount: z.number().int(),
@@ -70,7 +71,9 @@ export const ClassGroupItemSchema = z.object({
   courseActive: z.boolean(),
   academicPeriodId: z.string().uuid(),
   academicPeriodName: z.string(),
+  teacherId: z.string().uuid().nullable(),
   teacherName: z.string(),
+  legacyTeacherName: z.string(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.string().datetime().nullable(),
   endsOn: z.string().datetime().nullable(),
@@ -105,7 +108,8 @@ export const CreateClassGroupBodySchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
   code: z.string().trim().min(1),
-  teacherName: z.string().trim(),
+  /** From the roster (OOC-80); null on edit takes the allocation away. */
+  teacherId: z.string().uuid().nullable().optional(),
   slots: z.array(ValidWeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: DateTimeOrNull,

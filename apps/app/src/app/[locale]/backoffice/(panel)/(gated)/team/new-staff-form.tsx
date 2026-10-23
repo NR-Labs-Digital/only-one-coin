@@ -3,21 +3,13 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { getPathname } from '@/i18n/navigation'
-import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
+import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { canHoldMaster } from '@/lib/backoffice/permissions'
 import { buildInvitePath } from '@/lib/backoffice/invite'
 import { Card, RequiredMark } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { formatDate, type Locale } from '@/lib/format'
-
-/** A teacher still on the roster — who an account may be opened over. */
-export interface TeacherOption {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
 
 /** `master` is not listed: it only appears for the owners' e-mail domain. */
 const ROLES: StaffRole[] = [
@@ -47,10 +39,11 @@ const labelClass =
  * shows somebody else's password is a panel that has it. The second factor is
  * not set here either — the owner enrolls their own, on first sign-in.
  *
- * A `teacher` account is opened over a teacher who is already on the roster,
- * the same shape as a manual enrollment acting only on a student who already
- * exists (CLAUDE.md §1): the record carries what the account is scoped by, so
- * it has to exist before the door does.
+ * A `teacher` invite names the teacher file the account will belong to
+ * (OOC-79): the person is picked from the roster — files with no account and
+ * no invite already open — and the pick fills name and e-mail, still editable.
+ * Accepting the invite links the account to that file; apps/api checks the
+ * file again on both ends, so a stale list only costs a refusal here.
  *
  * Posts to `POST /api/v1/staff/invites` (same-origin `/api/v1/...` proxy, the
  * pattern `new-student-form.tsx` already established) — `CreateStaffInviteUseCase`
@@ -61,7 +54,7 @@ export function NewStaffForm({
   onCancel,
   onCreate,
 }: {
-  teachers: TeacherOption[]
+  teachers: InvitableTeacher[]
   onCancel: () => void
   onCreate: (member: StaffMemberRow) => void
 }) {
@@ -80,6 +73,7 @@ export function NewStaffForm({
   const [copied, setCopied] = useState(false)
   const [pending, setPending] = useState(false)
   const [emailTaken, setEmailTaken] = useState(false)
+  const [teacherRefused, setTeacherRefused] = useState(false)
   const [failed, setFailed] = useState(false)
 
   const isTeacher = role === 'teacher'
@@ -97,10 +91,8 @@ export function NewStaffForm({
     (role !== 'master' || allowMaster) &&
     (!isTeacher || teacherId !== '')
 
-  /* Picking the teacher fills the person in: the roster already answered who
-     they are and where to write to them, and retyping it is how two records of
-     one person start disagreeing. */
-  function selectTeacher(id: string) {
+  /** Picking the file fills who the person is; the fields stay editable. */
+  function pickTeacher(id: string) {
     setTeacherId(id)
     const teacher = teachers.find((item) => item.id === id)
     if (!teacher) return
@@ -109,15 +101,11 @@ export function NewStaffForm({
     setEmail(teacher.email)
   }
 
-  function selectRole(next: StaffRole) {
-    setRole(next)
-    if (next !== 'teacher') setTeacherId('')
-  }
-
   async function submit() {
     if (!ready || pending) return
     setPending(true)
     setEmailTaken(false)
+    setTeacherRefused(false)
     setFailed(false)
 
     // Every exit from here — a rejected status, a body that doesn't parse, a
@@ -134,6 +122,7 @@ export function NewStaffForm({
           lastName: lastName.trim(),
           email: email.trim(),
           role,
+          ...(isTeacher ? { teacherId } : {}),
         }),
       })
 
@@ -144,6 +133,10 @@ export function NewStaffForm({
           .catch(() => undefined)
         if (reason === 'staff_invite.email_taken') {
           setEmailTaken(true)
+        } else if (reason?.startsWith('staff_invite.teacher_')) {
+          // The file got an account or an open invite, or left the roster,
+          // since the list was read (OOC-79).
+          setTeacherRefused(true)
         } else {
           setFailed(true)
         }
@@ -249,25 +242,29 @@ export function NewStaffForm({
     <Card className="p-5">
       <p className="mb-1 text-sm font-semibold text-ink">{t('team.new_title')}</p>
 
-      {(emailTaken || failed) && (
+      {(emailTaken || teacherRefused || failed) && (
         <div
           role="alert"
           className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
-          {t(emailTaken ? 'team.invite_email_taken' : 'team.action_failed')}
+          {t(
+            emailTaken
+              ? 'team.invite_email_taken'
+              : teacherRefused
+                ? 'team.invite_teacher_unavailable'
+                : 'team.action_failed',
+          )}
         </div>
       )}
 
-      {/* Access first: the cargo decides whether the rest of the form is typed
-          or picked from the roster. */}
       <Block>
-        {/* Capped: one or two selects stretched across a wide panel read as a
+        {/* Capped: a lone select stretched across a wide panel reads as a
             form with a field missing. */}
         <AutoGrid min="15rem" gap="gap-3" className="max-w-3xl">
           <Labelled label={t('team.field_role')} required>
             <select
               value={role}
-              onChange={(event) => selectRole(event.target.value as StaffRole)}
+              onChange={(event) => setRole(event.target.value as StaffRole)}
               className={fieldClass}
             >
               {roles.map((item) => (
@@ -277,26 +274,33 @@ export function NewStaffForm({
               ))}
             </select>
           </Labelled>
-
-          {isTeacher && (
-            <Labelled label={t('team.field_teacher')} required>
-              <select
-                value={teacherId}
-                onChange={(event) => selectTeacher(event.target.value)}
-                className={fieldClass}
-              >
-                <option value="">{t('team.teacher_select')}</option>
-                {teachers.map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {`${teacher.firstName} ${teacher.lastName}`}
-                  </option>
-                ))}
-              </select>
-            </Labelled>
-          )}
         </AutoGrid>
 
-        {isTeacher && (
+        {isTeacher &&
+          (teachers.length > 0 ? (
+            <AutoGrid min="15rem" gap="gap-3" className="mt-3 max-w-3xl">
+              <Labelled label={t('team.field_teacher')} required>
+                <select
+                  value={teacherId}
+                  onChange={(event) => pickTeacher(event.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="" disabled>
+                    {t('team.field_teacher_placeholder')}
+                  </option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {`${teacher.firstName} ${teacher.lastName}`}
+                    </option>
+                  ))}
+                </select>
+              </Labelled>
+            </AutoGrid>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">{t('team.teacher_none_available')}</p>
+          ))}
+
+        {isTeacher && teachers.length > 0 && (
           <p className="mt-3 text-xs text-muted-foreground">{t('team.teacher_hint')}</p>
         )}
       </Block>
@@ -307,8 +311,7 @@ export function NewStaffForm({
             <input
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
 
@@ -316,8 +319,7 @@ export function NewStaffForm({
             <input
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
 
@@ -326,8 +328,7 @@ export function NewStaffForm({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              disabled={isTeacher}
-              className={`${fieldClass} disabled:bg-slate-50 disabled:text-muted-foreground`}
+              className={fieldClass}
             />
           </Labelled>
         </AutoGrid>

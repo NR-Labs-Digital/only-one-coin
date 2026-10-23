@@ -1,13 +1,13 @@
-import type { PlatformSettings } from "../PlatformSettings.js";
+import type { AuditLogEntry } from "../../identity/ports/IAuditLogRepository.js";
+import type { PlatformSettings, PlatformSettingsChanges } from "../PlatformSettings.js";
 
 /**
- * One row, read on every checkout hold and every receipt validation. Narrow on purpose, like
- * `IFeatureFlagOverrideRepository`: each setting has its own write, so a
- * change to one can never carry a stale copy of another along with it.
+ * One row, read on every checkout hold, receipt validation and every screen
+ * that runs on a platform rule. A write touches only the columns that changed,
+ * so saving one setting can never carry a stale copy of another along with it.
  */
 export interface IPlatformSettingsRepository {
   get(): Promise<PlatformSettings>;
-  setCheckoutHoldMinutes(minutes: number, actorId: string): Promise<void>;
-  setReceiptAmountToleranceCents(cents: number, actorId: string): Promise<void>;
-  setReceiptRejectBelowPercent(percent: number, actorId: string): Promise<void>;
+  /** One transaction: the changed columns and one audit entry each. */
+  update(params: { changes: PlatformSettingsChanges; actorId: string; audit: AuditLogEntry[] }): Promise<void>;
 }

@@ -104,8 +104,10 @@ jobs:
       - name: Typecheck (todos os pacotes)
         run: pnpm -r --if-present run typecheck
 
+      # Retry só quando o next/font não alcança o Google Fonts — falha de
+      # rede recorrente que derrubava o CI da main e, com ele, os deploys.
       - name: Build (todos os pacotes e apps)
-        run: pnpm -r build
+        run: scripts/retry-on-font-fetch.sh pnpm -r build
 
       - name: Credencial de banco no bundle do cliente (CLAUDE.md §6)
         run: |

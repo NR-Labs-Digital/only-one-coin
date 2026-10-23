@@ -3,8 +3,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import {
   getCatalogClassGroup,
+  getClassGroupRoster,
   listCatalogCourses,
   listCatalogWaitlist,
+  listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { slotsLabel } from '@/lib/backoffice/schedule'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
@@ -14,11 +16,8 @@ import {
   canCreateClassGroup,
   canCreateEnrollment,
 } from '@/lib/backoffice/permissions'
-import {
-  addBusinessDays,
-  businessDaysUntil,
-  CERTIFICATE_DEADLINE_BUSINESS_DAYS,
-} from '@/lib/backoffice/certificates'
+import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import {
   Card,
@@ -29,7 +28,9 @@ import {
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { ClassGroupActions } from './class-group-actions'
+import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
+import { RosterCard } from './roster-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 type Translate = Awaited<ReturnType<typeof getTranslations<'bo'>>>
@@ -52,7 +53,6 @@ export default async function ClassGroupDetailPage({
 
   const staff = await getStaffSession()
 
-
   /* Billing sees no academic data: the page answers 404 (the catalog API
      answers it 403). The role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
   if (!canBrowseCatalog(staff.role)) notFound()
@@ -64,17 +64,22 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [waitlist, courses] = await Promise.all([
+  const [roster, waitlist, courses, teachers, settings] = await Promise.all([
+    // Every catalog reader gets the roster; which columns is the API's call.
+    getClassGroupRoster(group.id),
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
+    canManage ? listTeacherOptions() : Promise.resolve(null),
+    getPlatformSettings(),
   ])
   const schedule = slotsLabel(group.slots, t)
 
-  /* The free certificate is owed within 25 business days of the end
-     (`docs/REGRAS-NEGOCIO.md` §6) — only worth saying once classes are over. */
+  /* The free certificate is owed within the business days the backoffice sets
+     (`docs/REGRAS-NEGOCIO.md` §6, OOC-41) — only worth saying once classes are
+     over. Settings that could not be read say nothing rather than a guess. */
   const deadline =
-    group.status === 'finished' && group.endsOn
-      ? addBusinessDays(isoToLimaDate(group.endsOn), CERTIFICATE_DEADLINE_BUSINESS_DAYS)
+    group.status === 'finished' && group.endsOn && settings
+      ? addBusinessDays(isoToLimaDate(group.endsOn), settings.certificateDeadlineBusinessDays)
       : null
   const businessDaysLeft = deadline ? businessDaysUntil(deadline, new Date()) : 0
 
@@ -117,7 +122,9 @@ export default async function ClassGroupDetailPage({
           <Field label={t('class_group.field_code')}>
             <span className="tabular-nums">{group.code}</span>
           </Field>
-          <Field label={t('class_group.field_teacher')}>{group.teacherName}</Field>
+          <Field label={t('class_group.field_teacher')}>
+            <TeacherCell row={group} />
+          </Field>
           <Field label={t('class_group.field_schedule')}>
             <span className="tabular-nums">{schedule}</span>
           </Field>
@@ -168,9 +175,12 @@ export default async function ClassGroupDetailPage({
       <ClassGroupActions
         group={group}
         courses={courses ?? []}
+        teachers={teachers}
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
       />
+
+      <RosterCard roster={roster} />
 
       {showWaitlist && (
         <WaitlistCard

@@ -9,6 +9,8 @@ import {
   planPrices,
   plans,
   paymentReceipts,
+  platformSettings,
+  receiptRereads,
   receiptUploads,
   seatHolds,
   students,
@@ -18,7 +20,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
-import { ListPaymentReviewQueueQuery, REVIEW_WINDOW_DAYS } from "./ListPaymentReviewQueueQuery.js";
+import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
+import { ListPaymentReviewQueueQuery } from "./ListPaymentReviewQueueQuery.js";
 import { ListPaymentsQuery } from "./ListPaymentsQuery.js";
 
 /**
@@ -108,8 +111,14 @@ type SeedKey = keyof SeededPayments["operationOf"];
 /**
  * Four payments in the suite's period, a minute apart, oldest first: one
  * nobody has sent a receipt for, one whose receipt was screened and flagged,
- * one approved (with its audit entry) and one rejected.
+ * one approved and one rejected. The approval also has an audit entry by
+ * someone else, which the ledger must not read.
  */
+/** Thirty seconds after the payment came in. */
+function decidedAtOf(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + 30_000);
+}
+
 /** What OCR level 1 left on the under-review payment's receipt. */
 type SeedReading = "read" | "failed" | "none";
 
@@ -159,6 +168,9 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
         operationNumber: operationOf[entry.key],
         createdAt,
         updatedAt: createdAt,
+        // A decided payment always says when (payments_decided_at_check);
+        // nobody is named, as on a row decided outside the panel.
+        decidedAt: entry.status === "approved" || entry.status === "rejected" ? decidedAtOf(createdAt) : null,
       })
       .returning({ id: payments.id });
     ids[entry.key] = payment!.id;
@@ -220,8 +232,11 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
     });
   }
 
+  await tx.execute(
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values ('usr_payment_queries_trail', 'Solo en la trilla', 'usr_payment_queries_trail@example.com', true, 'billing')`,
+  );
   await tx.insert(auditLog).values({
-    actorId: "usr_payment_queries_integration",
+    actorId: "usr_payment_queries_trail",
     action: "payment.approved",
     targetId: ids.approved,
     metadata: { test: true },
@@ -230,11 +245,101 @@ async function seedPayments(tx: Tx, reading: SeedReading = "read"): Promise<Seed
   return { ...ids, operationOf };
 }
 
+const READER = "usr_payment_queries_reader";
+
+/** The queue reads its review window from platform_settings (OOC-41). */
+function reviewQueue(tx: Tx): ListPaymentReviewQueueQuery {
+  return new ListPaymentReviewQueueQuery(tx as unknown as Db, new DrizzlePlatformSettingsRepository(tx as unknown as Db));
+}
+
+/**
+ * One more open payment with a processed, read and judged receipt, for the
+ * priority order (Sessão 32). `confidence` goes on the three fields the
+ * order looks at; `minutesAgo` sets its arrival.
+ */
+async function seedJudgedPayment(
+  tx: Tx,
+  params: { tag: string; minutesAgo: number; verdict: "approve" | "review" | "reject_suggested"; confidence: number },
+): Promise<{ paymentId: string; uploadId: string }> {
+  const stamp = `${Date.now()}${params.tag}`;
+  const [student] = await tx
+    .insert(students)
+    .values({
+      firstName: "Prioridad",
+      lastName: params.tag,
+      nationalIdType: "DNI",
+      nationalId: `PRIO${stamp}`,
+      email: `prio.${stamp}@gmail.com`,
+      phone: "+51900000000",
+      birthDate: new Date("2000-01-01T00:00:00.000Z"),
+      country: "PE",
+      city: "Lima",
+    })
+    .returning({ id: students.id });
+  const [enrollment] = await tx
+    .insert(enrollments)
+    .values({ studentId: student!.id, classGroupId: GROUP, planPriceId: PLAN_PRICE, seatStatus: "reserved" })
+    .returning({ id: enrollments.id });
+  const createdAt = new Date(Date.now() - params.minutesAgo * 60_000);
+  const [payment] = await tx
+    .insert(payments)
+    .values({
+      enrollmentId: enrollment!.id,
+      idempotencyKey: `payment-queries-priority-${stamp}`,
+      status: params.verdict === "approve" ? "pending" : "under_review",
+      method: "yape",
+      amountCents: 15000,
+      operationNumber: `OPPRIO${stamp}`,
+      createdAt,
+      updatedAt: createdAt,
+    })
+    .returning({ id: payments.id });
+  const [hold] = await tx
+    .insert(seatHolds)
+    .values({ classGroupId: GROUP, origin: "web", status: "consumed", enrollmentId: enrollment!.id, settledAt: new Date(), expiresAt: new Date() })
+    .returning({ id: seatHolds.id });
+  const [upload] = await tx
+    .insert(receiptUploads)
+    .values({
+      seatHoldId: hold!.id,
+      paymentId: payment!.id,
+      objectKey: `receipts/payment-queries-priority/${stamp}/raw.jpg`,
+      processedObjectKey: `receipts/payment-queries-priority/${stamp}/processed.jpg`,
+      status: "processed",
+      fraudSignals: [],
+      screenedAt: new Date(),
+      validationVerdict: params.verdict,
+      validationDetail: { reason: params.verdict === "approve" ? "exact" : params.verdict === "review" ? "underpaid" : "far_below" },
+      validatedAt: new Date(),
+    })
+    .returning({ id: receiptUploads.id });
+  await tx.insert(paymentReceipts).values({
+    paymentId: payment!.id,
+    receiptUploadId: upload!.id,
+    tier: 1,
+    modelName: "google/gemini-3.1-flash-lite",
+    amountCents: 15000,
+    operationNumber: `OPPRIO${stamp}`,
+    extractedFields: [
+      { field: "amount_cents", value: 15000, confidence: params.confidence },
+      { field: "operation_number", value: `OPPRIO${stamp}`, confidence: 0.99 },
+      { field: "payment_method", value: "yape", detail: null, confidence: 0.99 },
+    ],
+  });
+  return { paymentId: payment!.id, uploadId: upload!.id };
+}
+
+async function seedReader(tx: Tx): Promise<void> {
+  await tx.execute(
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values (${READER}, 'Revisora', ${`${READER}@example.com`}, true, 'billing')`,
+  );
+}
+
 describe("ListPaymentReviewQueueQuery", () => {
   it("lists only open payments, oldest first, with receipt state, signals and deadline", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.total).toBe(2);
       expect(queue.items.map((item) => item.id)).toEqual([seeded.pending, seeded.underReview]);
@@ -243,7 +348,8 @@ describe("ListPaymentReviewQueueQuery", () => {
       expect(queue.items[0]!.fraudSignals).toEqual([]);
       expect(queue.items[1]!.fraudSignals).toEqual(["identical_file"]);
       const item = queue.items[0]!;
-      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const { reviewWindowDays } = await new DrizzlePlatformSettingsRepository(tx as unknown as Db).get();
+      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(reviewWindowDays * 24 * 60 * 60 * 1000);
       expect(item.expectedAmountCents).toBe(15000);
       expect(item).toMatchObject({ classGroupName: "Lun/Mié 19:00", planName: "Paquete completo", status: "pending", currency: "PEN" });
     });
@@ -252,7 +358,7 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("carries the OCR reading of the latest receipt, field by field (OOC-20)", async () => {
     await rolledBack(async (tx) => {
       await seedPayments(tx, "read");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       // No receipt, nothing to read.
       expect(queue.items[0]!.reading).toBeNull();
@@ -273,12 +379,12 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("says when the OCR failed, and when it has not read the receipt yet", async () => {
     await rolledBack(async (tx) => {
       await seedPayments(tx, "failed");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
       expect(queue.items[1]!.reading).toMatchObject({ state: "failed", reason: "provider_unavailable" });
     });
     await rolledBack(async (tx) => {
       await seedPayments(tx, "none");
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
       expect(queue.items[1]!.reading).toEqual({ state: "not_read" });
     });
   });
@@ -295,7 +401,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         })
         .where(eq(receiptUploads.paymentId, seeded.underReview));
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD, sort: "oldest" });
 
       expect(queue.items[0]!.verdict).toBeNull();
       expect(queue.items[1]!.verdict).toEqual({ verdict: "reject_suggested", reason: "far_below" });
@@ -310,7 +416,7 @@ describe("ListPaymentReviewQueueQuery", () => {
         .set({ validationVerdict: "review", validationDetail: { reason: "reason_from_a_later_version" }, validatedAt: new Date() })
         .where(eq(receiptUploads.paymentId, seeded.underReview));
 
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
 
       expect(queue.items[1]!.verdict).toBeNull();
     });
@@ -319,12 +425,125 @@ describe("ListPaymentReviewQueueQuery", () => {
   it("finds an open payment by its operation number", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
-      const queue = await new ListPaymentReviewQueueQuery(tx as unknown as Db).run({
+      const queue = await reviewQueue(tx).run({
         academicPeriodId: PERIOD,
         q: seeded.operationOf.underReview,
       });
 
       expect(queue.items.map((item) => item.id)).toEqual([seeded.underReview]);
+    });
+  });
+
+  it("measures the deadline with the review window set in the backoffice (OOC-41)", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      await tx.update(platformSettings).set({ reviewWindowDays: 9 });
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+
+      const item = queue.items[0]!;
+      expect(item.reviewDeadline.getTime() - item.submittedAt.getTime()).toBe(9 * 24 * 60 * 60 * 1000);
+    });
+  });
+
+  it("orders by priority by default: red, yellow, green, least confident first (Sessão 32)", async () => {
+    await rolledBack(async (tx) => {
+      const greenSure = await seedJudgedPayment(tx, { tag: "a", minutesAgo: 50, verdict: "approve", confidence: 0.99 });
+      const greenShaky = await seedJudgedPayment(tx, { tag: "b", minutesAgo: 40, verdict: "approve", confidence: 0.4 });
+      const yellowSure = await seedJudgedPayment(tx, { tag: "c", minutesAgo: 30, verdict: "review", confidence: 0.95 });
+      const yellowShaky = await seedJudgedPayment(tx, { tag: "d", minutesAgo: 20, verdict: "review", confidence: 0.3 });
+      const red = await seedJudgedPayment(tx, { tag: "e", minutesAgo: 10, verdict: "reject_suggested", confidence: 0.9 });
+      const query = reviewQueue(tx);
+
+      const byPriority = await query.run({ academicPeriodId: PERIOD });
+      expect(byPriority.items.map((item) => item.id)).toEqual([
+        red.paymentId,
+        yellowShaky.paymentId,
+        yellowSure.paymentId,
+        greenShaky.paymentId,
+        greenSure.paymentId,
+      ]);
+      expect(byPriority.items[1]!.confidence).toBeCloseTo(0.3);
+
+      const byArrival = await query.run({ academicPeriodId: PERIOD, sort: "oldest" });
+      expect(byArrival.items.map((item) => item.id)).toEqual([
+        greenSure.paymentId,
+        greenShaky.paymentId,
+        yellowSure.paymentId,
+        yellowShaky.paymentId,
+        red.paymentId,
+      ]);
+    });
+  });
+
+  it("puts a payment with no verdict among the yellows, as unread", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx, "none");
+      const yellow = await seedJudgedPayment(tx, { tag: "f", minutesAgo: 1, verdict: "review", confidence: 0.5 });
+      const green = await seedJudgedPayment(tx, { tag: "g", minutesAgo: 60, verdict: "approve", confidence: 0.2 });
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+
+      // No verdict and no reading → confidence 0, ahead of the 0.5 yellow;
+      // the green comes last however old and shaky it is.
+      expect(queue.items.map((item) => item.id)).toEqual([seeded.pending, seeded.underReview, yellow.paymentId, green.paymentId]);
+      expect(queue.items[0]!.confidence).toBeNull();
+    });
+  });
+
+  it("an answered re-read replaces the first reading and its verdict, and moves the order", async () => {
+    await rolledBack(async (tx) => {
+      await seedReader(tx);
+      const first = await seedJudgedPayment(tx, { tag: "h", minutesAgo: 20, verdict: "review", confidence: 0.9 });
+      const reread = await seedJudgedPayment(tx, { tag: "i", minutesAgo: 10, verdict: "review", confidence: 0.2 });
+      await tx.insert(receiptRereads).values({
+        paymentId: reread.paymentId,
+        receiptUploadId: reread.uploadId,
+        requestedBy: READER,
+        tier: 1,
+        modelName: "google/gemini-3.1-flash-lite",
+        amountCents: 15000,
+        extractedFields: [
+          { field: "amount_cents", value: 15000, confidence: 0.99 },
+          { field: "operation_number", value: "READAGAIN", confidence: 0.98 },
+          { field: "payment_method", value: "yape", detail: null, confidence: 0.97 },
+        ],
+        validationVerdict: "approve",
+        validationDetail: { reason: "exact" },
+        readAt: new Date(),
+      });
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+
+      // Green now: behind the yellow it used to be ahead of.
+      expect(queue.items.map((item) => item.id)).toEqual([first.paymentId, reread.paymentId]);
+      const item = queue.items[1]!;
+      expect(item.readingSource).toBe("reread");
+      expect(item.verdict).toEqual({ verdict: "approve", reason: "exact" });
+      expect(item.reading).toMatchObject({ state: "read", operationNumber: { value: "READAGAIN", confidence: 0.98 } });
+      expect(item.rereadRequestedAt).toBeNull();
+      // The re-read never moved the payment.
+      expect(item.status).toBe("under_review");
+      expect(queue.items[0]!.readingSource).toBe("first");
+    });
+  });
+
+  it("says when a re-read is still on its way, keeping the reading it has", async () => {
+    await rolledBack(async (tx) => {
+      await seedReader(tx);
+      const judged = await seedJudgedPayment(tx, { tag: "j", minutesAgo: 5, verdict: "review", confidence: 0.6 });
+      await tx.insert(receiptRereads).values({
+        paymentId: judged.paymentId,
+        receiptUploadId: judged.uploadId,
+        requestedBy: READER,
+        tier: 1,
+      });
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+
+      expect(queue.items[0]!.rereadRequestedAt).toBeInstanceOf(Date);
+      expect(queue.items[0]!.readingSource).toBe("first");
+      expect(queue.items[0]!.verdict).toEqual({ verdict: "review", reason: "underpaid" });
     });
   });
 });
@@ -359,15 +578,26 @@ describe("ListPaymentsQuery", () => {
     });
   });
 
-  it("names who decided and when, from the audit trail", async () => {
+  it("reads when it was decided from the payment, never from the audit trail", async () => {
     await rolledBack(async (tx) => {
       const seeded = await seedPayments(tx);
+      const [row] = await tx.select({ decidedAt: payments.decidedAt }).from(payments).where(eq(payments.id, seeded.approved));
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "approved" });
 
-      expect(ledger.items[0]!.decidedAt).not.toBeNull();
-      // The actor id in the seed matches no Better Auth user: the name is null, not an error.
-      expect(ledger.items[0]!.decidedByName).toBeNull();
       expect(ledger.items[0]!.id).toBe(seeded.approved);
+      expect(ledger.items[0]!.decidedAt).toEqual(row!.decidedAt);
+      // The trail names someone; the payment names nobody — the ledger
+      // follows the payment.
+      expect(ledger.items[0]!.decidedByName).toBeNull();
+    });
+  });
+
+  it("an open payment has no decision", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "pending" });
+
+      expect(ledger.items[0]).toMatchObject({ decidedAt: null, decidedByName: null });
     });
   });
 
@@ -378,7 +608,7 @@ describe("ListPaymentsQuery", () => {
       await tx.execute(
         sql`insert into "user" ("id", "name", "email", "emailVerified", "role") values (${userId}, 'Caja Prueba', ${`${userId}@example.com`}, true, 'billing')`,
       );
-      await tx.insert(auditLog).values({ actorId: userId, action: "payment.rejected", targetId: seeded.rejected, metadata: { test: true } });
+      await tx.update(payments).set({ decidedBy: userId }).where(eq(payments.id, seeded.rejected));
 
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, status: "rejected" });
 
@@ -393,6 +623,74 @@ describe("ListPaymentsQuery", () => {
       const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, q: seeded.operationOf.approved });
 
       expect(ledger.items.map((row) => row.id)).toEqual([seeded.approved]);
+    });
+  });
+
+  it("the open tab holds only what still needs a decision (OOC-114)", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, state: "open" });
+
+      expect(ledger.total).toBe(2);
+      expect(ledger.items.map((row) => row.id)).toEqual([seeded.underReview, seeded.pending]);
+      expect(ledger.counts).toEqual({ open: 2, closed: 2 });
+    });
+  });
+
+  it("the closed tab is ordered by when it was decided, not when it came in", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      // The older payment was settled last.
+      await tx
+        .update(payments)
+        .set({ decidedAt: sql`now() + interval '1 hour'` })
+        .where(eq(payments.id, seeded.approved));
+
+      const query = new ListPaymentsQuery(tx as unknown as Db);
+      const newest = await query.run({ academicPeriodId: PERIOD, state: "closed" });
+      const oldest = await query.run({ academicPeriodId: PERIOD, state: "closed", sort: "oldest" });
+
+      expect(newest.total).toBe(2);
+      expect(newest.items.map((row) => row.id)).toEqual([seeded.approved, seeded.rejected]);
+      expect(oldest.items.map((row) => row.id)).toEqual([seeded.rejected, seeded.approved]);
+    });
+  });
+
+  it("the fine status narrows inside the tab, and the counters ignore both", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const query = new ListPaymentsQuery(tx as unknown as Db);
+      const within = await query.run({ academicPeriodId: PERIOD, state: "closed", status: "rejected" });
+      const across = await query.run({ academicPeriodId: PERIOD, state: "open", status: "approved" });
+
+      expect(within.items.map((row) => row.id)).toEqual([seeded.rejected]);
+      expect(within.counts).toEqual({ open: 2, closed: 2 });
+      expect(across.total).toBe(0);
+    });
+  });
+
+  it("the counters follow the search", async () => {
+    await rolledBack(async (tx) => {
+      const seeded = await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({
+        academicPeriodId: PERIOD,
+        state: "open",
+        q: seeded.operationOf.approved,
+      });
+
+      expect(ledger.total).toBe(0);
+      expect(ledger.counts).toEqual({ open: 0, closed: 1 });
+    });
+  });
+
+  it("the open tab counts what the review queue lists — the number on the menu badge", async () => {
+    await rolledBack(async (tx) => {
+      await seedPayments(tx);
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ state: "open" });
+      const queue = await reviewQueue(tx).run({});
+
+      expect(ledger.counts.open).toBe(queue.total);
+      expect(ledger.total).toBe(queue.total);
     });
   });
 

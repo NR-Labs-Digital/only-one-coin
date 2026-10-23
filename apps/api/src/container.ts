@@ -5,6 +5,11 @@ import {
   SendEmailVerificationCodeUseCase,
   CancelStaffPasswordResetUseCase,
   ChangeOwnPasswordUseCase,
+  StartOwnMfaEnrollmentUseCase,
+  ConfirmOwnMfaEnrollmentUseCase,
+  RegenerateOwnRecoveryCodesUseCase,
+  DisableOwnMfaUseCase,
+  type IStaffSecondFactor,
   CompletePortalAccessUseCase,
   CompleteStaffInviteUseCase,
   CompleteStaffPasswordResetUseCase,
@@ -27,6 +32,10 @@ import {
   ExpireSeatHoldsUseCase,
   PromoteUserRoleUseCase,
   RegisterStudentUseCase,
+  RegisterTeacherUseCase,
+  SetTeacherRosterStatusUseCase,
+  UpdateTeacherAvailabilityUseCase,
+  UpdateTeacherUseCase,
   UpdateStudentUseCase,
   SaveGuardianUseCase,
   RenamePlanUseCase,
@@ -37,6 +46,7 @@ import {
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
   SettlePaymentUseCase,
+  RequestReceiptRereadUseCase,
   RemoveStaffAccessUseCase,
   RenewStaffInviteUseCase,
   RenewStaffPasswordResetUseCase,
@@ -46,10 +56,8 @@ import {
   SchedulePlanPriceUseCase,
   SetFeatureFlagOverrideUseCase,
   SubmitPublicEnrollmentUseCase,
-  UpdateCheckoutHoldMinutesUseCase,
-  UpdateReceiptAmountToleranceUseCase,
+  UpdatePlatformSettingsUseCase,
   ValidateReceiptUseCase,
-  UpdateReceiptRejectBelowPercentUseCase,
   UpdateCourseUseCase,
   type IAuditLogRepository,
   type ICatalogEntryRepository,
@@ -68,6 +76,7 @@ import {
   type IPortalAccessRepository,
   type IPublicEnrollmentRepository,
   type IReceiptExtractionRepository,
+  type IReceiptRereadRepository,
   type IReceiptUploadRepository,
   type IEmailVerificationRepository,
   type ISeatHoldRepository,
@@ -78,6 +87,7 @@ import {
   type IStaffPasswordSetter,
   type IStaffUserLookup,
   type IStudentRepository,
+  type ITeacherRepository,
   type IUserRoleRepository,
 } from "@ooc/domain";
 import { loadConfig, type Config } from "./config.js";
@@ -90,6 +100,9 @@ import { TurnstileCaptchaVerifier, type CaptchaVerifier } from "./infra/edge/Tur
 import { createAuth, type Auth } from "./infra/auth/betterAuth.js";
 import { BetterAuthCurrentSessionPort } from "./infra/identity/BetterAuthCurrentSessionPort.js";
 import { BetterAuthFreshAuthVerifier } from "./infra/identity/BetterAuthFreshAuthVerifier.js";
+import { BetterAuthStaffSecondFactor } from "./infra/identity/BetterAuthStaffSecondFactor.js";
+import { OutboxTwoFactorCodeSender } from "./infra/auth/OutboxTwoFactorCodeSender.js";
+import { recoveryCodeCipher } from "./infra/auth/recoveryCodes.js";
 import { PortalLinkBuilder } from "./infra/identity/PortalLinkBuilder.js";
 import { BackofficePasswordResetLinkBuilder } from "./infra/identity/BackofficePasswordResetLinkBuilder.js";
 import { BetterAuthStaffAccountProvisioner } from "./infra/identity/BetterAuthStaffAccountProvisioner.js";
@@ -125,9 +138,19 @@ import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
 import { StudentActivityQuery } from "./infra/persistence/student/StudentActivityQuery.js";
+import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTeacherRepository.js";
+import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
+import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
+import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
+import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
+import {
+  DrizzleReceiptRereadRepository,
+  type IReceiptRereadRelayStore,
+} from "./infra/persistence/payment/DrizzleReceiptRereadRepository.js";
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
+import { DashboardSummaryQuery } from "./infra/persistence/dashboard/DashboardSummaryQuery.js";
 import { PaymentReceiptImageQuery } from "./infra/persistence/payment/PaymentReceiptImageQuery.js";
 import { StudentPortalQuery } from "./infra/persistence/portal/StudentPortalQuery.js";
 import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollmentsQuery.js";
@@ -144,6 +167,7 @@ import { DrizzleWaitlistRepository } from "./infra/persistence/catalog/DrizzleWa
 import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.js";
 import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroupsQuery.js";
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
+import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
@@ -163,6 +187,7 @@ export interface AppRepositories {
   plan: IPlanRepository;
   student: IStudentRepository;
   guardian: IGuardianRepository;
+  teacher: ITeacherRepository;
   enrollment: IEnrollmentRepository;
   publicEnrollment: IPublicEnrollmentRepository;
   seatHold: ISeatHoldRepository;
@@ -177,6 +202,9 @@ export interface AppRepositories {
    * submit route must never import the AI module (apps/api/CLAUDE.md) —
    * index.ts builds it next to the workers. */
   receiptExtraction: IReceiptExtractionRepository;
+  /** Re-reads asked for in Payments (Sessão 32): the request route and the
+   * `receipt-reread` worker use the port, the relay the pending list. */
+  receiptReread: IReceiptRereadRepository & IReceiptRereadRelayStore;
   planPriceLookup: IPlanPriceLookup;
   portalAccess: IPortalAccessRepository;
   staffInvite: IStaffInviteRepository;
@@ -186,6 +214,12 @@ export interface AppRepositories {
 }
 
 export interface AppUseCases {
+  teacher: {
+    register: RegisterTeacherUseCase;
+    update: UpdateTeacherUseCase;
+    updateAvailability: UpdateTeacherAvailabilityUseCase;
+    setRosterStatus: SetTeacherRosterStatusUseCase;
+  };
   student: {
     register: RegisterStudentUseCase;
     update: UpdateStudentUseCase;
@@ -209,6 +243,7 @@ export interface AppUseCases {
   };
   payment: {
     settlePayment: SettlePaymentUseCase;
+    requestReceiptReread: RequestReceiptRereadUseCase;
   };
   staff: {
     promoteRole: PromoteUserRoleUseCase;
@@ -224,6 +259,10 @@ export interface AppUseCases {
     completePasswordReset: CompleteStaffPasswordResetUseCase;
     requestPasswordReset: RequestStaffPasswordResetUseCase;
     changeOwnPassword: ChangeOwnPasswordUseCase;
+    startOwnMfaEnrollment: StartOwnMfaEnrollmentUseCase;
+    confirmOwnMfaEnrollment: ConfirmOwnMfaEnrollmentUseCase;
+    regenerateOwnRecoveryCodes: RegenerateOwnRecoveryCodesUseCase;
+    disableOwnMfa: DisableOwnMfaUseCase;
   };
   portal: {
     resolveSignInEmail: ResolvePortalSignInEmailUseCase;
@@ -233,9 +272,7 @@ export interface AppUseCases {
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
-    updateCheckoutHoldMinutes: UpdateCheckoutHoldMinutesUseCase;
-    updateReceiptAmountTolerance: UpdateReceiptAmountToleranceUseCase;
-    updateReceiptRejectBelowPercent: UpdateReceiptRejectBelowPercentUseCase;
+    updateSettings: UpdatePlatformSettingsUseCase;
   };
   catalog: {
     retire: RetireCatalogEntryUseCase;
@@ -261,11 +298,16 @@ export interface AppQueries {
   listEnrollments: ListEnrollmentsQuery;
   listPayments: ListPaymentsQuery;
   listPaymentReviewQueue: ListPaymentReviewQueueQuery;
+  dashboardSummary: DashboardSummaryQuery;
   paymentReceiptImage: PaymentReceiptImageQuery;
   getStudent: GetStudentQuery;
   studentPortal: StudentPortalQuery;
   studentEnrollmentHistory: StudentEnrollmentHistoryQuery;
   studentActivity: StudentActivityQuery;
+  listTeachers: ListTeachersQuery;
+  getTeacher: GetTeacherQuery;
+  listTeacherOptions: ListTeacherOptionsQuery;
+  listInvitableTeachers: ListInvitableTeachersQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
@@ -273,6 +315,7 @@ export interface AppQueries {
   listPeriods: ListPeriodsQuery;
   listClassGroups: ListClassGroupsQuery;
   listWaitlist: ListWaitlistQuery;
+  classGroupRoster: ClassGroupRosterQuery;
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
@@ -287,6 +330,7 @@ export interface AppIdentity {
   staffAccountProvisioner: IStaffAccountProvisioner;
   staffUserLookup: IStaffUserLookup;
   staffPasswordSetter: IStaffPasswordSetter;
+  staffSecondFactor: IStaffSecondFactor;
 }
 
 /** What the e-mail workers need — the outbox and the (guarded) provider. */
@@ -331,9 +375,14 @@ function buildContainer(): AppContainer {
   const config = loadConfig();
   const logger = createLogger(config);
 
+  // Persistence — ahead of auth: the second-factor code is e-mailed through
+  // the outbox, so Better Auth needs the database handle to send it.
+  const db = createDb(config);
+
   // Auth
-  const auth = createAuth(config);
+  const auth = createAuth(config, { codeSender: new OutboxTwoFactorCodeSender(db) });
   const currentSession = new BetterAuthCurrentSessionPort(auth);
+  const staffSecondFactor = new BetterAuthStaffSecondFactor(auth, db, recoveryCodeCipher(config.BETTER_AUTH_SECRET));
 
   // Public-route protection
   const edgeRedis = createEdgeRedis(config.REDIS_URL, logger);
@@ -344,13 +393,12 @@ function buildContainer(): AppContainer {
     captcha: new TurnstileCaptchaVerifier(config.TURNSTILE_SECRET_KEY, logger),
   };
 
-  // Persistence
-  const db = createDb(config);
-  const freshAuthVerifier = new BetterAuthFreshAuthVerifier(auth, db);
+  const freshAuthVerifier = new BetterAuthFreshAuthVerifier(db);
 
   // Repositories
   const studentRepository = new DrizzleStudentRepository(db);
   const guardianRepository = new DrizzleGuardianRepository(db);
+  const teacherRepository = new DrizzleTeacherRepository(db);
   const enrollmentRepository = new DrizzleEnrollmentRepository(db);
   const publicEnrollmentRepository = new DrizzlePublicEnrollmentRepository(db);
   const planPriceLookup = new DrizzlePlanPriceLookup(db);
@@ -359,6 +407,7 @@ function buildContainer(): AppContainer {
   const receiptUploadRepository = new DrizzleReceiptUploadRepository(db);
   const receiptScreeningRepository = new DrizzleReceiptScreeningRepository(db);
   const receiptExtractionRepository = new DrizzleReceiptExtractionRepository(db);
+  const receiptRereadRepository = new DrizzleReceiptRereadRepository(db);
   const platformSettingsRepository = new DrizzlePlatformSettingsRepository(db);
   const userRoleRepository = new DrizzleUserRoleRepository(db);
   const auditLogRepository = new DrizzleAuditLogRepository(db);
@@ -392,6 +441,9 @@ function buildContainer(): AppContainer {
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const updateStudent = new UpdateStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const saveGuardian = new SaveGuardianUseCase(studentRepository, guardianRepository, auditLogRepository);
+  const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
+  const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
+  const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
   const createManualEnrollment = new CreateManualEnrollmentUseCase(
     enrollmentRepository,
     planPriceLookup,
@@ -417,12 +469,27 @@ function buildContainer(): AppContainer {
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
   const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository);
   const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
-  const createInvite = new CreateStaffInviteUseCase(staffUserLookup, staffInviteRepository, auditLogRepository);
+  const createInvite = new CreateStaffInviteUseCase(
+    staffUserLookup,
+    staffInviteRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
   const renewInvite = new RenewStaffInviteUseCase(staffInviteRepository, auditLogRepository);
   const cancelInvite = new CancelStaffInviteUseCase(staffInviteRepository, auditLogRepository);
-  const completeInvite = new CompleteStaffInviteUseCase(staffInviteRepository, staffAccountProvisioner, auditLogRepository);
+  const completeInvite = new CompleteStaffInviteUseCase(
+    staffInviteRepository,
+    staffAccountProvisioner,
+    teacherRepository,
+    auditLogRepository,
+  );
   const removeAccess = new RemoveStaffAccessUseCase(staffAccessRepository, auditLogRepository);
-  const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, auditLogRepository);
+  const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, teacherRepository, auditLogRepository);
+  const setTeacherRosterStatus = new SetTeacherRosterStatusUseCase(
+    teacherRepository,
+    staffAccessRepository,
+    auditLogRepository,
+  );
   const createPasswordReset = new CreateStaffPasswordResetUseCase(staffPasswordResetRepository, auditLogRepository);
   const renewPasswordReset = new RenewStaffPasswordResetUseCase(staffPasswordResetRepository);
   const cancelPasswordReset = new CancelStaffPasswordResetUseCase(staffPasswordResetRepository);
@@ -444,11 +511,17 @@ function buildContainer(): AppContainer {
     staffSessionRevoker,
     auditLogRepository,
   );
+  const startOwnMfaEnrollment = new StartOwnMfaEnrollmentUseCase(staffSecondFactor);
+  const confirmOwnMfaEnrollment = new ConfirmOwnMfaEnrollmentUseCase(staffSecondFactor, auditLogRepository);
+  const regenerateOwnRecoveryCodes = new RegenerateOwnRecoveryCodesUseCase(
+    freshAuthVerifier,
+    staffSecondFactor,
+    auditLogRepository,
+  );
+  const disableOwnMfa = new DisableOwnMfaUseCase(freshAuthVerifier, staffSecondFactor, auditLogRepository);
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
-  const updateCheckoutHoldMinutes = new UpdateCheckoutHoldMinutesUseCase(platformSettingsRepository, auditLogRepository);
-  const updateReceiptAmountTolerance = new UpdateReceiptAmountToleranceUseCase(platformSettingsRepository, auditLogRepository);
-  const updateReceiptRejectBelowPercent = new UpdateReceiptRejectBelowPercentUseCase(platformSettingsRepository, auditLogRepository);
+  const updateSettings = new UpdatePlatformSettingsUseCase(platformSettingsRepository);
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
@@ -464,9 +537,15 @@ function buildContainer(): AppContainer {
     courseRepository,
     academicPeriodRepository,
     classGroupRepository,
+    teacherRepository,
     auditLogRepository,
   );
-  const updateClassGroup = new UpdateClassGroupUseCase(courseRepository, classGroupRepository, auditLogRepository);
+  const updateClassGroup = new UpdateClassGroupUseCase(
+    courseRepository,
+    classGroupRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
   const advanceClassGroupStatus = new AdvanceClassGroupStatusUseCase(classGroupRepository, auditLogRepository);
   const joinWaitlist = new JoinWaitlistUseCase(classGroupRepository, waitlistRepository, auditLogRepository);
   const leaveWaitlist = new LeaveWaitlistUseCase(waitlistRepository, auditLogRepository);
@@ -501,7 +580,8 @@ function buildContainer(): AppContainer {
   const studentActivity = new StudentActivityQuery(db);
   const listEnrollments = new ListEnrollmentsQuery(db);
   const listPayments = new ListPaymentsQuery(db);
-  const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db);
+  const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db, platformSettingsRepository);
+  const dashboardSummary = new DashboardSummaryQuery(db);
   const paymentReceiptImage = new PaymentReceiptImageQuery(db, receiptObjectStore);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
   const getPublicCatalog = new GetPublicCatalogQuery(db);
@@ -509,7 +589,12 @@ function buildContainer(): AppContainer {
   const getCourse = new GetCourseQuery(db);
   const listPeriods = new ListPeriodsQuery(db);
   const listClassGroups = new ListClassGroupsQuery(db);
+  const listTeachers = new ListTeachersQuery(db, platformSettingsRepository);
+  const getTeacher = new GetTeacherQuery(db, listTeachers, listClassGroups);
+  const listTeacherOptions = new ListTeacherOptionsQuery(db);
+  const listInvitableTeachers = new ListInvitableTeachersQuery(db);
   const listWaitlist = new ListWaitlistQuery(db);
+  const classGroupRoster = new ClassGroupRosterQuery(db);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
@@ -530,6 +615,7 @@ function buildContainer(): AppContainer {
       staffAccountProvisioner,
       staffUserLookup,
       staffPasswordSetter,
+      staffSecondFactor,
     },
     notifications: {
       outbox: outboxRepository,
@@ -547,12 +633,14 @@ function buildContainer(): AppContainer {
       plan: planRepository,
       student: studentRepository,
       guardian: guardianRepository,
+      teacher: teacherRepository,
       enrollment: enrollmentRepository,
       publicEnrollment: publicEnrollmentRepository,
       seatHold: seatHoldRepository,
       emailVerification: emailVerificationRepository,
       receiptUpload: receiptUploadRepository,
       receiptExtraction: receiptExtractionRepository,
+      receiptReread: receiptRereadRepository,
       planPriceLookup,
       portalAccess: portalAccessRepository,
       staffInvite: staffInviteRepository,
@@ -561,6 +649,12 @@ function buildContainer(): AppContainer {
       platformSettings: platformSettingsRepository,
     },
     useCases: {
+      teacher: {
+        register: registerTeacher,
+        update: updateTeacher,
+        updateAvailability: updateTeacherAvailability,
+        setRosterStatus: setTeacherRosterStatus,
+      },
       student: {
         register: registerStudent,
         update: updateStudent,
@@ -581,6 +675,7 @@ function buildContainer(): AppContainer {
       },
       payment: {
         settlePayment,
+        requestReceiptReread: new RequestReceiptRereadUseCase(receiptRereadRepository),
       },
       staff: {
         promoteRole,
@@ -596,13 +691,15 @@ function buildContainer(): AppContainer {
         completePasswordReset,
         requestPasswordReset,
         changeOwnPassword,
+        startOwnMfaEnrollment,
+        confirmOwnMfaEnrollment,
+        regenerateOwnRecoveryCodes,
+        disableOwnMfa,
       },
       portal,
       platform: {
         setFeatureFlag,
-        updateCheckoutHoldMinutes,
-        updateReceiptAmountTolerance,
-        updateReceiptRejectBelowPercent,
+        updateSettings,
       },
       catalog: {
         retire: retireCatalogEntry,
@@ -628,9 +725,14 @@ function buildContainer(): AppContainer {
       studentPortal,
       studentEnrollmentHistory,
       studentActivity,
+      listTeachers,
+      getTeacher,
+      listTeacherOptions,
+      listInvitableTeachers,
       listEnrollments,
       listPayments,
       listPaymentReviewQueue,
+      dashboardSummary,
       paymentReceiptImage,
       listOpenClassGroups,
       getPublicCatalog,
@@ -639,6 +741,7 @@ function buildContainer(): AppContainer {
       listPeriods,
       listClassGroups,
       listWaitlist,
+      classGroupRoster,
       listStaff,
       listStaffRoleChanges,
       getPasswordChangedAt,

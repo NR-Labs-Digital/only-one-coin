@@ -1,5 +1,5 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
-import { CannotActOnSelfError, NotFreshlyAuthenticatedError } from "./errors.js";
+import { CannotActOnSelfError, NotFreshlyAuthenticatedError, TeacherRoleLockedError } from "./errors.js";
 import type { IAuditLogRepository } from "./ports/IAuditLogRepository.js";
 import type { IFreshAuthVerifier } from "./ports/IFreshAuthVerifier.js";
 import type { IUserRoleRepository } from "./ports/IUserRoleRepository.js";
@@ -45,6 +45,13 @@ export class PromoteUserRoleUseCase extends BaseUseCase<PromoteUserRoleInput, Pr
     }
 
     const fromRole = await this.userRoleRepository.findRoleByUserId(input.targetUserId);
+
+    // O cargo `teacher` entra pelo convite e sai pelo quadro de docentes
+    // (OOC-79): trocar por aqui deixaria `teachers.user_id` apontando para uma
+    // conta de outro cargo, ou um docente sem ficha.
+    if (fromRole === "teacher" || input.newRole === "teacher") {
+      throw new TeacherRoleLockedError();
+    }
 
     await this.userRoleRepository.updateRole(input.targetUserId, input.newRole);
 

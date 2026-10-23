@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
 import type { GetStudentQuery, StudentDetailRow } from "../student/GetStudentQuery.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 export interface PortalPaymentRow {
   id: string;
@@ -84,7 +85,7 @@ export class StudentPortalQuery {
         certificateRule: courses.certificateRule,
         classGroupCode: classGroups.code,
         classGroupSchedule: classGroups.schedule,
-        teacherName: classGroups.teacherName,
+        teacherName: classGroupTeacherName,
         slots: classGroups.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,

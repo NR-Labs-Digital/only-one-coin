@@ -109,7 +109,10 @@ export function PasswordResetForm({
       })
 
       if (signIn.ok) {
-        router.push('/backoffice/home')
+        // With the second factor on, the password opens no session: Better
+        // Auth answers `twoFactorRedirect` and the login screen asks the code.
+        const body = (await signIn.json().catch(() => null)) as { twoFactorRedirect?: boolean } | null
+        router.push(body?.twoFactorRedirect ? '/backoffice?mfa=challenge' : '/backoffice/home')
         return
       }
 

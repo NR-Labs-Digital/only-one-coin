@@ -62,6 +62,56 @@ describe("AllowlistGuard", () => {
     expect(guard.allows("x@evil-nrlabsdigital.com")).toBe(false);
     expect(guard.allows("x@nrlabsdigital.com.evil.io")).toBe(false);
   });
+
+  /* OOC-29: outside production the staff second-factor code for an address
+     that is not a real inbox (the seeded admin@admin.com) goes to the
+     allowlist instead — otherwise nobody can sign in as that account. */
+  describe("the staff second-factor code outside production", () => {
+    const MFA_EMAIL: OutgoingEmail = {
+      to: "admin@admin.com",
+      templateKey: "staff_mfa_code",
+      locale: "es-PE",
+      vars: { recipientName: "Admin", code: "042137" },
+    };
+
+    it("goes to every exact allowlisted address, never to the original recipient", async () => {
+      const inner = new RecordingProvider();
+      const guard = new AllowlistGuard(inner, {
+        enforce: true,
+        allowlist: ["qa.one@gmail.com", "@nrlabsdigital.com", "qa.two@gmail.com"],
+      });
+
+      await guard.sendEmail(MFA_EMAIL);
+
+      expect(inner.sent.map((email) => email.to)).toEqual(["qa.one@gmail.com", "qa.two@gmail.com"]);
+      expect(inner.sent.every((email) => email.templateKey === "staff_mfa_code")).toBe(true);
+    });
+
+    it("is sent as addressed when the recipient is already allowlisted", async () => {
+      const inner = new RecordingProvider();
+      const guard = new AllowlistGuard(inner, { enforce: true, allowlist: ["admin@admin.com", "qa.one@gmail.com"] });
+
+      await guard.sendEmail(MFA_EMAIL);
+
+      expect(inner.sent.map((email) => email.to)).toEqual(["admin@admin.com"]);
+    });
+
+    it("is refused when the allowlist names no exact address", async () => {
+      const inner = new RecordingProvider();
+      const guard = new AllowlistGuard(inner, { enforce: true, allowlist: ["@nrlabsdigital.com"] });
+
+      await expect(guard.sendEmail(MFA_EMAIL)).rejects.toBeInstanceOf(RecipientNotAllowedError);
+      expect(inner.sent).toHaveLength(0);
+    });
+
+    it("never redirects any other template", async () => {
+      const inner = new RecordingProvider();
+      const guard = new AllowlistGuard(inner, { enforce: true, allowlist: ["qa.one@gmail.com"] });
+
+      await expect(guard.sendEmail(AN_EMAIL)).rejects.toBeInstanceOf(RecipientNotAllowedError);
+      expect(inner.sent).toHaveLength(0);
+    });
+  });
 });
 
 function jsonResponse(status: number, body: unknown): Response {

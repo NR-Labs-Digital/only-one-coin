@@ -1,7 +1,8 @@
 import { academicPeriods, classGroups, courses, waitlistEntries } from "@ooc/db";
 import type { ClassGroupStatus, WeeklySlot } from "@ooc/domain";
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { linkedTeacherName } from "./classGroupTeacherName.js";
 
 export interface ClassGroupItem {
   id: string;
@@ -13,7 +14,15 @@ export interface ClassGroupItem {
   courseActive: boolean;
   academicPeriodId: string;
   academicPeriodName: string;
+  /** The teacher allocated from the roster (OOC-80); null = nobody yet. */
+  teacherId: string | null;
+  /** The allocated teacher's name, from their file; empty when unallocated. */
   teacherName: string;
+  /**
+   * The free text typed before teachers had a file — only a hint for the
+   * coordination while the class group waits for a real allocation.
+   */
+  legacyTeacherName: string;
   slots: WeeklySlot[];
   /** ISO 8601, UTC — rendered in America/Lima by the screen. */
   startsOn: string | null;
@@ -36,6 +45,10 @@ export interface ClassGroupFilter {
   /** Free text over code, course name and teacher name. */
   q?: string;
   id?: string;
+  /** The class groups allocated to one teacher (OOC-78). */
+  teacherId?: string;
+  /** Only the class groups nobody is allocated to yet (OOC-80). */
+  unassigned?: boolean;
 }
 
 /** Without a period or a search the list would be every class group ever opened. */
@@ -59,16 +72,19 @@ export class ListClassGroupsQuery {
       filter.id ? eq(classGroups.id, filter.id) : undefined,
       filter.periodId ? eq(classGroups.academicPeriodId, filter.periodId) : undefined,
       filter.courseId ? eq(classGroups.courseId, filter.courseId) : undefined,
+      filter.teacherId ? eq(classGroups.teacherId, filter.teacherId) : undefined,
       filter.status ? eq(classGroups.status, filter.status) : undefined,
+      filter.unassigned ? isNull(classGroups.teacherId) : undefined,
       term
         ? or(
             ilike(classGroups.code, `%${escapeLike(term)}%`),
             ilike(courses.name, `%${escapeLike(term)}%`),
+            ilike(linkedTeacherName, `%${escapeLike(term)}%`),
             ilike(classGroups.teacherName, `%${escapeLike(term)}%`),
           )
         : undefined,
     ];
-    const unscoped = !filter.id && !filter.periodId && !term;
+    const unscoped = !filter.id && !filter.periodId && !filter.teacherId && !term;
 
     const waitlistCount = sql<number>`(
       select count(*) from ${waitlistEntries}
@@ -82,6 +98,7 @@ export class ListClassGroupsQuery {
         language: courses.language,
         courseDeletedAt: courses.deletedAt,
         periodName: academicPeriods.name,
+        teacherName: linkedTeacherName,
         waitlistCount,
       })
       .from(classGroups)
@@ -99,7 +116,7 @@ export class ListClassGroupsQuery {
           asc(classGroups.id),
         ));
 
-    return rows.map(({ row, courseName, language, courseDeletedAt, periodName, waitlistCount: waiting }) => ({
+    return rows.map(({ row, courseName, language, courseDeletedAt, periodName, teacherName, waitlistCount: waiting }) => ({
       id: row.id,
       code: row.code,
       courseId: row.courseId,
@@ -108,7 +125,9 @@ export class ListClassGroupsQuery {
       courseActive: courseDeletedAt === null,
       academicPeriodId: row.academicPeriodId,
       academicPeriodName: periodName,
-      teacherName: row.teacherName,
+      teacherId: row.teacherId,
+      teacherName,
+      legacyTeacherName: row.teacherName,
       slots: row.slots as WeeklySlot[],
       startsOn: row.startsOn?.toISOString() ?? null,
       endsOn: row.endsOn?.toISOString() ?? null,

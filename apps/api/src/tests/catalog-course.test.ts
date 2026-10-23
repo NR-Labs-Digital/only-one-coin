@@ -2,6 +2,7 @@ import {
   Course,
   CourseNotFoundError,
   CreateCourseUseCase,
+  LandingKeyTakenError,
   UpdateCourseUseCase,
   type CreateCourseDTO,
 } from "@ooc/domain";
@@ -54,8 +55,9 @@ describe("CreateCourseUseCase", () => {
     expect(() => Course.create({ ...A_COURSE, minAge: 0 })).toThrow(ZodError);
   });
 
-  it("refuses a blank summary", () => {
-    expect(() => Course.create({ ...A_COURSE, summary: "   " })).toThrow(ZodError);
+  it("opens a course without a summary (OOC-107)", () => {
+    const { summary: _summary, ...withoutSummary } = A_COURSE;
+    expect(Course.create(withoutSummary).summary).toBe("");
   });
 });
 
@@ -91,5 +93,71 @@ describe("UpdateCourseUseCase", () => {
     await expect(
       new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: "018f2b5c-0000-7000-8000-0000000000ff", patch: { minAge: 15 } }),
     ).rejects.toBeInstanceOf(CourseNotFoundError);
+  });
+});
+
+/**
+ * The landing's enroll buttons send a key, not an id (OOC-117). One live
+ * course per key — otherwise the checkout would have to guess which course a
+ * button meant.
+ */
+describe("landing key", () => {
+  it("a course is born unlinked unless told otherwise", () => {
+    expect(Course.create(A_COURSE).landingKey).toBeNull();
+    expect(Course.create({ ...A_COURSE, landingKey: "english" }).landingKey).toBe("english");
+  });
+
+  it("refuses a key the landing does not have", () => {
+    expect(() => Course.create({ ...A_COURSE, landingKey: "klingon" as never })).toThrow(ZodError);
+  });
+
+  it("refuses to open a course on a key another live course holds", async () => {
+    await courses.create(Course.create({ ...A_COURSE, landingKey: "english" }));
+
+    await expect(
+      new CreateCourseUseCase(courses, auditLog).run({
+        actorId: ACTOR,
+        course: { ...A_COURSE, name: "Inglés Básico 2", landingKey: "english" },
+      }),
+    ).rejects.toBeInstanceOf(LandingKeyTakenError);
+    expect(auditLog.appended).toEqual([]);
+  });
+
+  it("lets a new course take the key a retired course held", async () => {
+    const retired = await courses.create(Course.create({ ...A_COURSE, landingKey: "english" }));
+    retired.softDelete();
+
+    const created = await new CreateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      course: { ...A_COURSE, landingKey: "english" },
+    });
+
+    expect(created.landingKey).toBe("english");
+  });
+
+  it("refuses to move a course onto a key another live course holds", async () => {
+    await courses.create(Course.create({ ...A_COURSE, landingKey: "english" }));
+    const other = await courses.create(Course.create({ ...A_COURSE, name: "Inglés Kids" }));
+
+    await expect(
+      new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: other.id, patch: { landingKey: "english" } }),
+    ).rejects.toBeInstanceOf(LandingKeyTakenError);
+  });
+
+  it("links, relinks and unlinks a course, auditing the field", async () => {
+    const course = await courses.create(Course.create(A_COURSE));
+    const update = new UpdateCourseUseCase(courses, auditLog);
+
+    await update.run({ actorId: ACTOR, id: course.id, patch: { landingKey: "english-kids" } });
+    // Saving the key the course already holds is not a conflict with itself.
+    await update.run({ actorId: ACTOR, id: course.id, patch: { landingKey: "english-kids", minAge: 6 } });
+    const unlinked = await update.run({ actorId: ACTOR, id: course.id, patch: { landingKey: null } });
+
+    expect(unlinked.landingKey).toBeNull();
+    expect(auditLog.appended.map((entry) => entry.metadata)).toEqual([
+      { fields: ["landingKey"] },
+      { fields: ["minAge"] },
+      { fields: ["landingKey"] },
+    ]);
   });
 });

@@ -1,73 +1,36 @@
 'use client'
 
-import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { PaymentSettings } from '@/lib/backoffice/types'
+import type { PlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatMoney, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
-import { Notice, Row, SettingsActions, numberClass } from '../settings-ui'
+import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from '../settings-ui'
+
+/** The receipt half of the settings. */
+export type ReceiptSettings = Pick<
+  PlatformSettings,
+  | 'receiptAmountToleranceCents'
+  | 'receiptRejectBelowPercent'
+  | 'ocrLowConfidencePercent'
+  | 'checkoutHoldMinutes'
+  | 'reviewWindowDays'
+>
 
 /**
- * The receipt numbers the pipeline approves on before it asks for a human:
- * the value tolerance, the confidence floor that escalates, and the seat's two
- * clocks. Settings rather than constants for the reason CLAUDE.md §5 gives
- * about the tolerance: changing what a rule means must not require a deploy.
+ * The receipt numbers: what the traffic light calls green and red, the
+ * confidence below which a field read by the OCR is flagged to the reviewer,
+ * and the seat's two clocks. None of them approves anything — a person does,
+ * in Payments (owner, 03/10/2026).
  *
- * The checkout hold, the tolerance and the red line reach the server (`PUT
- * /settings/…`, each appending to `audit_log`); the confidence floor and the
- * reservation days still change on screen only, and the toast after saving
- * says so.
+ * Saved to `apps/api` (`PATCH /settings`, OOC-41), one audit entry per changed
+ * number. They apply to the next receipt, hold or deadline — never to one
+ * already decided.
  */
-export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings }) {
+export function ReceiptSettingsForm({ settings }: { settings: ReceiptSettings }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
-
-  const [saved, setSaved] = useState<PaymentSettings>(settings)
-  const [draft, setDraft] = useState<PaymentSettings>(settings)
-  const [toast, setToast] = useState<string | null>(null)
-
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
-
-  /** One PUT per server-side number that changed; the first failure stops. */
-  async function save() {
-    const writes: { changed: boolean; path: string; body: Record<string, number> }[] = [
-      {
-        changed: draft.checkoutHoldMinutes !== saved.checkoutHoldMinutes,
-        path: '/api/v1/settings/checkout-hold',
-        body: { minutes: draft.checkoutHoldMinutes },
-      },
-      {
-        changed: draft.toleranceCents !== saved.toleranceCents,
-        path: '/api/v1/settings/receipt-amount-tolerance',
-        body: { cents: draft.toleranceCents },
-      },
-      {
-        changed: draft.rejectBelowPercent !== saved.rejectBelowPercent,
-        path: '/api/v1/settings/receipt-reject-below',
-        body: { percent: draft.rejectBelowPercent },
-      },
-    ]
-
-    for (const write of writes.filter((entry) => entry.changed)) {
-      const response = await fetch(write.path, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(write.body),
-      }).catch(() => null)
-
-      if (!response?.ok) {
-        setToast(t('settings.receipts_save_failed_toast'))
-        return
-      }
-    }
-    setSaved(draft)
-    setToast(t('settings.receipts_saved_toast'))
-  }
-
-  function set<K extends keyof PaymentSettings>(key: K, value: PaymentSettings[K]) {
-    setDraft({ ...draft, [key]: value })
-  }
+  const { draft, set, dirty, saving, toast, dismissToast, save, cancel } = useSettingsForm(settings)
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,7 +40,7 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
             helpLabel={t('common.help')}
             label={t('settings.tolerance_label')}
             hint={t('settings.tolerance_hint')}
-            value={formatMoney(draft.toleranceCents, 'PEN', locale)}
+            value={formatMoney(draft.receiptAmountToleranceCents, 'PEN', locale)}
           >
             <input
               type="number"
@@ -85,9 +48,11 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
               max={50}
               step={0.1}
               aria-label={t('settings.tolerance_label')}
-              value={draft.toleranceCents / 100}
+              value={draft.receiptAmountToleranceCents / 100}
               onChange={(event) =>
-                set('toleranceCents', Math.round(Number(event.target.value) * 100))
+                // Soles typed by hand stop being a float on this line: what is
+                // stored is integer cents (CLAUDE.md §6).
+                set('receiptAmountToleranceCents', Math.round(Number(event.target.value) * 100))
               }
               className={numberClass}
             />
@@ -97,15 +62,15 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
             helpLabel={t('common.help')}
             label={t('settings.reject_below_label')}
             hint={t('settings.reject_below_hint')}
-            value={t('settings.reject_below_value', { percent: draft.rejectBelowPercent })}
+            value={t('settings.reject_below_value', { percent: draft.receiptRejectBelowPercent })}
           >
             <input
               type="number"
               min={1}
               max={99}
               aria-label={t('settings.reject_below_label')}
-              value={draft.rejectBelowPercent}
-              onChange={(event) => set('rejectBelowPercent', Number(event.target.value))}
+              value={draft.receiptRejectBelowPercent}
+              onChange={(event) => set('receiptRejectBelowPercent', Number(event.target.value))}
               className={numberClass}
             />
           </Row>
@@ -114,9 +79,7 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
             helpLabel={t('common.help')}
             label={t('settings.confidence_label')}
             hint={t('settings.confidence_hint')}
-            value={t('settings.confidence_value', {
-              value: Math.round(draft.escalationConfidence * 100),
-            })}
+            value={t('settings.confidence_value', { value: draft.ocrLowConfidencePercent })}
           >
             <input
               type="range"
@@ -124,26 +87,21 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
               max={95}
               step={1}
               aria-label={t('settings.confidence_label')}
-              value={Math.round(draft.escalationConfidence * 100)}
-              onChange={(event) =>
-                set('escalationConfidence', Number(event.target.value) / 100)
-              }
+              value={draft.ocrLowConfidencePercent}
+              onChange={(event) => set('ocrLowConfidencePercent', Number(event.target.value))}
               className="w-32 accent-brand-blue"
             />
           </Row>
 
-          {/* The seat's other clock. It sits beside the reservation window
-              because the two are one rule read at two speeds: this is the
-              minutes somebody has to pay before the seat goes back, that is the
-              days the paid-but-unreviewed seat waits (CLAUDE.md §5). Split
-              across two screens is how they end up contradicting each other. */}
+          {/* The seat's two clocks, side by side: the minutes somebody has to
+              pay before the seat goes back, then the days the paid-but-
+              unreviewed payment waits for a decision. Split across two screens
+              is how they end up contradicting each other. */}
           <Row
             helpLabel={t('common.help')}
             label={t('settings.checkout_hold_label')}
             hint={t('settings.checkout_hold_hint')}
-            value={t('settings.checkout_hold_value', {
-              minutes: draft.checkoutHoldMinutes,
-            })}
+            value={t('settings.checkout_hold_value', { minutes: draft.checkoutHoldMinutes })}
           >
             <input
               type="number"
@@ -160,15 +118,15 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
             helpLabel={t('common.help')}
             label={t('settings.reservation_label')}
             hint={t('settings.reservation_hint')}
-            value={t('settings.reservation_value', { days: draft.reservationDays })}
+            value={t('settings.reservation_value', { days: draft.reviewWindowDays })}
           >
             <input
               type="number"
               min={1}
               max={30}
               aria-label={t('settings.reservation_label')}
-              value={draft.reservationDays}
-              onChange={(event) => set('reservationDays', Number(event.target.value))}
+              value={draft.reviewWindowDays}
+              onChange={(event) => set('reviewWindowDays', Number(event.target.value))}
               className={numberClass}
             />
           </Row>
@@ -176,13 +134,9 @@ export function ReceiptSettingsForm({ settings }: { settings: PaymentSettings })
         <Notice>{t('settings.receipts_notice')}</Notice>
       </section>
 
-      <SettingsActions
-        dirty={dirty}
-        onSave={() => void save()}
-        onCancel={() => setDraft(saved)}
-      />
+      <SettingsActions dirty={dirty} saving={saving} onSave={save} onCancel={cancel} />
 
-      <Toast message={toast} onDismiss={() => setToast(null)} />
+      <Toast message={toast} onDismiss={dismissToast} />
     </div>
   )
 }

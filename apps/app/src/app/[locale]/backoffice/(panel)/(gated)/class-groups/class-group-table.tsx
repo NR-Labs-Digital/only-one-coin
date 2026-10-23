@@ -70,7 +70,9 @@ export function ClassGroupTableRow({ row }: { row: ClassGroupItem }) {
         </Link>
         <span className="block text-xs tabular-nums text-muted-foreground">{row.code}</span>
       </td>
-      <td className={`${tdClass} text-sm text-muted-foreground`}>{row.teacherName}</td>
+      <td className={`${tdClass} text-sm text-muted-foreground`}>
+        <TeacherCell row={row} />
+      </td>
       <td className={`${tdClass} text-sm tabular-nums text-muted-foreground`}>
         {slotsLabel(row.slots, t)}
       </td>
@@ -116,5 +118,26 @@ export function ClassGroupTableRow({ row }: { row: ClassGroupItem }) {
         </span>
       </td>
     </tr>
+  )
+}
+
+/**
+ * The teacher cell, here and on the class group page. Nobody allocated is a
+ * finding, not an empty cell (OOC-80): the class group cannot reach a
+ * teacher's screen, grades or certificates until coordination links it — the
+ * name typed before teachers had a file stays as a hint for whoever does.
+ */
+export function TeacherCell({ row }: { row: ClassGroupItem }) {
+  const t = useTranslations('bo')
+  if (row.teacherId) return <>{row.teacherName}</>
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <StatusBadge tone="warning" label={t('class_groups.teacher_unassigned')} />
+      {row.legacyTeacherName && (
+        <span className="text-xs text-muted-foreground">
+          {t('class_groups.teacher_legacy_hint', { name: row.legacyTeacherName })}
+        </span>
+      )}
+    </span>
   )
 }

@@ -1,10 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listTeachers } from '@/lib/backoffice/mock-data'
-import { listStaff } from '@/lib/backoffice/staff'
+import { listInvitableTeachers, listStaff, listStaffRoleChanges } from '@/lib/backoffice/staff'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageStaff } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeamView } from './team-view'
+import { RoleChangeLog } from './role-change-log'
 
 /**
  * The team: every account that opens the backoffice, the cargo it opens it
@@ -42,29 +42,22 @@ export default async function TeamPage({
     )
   }
 
-  /* An account for a docente is opened over somebody already on the roster —
-     and only over one still on it, because the account is what lets them run
-     the class groups they are given. */
-  const teachers = listTeachers()
-    .filter((teacher) => teacher.status === 'active')
-    .map((teacher) => ({
-      id: teacher.id,
-      firstName: teacher.firstName,
-      lastName: teacher.lastName,
-      email: teacher.email,
-    }))
-
-  const rows = await listStaff()
+  const [rows, roleChanges, invitableTeachers] = await Promise.all([
+    listStaff(),
+    listStaffRoleChanges(),
+    listInvitableTeachers(),
+  ])
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('team.title')} />
       <TeamView
         rows={rows}
-        teachers={teachers}
+        invitableTeachers={invitableTeachers}
         currentUserId={staff.id}
         currentUserName={`${staff.firstName} ${staff.lastName}`}
       />
+      <RoleChangeLog items={roleChanges} />
     </div>
   )
 }

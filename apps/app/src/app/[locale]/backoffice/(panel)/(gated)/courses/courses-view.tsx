@@ -19,6 +19,8 @@ import { Toast } from '@/components/backoffice/controls'
 import { CourseOptionsSheet } from './course-options-sheet'
 import { CoursePlansSheet } from './course-plans-sheet'
 import { NewCourseForm } from './new-course-form'
+import { landingKeyHolders } from './landing-key-field'
+import { LANDING_COURSE_KEYS } from '@ooc/domain/landing-course-keys'
 
 /**
  * The catalog, folded by language like the class group list — the two screens
@@ -75,6 +77,16 @@ export function CoursesView({
   const [toast, setToast] = useState<string | null>(null)
 
   const searching = query.trim().length > 0
+
+  /**
+   * Landing pages whose enroll button finds no live course (OOC-117) — the
+   * checkout still opens, with nothing chosen, so nobody would notice
+   * otherwise. Shown to whoever can fix it.
+   */
+  const unlinkedPages = useMemo(() => {
+    const holders = landingKeyHolders(courses)
+    return LANDING_COURSE_KEYS.filter((key) => !holders.has(key))
+  }, [courses])
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -150,8 +162,20 @@ export function CoursesView({
         )}
       </Toolbar>
 
+      {canCreate && unlinkedPages.length > 0 && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <BoIcon name="alert" size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <span className="font-semibold">{t('landing_key.unlinked_title')}: </span>
+            {unlinkedPages.map((key) => t(`landing_key.pages.${key}`)).join(' · ')}
+            <span className="mt-1 block text-xs text-amber-800">{t('landing_key.unlinked_body')}</span>
+          </span>
+        </p>
+      )}
+
       {creating && (
         <NewCourseForm
+          courses={courses}
           languages={[...new Map(courses.map((row) => [row.language.id, row.language])).values()]}
           onCancel={() => setCreating(false)}
           onCreated={() => {
@@ -346,6 +370,8 @@ export function CoursesView({
 
       <CourseOptionsSheet
         course={configuring}
+        courses={courses}
+        canLinkLanding={canCreate}
         onClose={() => setConfiguring(null)}
         onSaved={(message, live) => {
           setToast(

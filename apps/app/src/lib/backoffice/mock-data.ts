@@ -4,25 +4,15 @@ import type {
   ClassGroupStudent,
   CourseLanguage,
   CourseRow,
-  DashboardMetrics,
   EnrollmentRow,
   EmailDeliveryIssue,
   EmailFlow,
   EmailMetrics,
   EmailSegment,
-  PaymentMethod,
-  PaymentSettings,
   PlanPrice,
-  ReviewFlag,
-  ReviewQueueItem,
-  SeatWatchItem,
   StaffUser,
   StudentDetail,
-  TeacherContract,
-  TeacherDetail,
-  TeacherRow,
 } from './types'
-import { daysUntil } from './contract'
 
 /**
  * Mock backoffice dataset for the UI/UX phase. Every value is shaped like the
@@ -45,121 +35,7 @@ import { daysUntil } from './contract'
  * recognise — or not recognise — on it.
  */
 
-/**
- * Fee for the constancia de matrícula (`docs/REGRAS-NEGOCIO.md` §5: S/25).
- * A backoffice setting in the real system, never a constant in the code — the
- * same rule the payment tolerance follows (CLAUDE.md §5).
- */
-export const CONSTANCIA_FEE_CENTS = 2500
-
-/**
- * Minimum passing grade, 0–20 scale (`docs/REGRAS-NEGOCIO.md` §3: 14). Also a
- * backoffice setting later; it lives here so the batch preview has one source.
- */
-export const PASSING_GRADE = 14
-
-/**
- * The tail of the human review queue. One entry describes a person, the seat
- * they reserved and the receipt still waiting on a human — the student file
- * and the queue row are both derived from it, so the two screens can never
- * disagree about the same receipt.
- */
-interface PendingReceipt {
-  id: string
-  studentId: string
-  firstName: string
-  lastName: string
-  nationalId: string
-  email: string
-  phone: string
-  region: string
-  city: string
-  birthDate: string
-  courseName: string
-  classGroupName: string
-  teacherName: string
-  method: PaymentMethod
-  /** What the extraction read on the receipt. */
-  amountCents: number
-  /** The frozen plan price it is checked against (CLAUDE.md §5). */
-  expectedAmountCents: number
-  operationNumber: string | null
-  flag: ReviewFlag
-  tier: number
-  confidence: number
-  submittedAt: string
-}
-
-const pendingReceipts: PendingReceipt[] = []
-
 const students: StudentDetail[] = []
-
-
-export function getDashboardMetrics(): DashboardMetrics {
-  return {
-    enrollmentsToday: 0,
-    enrollmentsTodayDelta: 0,
-    pendingReview: listReviewQueue().length,
-    oldestPendingHours: 0,
-    activeStudents: 0,
-    activeStudentsDelta: 0,
-    seatsTaken: 0,
-    seatsCapacity: 0,
-  }
-}
-
-/** Receipts already sitting on a student file of their own. */
-const flaggedReceipts: ReviewQueueItem[] = []
-
-/**
- * The whole human queue, oldest first — the order it is worked in, and the one
- * the screen promises. Never a model's decision: tier 3 and divergence end
- * here by rule (CLAUDE.md §5).
- */
-function listReviewQueue(): ReviewQueueItem[] {
-  return [
-    ...flaggedReceipts,
-    ...pendingReceipts.map(
-      ({
-        studentId,
-        firstName,
-        lastName,
-        courseName,
-        method,
-        amountCents,
-        expectedAmountCents,
-        operationNumber,
-        flag,
-        tier,
-        confidence,
-        submittedAt,
-        id,
-      }): ReviewQueueItem => ({
-        id,
-        studentId,
-        studentName: `${firstName} ${lastName}`,
-        courseName,
-        method,
-        amountCents,
-        expectedAmountCents,
-        operationNumber,
-        flag,
-        tier,
-        confidence,
-        submittedAt,
-      }),
-    ),
-  ].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt))
-}
-
-/** Home preview: the five that have been waiting the longest. */
-export function getReviewQueue(): ReviewQueueItem[] {
-  return listReviewQueue().slice(0, 5)
-}
-
-export function getSeatWatch(): SeatWatchItem[] {
-  return []
-}
 
 /* -------------------------------------------------------------------------- */
 /* Class groups                                                                */
@@ -279,98 +155,31 @@ export function listClassGroupRosters(): ClassGroupDetail[] {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Teacher roster. Everything countable — class groups, students, pending
- * grades, pending certificates — is derived from `classGroups` below rather
- * than written here, so the roster can never disagree with the class group
- * list about who teaches what.
- *
- * The nationalities are not decoration: the catalog advertises the Italian
- * class group with a "docente ítalo-peruano" (`docs/REGRAS-NEGOCIO.md` §3), so
- * origin is catalogue data the ficha carries (`docs/REQUISITOS.md` RF03).
+ * The signed-in teacher's own figures, for the teacher home and the menu badge
+ * until the teacher area reads the API (OOC-79, OOC-82). The roster and the
+ * teacher file already read `apps/api` (OOC-78); no teacher is seeded here, so
+ * this answers for nobody.
  */
-const teachers: Omit<
-  TeacherDetail,
-  | 'activeClassGroups'
-  | 'studentCount'
-  | 'pendingGrades'
-  | 'pendingCertificates'
-  | 'classGroups'
-  /* Derived from `contract` against the request's clock, not seeded. */
-  | 'contractDaysLeft'
->[] = []
+export interface TeacherWorkload {
+  studentCount: number
+  pendingGrades: number
+  pendingCertificates: number
+}
+
+const teacherIds: string[] = []
 
 /** Still enrolling or running — what counts as load right now. */
 function isRunning(group: Pick<ClassGroupRow, 'status'>): boolean {
   return group.status === 'enrolling' || group.status === 'in_progress'
 }
 
-function teacherLoad(teacherId: string) {
-  const own = classGroups.filter((group) => group.teacherId === teacherId)
-  const running = own.filter(isRunning)
+export function getTeacher(id: string): TeacherWorkload | undefined {
+  if (!teacherIds.includes(id)) return undefined
+  const own = classGroups.filter((group) => group.teacherId === id)
   return {
-    activeClassGroups: running.length,
-    studentCount: running.reduce((sum, group) => sum + group.seatsTaken, 0),
+    studentCount: own.filter(isRunning).reduce((sum, group) => sum + group.seatsTaken, 0),
     pendingGrades: own.reduce((sum, group) => sum + pendingGradesOf(group), 0),
     pendingCertificates: own.reduce((sum, group) => sum + group.pendingCertificates, 0),
-  }
-}
-
-/**
- * Days left on the contract, against the request's clock. Handed down as a
- * number so the component never computes a date: it would hydrate a different
- * figure than the server rendered.
- */
-function contractCountdown(
-  contract: TeacherContract | null,
-  now: Date,
-): { contractDaysLeft: number | null } {
-  return {
-    contractDaysLeft: contract ? daysUntil(contract.endsAt, now) : null,
-  }
-}
-
-export function listTeachers(now: Date = new Date()): TeacherRow[] {
-  return teachers
-    .map(({ availability, ...teacher }) => {
-      void availability
-      return {
-        ...teacher,
-        ...teacherLoad(teacher.id),
-        ...contractCountdown(teacher.contract, now),
-      }
-    })
-    .sort(
-      (a, b) =>
-        a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
-    )
-}
-
-export function getTeacher(
-  id: string,
-  now: Date = new Date(),
-): TeacherDetail | undefined {
-  const teacher = teachers.find((item) => item.id === id)
-  if (!teacher) return undefined
-  return {
-    ...teacher,
-    ...teacherLoad(teacher.id),
-    ...contractCountdown(teacher.contract, now),
-    /* Running first, then the finished ones that still owe a certificate:
-       the file is opened either to allocate the next class group or to close
-       the last one. */
-    classGroups: classGroups
-      .filter((group) => group.teacherId === id)
-      .map((group) => {
-        const { students, ...row } = group
-        void students
-        return { ...row, pendingGrades: pendingGradesOf(group) }
-      })
-      .sort(
-        (a, b) =>
-          Number(isRunning(b)) - Number(isRunning(a)) ||
-          b.pendingCertificates - a.pendingCertificates ||
-          b.startDate.localeCompare(a.startDate),
-      ),
   }
 }
 
@@ -389,7 +198,15 @@ export function getTeacher(
 export function listClassGroupsFor(staff: StaffUser): ClassGroupRow[] {
   const rows = listClassGroups()
   if (staff.role !== 'teacher') return rows
-  return rows.filter((group) => group.teacherId === staff.teacherId)
+  return rows.filter((group) => ownsClassGroup(staff, group))
+}
+
+/**
+ * A teacher with no file linked (`teacherId: null`) owns nothing — compared
+ * bare, their null would match every class group still without a teacher.
+ */
+function ownsClassGroup(staff: StaffUser, group: Pick<ClassGroupRow, 'teacherId'>): boolean {
+  return staff.teacherId !== null && group.teacherId === staff.teacherId
 }
 
 /**
@@ -403,7 +220,7 @@ export function getClassGroupFor(
 ): ClassGroupDetail | undefined {
   const group = getClassGroup(id)
   if (!group) return undefined
-  if (staff.role === 'teacher' && group.teacherId !== staff.teacherId) return undefined
+  if (staff.role === 'teacher' && !ownsClassGroup(staff, group)) return undefined
   return group
 }
 
@@ -416,24 +233,13 @@ export function getClassGroupFor(
 export function listClassGroupRostersFor(staff: StaffUser): ClassGroupDetail[] {
   const rosters = listClassGroupRosters()
   if (staff.role !== 'teacher') return rosters
-  return rosters.filter((group) => group.teacherId === staff.teacherId)
+  return rosters.filter((group) => ownsClassGroup(staff, group))
 }
 
 /* -------------------------------------------------------------------------- */
 /* Payments                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** Tolerance and the other pipeline parameters — settings, never constants
- *  in the code (CLAUDE.md §5). Editable from the backoffice. */
-export function getPaymentSettings(): PaymentSettings {
-  return {
-    toleranceCents: 0,
-    rejectBelowPercent: 50,
-    escalationConfidence: 0.75,
-    reservationDays: 5,
-    checkoutHoldMinutes: 15,
-  }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Enrollments — the ledger of seats, and the reservations still open          */
@@ -531,6 +337,7 @@ export function listEnrollments(): EnrollmentRow[] {
         language: group?.language ?? languageOf(item.courseName),
         modality: 'online',
         academicPeriodName: item.academicPeriodName,
+        classGroupStatus: group?.status ?? 'enrolling',
         status: item.status,
         seatStatus: item.seatStatus,
         planName: item.planName,
@@ -729,8 +536,8 @@ export function listEmailFlows(): EmailFlow[] {
       sample: studentSample,
     },
     {
-      /* 45 days out, the number the panel already watches
-         (`CONTRACT_ALERT_DAYS`, CLAUDE.md §1 — provisional). */
+      /* 45 days out — the default of the backoffice's contract alert
+         (`platform_settings.contract_alert_days`, CLAUDE.md §1 — provisional). */
       template: 'teacher_contract_expiring',
       audience: 'teacher',
       stage: null,

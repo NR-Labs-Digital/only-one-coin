@@ -10,6 +10,9 @@ import type { PaymentMethod, PaymentStatus } from './types'
  */
 export interface PaymentLedgerQuery {
   page: number
+  /** The tab (OOC-114). Opens on `open`: what still needs a decision. */
+  state: PaymentLedgerState
+  /** Narrows within the tab — always one of `statusesOf(state)`. */
   status: PaymentStatus | null
   method: PaymentMethod | null
   q: string
@@ -23,6 +26,18 @@ export const PAYMENT_STATUSES: readonly PaymentStatus[] = [
   'approved',
   'rejected',
 ]
+
+export type PaymentLedgerState = 'open' | 'closed' | 'all'
+
+/** Tab order on screen; the first is the default. */
+export const PAYMENT_LEDGER_STATES: readonly PaymentLedgerState[] = ['open', 'closed', 'all']
+
+/** The fine statuses a tab holds — the only ones its status filter offers. */
+export function statusesOf(state: PaymentLedgerState): readonly PaymentStatus[] {
+  if (state === 'open') return PAYMENT_STATUSES.filter((s) => s === 'under_review' || s === 'pending')
+  if (state === 'closed') return PAYMENT_STATUSES.filter((s) => s === 'approved' || s === 'rejected')
+  return PAYMENT_STATUSES
+}
 
 export const PAYMENT_METHODS: readonly PaymentMethod[] = [
   'yape',
@@ -56,10 +71,14 @@ export function parsePaymentLedgerQuery(
 ): PaymentLedgerQuery {
   const page = Number.parseInt(first(params.page) ?? '', 10)
   const q = first(params.q)?.trim() ?? ''
+  const state = oneOf(PAYMENT_LEDGER_STATES, first(params.state)) ?? 'open'
 
   return {
     page: Number.isInteger(page) && page >= 1 ? page : 1,
-    status: oneOf(PAYMENT_STATUSES, first(params.status)),
+    state,
+    // A status outside the tab (`?state=open&status=approved`) would be an
+    // empty list that looks like a fact; it is dropped instead.
+    status: oneOf(statusesOf(state), first(params.status)),
     method: oneOf(PAYMENT_METHODS, first(params.method)),
     q: q.length >= MIN_SEARCH_LENGTH && q.length <= MAX_SEARCH_LENGTH ? q : '',
     sort: first(params.sort) === 'oldest' ? 'oldest' : 'newest',
@@ -70,6 +89,7 @@ export function parsePaymentLedgerQuery(
 export function paymentLedgerSearchParams(query: PaymentLedgerQuery): URLSearchParams {
   const search = new URLSearchParams()
   if (query.page > 1) search.set('page', String(query.page))
+  if (query.state !== 'open') search.set('state', query.state)
   if (query.status) search.set('status', query.status)
   if (query.method) search.set('method', query.method)
   if (query.q) search.set('q', query.q)
@@ -78,12 +98,17 @@ export function paymentLedgerSearchParams(query: PaymentLedgerQuery): URLSearchP
 }
 
 /**
- * What the reader narrowed the review queue to. The queue has one order —
- * oldest first, the order it is worked in — so only search and page travel.
+ * How the review queue is ordered (Sessão 32). `priority` is the default:
+ * suggested rejection, then review, then green, the least confident reading
+ * first within each. `oldest` is plain arrival order.
  */
+export type ReviewQueueSort = 'priority' | 'oldest'
+
+/** What the reader narrowed the review queue to — search, order and page. */
 export interface ReviewQueueQuery {
   page: number
   q: string
+  sort: ReviewQueueSort
 }
 
 /** Same rules as the ledger: whatever the API would refuse is dropped. */
@@ -91,13 +116,14 @@ export function parseReviewQueueQuery(
   params: Record<string, string | string[] | undefined>,
 ): ReviewQueueQuery {
   const { page, q } = parsePaymentLedgerQuery(params)
-  return { page, q }
+  return { page, q, sort: first(params.sort) === 'oldest' ? 'oldest' : 'priority' }
 }
 
 export function reviewQueueSearchParams(query: ReviewQueueQuery): URLSearchParams {
   const search = new URLSearchParams()
   if (query.page > 1) search.set('page', String(query.page))
   if (query.q) search.set('q', query.q)
+  if (query.sort !== 'priority') search.set('sort', query.sort)
   return search
 }
 

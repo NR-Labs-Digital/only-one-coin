@@ -1,35 +1,32 @@
 'use client'
 
-import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { AcademicSettings } from '@/lib/backoffice/types'
+import type { PlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatMoney, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
-import { Notice, Row, SettingsActions, numberClass } from './settings-ui'
+import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from './settings-ui'
+
+/** The academic half of the settings. */
+export type AcademicSettings = Pick<
+  PlatformSettings,
+  'passingGrade' | 'certificateDeadlineBusinessDays' | 'constanciaFeeCents' | 'contractAlertDays'
+>
 
 /**
  * The academic numbers the platform runs on: what counts as approved, how long
  * the institution has to issue, what a paid procedure costs and how early a
- * contract starts warning. All of them are settings rather than constants for
- * the reason CLAUDE.md §5 gives about the tolerance: the Asociación changing
- * what a rule means must not require a deploy.
+ * contract starts warning. Settings rather than constants: the Asociación
+ * changing what a rule means must not require a deploy.
  *
- * Nothing is submitted yet: there is no API behind this screen, and the save
- * button says so.
+ * Saved to `apps/api` (`PATCH /settings`, OOC-41), one audit entry per
+ * changed number; grades, certificates, the student's documents and the
+ * teacher roster read them from there.
  */
 export function AcademicSettingsForm({ settings }: { settings: AcademicSettings }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
-
-  const [draft, setDraft] = useState<AcademicSettings>(settings)
-  const [toast, setToast] = useState<string | null>(null)
-
-  const dirty = JSON.stringify(draft) !== JSON.stringify(settings)
-
-  function set<K extends keyof AcademicSettings>(key: K, value: AcademicSettings[K]) {
-    setDraft({ ...draft, [key]: value })
-  }
+  const { draft, set, dirty, saving, toast, dismissToast, save, cancel } = useSettingsForm(settings)
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,7 +79,8 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
           >
             <input
               type="number"
-              min={0}
+              min={1}
+              max={1000}
               step={0.5}
               aria-label={t('settings.constancia_fee_label')}
               value={draft.constanciaFeeCents / 100}
@@ -116,13 +114,9 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
         <Notice>{t('settings.academic_notice')}</Notice>
       </section>
 
-      <SettingsActions
-        dirty={dirty}
-        onSave={() => setToast(t('settings.saved_toast'))}
-        onCancel={() => setDraft(settings)}
-      />
+      <SettingsActions dirty={dirty} saving={saving} onSave={save} onCancel={cancel} />
 
-      <Toast message={toast} onDismiss={() => setToast(null)} />
+      <Toast message={toast} onDismiss={dismissToast} />
     </div>
   )
 }

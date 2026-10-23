@@ -24,6 +24,13 @@ export default async function StudentsPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
+  /* The directory is asked for alongside the session, not after it: every
+     call to apps/api is a round trip, and the tab click waited for two in a
+     row. A cargo that may not browse gets its 403 from the API and the
+     answer is dropped — `listStudents` never rejects, so nothing is left
+     floating. */
+  const query = parseStudentDirectoryQuery(await searchParams)
+  const pageRequest = listStudents(query)
   const staff = await getStaffSession()
 
   /* A teacher reaches a student through their own class group, never through a
@@ -42,8 +49,7 @@ export default async function StudentsPage({
     )
   }
 
-  const query = parseStudentDirectoryQuery(await searchParams)
-  const page = await listStudents(query)
+  const page = await pageRequest
 
   /* API down or erroring. An honest failure screen, never an empty
      directory — "no students" and "could not load" are different facts. */

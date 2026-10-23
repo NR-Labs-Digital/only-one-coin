@@ -8,9 +8,10 @@ import type { PaymentRow } from '@/lib/backoffice/types'
 import type { PaymentLedger } from '@/lib/backoffice/payments'
 import {
   MIN_SEARCH_LENGTH,
+  PAYMENT_LEDGER_STATES,
   PAYMENT_METHODS,
-  PAYMENT_STATUSES,
   paymentLedgerSearchParams,
+  statusesOf,
   type PaymentLedgerQuery,
 } from '@/lib/backoffice/payment-ledger-query'
 import { formatDateTime, formatMoney, type Locale } from '@/lib/format'
@@ -30,6 +31,7 @@ import {
 import { paymentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
+import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { PaymentDetailDialog } from './payment-detail-dialog'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
@@ -40,6 +42,10 @@ const SEARCH_DEBOUNCE_MS = 350
  * The ledger: every payment the institution received. Newest first here, the
  * opposite of the review queue: this screen answers "what came in", the queue
  * answers "what is somebody still waiting on".
+ *
+ * It opens on the open tab (OOC-114) — the money still owed a decision. A
+ * decided payment never leaves the ledger, only the default view: it is one
+ * tab away, read by when it was decided.
  *
  * Search, filters, sort and paging are the URL, and the URL is a query to
  * Postgres (`GET /api/v1/payments`): this component never holds more than the
@@ -95,7 +101,8 @@ export function PaymentsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, query])
 
-  const { items: pageRows, total, pageSize, metrics } = ledger
+  const { items: pageRows, total, pageSize, metrics, counts } = ledger
+  const closedTab = query.state === 'closed'
 
   const activeFilters = [query.status, query.method].filter(
     (value) => value !== null,
@@ -162,6 +169,19 @@ export function PaymentsView({
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
+        {/* The tab drops the fine status: one from the other tab would be an
+            empty list. The counters come from the server, under the search
+            and the other filters. */}
+        <ListStateTabs
+          label={t('payments.state_label')}
+          active={query.state}
+          onSelect={(state) => navigate({ state, status: null })}
+          tabs={PAYMENT_LEDGER_STATES.map((state) => ({
+            key: state,
+            label: t(`payments.state_${state}`),
+            count: state === 'all' ? counts.open + counts.closed : counts[state],
+          }))}
+        />
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('payments.search_label')}</span>
@@ -192,7 +212,7 @@ export function PaymentsView({
                 onClick={() => navigate({ status: null })}
                 label={t('payments.filter_all')}
               />
-              {PAYMENT_STATUSES.map((value) => (
+              {statusesOf(query.state).map((value) => (
                 <Chip
                   key={value}
                   active={query.status === value}
@@ -237,10 +257,12 @@ export function PaymentsView({
       <Card className={`min-w-0 transition-opacity ${pending ? 'opacity-60' : ''}`} aria-busy={pending}>
         {pageRows.length === 0 ? (
           <div className="p-4">
+            {/* An empty open tab is the good news of this screen — said as
+                such, not as "no payments yet". */}
             <EmptyState
-              icon={!narrowed ? 'payments' : 'search'}
-              title={t(!narrowed ? 'payments.empty_title' : 'payments.empty_search_title')}
-              body={t(!narrowed ? 'payments.empty_body' : 'payments.empty_search_body')}
+              icon={narrowed ? 'search' : query.state === 'open' ? 'check' : 'payments'}
+              title={t(narrowed ? 'payments.empty_search_title' : `payments.empty_${query.state}_title`)}
+              body={t(narrowed ? 'payments.empty_search_body' : `payments.empty_${query.state}_body`)}
             />
           </div>
         ) : (
@@ -252,7 +274,7 @@ export function PaymentsView({
                 t('payments.col_amount'),
                 t('payments.col_status'),
                 t('payments.col_operation'),
-                t('payments.col_submitted'),
+                t(closedTab ? 'payments.col_decided' : 'payments.col_submitted'),
               ]}
             >
               <thead>
@@ -262,7 +284,9 @@ export function PaymentsView({
                   <th className={thClass}>{t('payments.col_amount')}</th>
                   <th className={thClass}>{t('payments.col_status')}</th>
                   <th className={thClass}>{t('payments.col_operation')}</th>
-                  <th className={thClass}>{t('payments.col_submitted')}</th>
+                  <th className={thClass}>
+                    {t(closedTab ? 'payments.col_decided' : 'payments.col_submitted')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -333,10 +357,21 @@ export function PaymentsView({
                         </span>
                       </td>
 
+                      {/* The closed tab is ordered by the decision, so the
+                          column shows it — when, and who. */}
                       <td
                         className={`${tdClass} whitespace-nowrap text-sm tabular-nums text-muted-foreground`}
                       >
-                        {formatDateTime(row.submittedAt, locale)}
+                        {closedTab && row.decidedAt ? (
+                          <>
+                            {formatDateTime(row.decidedAt, locale)}
+                            <span className="block text-xs">
+                              {row.decidedByName ?? t('payments.decided_by_unknown')}
+                            </span>
+                          </>
+                        ) : (
+                          formatDateTime(row.submittedAt, locale)
+                        )}
                       </td>
                     </tr>
                   )

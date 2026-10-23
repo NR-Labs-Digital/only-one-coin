@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getStudent, getStudentActivity } from '@/lib/backoffice/students'
 import { getStaffSession } from '@/lib/backoffice/session'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import {
   canBrowseStudents,
   canEditStudent,
@@ -30,13 +31,16 @@ export default async function StudentDetailPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const staff = await getStaffSession()
-  if (!canBrowseStudents(staff.role)) notFound()
-
-  const [student, activity] = await Promise.all([
+  /* One wave of calls, not two: the file is fetched alongside the session.
+     A cargo that may not browse is refused by the API too (403 → null), and
+     its answer is never shown. */
+  const [staff, student, activity, settings] = await Promise.all([
+    getStaffSession(),
     getStudent(studentId),
     getStudentActivity(studentId),
+    getPlatformSettings(),
   ])
+  if (!canBrowseStudents(staff.role)) notFound()
   if (!student) notFound()
 
   const fullName = `${student.firstName} ${student.lastName}`
@@ -90,6 +94,7 @@ export default async function StudentDetailPage({
         canViewPayments={canViewPayments(staff.role)}
         canEdit={canEditStudent(staff.role)}
         activity={activity}
+        constanciaFeeCents={settings?.constanciaFeeCents ?? null}
       />
     </div>
   )

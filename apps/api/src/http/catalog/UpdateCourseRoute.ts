@@ -19,6 +19,7 @@ export const updateCourseRoute = RouteBuilder.patch("/catalog/courses/:id")
   .response(200, IdResponseSchema)
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)
+  .response(409, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const course = await container.useCases.catalog.updateCourse.run({
       actorId: request.currentUser!.id,

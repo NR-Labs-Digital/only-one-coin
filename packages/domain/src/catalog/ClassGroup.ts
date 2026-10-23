@@ -38,7 +38,14 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
   code: z.string().trim(),
-  teacherName: z.string().trim(),
+  /** The teacher running it (OOC-80). Null until somebody is allocated. */
+  teacherId: z.string().uuid().nullable(),
+  /**
+   * The free-text name typed before teachers had a file (`class_groups.teacher_name`).
+   * Read-only: nothing writes a new one, and allocating a teacher clears it —
+   * it only stays as a hint on the class groups still waiting for a link.
+   */
+  legacyTeacherName: z.string(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.coerce.date().nullable(),
   endsOn: z.coerce.date().nullable(),
@@ -55,7 +62,7 @@ export const CreateClassGroupSchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
   code: z.string().trim().min(1),
-  teacherName: z.string().trim(),
+  teacherId: z.string().uuid().nullable().optional(),
   slots: z.array(WeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: optionalDate,
@@ -75,7 +82,8 @@ export class ClassGroup extends SoftDeletableModel {
   public courseId: string;
   public readonly academicPeriodId: string;
   public code: string;
-  public teacherName: string;
+  public teacherId: string | null;
+  public legacyTeacherName: string;
   public slots: WeeklySlot[];
   public startsOn: Date | null;
   public endsOn: Date | null;
@@ -92,7 +100,8 @@ export class ClassGroup extends SoftDeletableModel {
     this.courseId = props.courseId;
     this.academicPeriodId = props.academicPeriodId;
     this.code = props.code;
-    this.teacherName = props.teacherName;
+    this.teacherId = props.teacherId;
+    this.legacyTeacherName = props.legacyTeacherName;
     this.slots = props.slots;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
@@ -111,6 +120,8 @@ export class ClassGroup extends SoftDeletableModel {
       ClassGroupPropsSchema.parse({
         ...valid,
         id: uuid(),
+        teacherId: valid.teacherId ?? null,
+        legacyTeacherName: "",
         startsOn: valid.startsOn ?? null,
         endsOn: valid.endsOn ?? null,
         enrollmentOpensAt: valid.enrollmentOpensAt ?? null,
@@ -136,7 +147,8 @@ export class ClassGroup extends SoftDeletableModel {
         courseId: source.courseId,
         academicPeriodId,
         code: source.code,
-        teacherName: source.teacherName,
+        teacherId: source.teacherId,
+        legacyTeacherName: source.legacyTeacherName,
         slots: source.slots,
         startsOn: null,
         endsOn: null,
@@ -164,7 +176,14 @@ export class ClassGroup extends SoftDeletableModel {
       changed.push("courseId");
     }
 
-    for (const key of ["code", "teacherName", "capacity"] as const) {
+    if (valid.teacherId !== undefined && valid.teacherId !== this.teacherId) {
+      this.teacherId = valid.teacherId;
+      // Somebody chose from the roster: the typed name has done its job.
+      if (valid.teacherId !== null) this.legacyTeacherName = "";
+      changed.push("teacherId");
+    }
+
+    for (const key of ["code", "capacity"] as const) {
       const next = valid[key];
       if (next !== undefined && next !== this[key]) {
         (this as Record<string, unknown>)[key] = next;

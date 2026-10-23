@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { UnableToProcessEntryError } from "../shared/base/errors/UnableToProcessEntryError.js";
+import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
+import { TeacherInviteRefusedError } from "./errors.js";
 import type { IAuditLogRepository } from "./ports/IAuditLogRepository.js";
 import type { IStaffInviteRepository, StaffInvite } from "./ports/IStaffInviteRepository.js";
 import type { IStaffUserLookup } from "./ports/IStaffUserLookup.js";
@@ -14,6 +16,8 @@ export interface CreateStaffInviteInput {
   firstName: string;
   lastName: string;
   role: Role;
+  /** The teacher file a `teacher` invite opens an account for — required for that cargo, ignored for any other. */
+  teacherId?: string | null;
 }
 
 export interface CreateStaffInviteOutput {
@@ -26,11 +30,17 @@ export interface CreateStaffInviteOutput {
  * with `node:crypto`, the same "plain Node builtin used directly in a
  * usecase" precedent `PromoteUserRoleUseCase` already sets with `new Date()`
  * — it is not delegating to any auth provider, just producing random bytes.
+ *
+ * A `teacher` invite names the teacher file the account will belong to
+ * (OOC-79): a live file on the roster, with no account and no other open
+ * invite. The partial unique index `staff_invites_pending_teacher_uidx` backs
+ * the last check against two invites racing.
  */
 export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput, CreateStaffInviteOutput> {
   constructor(
     private readonly staffUserLookup: IStaffUserLookup,
     private readonly staffInviteRepository: IStaffInviteRepository,
+    private readonly teacherRepository: ITeacherRepository,
     private readonly auditLogRepository: IAuditLogRepository,
   ) {
     super();
@@ -55,6 +65,8 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
       });
     }
 
+    const teacherId = input.role === "teacher" ? await this.invitableTeacherId(input.teacherId ?? null) : null;
+
     const token = randomBytes(32).toString("base64url");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + INVITE_TTL_DAYS);
@@ -66,6 +78,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
       role: input.role,
       token,
       invitedBy: input.actorId,
+      teacherId,
       expiresAt,
     });
 
@@ -78,10 +91,30 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
       // not a "user".id, so the ledger query's join against "user" can't
       // resolve a display name for this entry the way it does for
       // `role.promote` (ListStaffRoleChangesQuery.ts).
-      metadata: { email, role: input.role, firstName: invite.firstName, lastName: invite.lastName },
+      metadata: {
+        email,
+        role: input.role,
+        firstName: invite.firstName,
+        lastName: invite.lastName,
+        ...(teacherId ? { teacherId } : {}),
+      },
       at: new Date(),
     });
 
     return { invite };
+  }
+
+  private async invitableTeacherId(teacherId: string | null): Promise<string> {
+    if (!teacherId) throw new TeacherInviteRefusedError({ reason: "staff_invite.teacher_required" });
+
+    const teacher = await this.teacherRepository.findById(teacherId);
+    if (!teacher) throw new TeacherInviteRefusedError({ reason: "staff_invite.teacher_not_found" });
+    if (!teacher.isActive) throw new TeacherInviteRefusedError({ reason: "staff_invite.teacher_inactive" });
+    if (teacher.userId) throw new TeacherInviteRefusedError({ reason: "staff_invite.teacher_has_account" });
+
+    const open = await this.staffInviteRepository.findPendingByTeacherId(teacherId);
+    if (open) throw new TeacherInviteRefusedError({ reason: "staff_invite.teacher_invite_pending" });
+
+    return teacherId;
   }
 }

@@ -1,3 +1,4 @@
+import { LandingCourseKeySchema } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
@@ -14,6 +15,7 @@ const GetPublicCatalogResponseSchema = z.object({
       minAge: z.number().int(),
       modules: z.number().int(),
       totalHours: z.number().int(),
+      landingKey: LandingCourseKeySchema.nullable(),
     }),
   ),
   plans: z.array(
@@ -72,13 +74,12 @@ const PROVISIONAL_ACCOUNTS = [
   { method: "bcp" as const, holder: "Asociación Only One Coin Perú", number: "191-9999999-0-99", interbankCode: "00219199999999099", hasQr: false },
 ];
 
-// `holdMinutes` is not here: it is the backoffice's (platform_settings) and is
-// read per request below. It only tells the checkout how long the hold it is
-// about to claim will last — the deadline itself comes back from
-// ClaimSeatHoldRoute. The rest is still provisional: no server-side reader
-// of the review window yet.
+// `holdMinutes` and `reservationDays` are not here: they are the backoffice's
+// (platform_settings) and are read per request below. The first only tells the
+// checkout how long the hold it is about to claim will last — the deadline
+// itself comes back from ClaimSeatHoldRoute; the second is the review window
+// Payments works to (OOC-41), promised to the student on the last step.
 const PROVISIONAL_SETTINGS = {
-  reservationDays: 5,
   maxReceiptBytes: 8 * 1024 * 1024,
   consentVersion: "v1",
 };
@@ -112,6 +113,7 @@ export const getPublicCatalogRoute = RouteBuilder.get("/catalog")
         minAge: course.minAge,
         modules: course.modules,
         totalHours: course.totalHours,
+        landingKey: course.landingKey,
       })),
       plans: catalog.plans.map((plan) => ({ ...plan, currency: "PEN" as const })),
       classGroups: catalog.classGroups.map((group) => ({
@@ -126,6 +128,10 @@ export const getPublicCatalogRoute = RouteBuilder.get("/catalog")
         seatsTaken: group.seatsTaken,
       })),
       accounts: PROVISIONAL_ACCOUNTS,
-      settings: { ...PROVISIONAL_SETTINGS, holdMinutes: platformSettings.checkoutHoldMinutes },
+      settings: {
+        ...PROVISIONAL_SETTINGS,
+        holdMinutes: platformSettings.checkoutHoldMinutes,
+        reservationDays: platformSettings.reviewWindowDays,
+      },
     });
   });

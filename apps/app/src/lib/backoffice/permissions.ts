@@ -140,6 +140,15 @@ export function canManageTeachers(role: StaffRole): boolean {
 }
 
 /**
+ * Who corrects a teacher file, its week and its place on the roster. The
+ * roster's readers minus the analyst, who observes and proposes but never
+ * edits (CLAUDE.md §8). Mirrors TEACHER_EDIT_ROLES in apps/api.
+ */
+export function canEditTeachers(role: StaffRole): boolean {
+  return isManagement(role) || role === 'academic_supervisor'
+}
+
+/**
  * Who registers a new teacher. Management only: a teacher record is an account
  * that will read student grades, and creating one is one step away from
  * creating staff — which `CLAUDE.md` §8 puts behind a dedicated usecase.
@@ -301,7 +310,8 @@ export function canConfigureSettings(role: StaffRole): boolean {
 /**
  * Whose second factor is not optional (CLAUDE.md §8). These cargos move money
  * or hand out roles, so the panel never offers them a switch to turn it off.
- * The enforcing check is the session policy in `apps/api`.
+ * Mirrors `MFA_REQUIRED_ROLES` (packages/domain); the enforcing check is the
+ * authorization hook in `apps/api`, which refuses them until it is on.
  */
 export function isMfaMandatory(role: StaffRole): boolean {
   return isManagement(role) || role === 'billing'

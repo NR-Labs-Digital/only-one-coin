@@ -12,9 +12,10 @@ import {
   canManageEmail,
   canManageFeatureFlags,
   canManageStaff,
+  canViewPayments,
   isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import { getDashboardMetrics } from '@/lib/backoffice/mock-data'
+import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { initials } from '@/lib/format'
@@ -56,8 +57,9 @@ export default async function BackofficePanelLayout({
   // not here: this shell renders for `../features` too, off included — that
   // is the one screen the `backoffice` flag must never be able to hide
   // (CLAUDE.md §5).
-  const staff = await getStaffSession()
-  const { pendingReview } = getDashboardMetrics()
+  // The session and the flags are independent reads of apps/api — asked
+  // together, so the shell pays one round trip for both instead of two.
+  const [staff, flags] = await Promise.all([getStaffSession(), getFeatureFlags()])
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
@@ -72,7 +74,15 @@ export default async function BackofficePanelLayout({
     redirect({ href: '/docente/home', locale })
   }
 
-  const flags = await getFeatureFlags()
+  /* The queue count behind the Payments badge, asked only by a cargo the API
+     serves the queue to — anybody else would get a 403, and the badge would
+     just say nothing. A failed read says nothing too: no badge beats a wrong
+     zero. */
+  const reviewQueue =
+    flags['backoffice.payments'] && canViewPayments(staff.role)
+      ? await getReviewQueueHead()
+      : null
+  const pendingReview = reviewQueue?.total ?? 0
 
   /* A group whose every section is off is not an empty dropdown — it is not a
      group. Only `home` is unconditional: it is where the panel starts. */

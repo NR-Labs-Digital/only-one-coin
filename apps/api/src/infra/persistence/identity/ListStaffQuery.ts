@@ -29,6 +29,8 @@ interface StaffUserRow extends Record<string, unknown> {
   email: string;
   role: string;
   banned: boolean;
+  twoFactorEnabled: boolean;
+  teacherId: string | null;
   createdAt: string;
   lastAccessAt: string | null;
 }
@@ -40,10 +42,11 @@ interface StaffUserRow extends Record<string, unknown> {
  * invariant to protect, so it lives here rather than in packages/domain,
  * same call `ListStudentsQuery` already makes.
  *
- * `teacherId` is always null and `mfaEnrolled` is always false — there is no
- * `teachers` table yet (GetCurrentStaffRoute.ts already documents the same
- * gap) and Better Auth's `twoFactor` plugin isn't configured
- * (backoffice-login-form.tsx already flags this), so neither is faked here.
+ * `teacherId` is the teacher file the account belongs to (`teachers.user_id`)
+ * or the one the invite names (OOC-79); null for every other cargo, and for a
+ * `teacher` account nothing links — a finding the team screen shows.
+ * `mfaEnrolled` is the account's `twoFactorEnabled` (OOC-29); an invite has no
+ * account yet, so it is always false there.
  */
 export class ListStaffQuery {
   constructor(private readonly db: Db) {}
@@ -56,9 +59,12 @@ export class ListStaffQuery {
         u."email" as "email",
         u."role" as "role",
         u."banned" as "banned",
+        u."twoFactorEnabled" as "twoFactorEnabled",
+        t."id" as "teacherId",
         u."createdAt" as "createdAt",
         (select max(s."createdAt") from "session" s where s."userId" = u."id") as "lastAccessAt"
       from "user" u
+      left join "teachers" t on t."user_id" = u."id" and t."deleted_at" is null
       where u."role" not in ('student', 'guardian')
     `);
 
@@ -71,8 +77,8 @@ export class ListStaffQuery {
         email: row.email,
         role: row.role,
         status: row.banned ? "inactive" : "active",
-        teacherId: null,
-        mfaEnrolled: false,
+        teacherId: row.teacherId,
+        mfaEnrolled: row.twoFactorEnabled,
         joinedAt: new Date(row.createdAt),
         lastAccessAt: row.lastAccessAt ? new Date(row.lastAccessAt) : null,
         inviteToken: null,
@@ -89,7 +95,7 @@ export class ListStaffQuery {
       email: invite.email,
       role: invite.role,
       status: "invited",
-      teacherId: null,
+      teacherId: invite.teacherId,
       mfaEnrolled: false,
       joinedAt: invite.createdAt,
       lastAccessAt: null,

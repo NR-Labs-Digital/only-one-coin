@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type { CatalogErrorKey, CourseOptions, CourseRow } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import { BoIcon } from '@/components/backoffice/icons'
@@ -13,6 +14,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { CourseOptionFields } from './course-option-fields'
+import { LandingKeyField } from './landing-key-field'
 
 /**
  * Course options — what coordination may change on a course that already
@@ -23,14 +25,23 @@ import { CourseOptionFields } from './course-option-fields'
  * Price is absent for the same reason it is absent from the course type: it is
  * versioned and never edited, and the enrollment freezes the version in force
  * (CLAUDE.md §5).
+ *
+ * The landing page link (OOC-117) shows only to whoever may create a course:
+ * it decides what the public website sells, and it goes through the course's
+ * identity route, not the options one.
  */
 export function CourseOptionsSheet({
   course,
+  courses,
+  canLinkLanding,
   onClose,
   onSaved,
   onOpenPlans,
 }: {
   course: CourseRow | null
+  /** The whole catalog — to tell which landing pages another course holds. */
+  courses: CourseRow[]
+  canLinkLanding: boolean
   onClose: () => void
   onSaved: (message: 'saved' | 'retired' | 'restored', liveEnrollments?: number) => void
   /** Clicking the row lands here, so plans must be one step away, not hidden behind another control. */
@@ -38,6 +49,7 @@ export function CourseOptionsSheet({
 }) {
   const t = useTranslations('bo')
   const [draft, setDraft] = useState<CourseOptions | null>(null)
+  const [landingKey, setLandingKey] = useState<LandingCourseKey | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
 
@@ -45,6 +57,7 @@ export function CourseOptionsSheet({
   // away on close — a half-edited course must not leak into the next one.
   useEffect(() => {
     setError(null)
+    setLandingKey(course?.landingKey ?? null)
     setDraft(
       course && {
         minAge: course.minAge,
@@ -68,6 +81,14 @@ export function CourseOptionsSheet({
     if (changed.length > 0) {
       const patch = Object.fromEntries(changed.map((key) => [key, options[key]]))
       const result = await catalogWrite(`/courses/${target.id}/options`, 'PATCH', patch)
+      if (!result.ok) {
+        setSaving(false)
+        setError(result.error)
+        return
+      }
+    }
+    if (canLinkLanding && landingKey !== target.landingKey) {
+      const result = await catalogWrite(`/courses/${target.id}`, 'PATCH', { landingKey })
       if (!result.ok) {
         setSaving(false)
         setError(result.error)
@@ -139,6 +160,15 @@ export function CourseOptionsSheet({
               </button>
 
               <CourseOptionFields value={draft} onChange={setDraft} />
+
+              {canLinkLanding && (
+                <LandingKeyField
+                  value={landingKey}
+                  onChange={setLandingKey}
+                  courses={courses}
+                  selfId={course.id}
+                />
+              )}
 
               <div className="flex items-center gap-2">
                 <button

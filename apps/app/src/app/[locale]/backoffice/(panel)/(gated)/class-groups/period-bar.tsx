@@ -187,6 +187,9 @@ export function PeriodBar({
                 </option>
               ))}
             </select>
+            {/* The period is a sales campaign, not when classes start — the
+                two read alike and got mixed up (OOC-93). */}
+            <span className="text-xs text-muted-foreground">{t('periods.hint')}</span>
           </label>
         )}
 

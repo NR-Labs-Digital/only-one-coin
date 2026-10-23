@@ -5,10 +5,18 @@ import {
   SoftDeletableModel,
   SoftDeletableModelPropsSchema,
 } from "../shared/base/SoftDeletableModel.js";
+import { LANDING_COURSE_KEYS, type LandingCourseKey } from "./landingCourseKeys.js";
 
 /** How the certificate is earned (docs/REGRAS-NEGOCIO.md §6). */
 export const CertificateRuleSchema = z.enum(["automatic", "exam_required"]);
 export type CertificateRule = z.infer<typeof CertificateRuleSchema>;
+
+/**
+ * Which landing page sells this course (OOC-117). Null is a course the
+ * landing does not link to — an enroll button with that key opens the
+ * checkout with nothing chosen. One live course per key (unique index).
+ */
+export const LandingCourseKeySchema = z.enum(LANDING_COURSE_KEYS);
 
 /**
  * What a row may hold. Looser than what may be written: courses that predate
@@ -26,6 +34,7 @@ export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
   allowsTransfer: z.boolean(),
+  landingKey: LandingCourseKeySchema.nullable(),
 });
 
 export type CourseProps = z.infer<typeof CoursePropsSchema>;
@@ -41,15 +50,17 @@ export const CourseOptionsSchema = z.object({
 });
 
 /**
- * Opening a course. Level and summary are required here even though old rows
- * may lack them: a course created without a summary reaches students blank.
+ * Opening a course. Level is required here even though old rows may lack it.
+ * The summary is not (OOC-107): the backoffice form no longer asks for it, and
+ * the portal hides "Sobre el curso" when it is blank. The column stays.
  */
 export const CreateCourseSchema = CoursePropsSchema.omit(BASE_PROPS_KEYS).extend({
   level: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
+  summary: z.string().trim().default(""),
+  landingKey: LandingCourseKeySchema.nullable().default(null),
 });
 
-export type CreateCourseDTO = z.infer<typeof CreateCourseSchema>;
+export type CreateCourseDTO = z.input<typeof CreateCourseSchema>;
 
 export const UpdateCourseSchema = CreateCourseSchema.partial();
 export type UpdateCourseDTO = z.infer<typeof UpdateCourseSchema>;
@@ -65,6 +76,7 @@ export class Course extends SoftDeletableModel {
   public certificateRule: CertificateRule;
   public allowsFreeze: boolean;
   public allowsTransfer: boolean;
+  public landingKey: LandingCourseKey | null;
 
   constructor(props: CourseProps) {
     super(props);
@@ -78,6 +90,7 @@ export class Course extends SoftDeletableModel {
     this.certificateRule = props.certificateRule;
     this.allowsFreeze = props.allowsFreeze;
     this.allowsTransfer = props.allowsTransfer;
+    this.landingKey = props.landingKey;
   }
 
   static create(dto: CreateCourseDTO): Course {

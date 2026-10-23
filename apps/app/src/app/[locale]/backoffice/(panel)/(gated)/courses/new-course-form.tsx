@@ -2,16 +2,19 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type {
   CatalogErrorKey,
   CourseLanguage,
   CourseOptions,
+  CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { CourseOptionFields, DEFAULT_COURSE_OPTIONS } from './course-option-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { LandingKeyField } from './landing-key-field'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -33,10 +36,13 @@ const labelClass =
  */
 export function NewCourseForm({
   languages,
+  courses,
   onCancel,
   onCreated,
 }: {
   languages: CourseLanguage[]
+  /** The catalog — the landing page picker greys out the pages already linked. */
+  courses: CourseRow[]
   onCancel: () => void
   onCreated: () => void
 }) {
@@ -45,16 +51,12 @@ export function NewCourseForm({
   const [name, setName] = useState('')
   const [language, setLanguage] = useState('')
   const [level, setLevel] = useState('')
-  const [summary, setSummary] = useState('')
+  const [landingKey, setLandingKey] = useState<LandingCourseKey | null>(null)
   const [draftOptions, setDraftOptions] = useState<CourseOptions>(DEFAULT_COURSE_OPTIONS)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
 
-  const ready =
-    name.trim() !== '' &&
-    level.trim() !== '' &&
-    summary.trim() !== '' &&
-    language.trim() !== ''
+  const ready = name.trim() !== '' && level.trim() !== '' && language.trim() !== ''
 
   async function submit() {
     setSaving(true)
@@ -64,7 +66,7 @@ export function NewCourseForm({
       name: name.trim(),
       language: language.trim(),
       level: level.trim(),
-      summary: summary.trim(),
+      landingKey,
       ...options,
     })
     setSaving(false)
@@ -82,19 +84,20 @@ export function NewCourseForm({
       <AutoGrid min="15rem" gap="gap-3">
         <label className="flex flex-col gap-1">
           <span className={labelClass}>{t('courses.field_language')}</span>
+          {/* A plain input, not a datalist: the datalist arrow showed on some
+              browsers and not on others (OOC-106). Language is free text and
+              courses group by its spelling, so the hint names the ones in use. */}
           <input
-            list="course-languages"
             value={language}
             onChange={(event) => setLanguage(event.target.value)}
             className={fieldClass}
           />
-          <datalist id="course-languages">
-            {languages.map((item) => (
-              <option key={item.id} value={item.name} />
-            ))}
-          </datalist>
           <span className="text-xs text-muted-foreground">
-            {t('courses.field_language_hint')}
+            {languages.length > 0
+              ? t('courses.field_language_hint', {
+                  languages: languages.map((item) => item.name).join(', '),
+                })
+              : t('courses.field_language_hint_empty')}
           </span>
         </label>
 
@@ -118,16 +121,7 @@ export function NewCourseForm({
           />
         </label>
 
-        {/* Full width: it is a paragraph, not a token. */}
-        <label className="flex flex-col gap-1" style={{ gridColumn: '1 / -1' }}>
-          <span className={labelClass}>{t('courses.field_summary')}</span>
-          <textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            rows={3}
-            className={`${fieldClass} resize-y`}
-          />
-        </label>
+        <LandingKeyField value={landingKey} onChange={setLandingKey} courses={courses} />
       </AutoGrid>
 
       <div className="mt-5 border-t border-line pt-5">

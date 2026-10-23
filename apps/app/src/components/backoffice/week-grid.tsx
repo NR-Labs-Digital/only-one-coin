@@ -50,7 +50,7 @@ export function WeekGrid({
 
             {column.classes.map((item) => (
               <Link
-                key={item.id}
+                key={`${item.id}-${item.startTime}`}
                 href={hrefOf(item.id)}
                 title={item.courseName}
                 className={`rounded px-1.5 py-1 text-[11px] font-semibold transition ${

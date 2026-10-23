@@ -1,7 +1,9 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
+import type { PlatformSettings } from '@/lib/backoffice/platform-settings'
+import { changedSettings, saveSettings } from '@/lib/backoffice/settings-client'
 import { BoIcon } from '@/components/backoffice/icons'
 import {
   Tooltip,
@@ -82,10 +84,14 @@ export function Notice({ children }: { children: ReactNode }) {
 /** Save/discard pair every settings screen ends on. Disabled until dirty. */
 export function SettingsActions({
   dirty,
+  saving = false,
   onSave,
   onCancel,
 }: {
   dirty: boolean
+  /** While the save is on its way both buttons wait — a second click would
+   * send the same change twice. */
+  saving?: boolean
   onSave: () => void
   onCancel: () => void
 }) {
@@ -95,7 +101,8 @@ export function SettingsActions({
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        disabled={!dirty}
+        disabled={!dirty || saving}
+        aria-busy={saving}
         onClick={onSave}
         className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-yellow hover:text-ink active:bg-brand-yellow-deep disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -104,7 +111,7 @@ export function SettingsActions({
       </button>
       <button
         type="button"
-        disabled={!dirty}
+        disabled={!dirty || saving}
         onClick={onCancel}
         className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -112,4 +119,47 @@ export function SettingsActions({
       </button>
     </div>
   )
+}
+
+/**
+ * One settings form's state: what the server holds, what the reader is typing,
+ * and the save that turns one into the other (`PATCH /settings`, OOC-41).
+ * Only the fields that changed are sent, all in one call — the server applies
+ * all of them or none, so the screen never ends up half saved.
+ */
+export function useSettingsForm<T extends Partial<PlatformSettings>>(initial: T) {
+  const t = useTranslations('bo')
+  const [saved, setSaved] = useState<T>(initial)
+  const [draft, setDraft] = useState<T>(initial)
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+
+  function set<K extends keyof T>(key: K, value: T[K]) {
+    setDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  async function save() {
+    setSaving(true)
+    const result = await saveSettings(changedSettings(saved, draft))
+    setSaving(false)
+    if (!result) {
+      setToast(t('settings.save_failed_toast'))
+      return
+    }
+    setSaved(draft)
+    setToast(t('settings.saved_toast'))
+  }
+
+  return {
+    draft,
+    set,
+    dirty,
+    saving,
+    toast,
+    dismissToast: () => setToast(null),
+    save: () => void save(),
+    cancel: () => setDraft(saved),
+  }
 }

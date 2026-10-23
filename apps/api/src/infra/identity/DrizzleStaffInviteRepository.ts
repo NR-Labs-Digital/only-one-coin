@@ -14,6 +14,7 @@ function toDomain(row: StaffInviteRow): StaffInvite {
     role: row.role as Role,
     token: row.token,
     status: row.status as StaffInvite["status"],
+    teacherId: row.teacherId,
     expiresAt: row.expiresAt,
   };
 }
@@ -31,6 +32,7 @@ export class DrizzleStaffInviteRepository implements IStaffInviteRepository {
         role: record.role,
         token: record.token,
         invitedBy: record.invitedBy,
+        teacherId: record.teacherId,
         expiresAt: record.expiresAt,
       })
       .returning();
@@ -43,6 +45,16 @@ export class DrizzleStaffInviteRepository implements IStaffInviteRepository {
       .select()
       .from(staffInvites)
       .where(and(eq(staffInvites.email, email), eq(staffInvites.status, "pending")))
+      .limit(1);
+    return row ? toDomain(row) : null;
+  }
+
+  async findPendingByTeacherId(teacherId: string): Promise<StaffInvite | null> {
+    // Served by staff_invites_pending_teacher_uidx.
+    const [row] = await this.db
+      .select()
+      .from(staffInvites)
+      .where(and(eq(staffInvites.teacherId, teacherId), eq(staffInvites.status, "pending")))
       .limit(1);
     return row ? toDomain(row) : null;
   }

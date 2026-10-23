@@ -75,6 +75,7 @@ export function StudentFile({
   canViewPayments,
   canEdit,
   activity,
+  constanciaFeeCents,
 }: {
   student: StudentDetail
   /** Whether the reader's cargo opens Pagos — decides whether the file links there. */
@@ -83,6 +84,8 @@ export function StudentFile({
   canEdit: boolean
   /** First page of the timeline; null when the API could not answer. */
   activity: StudentActivityPage | null
+  /** Today's constancia fee (`platform_settings`, OOC-41); null when it could not be read. */
+  constanciaFeeCents: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -159,11 +162,14 @@ export function StudentFile({
    * Pagos filtered down to this enrollment's payment. The ledger has no
    * by-id deep link, so it is searched by what identifies the payment best:
    * the operation number, or the student's name when none was ever written.
+   * On the "all" tab: the payment may already be decided, and the default
+   * open tab would show an empty list for it.
    */
   function paymentsHref(item: EnrollmentHistoryItem): string | null {
     if (!canViewPayments || item.paymentId === null) return null
     const search = paymentLedgerSearchParams({
       page: 1,
+      state: 'all',
       status: null,
       method: null,
       q: item.operationNumber ?? `${student.firstName} ${student.lastName}`,
@@ -484,7 +490,7 @@ export function StudentFile({
         </Card>
       )}
 
-      {tab === 'documents' && <StudentDocuments student={student} />}
+      {tab === 'documents' && <StudentDocuments student={student} constanciaFeeCents={constanciaFeeCents} />}
 
       {tab === 'activity' && (
         <Card className="p-5">

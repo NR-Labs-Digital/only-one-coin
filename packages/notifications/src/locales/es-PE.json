@@ -76,6 +76,15 @@
         "{code}",
         "El código vence en 10 minutos. Si no estás haciendo una matrícula, ignora este correo."
       ]
+    },
+    "staff_mfa_code": {
+      "subject": "Tu código de acceso al panel: {code}",
+      "preheader": "Escríbelo en el panel de Only One Coin. Vence en 10 minutos.",
+      "paragraphs": [
+        "Alguien que conoce la contraseña de tu cuenta del panel de Only One Coin está entrando o activando la verificación en dos pasos. Para continuar, escribe este código:",
+        "{code}",
+        "El código vence en 10 minutos y solo se puede usar una vez. Si no fuiste tú, no lo compartas con nadie y cambia tu contraseña: sin este código nadie entra a tu cuenta."
+      ]
     }
   }
 }

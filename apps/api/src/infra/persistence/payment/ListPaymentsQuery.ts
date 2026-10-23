@@ -1,4 +1,4 @@
-import { academicPeriods, auditLog, classGroups, courses, enrollments, payments, planPrices, students } from "@ooc/db";
+import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, students } from "@ooc/db";
 import type { PaymentMethod } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -21,16 +21,27 @@ export const PAYMENTS_PAGE_SIZE = 15;
 export type PaymentListStatus = "pending" | "under_review" | "approved" | "rejected";
 
 /**
+ * The ledger's tabs (OOC-114): what still needs a decision, what already got
+ * one. The same cut GitHub makes between open and closed pull requests — a
+ * decided payment never leaves the ledger, it only leaves the default view.
+ */
+export type PaymentListState = "open" | "closed";
+
+/**
  * What the reader narrowed the ledger to. Absent means "all", and every
  * field is applied by Postgres — at peak volume (CLAUDE.md §1) a filter over a
  * page slice answers the wrong question.
  */
 export interface PaymentListFilters {
+  /** Absent means both. The fine `status` narrows within it. */
+  state?: PaymentListState;
   status?: PaymentListStatus;
   method?: PaymentMethod;
   academicPeriodId?: string;
   /** Free text: student name, course or operation number. */
   q?: string;
+  /** On the closed tab the order is by decision, not by arrival: what was
+   * settled last is what a reader comes back to check. */
   sort?: "newest" | "oldest";
   /** 1-based. */
   page?: number;
@@ -53,7 +64,7 @@ export interface PaymentListRow {
   expectedAmountCents: number;
   currency: "PEN";
   submittedAt: Date;
-  /** From the audit trail, not from `payments.updated_at`: the row's
+  /** `payments.decided_at` (OOC-112), not `payments.updated_at`: the row's
    * timestamp moves for reasons other than the decision. */
   decidedAt: Date | null;
   decidedByName: string | null;
@@ -68,10 +79,19 @@ export interface PaymentListMetrics {
   rejected: number;
 }
 
+/** How many payments each tab holds under the reader's other filters —
+ * method, period and search, never the tab itself or the fine status, so the
+ * tab not on screen still says what is behind it. */
+export interface PaymentListCounts {
+  open: number;
+  closed: number;
+}
+
 export interface PaymentListResult {
   items: PaymentListRow[];
   /** Payments matching the filters, across every page. */
   total: number;
+  counts: PaymentListCounts;
   page: number;
   pageSize: number;
   /** Counted over the current period, never over the filtered page — the
@@ -81,7 +101,9 @@ export interface PaymentListResult {
 
 /** A payment nobody has decided yet — what the review queue lists. */
 export const OPEN_STATUSES: ("pending" | "under_review")[] = ["pending", "under_review"];
-const DECISION_ACTIONS = ["payment.approved", "payment.rejected"];
+
+/** A payment somebody approved or rejected. */
+export const CLOSED_STATUSES: ("approved" | "rejected")[] = ["approved", "rejected"];
 
 /**
  * The free-text search both Payments reads share: student name, course and
@@ -105,28 +127,15 @@ export class ListPaymentsQuery {
   async run(filters: PaymentListFilters = {}): Promise<PaymentListResult> {
     const page = Math.max(1, Math.floor(filters.page ?? 1));
 
-    // The decision that speaks for the payment: the latest approval or
-    // rejection written against it. DrizzlePaymentSettlementRepository writes
-    // exactly one, but the read does not lean on that — a second entry would
-    // otherwise duplicate the row.
-    const decision = this.db
-      .selectDistinctOn([auditLog.targetId], {
-        targetId: auditLog.targetId,
-        actorId: auditLog.actorId,
-        createdAt: auditLog.createdAt,
-      })
-      .from(auditLog)
-      .where(inArray(auditLog.action, DECISION_ACTIONS))
-      .orderBy(auditLog.targetId, desc(auditLog.createdAt))
-      .as("decision");
+    // A retired enrollment takes its payments out of the ledger with it; a
+    // retired course or class group does not — they still label the money
+    // that was paid on them.
+    const scope = and(isNull(enrollments.deletedAt), ...this.filterConditions(filters));
+    const where = and(scope, ...this.stateConditions(filters));
 
-    const where = and(
-      // A retired enrollment takes its payments out of the ledger with it;
-      // a retired course or class group does not — they still label the
-      // money that was paid on them.
-      isNull(enrollments.deletedAt),
-      ...this.filterConditions(filters),
-    );
+    // The closed tab is read by decision time. `decided_at` is never null on
+    // a decided payment (payments_decided_at_check).
+    const orderColumn = filters.state === "closed" ? payments.decidedAt : payments.createdAt;
 
     const rowsPromise = this.db
       .select({
@@ -143,11 +152,11 @@ export class ListPaymentsQuery {
         lastName: students.lastName,
         courseName: courses.name,
         expectedAmountCents: planPrices.amountCents,
-        decidedAt: decision.createdAt,
+        decidedAt: payments.decidedAt,
         // "user" is Better Auth's table, not modelled in the Drizzle schema —
-        // raw SQL, as in DrizzleStaffUserLookup. An actor with no account
-        // (deleted, or a system actor) reads as no name rather than an error.
-        decidedByName: sql<string | null>`(select "name" from "user" where "id" = ${decision.actorId})`,
+        // raw SQL, as in DrizzleStaffUserLookup. A payment decided outside the
+        // panel (seed, legacy import) has no reviewer and reads as no name.
+        decidedByName: sql<string | null>`(select "name" from "user" where "id" = ${payments.decidedBy})`,
       })
       .from(payments)
       .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
@@ -155,13 +164,11 @@ export class ListPaymentsQuery {
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
-      // `audit_log.target_id` is text — it names targets of every kind.
-      .leftJoin(decision, eq(decision.targetId, sql`${payments.id}::text`))
       .where(where)
       .orderBy(
         ...(filters.sort === "oldest"
-          ? [asc(payments.createdAt), asc(payments.id)]
-          : [desc(payments.createdAt), desc(payments.id)]),
+          ? [asc(orderColumn), asc(payments.id)]
+          : [desc(orderColumn), desc(payments.id)]),
       )
       .limit(PAYMENTS_PAGE_SIZE)
       .offset((page - 1) * PAYMENTS_PAGE_SIZE);
@@ -177,7 +184,25 @@ export class ListPaymentsQuery {
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .where(where);
 
-    const [rows, counted, metrics] = await Promise.all([rowsPromise, totalPromise, this.metrics()]);
+    // Both tabs in one pass, over the same joins as the total.
+    const countsPromise = this.db
+      .select({
+        open: sql<number>`count(*) filter (where ${inArray(payments.status, OPEN_STATUSES)})`.mapWith(Number),
+        closed: sql<number>`count(*) filter (where ${inArray(payments.status, CLOSED_STATUSES)})`.mapWith(Number),
+      })
+      .from(payments)
+      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .innerJoin(students, eq(students.id, enrollments.studentId))
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .innerJoin(courses, eq(courses.id, classGroups.courseId))
+      .where(scope);
+
+    const [rows, counted, countsRow, metrics] = await Promise.all([
+      rowsPromise,
+      totalPromise,
+      countsPromise,
+      this.metrics(),
+    ]);
 
     const items = rows.map(
       (row): PaymentListRow => ({
@@ -204,16 +229,25 @@ export class ListPaymentsQuery {
     return {
       items,
       total: counted[0]?.value ?? 0,
+      counts: { open: countsRow[0]?.open ?? 0, closed: countsRow[0]?.closed ?? 0 },
       page,
       pageSize: PAYMENTS_PAGE_SIZE,
       metrics,
     };
   }
 
+  /** The tab and the fine status — what the tab counters leave out. */
+  private stateConditions(filters: PaymentListFilters): SQL[] {
+    const conditions: SQL[] = [];
+    if (filters.state === "open") conditions.push(inArray(payments.status, OPEN_STATUSES));
+    if (filters.state === "closed") conditions.push(inArray(payments.status, CLOSED_STATUSES));
+    if (filters.status) conditions.push(eq(payments.status, filters.status));
+    return conditions;
+  }
+
   private filterConditions(filters: PaymentListFilters): SQL[] {
     const conditions: SQL[] = [];
 
-    if (filters.status) conditions.push(eq(payments.status, filters.status));
     if (filters.method) conditions.push(eq(payments.method, filters.method));
     if (filters.academicPeriodId) conditions.push(eq(classGroups.academicPeriodId, filters.academicPeriodId));
 

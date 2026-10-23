@@ -14,7 +14,7 @@ Detalhe de padrão (`BaseModel`/`BaseUseCase`, `RouteBuilder`, `container.ts`, e
 
 Entidade cuja linha pode ser aposentada estende **`SoftDeletableModel`** (`deletedAt`, `isDeleted`, `softDelete()`); entidade append-only estende **`BaseModel`** e fica sem `softDelete()` — de propósito. A separação não é estilo: a migration `0011` faz o Postgres **recusar** DELETE em `payments`, `payment_receipts`, `consents` e `audit_log`, e um método que o banco responde com exceção não é contrato, é armadilha pra quem implementar a porta depois. Pelo mesmo motivo `IBaseRepository` não tem `delete(id)`, e quem precisa dele usa `ISoftDeletableRepository`.
 
-Hoje estendem `SoftDeletableModel`: `Student`, `Guardian`, `Enrollment`. `Payment` não — `status` já diz que um pagamento não vale. A lista de tabelas correspondente está em `packages/db/CLAUDE.md`.
+Hoje estendem `SoftDeletableModel`: `Student`, `Guardian`, `Enrollment`, `Teacher` e as entidades do catálogo (`AcademicPeriod`, `Course`, `Plan`, `ClassGroup`). `Payment` não — `status` já diz que um pagamento não vale. A lista de tabelas correspondente está em `packages/db/CLAUDE.md`.
 
 ## Exceção documentada à regra acima
 
@@ -22,9 +22,11 @@ O vocabulário de erro HTTP (`src/shared/base/errors/` — `HttpError`, `Unautho
 
 **Nada além dessas classes pode importar ou expor tipo de framework** — o resto do pacote continua puro.
 
-## `src/student/fields.ts` — o único arquivo que o navegador importa
+## `src/student/fields.ts` e `src/catalog/landingCourseKeys.ts` — os arquivos que o navegador importa
 
 As regras de campo da ficha (normalização, formato do documento por tipo, celular, Gmail do aluno no checkout, faixa de idade, limites de tamanho, códigos de erro) vivem **uma vez só**, aqui, e são lidas pela API (via `CreateStudentSchema`/`GuardianFieldsSchema`) e pelo `apps/app` (via o subpath `@ooc/domain/fields`, OOC-64). Esse subpath aponta pro `.ts` cru, compilado pelo Next — então o arquivo tem que continuar **autocontido: só `zod`, nenhum import relativo**. Regra que precisa de mais que isso vai na entidade, não aqui.
+
+`src/catalog/landingCourseKeys.ts` (subpath `@ooc/domain/landing-course-keys`, OOC-117) é o segundo, pela mesma regra e mais apertada: **sem dependência nenhuma**, nem `zod` — além do Next, é importado pelo build do Astro (`apps/landing`). É a lista de páginas da landing que vendem curso; o `Course` a valida com `z.enum` do lado de cá.
 
 Dois schemas por entidade, de propósito: `StudentPropsSchema`/`GuardianPropsSchema` são o que **carrega** do banco (frouxo — linha antiga e import legado ainda precisam abrir); `CreateStudentSchema`/`CreateGuardianSchema` são o que um registro **novo** precisa cumprir (normaliza, depois checa). `create()` recusa com `InvalidFieldsError` — campo + código, nunca frase.
 

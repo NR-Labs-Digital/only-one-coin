@@ -4,6 +4,8 @@ import type { ClassGroup, UpdateClassGroupDTO } from "./ClassGroup.js";
 import { CatalogClassGroupNotFoundError, CourseNotFoundError } from "./errors.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
+import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
+import { assertAssignableTeacher } from "./assignableTeacher.js";
 
 export interface UpdateClassGroupInput {
   actorId: string;
@@ -19,6 +21,7 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
   constructor(
     private readonly courses: ICourseRepository,
     private readonly classGroups: IClassGroupRepository,
+    private readonly teachers: ITeacherRepository,
     private readonly auditLog: IAuditLogRepository,
   ) {
     super();
@@ -28,9 +31,21 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
     const group = await this.classGroups.findById(input.id);
     if (!group || group.isDeleted) throw new CatalogClassGroupNotFoundError();
 
-    if (input.patch.courseId !== undefined && input.patch.courseId !== group.courseId) {
-      const course = await this.courses.findById(input.patch.courseId);
+    const courseChanges = input.patch.courseId !== undefined && input.patch.courseId !== group.courseId;
+    const teacherChanges = input.patch.teacherId !== undefined && input.patch.teacherId !== group.teacherId;
+
+    if (courseChanges) {
+      const course = await this.courses.findById(input.patch.courseId!);
       if (!course || course.isDeleted) throw new CourseNotFoundError();
+    }
+
+    // A new allocation, or the same teacher carried onto another course,
+    // goes through the roster check; an untouched allocation never does.
+    const teacherId = input.patch.teacherId !== undefined ? input.patch.teacherId : group.teacherId;
+    if (teacherId !== null && (courseChanges || teacherChanges)) {
+      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
+      if (!course) throw new CourseNotFoundError();
+      await assertAssignableTeacher(this.teachers, teacherId, course.language);
     }
 
     const changed = group.update(input.patch);
@@ -42,7 +57,7 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
       actorId: input.actorId,
       action: "catalog.class_group.updated",
       targetId: group.id,
-      metadata: { fields: changed },
+      metadata: { fields: changed, ...(changed.includes("teacherId") && { teacherId: group.teacherId }) },
       at: saved.updatedAt,
     });
 

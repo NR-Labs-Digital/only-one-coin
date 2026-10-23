@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getGeneralSettings } from '@/lib/backoffice/settings'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { canConfigureSettings } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
@@ -12,10 +12,9 @@ import { AcademicSettingsForm } from './academic-form'
  * payments): this one holds the academic rules and procedures, the sibling
  * under `/settings/receipts` holds what the receipt pipeline approves on.
  *
- * Nothing here is a new rule. Each field is a constant the code itself flags as
- * belonging in the backoffice (`lib/backoffice/settings.ts`). Putting them
- * behind a screen is what stops a change of "aprobado" from being a deploy
- * (CLAUDE.md §5).
+ * Nothing here is a new rule. Each field lives in `platform_settings` and is
+ * read by the screens that apply it (OOC-41) — putting them behind a screen is
+ * what stops a change of "aprobado" from being a deploy.
  *
  * Admin only. The gate here draws the form or the locked state; the check that
  * counts is the role declared on the route in `apps/api` (CLAUDE.md §8).
@@ -44,23 +43,48 @@ export default async function SettingsPage({
     )
   }
 
+
+  const tabs = (
+    <SectionTabs
+      tabs={[
+        {
+          href: '/backoffice/settings',
+          label: t('settings.academic_title'),
+          exact: true,
+        },
+        {
+          href: '/backoffice/settings/receipts',
+          label: t('settings.receipts_title'),
+        },
+      ]}
+    />
+  )
+
+  /* A failure is shown as a failure: a form filled with made-up numbers would
+     look saved, and saving it would overwrite the real ones. */
+  const settings = await getPlatformSettings()
+  if (!settings) {
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={t('settings.title')} />
+        {tabs}
+        <EmptyState icon="alert" title={t('settings.load_error_title')} body={t('settings.load_error_body')} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('settings.title')} />
-      <SectionTabs
-        tabs={[
-          {
-            href: '/backoffice/settings',
-            label: t('settings.academic_title'),
-            exact: true,
-          },
-          {
-            href: '/backoffice/settings/receipts',
-            label: t('settings.receipts_title'),
-          },
-        ]}
+      {tabs}
+      <AcademicSettingsForm
+        settings={{
+          passingGrade: settings.passingGrade,
+          certificateDeadlineBusinessDays: settings.certificateDeadlineBusinessDays,
+          constanciaFeeCents: settings.constanciaFeeCents,
+          contractAlertDays: settings.contractAlertDays,
+        }}
       />
-      <AcademicSettingsForm settings={getGeneralSettings().academic} />
     </div>
   )
 }

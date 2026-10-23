@@ -27,7 +27,7 @@ passo 1 pré-preenchido** quando o link já traz curso e turma.
 
 | Entrada | Passo 1 | Passos 2–4 |
 | --- | --- | --- |
-| Landing (`/enrollment`) | escolhe idioma → curso → turma | iguais |
+| Landing (`/enrollment`) | escolhe idioma → curso → turma; o botão de uma página de curso chega com `?course=<chave da página>` e cai no curso ligado a ela (OOC-117) | iguais |
 | Link do vendedor (`/enrollment?course=…&group=…&src=whatsapp`) | resumo do que já foi escolhido, confirmável e trocável | iguais |
 
 **A métrica por canal não vem de ter duas telas** — vem do campo `source`

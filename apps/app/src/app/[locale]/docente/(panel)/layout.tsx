@@ -40,13 +40,13 @@ export default async function TeacherPanelLayout({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const staff = await getTeacherSession()
-  const flags = await getFeatureFlags()
+  // Independent reads of apps/api, memoized per request — asked together.
+  const [staff, flags] = await Promise.all([getTeacherSession(), getFeatureFlags()])
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
 
   /* The badge is the teacher's own queue — the final grades still open
      across their class groups. It is what the portal gets opened for. */
-  const pendingGrades = getTeacher(staff.teacherId)?.pendingGrades ?? 0
+  const pendingGrades = staff.teacherId ? (getTeacher(staff.teacherId)?.pendingGrades ?? 0) : 0
 
   const groups: BoNavGroup[] = [
     {

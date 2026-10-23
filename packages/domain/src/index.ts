@@ -26,6 +26,29 @@ export { Student, StudentPropsSchema, StudentFieldsSchema, CreateStudentSchema }
 export type { StudentProps, CreateStudentDTO } from "./student/Student.js";
 export type { IStudentRepository } from "./student/StudentRepository.js";
 export {
+  Teacher,
+  TeacherPropsSchema,
+  TeacherFieldsSchema,
+  CreateTeacherSchema,
+  TeacherStatusSchema,
+} from "./teacher/Teacher.js";
+export type { TeacherProps, CreateTeacherDTO, TeacherDataDTO, TeacherStatus } from "./teacher/Teacher.js";
+export { TeacherDataSchema, TeacherAvailabilitySchema } from "./teacher/Teacher.js";
+export type { ITeacherRepository } from "./teacher/TeacherRepository.js";
+export { TeacherAlreadyRegisteredError, TeacherNotFoundError } from "./teacher/errors.js";
+export { RegisterTeacherUseCase, type RegisterTeacherInput } from "./teacher/RegisterTeacherUseCase.js";
+export { UpdateTeacherUseCase, type UpdateTeacherInput } from "./teacher/UpdateTeacherUseCase.js";
+export {
+  UpdateTeacherAvailabilityUseCase,
+  type UpdateTeacherAvailabilityInput,
+} from "./teacher/UpdateTeacherAvailabilityUseCase.js";
+export {
+  SetTeacherRosterStatusUseCase,
+  TEACHER_LEFT_ROSTER_BAN_REASON,
+  type SetTeacherRosterStatusInput,
+  type SetTeacherRosterStatusOutput,
+} from "./teacher/SetTeacherRosterStatusUseCase.js";
+export {
   Guardian,
   GuardianPropsSchema,
   GuardianFieldsSchema,
@@ -88,6 +111,8 @@ export {
   PaymentAlreadySettledError,
   PaymentNotFoundError,
   PaymentSeatReleasedError,
+  ReceiptNotRereadableError,
+  ReceiptRereadInProgressError,
   PlanPriceNotFoundError,
   ReceiptNotReadyError,
   ReceiptNotUploadedError,
@@ -209,7 +234,7 @@ export {
 } from "./enrollment/SubmitPublicEnrollmentUseCase.js";
 
 export type { Role } from "./identity/Role.js";
-export { MASTER_EMAIL_DOMAINS, canHoldMaster, isOwnerEmail } from "./identity/Role.js";
+export { MASTER_EMAIL_DOMAINS, MFA_REQUIRED_ROLES, canHoldMaster, isOwnerEmail, requiresMfa } from "./identity/Role.js";
 export type { AuthenticatedUser } from "./identity/AuthenticatedUser.js";
 export {
   NotFreshlyAuthenticatedError,
@@ -217,6 +242,14 @@ export {
   CannotActOnSelfError,
   CurrentPasswordIncorrectError,
   NewPasswordRejectedError,
+  MfaEnrollmentRequiredError,
+  MfaRequiredForRoleError,
+  MfaAlreadyEnabledError,
+  MfaNotEnabledError,
+  MfaCodeRejectedError,
+  TeacherInviteRefusedError,
+  TeacherRoleLockedError,
+  TeacherOffRosterAccessError,
 } from "./identity/errors.js";
 export { STAFF_PASSWORD_MIN_LENGTH, meetsStaffPasswordPolicy } from "./identity/StaffPasswordPolicy.js";
 export {
@@ -251,6 +284,12 @@ export type {
 export type { IStaffPasswordResetLinkBuilder } from "./identity/ports/IStaffPasswordResetLinkBuilder.js";
 export type { IStaffPasswordSetter } from "./identity/ports/IStaffPasswordSetter.js";
 export type { IStaffSessionRevoker } from "./identity/ports/IStaffSessionRevoker.js";
+export type {
+  IStaffSecondFactor,
+  StaffMfaState,
+  MfaCodeFailure,
+  ConfirmMfaEnrollmentResult,
+} from "./identity/ports/IStaffSecondFactor.js";
 export {
   PromoteUserRoleUseCase,
   type PromoteUserRoleInput,
@@ -313,6 +352,19 @@ export {
   type ChangeOwnPasswordInput,
   type ChangeOwnPasswordOutput,
 } from "./identity/ChangeOwnPasswordUseCase.js";
+export { StartOwnMfaEnrollmentUseCase, type StartOwnMfaEnrollmentInput } from "./identity/StartOwnMfaEnrollmentUseCase.js";
+export {
+  ConfirmOwnMfaEnrollmentUseCase,
+  type ConfirmOwnMfaEnrollmentInput,
+  type ConfirmOwnMfaEnrollmentOutput,
+} from "./identity/ConfirmOwnMfaEnrollmentUseCase.js";
+export {
+  RegenerateOwnRecoveryCodesUseCase,
+  type RegenerateOwnRecoveryCodesInput,
+  type RegenerateOwnRecoveryCodesOutput,
+} from "./identity/RegenerateOwnRecoveryCodesUseCase.js";
+export { DisableOwnMfaUseCase, type DisableOwnMfaInput } from "./identity/DisableOwnMfaUseCase.js";
+export { STAFF_MFA_CODE_TTL_MINUTES, staffMfaCodeEmail } from "./identity/staffMfaEmail.js";
 
 export type {
   FeatureFlagOverride,
@@ -321,30 +373,20 @@ export type {
 export type { IFeatureFlagOverrideRepository } from "./platform/ports/IFeatureFlagOverrideRepository.js";
 export { NotAPlatformOwnerError, InvalidPlatformSettingError } from "./platform/errors.js";
 export {
-  CHECKOUT_HOLD_MINUTES_MIN,
-  CHECKOUT_HOLD_MINUTES_MAX,
-  CheckoutHoldMinutesSchema,
-  RECEIPT_AMOUNT_TOLERANCE_CENTS_MIN,
-  RECEIPT_AMOUNT_TOLERANCE_CENTS_MAX,
-  RECEIPT_REJECT_BELOW_PERCENT_MIN,
-  RECEIPT_REJECT_BELOW_PERCENT_MAX,
-  ReceiptAmountToleranceCentsSchema,
-  ReceiptRejectBelowPercentSchema,
+  PLATFORM_SETTING_BOUNDS,
+  PLATFORM_SETTING_COLUMNS,
+  PLATFORM_SETTING_KEYS,
+  PlatformSettingsChangesSchema,
+  platformSettingSchema,
+  type PlatformSettingKey,
   type PlatformSettings,
+  type PlatformSettingsChanges,
 } from "./platform/PlatformSettings.js";
 export type { IPlatformSettingsRepository } from "./platform/ports/IPlatformSettingsRepository.js";
 export {
-  UpdateCheckoutHoldMinutesUseCase,
-  type UpdateCheckoutHoldMinutesInput,
-} from "./platform/UpdateCheckoutHoldMinutesUseCase.js";
-export {
-  UpdateReceiptAmountToleranceUseCase,
-  type UpdateReceiptAmountToleranceInput,
-} from "./platform/UpdateReceiptAmountToleranceUseCase.js";
-export {
-  UpdateReceiptRejectBelowPercentUseCase,
-  type UpdateReceiptRejectBelowPercentInput,
-} from "./platform/UpdateReceiptRejectBelowPercentUseCase.js";
+  UpdatePlatformSettingsUseCase,
+  type UpdatePlatformSettingsInput,
+} from "./platform/UpdatePlatformSettingsUseCase.js";
 export {
   SetFeatureFlagOverrideUseCase,
   type SetFeatureFlagOverrideInput,
@@ -369,6 +411,8 @@ export {
   ClassGroupIncompleteError,
   CapacityBelowSeatsTakenError,
   ClassGroupCourseLockedError,
+  ClassGroupTeacherUnavailableError,
+  ClassGroupTeacherLanguageError,
   PeriodAlreadyDuplicatedError,
   DuplicateSamePeriodError,
   ClassGroupNotFullError,
@@ -377,6 +421,7 @@ export {
   WaitlistStudentNotFoundError,
   WaitlistEntryClosedError,
   WaitlistEntryNotFoundError,
+  LandingKeyTakenError,
 } from "./catalog/errors.js";
 export {
   AcademicPeriod,
@@ -435,12 +480,18 @@ export {
   CertificateRuleSchema,
   CourseOptionsSchema,
   CreateCourseSchema,
+  LandingCourseKeySchema,
   UpdateCourseSchema,
   type CertificateRule,
   type CourseProps,
   type CreateCourseDTO,
   type UpdateCourseDTO,
 } from "./catalog/Course.js";
+export {
+  LANDING_COURSE_KEYS,
+  isLandingCourseKey,
+  type LandingCourseKey,
+} from "./catalog/landingCourseKeys.js";
 export type { ICourseRepository } from "./catalog/ports/ICourseRepository.js";
 export { CreateCourseUseCase, type CreateCourseInput } from "./catalog/CreateCourseUseCase.js";
 export { UpdateCourseUseCase, type UpdateCourseInput } from "./catalog/UpdateCourseUseCase.js";
@@ -462,6 +513,22 @@ export {
   type IPaymentSettlementRepository,
 } from "./enrollment/PaymentSettlement.js";
 export { SettlePaymentUseCase, type SettlePaymentInput, type SettlePaymentOutput } from "./enrollment/SettlePaymentUseCase.js";
+export type {
+  IReceiptRereadRepository,
+  ReceiptRereadResult,
+  ReceiptRereadSubject,
+} from "./enrollment/ReceiptRereadRepository.js";
+export {
+  RequestReceiptRereadUseCase,
+  type RequestReceiptRereadInput,
+  type RequestReceiptRereadOutput,
+} from "./enrollment/RequestReceiptRereadUseCase.js";
+export {
+  RereadReceiptUseCase,
+  type RereadReceiptInput,
+  type RereadReceiptOutput,
+  type RecordReceiptRereadFailureInput,
+} from "./enrollment/RereadReceiptUseCase.js";
 
 export {
   PORTAL_ACTIVATION_TTL_DAYS,

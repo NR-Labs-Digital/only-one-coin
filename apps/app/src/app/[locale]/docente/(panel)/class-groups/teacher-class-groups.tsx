@@ -8,7 +8,6 @@ import type {
   ClassGroupDetail,
   ClassGroupStudent,
 } from '@/lib/backoffice/types'
-import { PASSING_GRADE } from '@/lib/backoffice/mock-data'
 import { formatDateTime, formatNumber, type Locale } from '@/lib/format'
 import {
   EmptyState,
@@ -77,9 +76,12 @@ const statusOrder: Record<ClassGroupDetail['status'], number> = {
 export function TeacherClassGroups({
   groups,
   teacherName,
+  passingGrade,
 }: {
   groups: ClassGroupDetail[]
   teacherName: string
+  /** Minimum final grade, from `platform_settings` (OOC-41). */
+  passingGrade: number
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -185,7 +187,7 @@ export function TeacherClassGroups({
         if (row.studentId !== editing) return row
         if (isDa(editValue)) return { ...row, finalGrade: null, gradeStatus: 'auto_failed' }
         const grade = parseGrade(editValue) as number
-        return { ...row, finalGrade: grade, gradeStatus: finalStatus(grade) }
+        return { ...row, finalGrade: grade, gradeStatus: finalStatus(grade, passingGrade) }
       }),
     }))
     setEditing(null)
@@ -205,7 +207,7 @@ export function TeacherClassGroups({
         if (!entry) return row
         if (row.gradeStatus !== 'pending') return row
         if (entry.grade === 'da') return { ...row, finalGrade: null, gradeStatus: 'auto_failed' }
-        return { ...row, finalGrade: entry.grade, gradeStatus: finalStatus(entry.grade) }
+        return { ...row, finalGrade: entry.grade, gradeStatus: finalStatus(entry.grade, passingGrade) }
       }),
     }))
     setPosted(t('class_list.batch_posted', { count: entries.length }))
@@ -417,7 +419,7 @@ export function TeacherClassGroups({
                     ) : student.finalGrade !== null ? (
                       <span
                         className={`font-semibold tabular-nums ${
-                          student.finalGrade >= PASSING_GRADE ? 'text-ink' : 'text-red-700'
+                          student.finalGrade >= passingGrade ? 'text-ink' : 'text-red-700'
                         }`}
                       >
                         {formatNumber(student.finalGrade, locale)}
@@ -498,14 +500,14 @@ export function TeacherClassGroups({
                         tone={
                           isDa(editValue)
                             ? 'danger'
-                            : (parseGrade(editValue) ?? 0) >= PASSING_GRADE
+                            : (parseGrade(editValue) ?? 0) >= passingGrade
                               ? 'success'
                               : 'danger'
                         }
                         label={
                           isDa(editValue)
                             ? t('class_list.did_not_sit')
-                            : (parseGrade(editValue) ?? 0) >= PASSING_GRADE
+                            : (parseGrade(editValue) ?? 0) >= passingGrade
                               ? t('grade_status.approved')
                               : t('grade_status.failed')
                         }

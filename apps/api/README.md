@@ -53,7 +53,7 @@ src/
     catalog/                              # GetPublicCatalogRoute, ListOpenClassGroupsRoute, RetireCatalogEntryRoute, RestoreCatalogEntryRoute
     enrollment/                           # ClaimSeatHoldRoute, ReleaseSeatHoldRoute e SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute e ListEnrollmentsRoute (backoffice)
     identity/                             # staff: convite, promoção de cargo, acesso, redefinição de senha, bitácora
-    platform/                             # feature flags: Get/List/Set; settings: GetPlatformSettings, UpdateCheckoutHoldMinutes
+    platform/                             # feature flags: Get/List/Set; settings: GetPlatformSettings, UpdatePlatformSettings (PATCH) — cargos em settingsRoles.ts
     student/                              # diretório e seletor (ListStudents, SearchStudents), ficha (GetStudent, ListStudentActivity), cadastro e edição (RegisterStudent, UpdateStudent, SaveGuardian) — cargos em studentRoles.ts
   workers/
     outbox-relay.worker.ts     # a cada 5 s oferece as linhas pending da outbox à fila send-email
@@ -101,7 +101,7 @@ substituída pelos bounded contexts reais acima.
 - **Persistência**: real via Drizzle sobre `@ooc/db` — todo repositório em
   `infra/persistence/` e `infra/identity/` fala com o Postgres, não existe
   implementação em memória. Ainda faltam bounded contexts inteiros: não há
-  tabela nem repositório de `teachers`, de turma no lado da escrita (só
+  upload de contrato de docente (OOC-81), de turma no lado da escrita (só
   leitura, `GET /class-groups`), de `payments` avulso fora do fluxo de
   matrícula, nem de `attendance`/`grades`/`materials`/`certificates`/`campaigns`.
 - **Índice único de documento** (`national_id_type` + `national_id`, CLAUDE.md
@@ -124,7 +124,7 @@ substituída pelos bounded contexts reais acima.
 - **Hold de checkout (relógio curto)**: real. `POST /seat-holds` prende a vaga
   com o `UPDATE … WHERE seats_taken < capacity` atômico e grava a linha em
   `seat_holds` com `expires_at` pelo relógio do Postgres (minutos lidos de
-  `platform_settings`, editáveis em `PUT /settings/checkout-hold`, com
+  `platform_settings`, editáveis em `PATCH /settings`, com
   `audit_log`). O submit exige `holdId` e **consome** o hold (não incrementa
   a vaga de novo); hold vencido ou desconhecido → 422
   `enrollment.seat_hold_expired`. `POST /seat-holds/:id/release` devolve a

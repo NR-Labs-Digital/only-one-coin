@@ -47,6 +47,8 @@ export const FIELD_LIMITS = {
   email: 254,
   phone: 30,
   methodDetail: 80,
+  address: 160,
+  language: 40,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -206,6 +208,21 @@ export const PersonNameField = requiredText(FIELD_LIMITS.name);
 export const CityField = requiredText(FIELD_LIMITS.city);
 export const RegionField = requiredText(FIELD_LIMITS.region);
 export const MethodDetailField = requiredText(FIELD_LIMITS.methodDetail);
+export const AddressLineField = requiredText(FIELD_LIMITS.address);
+export const LanguageField = requiredText(FIELD_LIMITS.language);
+
+/** ISO 3166-1 alpha-2, upper-cased. */
+export const CountryCodeField = z
+  .string()
+  .transform((value) => value.trim().toUpperCase())
+  .pipe(z.string().length(2, "invalid"));
+
+/** Object-level: inside Peru the address names its departamento. */
+export function refineRegion(value: { country: string; region: string | null }, ctx: z.RefinementCtx): void {
+  if (value.country === "PE" && value.region === null) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["region"], message: "required" });
+  }
+}
 
 export const EmailField = z
   .string()

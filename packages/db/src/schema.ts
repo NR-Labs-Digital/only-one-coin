@@ -9,6 +9,7 @@ import {
   jsonb,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -119,9 +120,18 @@ export const courses = pgTable(
     // Which paid procedures the course offers (docs/REGRAS-NEGOCIO.md §5).
     allowsFreeze: boolean("allows_freeze").notNull().default(true),
     allowsTransfer: boolean("allows_transfer").notNull().default(false),
+    // Which landing page's enroll button opens the checkout on this course
+    // (OOC-117) — a key from LANDING_COURSE_KEYS (@ooc/domain), not an id: the
+    // landing is static and cannot know a UUID minted per environment. Null
+    // is a course no landing page links to.
+    landingKey: text("landing_key"),
     ...softDeletable(),
   },
   (table) => [
+    // One live course per landing page; a retired course lets go of its key.
+    uniqueIndex("courses_landing_key_live_uidx")
+      .on(table.landingKey)
+      .where(sql`${table.landingKey} is not null and ${table.deletedAt} is null`),
     check(
       "courses_certificate_rule_check",
       sql`${table.certificateRule} in ('automatic', 'exam_required')`,
@@ -203,9 +213,13 @@ export const classGroups = pgTable(
     // (CatalogClassGroup.code doc comment) — carried for the backoffice
     // side. Default '' only so the column can land aditively.
     code: text("code").notNull().default(""),
-    // Plain text, not a `teachers` FK — there is no `teachers` table yet
-    // (docs/ROADMAP.md Sessão 36). Denormalized placeholder until then.
+    // Denormalized teacher name, kept until the contract step (CLAUDE.md §7);
+    // `teacher_id` below is the real link.
     teacherName: text("teacher_name").notNull().default(""),
+    // The teacher running it (OOC-77). Nullable: a class group can open before
+    // anybody is allocated, and every row written before this column has none.
+    // `teacher_name` stays until the contract step (CLAUDE.md §7).
+    teacherId: uuid("teacher_id").references((): AnyPgColumn => teachers.id, { onDelete: "restrict" }),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module
@@ -254,6 +268,7 @@ export const classGroups = pgTable(
     ),
     index("class_groups_source_class_group_id_idx").on(table.sourceClassGroupId),
     index("class_groups_course_id_idx").on(table.courseId),
+    index("class_groups_teacher_id_idx").on(table.teacherId),
     index("class_groups_academic_period_id_idx").on(table.academicPeriodId),
   ],
 );
@@ -362,6 +377,134 @@ export const guardians = pgTable(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// Teachers (OOC-77)
+// ---------------------------------------------------------------------------
+// A teacher leaves the roster as `inactive`, never as a deleted row: whoever
+// ran a class group and signed its grades is still pointed at by them. The
+// physical DELETE is refused by the database (0025), as for students.
+// `deleted_at` exists for a record created by mistake, not for leaving.
+//
+// `national_id` is stored normalized by the domain (student/fields.ts), so the
+// unique index sits on the raw column. `user_id` is the panel account
+// (Better Auth's "user".id, text) — its FK is hand-written in 0025, as in 0022.
+export const teachers = pgTable(
+  "teachers",
+  {
+    id: uuidPk(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
+    nationalIdType: text("national_id_type").notNull(),
+    nationalId: text("national_id").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    // ISO 3166-1 alpha-2 — where they are from; a selling point in the catalog.
+    nationality: text("nationality").notNull(),
+    // ISO 3166-1 alpha-2 — where they live; the contract needs an address.
+    country: text("country").notNull(),
+    // First-level division ("departamento" in Peru). Null outside it.
+    region: text("region"),
+    city: text("city").notNull(),
+    addressLine: text("address_line").notNull(),
+    status: text("status").notNull().default("active"),
+    userId: text("user_id"),
+    ...softDeletable(),
+  },
+  (table) => [
+    check("teachers_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
+    check("teachers_status_check", sql`${table.status} in ('active', 'inactive')`),
+    // The same normal form as normalizeNationalId (no spaces, dots or dashes,
+    // upper case): the unique index sits on the raw column, so a value written
+    // un-normalized would slip past it.
+    check(
+      "teachers_national_id_normalized_check",
+      sql`${table.nationalId} = upper(regexp_replace(${table.nationalId}, '[[:space:].-]', '', 'g'))`,
+    ),
+    uniqueIndex("teachers_national_id_uidx")
+      .on(table.nationalIdType, table.nationalId)
+      .where(sql`${table.deletedAt} is null`),
+    uniqueIndex("teachers_user_id_uidx").on(table.userId),
+  ],
+);
+
+// The languages a teacher is cleared to run a class group in — the same text
+// as `courses.language` (there is no languages table, CLAUDE.md §1). Rewritten
+// as a set when the file is edited.
+export const teacherLanguages = pgTable(
+  "teacher_languages",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    language: text("language").notNull(),
+    ...timestamps(),
+  },
+  (table) => [uniqueIndex("teacher_languages_teacher_id_language_uidx").on(table.teacherId, table.language)],
+);
+
+// Weekly windows a teacher is free in. `time`, not `timestamptz`: "Tuesday at
+// 19:00" is a wall-clock time in America/Lima, the same thing as a class
+// group's `slots` — there is no instant to put a zone on. The one documented
+// exception to "timestamptz sempre" (packages/db/CLAUDE.md). Overlapping
+// windows are refused by the domain; the database would need btree_gist.
+export const teacherAvailability = pgTable(
+  "teacher_availability",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    weekday: text("weekday").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    check(
+      "teacher_availability_weekday_check",
+      sql`${table.weekday} in ('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')`,
+    ),
+    check("teacher_availability_time_range_check", sql`${table.startTime} < ${table.endTime}`),
+    // Whole minutes only: the domain speaks HH:mm, so seconds would be lost on
+    // the round-trip.
+    check(
+      "teacher_availability_whole_minutes_check",
+      sql`extract(second from ${table.startTime}) = 0 and extract(second from ${table.endTime}) = 0`,
+    ),
+    uniqueIndex("teacher_availability_slot_uidx").on(table.teacherId, table.weekday, table.startTime),
+  ],
+);
+
+// Signed contracts, filed. A row exists only once a contract was filed, and
+// file, start and end come together (CLAUDE.md §1) — all three NOT NULL;
+// "no contract" is no row. Append-only (0025 lock): correcting a filing is
+// filing a new one. The current contract is the latest by `created_at`, which
+// is the filing date. The bytes live in the bucket under `object_key`.
+// `uploaded_by` is Better Auth's "user".id — FK hand-written in 0025.
+export const teacherContracts = pgTable(
+  "teacher_contracts",
+  {
+    id: uuidPk(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    objectKey: text("object_key").notNull(),
+    fileName: text("file_name").notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+    startsOn: timestamp("starts_on", { withTimezone: true }).notNull(),
+    endsOn: timestamp("ends_on", { withTimezone: true }).notNull(),
+    uploadedBy: text("uploaded_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("teacher_contracts_object_key_uidx").on(table.objectKey),
+    index("teacher_contracts_teacher_id_created_at_idx").on(table.teacherId, table.createdAt),
+    check("teacher_contracts_file_size_check", sql`${table.fileSizeBytes} > 0`),
+    check("teacher_contracts_period_check", sql`${table.startsOn} <= ${table.endsOn}`),
+  ],
+);
+
 // Ley 29733 consent — append-only, never edited (same pattern as
 // plan_prices): the guardian is the one who accepts, with a timestamp, the
 // text version and their IP (CLAUDE.md §1, §8). A guardian row is created
@@ -429,6 +572,11 @@ export const enrollments = pgTable(
     check("enrollments_origin_check", sql`"origin" in ('whatsapp', 'web')`),
     index("enrollments_student_id_idx").on(table.studentId),
     index("enrollments_class_group_id_idx").on(table.classGroupId),
+    // A confirmed, live seat per class group — Enrollments' default list and
+    // the "active student" count (OOC-112).
+    index("enrollments_confirmed_class_group_id_idx")
+      .on(table.classGroupId)
+      .where(sql`${table.seatStatus} = 'confirmed' and ${table.deletedAt} is null`),
   ],
 );
 
@@ -568,10 +716,35 @@ export const payments = pgTable(
     // provides it upfront. Uniqueness against fraud lives on
     // payment_receipts, not here (see below).
     operationNumber: text("operation_number"),
+    // The decision, as data to read (OOC-112). `audit_log` stays the trail
+    // and is still written in the same transaction; these columns are what
+    // the ledger sorts and filters on without joining it. `decided_by` has a
+    // hand-written FK to Better Auth's "user" (0027) and is null for rows
+    // decided outside the panel (seed, legacy import). `rejection_reason` is
+    // the reason code only — the reviewer's free-text note stays in the trail.
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decidedBy: text("decided_by"),
+    rejectionReason: text("rejection_reason"),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex("payments_idempotency_key_uidx").on(table.idempotencyKey),
+    // Decided ⇔ dated: a settled payment always says when.
+    check(
+      "payments_decided_at_check",
+      sql`("status" in ('approved', 'rejected')) = ("decided_at" is not null)`,
+    ),
+    check("payments_decided_by_check", sql`"decided_by" is null or "decided_at" is not null`),
+    // Only a rejection carries a reason. Nullable on a rejection on purpose:
+    // the legacy import's PAGOS ERRONEOS bucket has none to give.
+    check(
+      "payments_rejection_reason_check",
+      sql`"rejection_reason" is null or ("status" = 'rejected' and "rejection_reason" in ('amount_mismatch', 'illegible', 'duplicate', 'not_a_receipt', 'other'))`,
+    ),
+    // The open queue — Payments' default list and the badge (OOC-112).
+    index("payments_open_created_at_idx")
+      .on(table.createdAt)
+      .where(sql`${table.status} in ('pending', 'under_review')`),
     check(
       "payments_status_check",
       sql`"status" in ('pending', 'under_review', 'approved', 'rejected')`,
@@ -748,6 +921,55 @@ export const receiptUploads = pgTable(
   ],
 );
 
+// A new level-1 reading of a receipt that already has one, asked for by a
+// reviewer in Payments (ROADMAP Sessão 32). The first reading stays in
+// payment_receipts, one per (upload, tier); every re-read is a row here, so
+// the history of what the model said is never overwritten. The row is born
+// with the request and filled once by the `receipt-reread` worker: the
+// reading (or its failure) and the traffic light's verdict on it, stamped
+// together. The verdict is guidance only — a re-read never moves the
+// payment's status (owner, 22/10/2026).
+export const receiptRereads = pgTable(
+  "receipt_rereads",
+  {
+    id: uuidPk(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id, { onDelete: "restrict" }),
+    receiptUploadId: uuid("receipt_upload_id")
+      .notNull()
+      .references(() => receiptUploads.id, { onDelete: "restrict" }),
+    // Better Auth's "user" is not modelled here; the FK is written by hand in
+    // the migration, as for payments.decided_by.
+    requestedBy: text("requested_by").notNull(),
+    tier: integer("tier").notNull(),
+    modelName: text("model_name"),
+    modelVersion: text("model_version"),
+    amountCents: integer("amount_cents"),
+    operationNumber: text("operation_number"),
+    extractedFields: jsonb("extracted_fields"),
+    failureReason: text("failure_reason"),
+    validationVerdict: text("validation_verdict"),
+    validationDetail: jsonb("validation_detail"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // One re-read in flight per receipt: a second click while the first is
+    // still with the model is a 409, not a second model call.
+    uniqueIndex("receipt_rereads_pending_uidx").on(table.receiptUploadId).where(sql`${table.readAt} is null`),
+    index("receipt_rereads_receipt_upload_id_idx").on(table.receiptUploadId, table.readAt),
+    // The relay's query: requests the worker has not answered yet.
+    index("receipt_rereads_pending_created_at_idx").on(table.createdAt).where(sql`${table.readAt} is null`),
+    check(
+      "receipt_rereads_validation_verdict_check",
+      sql`${table.validationVerdict} is null or ${table.validationVerdict} in ('approve', 'review', 'reject_suggested')`,
+    ),
+    // Read and judged in the same write: a finished row always has both.
+    check("receipt_rereads_read_stamp_check", sql`(${table.readAt} is null) = (${table.validationVerdict} is null)`),
+  ],
+);
+
 // One row per student waiting on a full class_group. Backoffice-only and
 // manual since OOC-35; the public checkout offering it is still Sessão 22.
 // FIFO by created_at; the partial unique pair stops the same student from
@@ -810,6 +1032,11 @@ export const staffInvites = pgTable(
     status: text("status").notNull().default("pending"),
     invitedBy: text("invited_by").notNull(),
     completedUserId: text("completed_user_id"),
+    // The teacher file a `teacher` invite opens an account for (OOC-79) —
+    // accepting it writes `teachers.user_id`. Only a `teacher` invite carries
+    // one, and a pending one must (CHECK below; invites older than 0033 have
+    // none, so it binds the pending ones only).
+    teacherId: uuid("teacher_id").references(() => teachers.id, { onDelete: "restrict" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ...timestamps(),
   },
@@ -818,6 +1045,15 @@ export const staffInvites = pgTable(
     uniqueIndex("staff_invites_pending_email_uidx")
       .on(table.email)
       .where(sql`${table.status} = 'pending'`),
+    // One open invite per teacher file: two would race for the same
+    // `teachers.user_id` when accepted.
+    uniqueIndex("staff_invites_pending_teacher_uidx")
+      .on(table.teacherId)
+      .where(sql`${table.status} = 'pending'`),
+    check(
+      "staff_invites_teacher_check",
+      sql`(${table.teacherId} is null or ${table.role} = 'teacher') and (${table.role} <> 'teacher' or ${table.status} <> 'pending' or ${table.teacherId} is not null)`,
+    ),
     check(
       "staff_invites_role_check",
       sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'teacher', 'sales', 'support', 'billing')`,
@@ -842,7 +1078,13 @@ export const auditLog = pgTable(
     metadata: jsonb("metadata"),
     createdAt: createdAt(),
   },
-  (table) => [index("audit_log_target_id_idx").on(table.targetId)],
+  (table) => [
+    index("audit_log_target_id_idx").on(table.targetId),
+    // Reads by kind of event over a time window — the backoffice home counts
+    // the day's approvals (OOC-67) on every visit, and would otherwise scan
+    // the whole trail.
+    index("audit_log_action_created_at_idx").on(table.action, table.createdAt),
+  ],
 );
 
 // Pending password-reset links for an EXISTING panel account (CLAUDE.md §8 —
@@ -1006,6 +1248,23 @@ export const platformSettings = pgTable(
     // OOC-21: below this percentage of the expected amount, rejection is
     // suggested to the reviewer. 50 is provisional (owner, 03/10/2026).
     receiptRejectBelowPercent: integer("receipt_reject_below_percent").notNull().default(50),
+    // OOC-41: the long clock — receipt sent → decision. One number for both
+    // what the checkout promises the student and the deadline Payments works
+    // to (owner, 22/10/2026).
+    reviewWindowDays: integer("review_window_days").notNull().default(5),
+    // OOC-41: below this confidence (whole percent) a field read by the OCR
+    // is flagged to the reviewer; level 2 escalates on it once it exists
+    // (Sessão 29). Whole percent, never a float.
+    ocrLowConfidencePercent: integer("ocr_low_confidence_percent").notNull().default(75),
+    // OOC-41: academic rules, on the 0–20 scale and in business days.
+    passingGrade: integer("passing_grade").notNull().default(14),
+    certificateDeadlineBusinessDays: integer("certificate_deadline_business_days").notNull().default(25),
+    // OOC-41: today's price of the constancia. A request will freeze the
+    // value it was asked at — changing this never reprices one already made.
+    constanciaFeeCents: integer("constancia_fee_cents").notNull().default(2500),
+    // OOC-41: how early a teacher's contract starts warning. 45 is
+    // provisional (CLAUDE.md §1).
+    contractAlertDays: integer("contract_alert_days").notNull().default(45),
     updatedBy: text("updated_by"),
     ...timestamps(),
   },
@@ -1023,5 +1282,20 @@ export const platformSettings = pgTable(
       "platform_settings_receipt_reject_below_percent_check",
       sql`${table.receiptRejectBelowPercent} between 1 and 99`,
     ),
+    check("platform_settings_review_window_days_check", sql`${table.reviewWindowDays} between 1 and 30`),
+    check(
+      "platform_settings_ocr_low_confidence_percent_check",
+      sql`${table.ocrLowConfidencePercent} between 50 and 95`,
+    ),
+    check("platform_settings_passing_grade_check", sql`${table.passingGrade} between 0 and 20`),
+    check(
+      "platform_settings_certificate_deadline_business_days_check",
+      sql`${table.certificateDeadlineBusinessDays} between 1 and 90`,
+    ),
+    check(
+      "platform_settings_constancia_fee_cents_check",
+      sql`${table.constanciaFeeCents} between 100 and 100000`,
+    ),
+    check("platform_settings_contract_alert_days_check", sql`${table.contractAlertDays} between 1 and 180`),
   ],
 );

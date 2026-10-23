@@ -7,7 +7,6 @@ import type {
   DocumentType,
   StudentDetail,
 } from '@/lib/backoffice/types'
-import { CONSTANCIA_FEE_CENTS } from '@/lib/backoffice/mock-data'
 import {
   formatDate,
   formatDateTime,
@@ -39,7 +38,15 @@ const DOCUMENT_TYPES: DocumentType[] = ['enrollment_certificate', 'certificate']
  * Everything here is screen-local state: the real write goes through
  * `apps/api`, never from the browser (CLAUDE.md §8).
  */
-export function StudentDocuments({ student }: { student: StudentDetail }) {
+export function StudentDocuments({
+  student,
+  constanciaFeeCents,
+}: {
+  student: StudentDetail
+  /** Today's fee, from `platform_settings` (OOC-41). Null when it could not
+   * be read: the notice still says the constancia is paid, without a figure. */
+  constanciaFeeCents: number | null
+}) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
 
@@ -160,9 +167,11 @@ export function StudentDocuments({ student }: { student: StudentDetail }) {
             {type === 'enrollment_certificate' && (
               <p className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                {t('student_file.issue_fee_notice', {
-                  amount: formatMoney(CONSTANCIA_FEE_CENTS, 'PEN', locale),
-                })}
+                {constanciaFeeCents === null
+                  ? t('student_file.issue_fee_notice_no_amount')
+                  : t('student_file.issue_fee_notice', {
+                      amount: formatMoney(constanciaFeeCents, 'PEN', locale),
+                    })}
               </p>
             )}
 

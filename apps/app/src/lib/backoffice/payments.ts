@@ -18,6 +18,8 @@ export interface PaymentLedger {
   items: PaymentRow[]
   /** Payments matching the query, across every page. */
   total: number
+  /** What each tab holds under the other filters — the tab counters. */
+  counts: { open: number; closed: number }
   page: number
   pageSize: number
   /** The current period, never the filtered page. */

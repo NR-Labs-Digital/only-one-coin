@@ -206,7 +206,6 @@ describe("class group catalog", { timeout: 30_000 }, () => {
           courseId: C1,
           academicPeriodId: PERIOD_A,
           code: "CGCAT-SCHEDULE",
-          teacherName: "",
           slots: [
             { weekday: "mon", startTime: "18:00", endTime: "19:30" },
             { weekday: "wed", startTime: "18:00", endTime: "19:30" },
@@ -295,7 +294,10 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         courseActive: true,
         academicPeriodId: PERIOD_A,
         academicPeriodName: "Ciclo A (class group catalog integration)",
-        teacherName: "Docente de prueba",
+        // Typed before teachers had a file: a hint, not an allocation (OOC-80).
+        teacherId: null,
+        teacherName: "",
+        legacyTeacherName: "Docente de prueba",
         slots: [{ weekday: "mon", startTime: "19:00", endTime: "20:30" }],
         capacity: 25,
         seatsTaken: 1,

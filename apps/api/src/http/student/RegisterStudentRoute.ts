@@ -32,7 +32,7 @@ const RegisterStudentResponseSchema = z.object({
     nationalId: z.string(),
     email: z.string(),
     phone: z.string(),
-    birthDate: z.string(),
+    birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     country: z.string(),
     region: z.string().nullable(),
     city: z.string(),
@@ -65,7 +65,7 @@ export const registerStudentRoute = RouteBuilder.post("/students")
     });
 
     reply.status(201).send({
-      student: { ...result.student, birthDate: result.student.birthDate.toISOString() },
+      student: { ...result.student, birthDate: result.student.birthDate.toISOString().slice(0, 10) },
       guardian: result.guardian,
     });
   });

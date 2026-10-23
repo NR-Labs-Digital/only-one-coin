@@ -9,7 +9,7 @@ import type {
   EnrollmentStatus,
   PaymentStatus,
   ReceiptFraudSignalKind,
-  ReviewFlag,
+  ReceiptVerdict,
   ReviewReceiptState,
   SeatStatus,
   StudentStatus,
@@ -20,8 +20,9 @@ import type {
 
 export const studentTone: Record<StudentStatus, Tone> = {
   active: 'success',
+  former: 'info',
   under_review: 'warning',
-  inactive: 'neutral',
+  no_enrollment: 'neutral',
 }
 
 /** Off the roster is not an alarm — it is a record kept on purpose. */
@@ -57,13 +58,12 @@ export const documentTone: Record<DocumentStatus, Tone> = {
   locked: 'neutral',
 }
 
-/** Duplicate receipt (tier 0) is a hard block; the rest are review signals. */
-export const reviewFlagTone: Record<ReviewFlag, Tone> = {
-  amount_mismatch: 'danger',
-  low_confidence: 'warning',
-  illegible: 'warning',
-  duplicate_phash: 'danger',
-  model_divergence: 'warning',
+/** The receipt traffic light (OOC-21) in its own colours. Green still waits
+ *  for a person — it only says amount, number and method match. */
+export const verdictTone: Record<ReceiptVerdict, Tone> = {
+  approve: 'success',
+  review: 'warning',
+  reject_suggested: 'danger',
 }
 
 /**

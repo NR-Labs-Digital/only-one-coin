@@ -1,6 +1,7 @@
 import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
-import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 /**
  * The enrollment ledger — every confirmed seat in the institution, read for the
@@ -17,6 +18,21 @@ import type { Db } from "@/infra/db/client.js";
 
 export type EnrollmentListStatus = "under_review" | "active" | "completed" | "rejected";
 
+export type ClassGroupListStatus = "draft" | "enrolling" | "in_progress" | "finished" | "closed";
+
+/**
+ * The ledger's tabs (OOC-115), cut by the class group the seat is in — the
+ * only clock an enrollment has until OOC-84 gives it an academic status.
+ * `current`: the class group is still selling or running. `ended`: it
+ * finished or was closed. A draft class group never holds a confirmed seat
+ * (drafts are out of the checkout and the manual enrollment), so it belongs
+ * to neither.
+ */
+export type EnrollmentListState = "current" | "ended";
+
+export const CURRENT_CLASS_GROUP_STATUSES: ClassGroupListStatus[] = ["enrolling", "in_progress"];
+export const ENDED_CLASS_GROUP_STATUSES: ClassGroupListStatus[] = ["finished", "closed"];
+
 export interface EnrollmentListRow {
   id: string;
   code: string;
@@ -29,6 +45,8 @@ export interface EnrollmentListRow {
   language: { id: string; name: string } | null;
   modality: "online";
   academicPeriodName: string;
+  /** So the "all" tab says which side each row is on. */
+  classGroupStatus: ClassGroupListStatus;
   status: EnrollmentListStatus;
   seatStatus: string;
   planName: string;
@@ -59,6 +77,8 @@ export type EnrollmentListSeatStatus = "reserved" | "confirmed" | "released";
  * filter that only sees the newest few hundred rows answers the wrong question.
  */
 export interface EnrollmentListFilters {
+  /** Absent means every confirmed seat, whatever its class group. */
+  state?: EnrollmentListState;
   /** `courses.language` — the label itself, there is no languages table. */
   language?: string;
   academicPeriodId?: string;
@@ -79,6 +99,10 @@ export interface EnrollmentListResult {
   items: EnrollmentListRow[];
   /** Enrollments matching the filters, across every page. */
   total: number;
+  /** What each tab holds under the reader's other filters — never the tab
+   * itself, so the one not on screen still says what is behind it. `all` is
+   * not their sum: it also counts what neither tab holds. */
+  counts: { current: number; ended: number; all: number };
   page: number;
   pageSize: number;
   /** Counted over the whole ledger, never over the filtered page — the header
@@ -152,7 +176,7 @@ export class ListEnrollmentsQuery {
       .orderBy(payments.enrollmentId, desc(payments.createdAt))
       .as("latest_payment");
 
-    const where = and(
+    const scope = and(
       // Only the enrollment itself is filtered for retirement: a retired
       // course or class group must still label the enrollments that happened
       // on it, or the ledger would lose rows every time the catalog is tidied
@@ -165,6 +189,7 @@ export class ListEnrollmentsQuery {
       eq(enrollments.seatStatus, "confirmed"),
       ...this.filterConditions(filters, latestPayment),
     );
+    const where = and(scope, ...this.stateConditions(filters));
 
     const rowsPromise = this.db
       .select({
@@ -179,8 +204,9 @@ export class ListEnrollmentsQuery {
         classGroupId: classGroups.id,
         classGroupSchedule: classGroups.schedule,
         classGroupCode: classGroups.code,
-        teacherName: classGroups.teacherName,
+        teacherName: classGroupTeacherName,
         academicPeriodName: academicPeriods.name,
+        classGroupStatus: classGroups.status,
         planName: plans.name,
         planPriceId: planPrices.id,
         amountCents: planPrices.amountCents,
@@ -219,9 +245,28 @@ export class ListEnrollmentsQuery {
       .leftJoin(latestPayment, eq(latestPayment.enrollmentId, enrollments.id))
       .where(where);
 
-    const [rows, counted, metrics, filterOptions] = await Promise.all([
+    // The tabs in one pass, over the same joins as the total.
+    const countsPromise = this.db
+      .select({
+        current: sql<number>`count(*) filter (where ${inArray(classGroups.status, CURRENT_CLASS_GROUP_STATUSES)})`.mapWith(
+          Number,
+        ),
+        ended: sql<number>`count(*) filter (where ${inArray(classGroups.status, ENDED_CLASS_GROUP_STATUSES)})`.mapWith(
+          Number,
+        ),
+        all: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(students.id, enrollments.studentId))
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .innerJoin(courses, eq(courses.id, classGroups.courseId))
+      .leftJoin(latestPayment, eq(latestPayment.enrollmentId, enrollments.id))
+      .where(scope);
+
+    const [rows, counted, countsRow, metrics, filterOptions] = await Promise.all([
       rowsPromise,
       totalPromise,
+      countsPromise,
       this.metrics(),
       this.filterOptions(),
     ]);
@@ -249,6 +294,8 @@ export class ListEnrollmentsQuery {
         // rule allows, not a guess at missing data.
         modality: "online",
         academicPeriodName: row.academicPeriodName,
+        // Held to this union by class_groups_status_check.
+        classGroupStatus: row.classGroupStatus as ClassGroupListStatus,
         status: deriveStatus(row.seatStatus, paymentStatus),
         seatStatus: row.seatStatus,
         planName: row.planName,
@@ -273,11 +320,23 @@ export class ListEnrollmentsQuery {
     return {
       items,
       total: counted[0]?.value ?? 0,
+      counts: {
+        current: countsRow[0]?.current ?? 0,
+        ended: countsRow[0]?.ended ?? 0,
+        all: countsRow[0]?.all ?? 0,
+      },
       page,
       pageSize: PAGE_SIZE,
       metrics,
       filterOptions,
     };
+  }
+
+  /** The tab — what the tab counters leave out. */
+  private stateConditions(filters: EnrollmentListFilters): SQL[] {
+    if (filters.state === "current") return [inArray(classGroups.status, CURRENT_CLASS_GROUP_STATUSES)];
+    if (filters.state === "ended") return [inArray(classGroups.status, ENDED_CLASS_GROUP_STATUSES)];
+    return [];
   }
 
   /**
@@ -303,7 +362,7 @@ export class ListEnrollmentsQuery {
           ilike(courses.name, needle),
           ilike(classGroups.code, needle),
           ilike(classGroups.schedule, needle),
-          ilike(classGroups.teacherName, needle),
+          ilike(classGroupTeacherName, needle),
           ilike(sql`${latestPayment.operationNumber}`, needle),
         )!,
       );

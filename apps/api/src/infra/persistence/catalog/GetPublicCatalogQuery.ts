@@ -1,7 +1,9 @@
 import { classGroups, courses, planPrices, plans } from "@ooc/db";
 import { and, desc, eq, isNull, lte, sql } from "drizzle-orm";
+import type { LandingCourseKey } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "./sellableClassGroup.js";
+import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 export interface PublicCatalogCourse {
   id: string;
@@ -11,6 +13,8 @@ export interface PublicCatalogCourse {
   minAge: number;
   modules: number;
   totalHours: number;
+  /** Lets `?course=<landing key>` from the static landing find it (OOC-117). */
+  landingKey: LandingCourseKey | null;
 }
 
 export interface PublicCatalogPlan {
@@ -70,6 +74,7 @@ export class GetPublicCatalogQuery {
         minAge: courses.minAge,
         modules: courses.modules,
         totalHours: courses.totalHours,
+        landingKey: sql<LandingCourseKey | null>`${courses.landingKey}`,
       })
       // Retired catalog is not offered (CLAUDE.md §6). Filtered on every
       // table this query is *about* — the offer itself — which is all three.
@@ -107,7 +112,7 @@ export class GetPublicCatalogQuery {
         id: classGroups.id,
         courseId: classGroups.courseId,
         code: classGroups.code,
-        teacherName: classGroups.teacherName,
+        teacherName: classGroupTeacherName,
         slots: classGroups.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,

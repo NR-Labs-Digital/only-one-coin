@@ -50,13 +50,13 @@ const GetStudentResponseSchema = z.object({
   nationalId: z.string(),
   email: z.string(),
   phone: z.string(),
-  birthDate: z.string(),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   country: z.string(),
   region: z.string().nullable(),
   city: z.string(),
   createdAt: z.string(),
   isMinor: z.boolean(),
-  status: z.enum(["active", "under_review", "inactive"]),
+  status: z.enum(["active", "former", "under_review", "no_enrollment"]),
   activeCourses: z.number().int(),
   totalEnrollments: z.number().int(),
   lastActivityAt: z.string(),
@@ -109,7 +109,10 @@ export const getStudentRoute = RouteBuilder.get("/students/:studentId")
     reply.status(200).send({
       ...student,
       portalAccess,
-      birthDate: student.birthDate.toISOString(),
+      // A calendar date, stored as UTC midnight: sent as `YYYY-MM-DD` so the
+      // file prints it as written — read as an instant in America/Lima it
+      // lands on the day before (OOC-109).
+      birthDate: student.birthDate.toISOString().slice(0, 10),
       createdAt: student.createdAt.toISOString(),
       lastActivityAt: student.lastActivityAt.toISOString(),
       guardian: student.guardian

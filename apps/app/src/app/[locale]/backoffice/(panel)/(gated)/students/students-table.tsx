@@ -6,8 +6,10 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation'
 import type { StudentDirectoryPage } from '@/lib/backoffice/students'
 import {
   MIN_SEARCH_LENGTH,
+  STUDENT_DIRECTORY_TABS,
   studentDirectorySearchParams,
   type StudentDirectoryQuery,
+  type StudentDirectoryTab,
 } from '@/lib/backoffice/student-directory-query'
 import {
   Card,
@@ -24,18 +26,16 @@ import { Toast } from '@/components/backoffice/controls'
 import { studentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
+import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { NewStudentForm } from './new-student-form'
-
-type StatusFilter = 'all' | 'active' | 'inactive'
-
-const STATUS_FILTERS: StatusFilter[] = ['all', 'active', 'inactive']
 
 /** A pause in typing before the search reaches the URL — and the database. */
 const SEARCH_DEBOUNCE_MS = 350
 
 /**
- * Student list (OOC-76). Search, the status filter, the minors filter and the
- * pages all live in the URL and run in Postgres: this component only rewrites
+ * Student list (OOC-76). It opens on the active tab (OOC-116): who studies
+ * now. Former students and files with no enrollment are one tab away, never
+ * gone. Search, the tab, the minors filter and the pages all live in the URL and run in Postgres: this component only rewrites
  * the URL, and the server component fetches exactly the page asked for. With
  * 30k students a filter applied in the browser over the loaded rows only
  * found whoever happened to be on the page — the reason this moved.
@@ -91,8 +91,13 @@ export function StudentsTable({
   }, [searchText, query])
 
   const { items: pageRows, total, pageSize, counts } = directory
-  const status: StatusFilter = query.status ?? 'all'
-  const activeFilters = (query.status ? 1 : 0) + (query.minor ? 1 : 0)
+  const activeFilters = query.minor ? 1 : 0
+  const tabCount: Record<StudentDirectoryTab, number> = {
+    active: counts.active,
+    former: counts.former,
+    no_enrollment: counts.noEnrollment,
+    all: counts.all,
+  }
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const currentPage = Math.min(query.page, pageCount) - 1
 
@@ -117,6 +122,17 @@ export function StudentsTable({
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
+        {/* The counters come from the server, over the search alone. */}
+        <ListStateTabs
+          label={t('students.tabs_label')}
+          active={query.status}
+          onSelect={(status) => navigate({ status })}
+          tabs={STUDENT_DIRECTORY_TABS.map((tab) => ({
+            key: tab,
+            label: t(`students.tab_${tab}`),
+            count: tabCount[tab],
+          }))}
+        />
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('students.search_label')}</span>
@@ -139,30 +155,7 @@ export function StudentsTable({
             count={activeFilters}
             panelClassName="flex-wrap items-center gap-1.5"
           >
-            {STATUS_FILTERS.map((value) => {
-              const active = status === value
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => navigate({ status: value === 'all' ? null : value })}
-                  aria-pressed={active}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    active
-                      ? 'bg-brand-blue text-white'
-                      : 'border border-line bg-white text-muted-foreground hover:bg-cream hover:text-ink'
-                  }`}
-                >
-                  {value === 'all' ? t('students.filter_all') : t(`student_status.${value}`)}
-                  <span className={active ? 'text-white/70' : 'text-slate-400'}>
-                    {value === 'all' ? counts.all : counts[value]}
-                  </span>
-                </button>
-              )
-            })}
-
-            <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
-
+            {/* Age is a filter of its own, across the tabs (OOC-116). */}
             <button
               type="button"
               onClick={() => navigate({ minor: !query.minor })}
@@ -204,9 +197,10 @@ export function StudentsTable({
           onCreate={() => {
             setCreating(false)
             setToast(t('new_student.created'))
-            // The new file is the newest row: back to the first page, read
-            // from the server like every other row.
-            navigate({ page: 1, q: '', status: null, minor: false })
+            // The new file is the newest row of the no-enrollment tab —
+            // registering somebody does not enroll them. Back to its first
+            // page, read from the server like every other row.
+            navigate({ page: 1, q: '', status: 'no_enrollment', minor: false })
             setSearchText('')
             router.refresh()
           }}
@@ -219,7 +213,7 @@ export function StudentsTable({
             <EmptyState
               icon="search"
               title={t('students.empty_title')}
-              body={t('students.empty_body')}
+              body={t(query.status === 'all' ? 'students.empty_body' : 'students.empty_tab_body')}
             />
           </div>
         ) : (

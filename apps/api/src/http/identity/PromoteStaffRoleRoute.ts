@@ -33,6 +33,8 @@ const PromoteStaffRoleResponseSchema = z.object({
 // Admin-only. `teacher` is deliberately absent from the body's role union:
 // that cargo travels with the roster file it is scoped by, opened and closed
 // from Docentes, never here (same rule the role-change dialog already draws).
+// A teacher account cannot leave the cargo here either: PromoteUserRoleUseCase
+// answers 422 `staff_role.teacher_account_locked` (OOC-79).
 export const promoteStaffRoleRoute = RouteBuilder.patch("/staff/:userId/role")
   .docs({
     tags: ["Identity"],
@@ -45,6 +47,7 @@ export const promoteStaffRoleRoute = RouteBuilder.patch("/staff/:userId/role")
   .response(200, PromoteStaffRoleResponseSchema)
   .response(401, ErrorResponseSchema)
   .response(403, ErrorResponseSchema)
+  .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const result = await container.useCases.staff.promoteRole.run({
       adminUserId: request.currentUser!.id,

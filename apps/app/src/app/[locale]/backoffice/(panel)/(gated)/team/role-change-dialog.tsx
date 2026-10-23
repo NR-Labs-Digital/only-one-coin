@@ -28,6 +28,27 @@ const ROLES: StaffRole[] = [
   'billing',
 ]
 
+/** What the promotion route answered, reduced to what the dialog has to say. */
+export type RoleChangeOutcome = 'ok' | 'wrong_password' | 'self' | 'failed'
+
+/**
+ * Maps the API's `reason` (`PromoteUserRoleUseCase`) to the dialog's message.
+ * Only `auth.not_freshly_authenticated` means the re-auth password was wrong;
+ * anything else — a lost session, a missing second factor, a 500 — is a
+ * failure the password field had nothing to do with.
+ */
+export function roleChangeOutcome(reason: string | undefined): Exclude<RoleChangeOutcome, 'ok'> {
+  if (reason === 'auth.not_freshly_authenticated') return 'wrong_password'
+  if (reason === 'auth.cannot_act_on_self') return 'self'
+  return 'failed'
+}
+
+const ERROR_KEY = {
+  wrong_password: 'team.reauth_wrong_password',
+  self: 'team.change_error_self',
+  failed: 'team.change_error_failed',
+} as const satisfies Record<Exclude<RoleChangeOutcome, 'ok'>, string>
+
 const fieldClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
@@ -52,15 +73,15 @@ export function RoleChangeDialog({
 }: {
   member: StaffMemberRow | null
   onClose: () => void
-  /** Returns whether the change went through — `false` keeps the dialog open
-   * with an inline error (wrong re-auth password), same as any other form. */
-  onConfirm: (member: StaffMemberRow, role: StaffRole, password: string) => Promise<boolean>
+  /** Anything but `'ok'` keeps the dialog open with the matching inline
+   * error, same as any other form. */
+  onConfirm: (member: StaffMemberRow, role: StaffRole, password: string) => Promise<RoleChangeOutcome>
 }) {
   const t = useTranslations('bo')
   const [role, setRole] = useState<StaffRole>('enrollment_supervisor')
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
-  const [wrongPassword, setWrongPassword] = useState(false)
+  const [error, setError] = useState<Exclude<RoleChangeOutcome, 'ok'> | null>(null)
 
   /* Reopening the dialog on a different person must not inherit the last one's
      answers — least of all the password. */
@@ -68,7 +89,7 @@ export function RoleChangeDialog({
     if (!member) return
     setRole(ROLES.find((item) => item !== member.role) ?? 'enrollment_supervisor')
     setPassword('')
-    setWrongPassword(false)
+    setError(null)
   }, [member])
 
   const ready = member !== null && role !== member.role && password.trim() !== '' && !pending
@@ -76,10 +97,10 @@ export function RoleChangeDialog({
   async function submit() {
     if (!member || !ready) return
     setPending(true)
-    setWrongPassword(false)
-    const ok = await onConfirm(member, role, password)
+    setError(null)
+    const outcome = await onConfirm(member, role, password)
     setPending(false)
-    if (!ok) setWrongPassword(true)
+    if (outcome !== 'ok') setError(outcome)
   }
 
   return (
@@ -159,9 +180,9 @@ export function RoleChangeDialog({
                   <span className="text-xs text-muted-foreground">
                     {t('team.change_reauth_hint')}
                   </span>
-                  {wrongPassword && (
+                  {error && (
                     <p role="alert" className="text-xs font-semibold text-red-600">
-                      {t('team.reauth_wrong_password')}
+                      {t(ERROR_KEY[error])}
                     </p>
                   )}
                 </div>

@@ -1,5 +1,4 @@
 import type { GradeStatus } from '@/lib/backoffice/types'
-import { PASSING_GRADE } from '@/lib/backoffice/mock-data'
 
 /**
  * The grade sheet's rules, shared by the one-grade dialog and the batch one:
@@ -30,7 +29,8 @@ export function parseGrade(raw: string): number | null {
   return grade <= 20 ? grade : null
 }
 
-export function finalStatus(grade: number): GradeStatus {
-  return grade >= PASSING_GRADE ? 'approved' : 'failed'
+/** `passingGrade` is the backoffice's (`platform_settings`, OOC-41), never a constant. */
+export function finalStatus(grade: number, passingGrade: number): GradeStatus {
+  return grade >= passingGrade ? 'approved' : 'failed'
 }
 

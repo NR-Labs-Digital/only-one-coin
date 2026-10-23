@@ -1,8 +1,36 @@
-import { enrollments, students } from "@ooc/db";
-import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
+import { classGroups, enrollments, students } from "@ooc/db";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { CURRENT_CLASS_GROUP_STATUSES } from "@/infra/persistence/enrollment/ListEnrollmentsQuery.js";
 
-export type StudentStatus = "active" | "under_review" | "inactive";
+/**
+ * Who the student is to the institution today (OOC-116), derived from their
+ * seats — still no column, as the schema documents:
+ *
+ * - `active` — at least one current enrollment: a confirmed seat in a class
+ *   group still enrolling or in progress, the same "current" as the
+ *   enrollment ledger's default tab (OOC-115).
+ * - `former` — had a confirmed seat, none current. A class group that
+ *   finishes moves its students here with no write anywhere.
+ * - `under_review` — nothing confirmed, a seat still reserved. Settled in
+ *   Payments, so only the pickers ever show it (OOC-55).
+ * - `no_enrollment` — nothing confirmed or reserved: registered by hand, or
+ *   every seat handed back.
+ *
+ * Until OOC-116 a confirmed seat meant "active" forever, which is why the
+ * directory and the enrollment ledger read as the same list.
+ */
+export type StudentStatus = "active" | "former" | "under_review" | "no_enrollment";
+
+export function deriveStudentStatus(seats: { confirmed: number; current: number; reserved: number }): StudentStatus {
+  if (seats.current > 0) return "active";
+  if (seats.confirmed > 0) return "former";
+  if (seats.reserved > 0) return "under_review";
+  return "no_enrollment";
+}
+
+/** `class_groups.status` values that make a confirmed seat current, as SQL. */
+export const currentClassGroupSql = inArray(classGroups.status, CURRENT_CLASS_GROUP_STATUSES);
 
 // Same "full years, not calendar years" rule the public checkout already
 // uses (apps/app/src/lib/enrollment/checkout.ts, ageFrom/isMinor) — kept in
@@ -33,6 +61,7 @@ export interface StudentListRow {
   createdAt: Date;
   isMinor: boolean;
   status: StudentStatus;
+  /** Current enrollments — what `active` counts. */
   activeCourses: number;
   totalEnrollments: number;
   lastActivityAt: Date;
@@ -83,8 +112,8 @@ export function decodeStudentCursor(raw: string): StudentListCursor | null {
   }
 }
 
-/** The statuses the directory lists — a student whose only seat is still
- * reserved is settled in Payments, not listed (OOC-55). */
+/** The directory's tabs — a student whose only seat is still reserved is
+ * settled in Payments, not listed (OOC-55), so `under_review` has no tab. */
 export type DirectoryStatus = Exclude<StudentStatus, "under_review">;
 
 /**
@@ -95,6 +124,7 @@ export type DirectoryStatus = Exclude<StudentStatus, "under_review">;
 export interface StudentDirectoryFilters {
   /** Partial name, document or phone — served by the trigram indexes. */
   q?: string;
+  /** The tab. Absent means every listed student. */
   status?: DirectoryStatus;
   /** Only students under 18 today. */
   minor?: boolean;
@@ -110,10 +140,10 @@ export interface StudentDirectoryPage {
   page: number;
   pageSize: number;
   /**
-   * How many students the search reaches per chip, ignoring the status and
-   * age filters themselves — so each chip says what choosing it would give.
+   * How many students the search reaches per tab and chip, ignoring the tab
+   * and the age filter themselves — so each says what choosing it would give.
    */
-  counts: { all: number; active: number; inactive: number; minors: number };
+  counts: { all: number; active: number; former: number; noEnrollment: number; minors: number };
 }
 
 /**
@@ -129,15 +159,19 @@ export interface StudentDirectoryPage {
  *   exceção, não um segundo caminho"): a short match list that still finds
  *   the student under review, so nobody registers the person twice.
  *
- * `status` is derived from `seatStatus` across the student's enrollments —
- * confirmed beats reserved beats "none of the above" ("derived, not a stored
- * column"). It does not know about payment or grading yet.
+ * `status` is derived from the student's seats and the class groups they
+ * sit in (`deriveStudentStatus`) — derived, not a stored column. It does not
+ * know about payment or grading yet.
  */
 export class ListStudentsQuery {
   constructor(private readonly db: Db) {}
 
-  /** Per-student enrollment figures, retired enrollments left out (CLAUDE.md §6). */
-  private enrollmentStats() {
+  /** Per-student enrollment figures, retired enrollments left out (CLAUDE.md §6).
+   * A retired class group still counts — its seats happened, the same rule as
+   * the enrollment ledger. `scope` narrows the students aggregated — the
+   * whole base costs a pass over every enrollment, which only the directory's
+   * counters actually need. */
+  private enrollmentStats(scope?: SQL) {
     return this.db
       .select({
         studentId: enrollments.studentId,
@@ -145,13 +179,17 @@ export class ListStudentsQuery {
         confirmed: sql<number>`count(*) filter (where ${enrollments.seatStatus} = 'confirmed')`
           .mapWith(Number)
           .as("confirmed"),
+        current: sql<number>`count(*) filter (where ${enrollments.seatStatus} = 'confirmed' and ${currentClassGroupSql})`
+          .mapWith(Number)
+          .as("current"),
         reserved: sql<number>`count(*) filter (where ${enrollments.seatStatus} = 'reserved')`
           .mapWith(Number)
           .as("reserved"),
         lastAt: sql<Date | null>`max(${enrollments.updatedAt})`.as("last_at"),
       })
       .from(enrollments)
-      .where(isNull(enrollments.deletedAt))
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .where(and(isNull(enrollments.deletedAt), scope))
       .groupBy(enrollments.studentId)
       .as("stats");
   }
@@ -161,8 +199,15 @@ export class ListStudentsQuery {
     const stats = this.enrollmentStats();
 
     const confirmed = sql`coalesce(${stats.confirmed}, 0)`;
+    const current = sql`coalesce(${stats.current}, 0)`;
     const reserved = sql`coalesce(${stats.reserved}, 0)`;
-    const isActive = sql`${confirmed} > 0`;
+    // `deriveStudentStatus` in SQL; the reserved-only students are already
+    // out of `base`.
+    const isActive = sql`${current} > 0`;
+    const isFormer = sql`${current} = 0 and ${confirmed} > 0`;
+    const isNoEnrollment = sql`${confirmed} = 0`;
+    const tabSql = (status: DirectoryStatus | undefined) =>
+      status === "active" ? isActive : status === "former" ? isFormer : status === "no_enrollment" ? isNoEnrollment : sql`true`;
     // Under 18 today, in UTC — the same rule `isMinor` applies in JS.
     const isMinorSql = sql`${students.birthDate} > ((now() at time zone 'UTC')::date - interval '18 years')`;
 
@@ -183,9 +228,7 @@ export class ListStudentsQuery {
       );
     }
 
-    const narrowed: SQL[] = [...base];
-    if (filters.status === "active") narrowed.push(isActive);
-    if (filters.status === "inactive") narrowed.push(sql`not (${isActive})`);
+    const narrowed: SQL[] = [...base, tabSql(filters.status)];
     if (filters.minor) narrowed.push(isMinorSql);
 
     const rowsPromise = this.db
@@ -205,6 +248,7 @@ export class ListStudentsQuery {
         updatedAt: students.updatedAt,
         totalEnrollments: sql<number>`coalesce(${stats.total}, 0)`.mapWith(Number),
         confirmedEnrollments: sql<number>`${confirmed}`.mapWith(Number),
+        currentEnrollments: sql<number>`${current}`.mapWith(Number),
         lastEnrollmentAt: stats.lastAt,
       })
       .from(students)
@@ -218,17 +262,16 @@ export class ListStudentsQuery {
       .limit(DIRECTORY_PAGE_SIZE)
       .offset((page - 1) * DIRECTORY_PAGE_SIZE);
 
-    // One pass for the total and every chip: the chips ignore the status and
-    // age filters (they are the choice), the total honours them.
-    const statusSql =
-      filters.status === "active" ? isActive : filters.status === "inactive" ? sql`not (${isActive})` : sql`true`;
+    // One pass for the total and every tab and chip: those ignore the tab and
+    // the age filter (they are the choice), the total honours them.
     const minorFilterSql = filters.minor ? isMinorSql : sql`true`;
     const countsPromise = this.db
       .select({
-        total: sql<number>`count(*) filter (where ${statusSql} and ${minorFilterSql})`.mapWith(Number),
+        total: sql<number>`count(*) filter (where ${tabSql(filters.status)} and ${minorFilterSql})`.mapWith(Number),
         all: sql<number>`count(*)`.mapWith(Number),
         active: sql<number>`count(*) filter (where ${isActive})`.mapWith(Number),
-        inactive: sql<number>`count(*) filter (where not (${isActive}))`.mapWith(Number),
+        former: sql<number>`count(*) filter (where ${isFormer})`.mapWith(Number),
+        noEnrollment: sql<number>`count(*) filter (where ${isNoEnrollment})`.mapWith(Number),
         minors: sql<number>`count(*) filter (where ${isMinorSql})`.mapWith(Number),
       })
       .from(students)
@@ -247,7 +290,8 @@ export class ListStudentsQuery {
       counts: {
         all: counted?.all ?? 0,
         active: counted?.active ?? 0,
-        inactive: counted?.inactive ?? 0,
+        former: counted?.former ?? 0,
+        noEnrollment: counted?.noEnrollment ?? 0,
         minors: counted?.minors ?? 0,
       },
     };
@@ -256,7 +300,19 @@ export class ListStudentsQuery {
   /** The pickers' short match list — by partial name or document, under review included. */
   async search(q: string): Promise<StudentListRow[]> {
     const needle = `%${q.trim()}%`;
-    const stats = this.enrollmentStats();
+    const matching = and(
+      isNull(students.deletedAt),
+      or(ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, needle), ilike(students.nationalId, needle)),
+    );
+    // Ten rows come back, so only their enrollments are aggregated — not
+    // every student's, on every keystroke of the picker.
+    const matched = this.db
+      .select({ id: students.id })
+      .from(students)
+      .where(matching)
+      .orderBy(desc(students.createdAt), desc(students.id))
+      .limit(SEARCH_LIMIT);
+    const stats = this.enrollmentStats(inArray(enrollments.studentId, matched));
 
     const rows = await this.db
       .select({
@@ -275,17 +331,13 @@ export class ListStudentsQuery {
         updatedAt: students.updatedAt,
         totalEnrollments: sql<number>`coalesce(${stats.total}, 0)`.mapWith(Number),
         confirmedEnrollments: sql<number>`coalesce(${stats.confirmed}, 0)`.mapWith(Number),
+        currentEnrollments: sql<number>`coalesce(${stats.current}, 0)`.mapWith(Number),
         reservedEnrollments: sql<number>`coalesce(${stats.reserved}, 0)`.mapWith(Number),
         lastEnrollmentAt: stats.lastAt,
       })
       .from(students)
       .leftJoin(stats, eq(stats.studentId, students.id))
-      .where(
-        and(
-          isNull(students.deletedAt),
-          or(ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, needle), ilike(students.nationalId, needle)),
-        ),
-      )
+      .where(matching)
       .orderBy(desc(students.createdAt), desc(students.id))
       .limit(SEARCH_LIMIT);
 
@@ -309,11 +361,15 @@ function toListRow(row: {
   updatedAt: Date;
   totalEnrollments: number;
   confirmedEnrollments: number;
+  currentEnrollments: number;
   reservedEnrollments: number;
   lastEnrollmentAt: Date | string | null;
 }): StudentListRow {
-  const status: StudentStatus =
-    row.confirmedEnrollments > 0 ? "active" : row.reservedEnrollments > 0 ? "under_review" : "inactive";
+  const status = deriveStudentStatus({
+    confirmed: row.confirmedEnrollments,
+    current: row.currentEnrollments,
+    reserved: row.reservedEnrollments,
+  });
   // A raw `max()` out of a subquery can come back as text from the driver.
   const lastEnrollmentAt = row.lastEnrollmentAt === null ? null : new Date(row.lastEnrollmentAt);
   const lastActivityAt = lastEnrollmentAt && lastEnrollmentAt > row.updatedAt ? lastEnrollmentAt : row.updatedAt;
@@ -333,7 +389,7 @@ function toListRow(row: {
     createdAt: row.createdAt,
     isMinor: isMinor(row.birthDate),
     status,
-    activeCourses: row.confirmedEnrollments,
+    activeCourses: row.currentEnrollments,
     totalEnrollments: row.totalEnrollments,
     lastActivityAt,
   };

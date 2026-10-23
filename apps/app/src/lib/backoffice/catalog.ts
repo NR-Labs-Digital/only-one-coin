@@ -2,8 +2,10 @@ import { apiFetch } from './api-client'
 import type {
   AcademicPeriodItem,
   ClassGroupItem,
+  ClassGroupRoster,
   CourseDetail,
   CourseRow,
+  TeacherOption,
   WaitlistItem,
 } from './types'
 
@@ -71,11 +73,36 @@ export async function listCatalogClassGroups(periodId?: string): Promise<ClassGr
   }
 }
 
+/** The roster as the class group form needs it (OOC-80); null when the read failed. */
+export async function listTeacherOptions(): Promise<TeacherOption[] | null> {
+  try {
+    const response = await apiFetch('/api/v1/catalog/teacher-options')
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: TeacherOption[] }
+    return body.items
+  } catch {
+    return null
+  }
+}
+
 export async function getCatalogClassGroup(id: string): Promise<ClassGroupItem | null> {
   try {
     const response = await apiFetch(`/api/v1/catalog/class-groups/${encodeURIComponent(id)}`)
     if (!response.ok) return null
     return (await response.json()) as ClassGroupItem
+  } catch {
+    return null
+  }
+}
+
+/** Who is enrolled in a class group. `null` = the API failed. */
+export async function getClassGroupRoster(id: string): Promise<ClassGroupRoster | null> {
+  try {
+    const response = await apiFetch(
+      `/api/v1/catalog/class-groups/${encodeURIComponent(id)}/roster`,
+    )
+    if (!response.ok) return null
+    return (await response.json()) as ClassGroupRoster
   } catch {
     return null
   }

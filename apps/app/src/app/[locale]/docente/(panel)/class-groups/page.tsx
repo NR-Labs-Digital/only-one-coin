@@ -1,7 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { listClassGroupRostersFor } from '@/lib/backoffice/mock-data'
 import { getTeacherSession } from '@/lib/backoffice/session'
-import { PageHeader } from '@/components/backoffice/ui'
+import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
+import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeacherClassGroups } from './teacher-class-groups'
 
 /**
@@ -23,15 +24,26 @@ export default async function TeacherClassGroupsPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const staff = await getTeacherSession()
+  const [staff, settings] = await Promise.all([getTeacherSession(), getPlatformSettings()])
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('nav.my_class_groups')} />
-      <TeacherClassGroups
-        groups={listClassGroupRostersFor(staff).filter((group) => group.status !== 'closed')}
-        teacherName={`${staff.firstName} ${staff.lastName}`}
-      />
+      {/* What "approved" means is the backoffice's (OOC-41). Without it the
+          grade sheet cannot tell pass from fail, so it says it could not load. */}
+      {settings ? (
+        <TeacherClassGroups
+          groups={listClassGroupRostersFor(staff).filter((group) => group.status !== 'closed')}
+          teacherName={`${staff.firstName} ${staff.lastName}`}
+          passingGrade={settings.passingGrade}
+        />
+      ) : (
+        <EmptyState
+          icon="alert"
+          title={t('settings.rules_load_error_title')}
+          body={t('settings.rules_load_error_body')}
+        />
+      )}
     </div>
   )
 }

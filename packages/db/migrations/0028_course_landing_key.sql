@@ -1,0 +1,2 @@
+ALTER TABLE "courses" ADD COLUMN "landing_key" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "courses_landing_key_live_uidx" ON "courses" USING btree ("landing_key") WHERE "courses"."landing_key" is not null and "courses"."deleted_at" is null;
