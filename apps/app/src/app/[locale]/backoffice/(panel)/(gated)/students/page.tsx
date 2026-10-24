@@ -4,6 +4,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canBrowseStudents,
   canCreateStudent,
+  canExportStudents,
 } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { StudentsTable } from './students-table'
@@ -73,6 +74,7 @@ export default async function StudentsPage({
         directory={page}
         query={query}
         canCreate={canCreateStudent(staff.role)}
+        canExport={canExportStudents(staff.role)}
       />
     </div>
   )
