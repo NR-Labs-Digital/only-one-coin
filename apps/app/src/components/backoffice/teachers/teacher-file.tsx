@@ -40,6 +40,7 @@ import {
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AvailabilityFields, slotsAreValid } from './availability-fields'
+import { ContractDownloadDialog } from './contract-download-dialog'
 import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
 import { FieldMessage } from '../field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -95,6 +96,7 @@ export function TeacherFile({
   const locale = useLocale() as Locale
   const [tab, setTab] = useState<Tab>('data')
   const [toast, setToast] = useState<string | null>(null)
+  const [contractDialog, setContractDialog] = useState(false)
 
   /**
    * On or off the roster. Out of it deletes nothing (`TeacherStatus`) — it is
@@ -566,6 +568,27 @@ export function TeacherFile({
               <p className="mt-3 text-xs text-muted-foreground">
                 {t('teachers.contract_none_body')}
               </p>
+            )}
+
+            {/* The contract to print and sign, filled from this file and the
+                published template. Built on demand, never stored (OOC-123). */}
+            {canEdit && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setContractDialog(true)}
+                  className="mt-3 inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-brand-blue transition hover:bg-sky-soft"
+                >
+                  <BoIcon name="download" size={16} />
+                  {t('teachers.contract_download_action')}
+                </button>
+                <ContractDownloadDialog
+                  open={contractDialog}
+                  teacherId={teacher.id}
+                  teacherName={`${teacher.firstName} ${teacher.lastName}`}
+                  onClose={() => setContractDialog(false)}
+                />
+              </>
             )}
           </div>
         </Card>
