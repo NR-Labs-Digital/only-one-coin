@@ -2,7 +2,7 @@ import type { Teacher } from "@ooc/domain";
 import { z } from "zod";
 import { ClassGroupItemSchema } from "@/http/catalog/CatalogSchemas.js";
 import type { TeacherDetail } from "@/infra/persistence/teacher/GetTeacherQuery.js";
-import type { TeacherListRow } from "@/infra/persistence/teacher/ListTeachersQuery.js";
+import type { TeacherContractSummary, TeacherListRow } from "@/infra/persistence/teacher/ListTeachersQuery.js";
 
 export const TeacherParamsSchema = z.object({ teacherId: z.string().uuid() });
 
@@ -12,7 +12,8 @@ const WeeklySlotResponseSchema = z.object({
   endTime: z.string(),
 });
 
-const TeacherContractResponseSchema = z.object({
+export const TeacherContractResponseSchema = z.object({
+  id: z.string().uuid(),
   fileName: z.string(),
   fileSizeBytes: z.number().int(),
   uploadedAt: z.string(),
@@ -46,6 +47,8 @@ export const TeacherRowResponseSchema = z.object({
 export const TeacherDetailResponseSchema = TeacherRowResponseSchema.extend({
   availability: z.array(WeeklySlotResponseSchema),
   classGroups: z.array(ClassGroupItemSchema),
+  /** Every filing, newest first; the first is `contract` (OOC-81). */
+  contracts: z.array(TeacherContractResponseSchema),
   /** The backoffice's alert window (OOC-41), for the contract badge. */
   contractAlertDays: z.number().int(),
 });
@@ -71,25 +74,33 @@ export const TeacherRecordResponseSchema = z.object({
 
 const day = (date: Date) => date.toISOString().slice(0, 10);
 
+export function serializeContract(contract: TeacherContractSummary) {
+  return {
+    id: contract.id,
+    fileName: contract.fileName,
+    fileSizeBytes: contract.fileSizeBytes,
+    uploadedAt: contract.uploadedAt.toISOString(),
+    startsAt: day(contract.startsOn),
+    endsAt: day(contract.endsOn),
+  };
+}
+
 export function serializeTeacherRow(row: TeacherListRow) {
   return {
     ...row,
     nationalIdType: row.nationalIdType as "DNI" | "CE" | "passport",
-    contract: row.contract
-      ? {
-          fileName: row.contract.fileName,
-          fileSizeBytes: row.contract.fileSizeBytes,
-          uploadedAt: row.contract.uploadedAt.toISOString(),
-          startsAt: day(row.contract.startsOn),
-          endsAt: day(row.contract.endsOn),
-        }
-      : null,
+    contract: row.contract ? serializeContract(row.contract) : null,
     joinedAt: day(row.joinedAt),
   };
 }
 
 export function serializeTeacherDetail(detail: TeacherDetail) {
-  return { ...serializeTeacherRow(detail), availability: detail.availability, classGroups: detail.classGroups };
+  return {
+    ...serializeTeacherRow(detail),
+    availability: detail.availability,
+    classGroups: detail.classGroups,
+    contracts: detail.contracts.map(serializeContract),
+  };
 }
 
 export function serializeTeacher(teacher: Teacher) {

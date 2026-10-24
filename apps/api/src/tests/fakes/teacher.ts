@@ -1,4 +1,13 @@
-import type { IStaffAccessRepository, ITeacherRepository, NationalIdType, Teacher } from "@ooc/domain";
+import {
+  TeacherContractAlreadyFiledError,
+  type IStaffAccessRepository,
+  type ITeacherContractRepository,
+  type ITeacherContractStorage,
+  type ITeacherRepository,
+  type NationalIdType,
+  type Teacher,
+  type TeacherContract,
+} from "@ooc/domain";
 
 /** A detached copy, the way a row read back from the database would be. */
 function copy<T extends object>(entity: T): T {
@@ -73,5 +82,56 @@ export class FakeStaffAccessRepository implements IStaffAccessRepository {
 
   async unban(userId: string): Promise<void> {
     this.unbanned.push(userId);
+  }
+}
+
+/** In-memory `teacher_contracts`, append-only like the table. */
+export class FakeTeacherContractRepository implements ITeacherContractRepository {
+  public readonly rows: TeacherContract[] = [];
+
+  async create(contract: TeacherContract): Promise<TeacherContract> {
+    if (this.rows.some((row) => row.id === contract.id || row.objectKey === contract.objectKey)) {
+      throw new TeacherContractAlreadyFiledError();
+    }
+    this.rows.push(contract);
+    return contract;
+  }
+
+  async findForTeacher(teacherId: string, contractId: string): Promise<TeacherContract | null> {
+    return this.rows.find((row) => row.id === contractId && row.teacherId === teacherId) ?? null;
+  }
+}
+
+/** The bucket, as a map of key → bytes. */
+export class FakeTeacherContractStorage implements ITeacherContractStorage {
+  public readonly objects = new Map<string, Uint8Array>();
+  public readonly targets: { objectKey: string; contentType: string; maxBytes: number }[] = [];
+  public readonly deleted: string[] = [];
+  public readonly downloads: { objectKey: string; fileName: string; expiresInSeconds: number }[] = [];
+
+  async createUploadTarget(params: { objectKey: string; contentType: string; maxBytes: number }) {
+    this.targets.push(params);
+    return { url: "https://bucket.example.com", fields: { key: params.objectKey } };
+  }
+
+  public readonly reads: string[] = [];
+
+  async size(objectKey: string) {
+    return this.objects.get(objectKey)?.length ?? null;
+  }
+
+  async read(objectKey: string) {
+    this.reads.push(objectKey);
+    return this.objects.get(objectKey) ?? new Uint8Array();
+  }
+
+  async delete(objectKey: string): Promise<void> {
+    this.objects.delete(objectKey);
+    this.deleted.push(objectKey);
+  }
+
+  async createDownloadUrl(params: { objectKey: string; fileName: string; expiresInSeconds: number }) {
+    this.downloads.push(params);
+    return `https://bucket.example.com/${params.objectKey}?signed`;
   }
 }

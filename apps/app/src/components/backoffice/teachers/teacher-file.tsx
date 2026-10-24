@@ -14,8 +14,6 @@ import { COUNTRIES, countryName, flagEmoji } from '@/lib/geo'
 import {
   formatDate,
   formatDateRange,
-  formatDateTime,
-  formatFileSize,
   initials,
   type Locale,
 } from '@/lib/format'
@@ -31,7 +29,6 @@ import {
   thClass,
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
-import { ContractBadge } from '@/components/backoffice/contract-badge'
 import { PhoneField } from '@/components/backoffice/phone-field'
 import {
   classGroupTone,
@@ -43,6 +40,7 @@ import { AvailabilityFields, slotsAreValid } from './availability-fields'
 import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
 import { FieldMessage } from '../field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { ContractSection } from './contract-section'
 import { WeekGrid } from '@/components/backoffice/week-grid'
 
 type Tab = 'data' | 'availability' | 'class_groups'
@@ -78,12 +76,15 @@ export function TeacherFile({
   teacher,
   catalogue,
   canEdit,
+  canOpenContracts,
   classGroupBase = '/backoffice/class-groups',
 }: {
   teacher: TeacherDetail
   /** Every language the catalog offers — what a teacher may be cleared for. */
   catalogue: CourseLanguage[]
   canEdit: boolean
+  /** Downloads a filed contract — the roster's readers, not the teacher (OOC-81). */
+  canOpenContracts: boolean
   /**
    * Where a class group of the file opens. The same ficha is read by
    * coordination in the backoffice and by the teacher in their own portal,
@@ -519,55 +520,12 @@ export function TeacherFile({
           {/* The contract, on the same tab as the person it binds. Its own
               block rather than a field, because "no contract on file" has to
               read as a finding and not as an empty cell. */}
-          <div className="mt-5 border-t border-line pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('teachers.section_contract')}
-              </p>
-              {/* Nothing to warn about off the roster: the countdown is there
-                  to stop somebody teaching on a lapsed contract, and nobody
-                  inactive is teaching. The document itself stays on file. */}
-              {status === 'active' ? (
-                <ContractBadge
-                  contract={teacher.contract}
-                  daysLeft={teacher.contractDaysLeft}
-                  alertDays={teacher.contractAlertDays}
-                />
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  {t('teachers.contract_inactive')}
-                </span>
-              )}
-            </div>
-
-            {teacher.contract ? (
-              <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-sky-soft px-3 py-2.5">
-                <BoIcon name="doc" size={16} className="shrink-0 text-brand-blue" />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm font-semibold text-ink">
-                    {teacher.contract.fileName}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {t('teachers.contract_file_meta', {
-                      date: formatDateTime(teacher.contract.uploadedAt, locale),
-                      size: formatFileSize(teacher.contract.fileSizeBytes, locale),
-                    })}
-                  </span>
-                </span>
-                <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
-                  {formatDateRange(
-                    teacher.contract.startsAt,
-                    teacher.contract.endsAt,
-                    locale,
-                  )}
-                </span>
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-muted-foreground">
-                {t('teachers.contract_none_body')}
-              </p>
-            )}
-          </div>
+          <ContractSection
+            teacher={teacher}
+            status={status}
+            canEdit={canEdit}
+            canOpen={canOpenContracts}
+          />
         </Card>
       )}
 
