@@ -5,7 +5,8 @@ import { container } from "@/container.js";
 import { TEACHER_READ_ROLES } from "./teacherRoles.js";
 
 /**
- * A five-minute download link for one filed contract (OOC-81). The contract
+ * A five-minute download link for a contract filed as a PDF (OOC-81); one
+ * generated from the template (OOC-124) prints via `…/document`. The contract
  * must belong to the teacher in the URL. Every call is written to audit_log.
  * The teacher themself does not download here — only the panel that reads
  * the roster.

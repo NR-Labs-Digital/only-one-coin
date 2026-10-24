@@ -5,8 +5,6 @@ import {
   Teacher,
   TeacherAlreadyRegisteredError,
   TeacherContract,
-  TeacherContractAlreadyFiledError,
-  teacherContractObjectKey,
   type CreateTeacherDTO,
 } from "@ooc/domain";
 import { eq, sql } from "drizzle-orm";
@@ -17,6 +15,7 @@ import type { Db } from "@/infra/db/client.js";
 import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { DrizzleClassGroupRepository } from "@/infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
+import { DrizzleDocumentTemplateRepository } from "@/infra/persistence/document/DrizzleDocumentTemplateRepository.js";
 import { DrizzleTeacherContractRepository } from "./DrizzleTeacherContractRepository.js";
 import { DrizzleTeacherRepository } from "./DrizzleTeacherRepository.js";
 import { GetTeacherQuery } from "./GetTeacherQuery.js";
@@ -286,7 +285,7 @@ describe("ListTeachersQuery", () => {
       const anaRow = roster.items.find((row) => row.id === ana.id)!;
       expect(anaRow.activeClassGroups).toBe(1);
       expect(anaRow.studentCount).toBe(12);
-      expect(anaRow.contract?.fileName).toBe("contrato.pdf");
+      expect(anaRow.contract?.file?.name).toBe("contrato.pdf");
       expect(anaRow.contractDaysLeft).toBeGreaterThan(300);
 
       const luisRow = roster.items.find((row) => row.id === luis.id)!;
@@ -358,22 +357,19 @@ describe("GetTeacherQuery", () => {
   });
 });
 
-describe("DrizzleTeacherContractRepository (OOC-81)", () => {
-  const FIRST = "018f2b5c-9000-7000-8000-0000000000c1";
-  const SECOND = "018f2b5c-9000-7000-8000-0000000000c2";
+describe("DrizzleTeacherContractRepository (OOC-124)", () => {
+  const VERSION = "018f2b5c-9000-7000-8000-0000000000d1";
 
-  function filing(teacherId: string, id: string, endsOn: string): TeacherContract {
-    return TeacherContract.file({
-      id,
+  function recording(teacherId: string, endsOn: string): TeacherContract {
+    return TeacherContract.record({
       teacherId,
-      objectKey: teacherContractObjectKey(teacherId, id),
-      fileSizeBytes: 2048,
-      uploadedBy: UPLOADER,
-      contract: { fileName: `contrato-${id.slice(-2)}.pdf`, startsOn: "2026-01-01", endsOn },
+      templateVersionId: VERSION,
+      recordedBy: UPLOADER,
+      period: { startsOn: "2026-01-01", endsOn },
     });
   }
 
-  it("files, reads back per teacher, and the file lists every filing newest first", async () => {
+  it("records a generated contract, reads it back per teacher, and the file lists every contract newest first", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
       const contracts = new DrizzleTeacherContractRepository(tx);
@@ -382,35 +378,61 @@ describe("DrizzleTeacherContractRepository (OOC-81)", () => {
         new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx)),
         new ListClassGroupsQuery(tx),
       );
+      await new DrizzleDocumentTemplateRepository(tx).publish({
+        id: VERSION,
+        kind: "teacher_contract",
+        body: "<p>v1</p>",
+        publishedBy: UPLOADER,
+      });
       const ana = await teachers.create(Teacher.create(ANA));
       const luis = await teachers.create(Teacher.create(LUIS));
 
-      const first = await contracts.create(filing(ana.id, FIRST, "2026-06-30"));
-      await contracts.create(filing(ana.id, SECOND, "2026-12-31"));
+      // One filed under OOC-81, then one generated — the generated is in force.
+      await fileContract(tx, ana.id, new Date("2026-06-30T00:00:00.000Z"), new Date(Date.now() - DAY_MS));
+      const generated = await contracts.create(recording(ana.id, "2026-12-31"));
 
-      expect(first.endsOn.toISOString()).toBe("2026-06-30T00:00:00.000Z");
-      expect((await contracts.findForTeacher(ana.id, FIRST))?.fileName).toBe("contrato-c1.pdf");
-      expect(await contracts.findForTeacher(luis.id, FIRST)).toBeNull();
+      const read = await contracts.findForTeacher(ana.id, generated.id);
+      expect(read).toMatchObject({ file: null, templateVersionId: VERSION, recordedBy: UPLOADER });
+      expect(read?.endsOn.toISOString()).toBe("2026-12-31T00:00:00.000Z");
+      expect(await contracts.findForTeacher(luis.id, generated.id)).toBeNull();
 
       const file = await get.run(ana.id);
-      // One transaction fixes `now()`, so both share `created_at` and the id
-      // (UUIDv7, later is larger) breaks the tie — the same order the roster uses.
-      expect(file?.contracts.map((contract) => contract.id)).toEqual([SECOND, FIRST]);
-      expect(file?.contract?.id).toBe(file?.contracts[0]?.id);
+      expect(file?.contracts).toHaveLength(2);
+      expect(file?.contract).toMatchObject({ id: generated.id, file: null, templateVersion: 1 });
+      expect(file?.contracts[1]).toMatchObject({
+        file: { name: "contrato.pdf", sizeBytes: 1024 },
+        templateVersion: null,
+      });
     });
   });
 
-  it("refuses filing the same upload twice", async () => {
+  it("refuses a row with neither a file nor a template version", async () => {
     await rolledBack(async (tx) => {
-      const teachers = new DrizzleTeacherRepository(tx);
-      const contracts = new DrizzleTeacherContractRepository(tx);
-      const ana = await teachers.create(Teacher.create(ANA));
-
-      await contracts.create(filing(ana.id, FIRST, "2026-06-30"));
+      const ana = await new DrizzleTeacherRepository(tx).create(Teacher.create(ANA));
       // Last statement: the refused insert aborts the surrounding transaction.
-      await expect(contracts.create(filing(ana.id, FIRST, "2026-06-30"))).rejects.toBeInstanceOf(
-        TeacherContractAlreadyFiledError,
-      );
+      await expect(
+        tx.insert(teacherContracts).values({
+          teacherId: ana.id,
+          startsOn: new Date("2026-01-01T00:00:00.000Z"),
+          endsOn: new Date("2026-12-31T00:00:00.000Z"),
+          uploadedBy: UPLOADER,
+        }),
+      ).rejects.toMatchObject({ cause: expect.objectContaining({ constraint: "teacher_contracts_source_check" }) });
+    });
+  });
+
+  it("refuses half a file", async () => {
+    await rolledBack(async (tx) => {
+      const ana = await new DrizzleTeacherRepository(tx).create(Teacher.create(ANA));
+      await expect(
+        tx.insert(teacherContracts).values({
+          teacherId: ana.id,
+          objectKey: `teacher-contracts/${ana.id}/half`,
+          startsOn: new Date("2026-01-01T00:00:00.000Z"),
+          endsOn: new Date("2026-12-31T00:00:00.000Z"),
+          uploadedBy: UPLOADER,
+        }),
+      ).rejects.toMatchObject({ cause: expect.objectContaining({ constraint: "teacher_contracts_file_check" }) });
     });
   });
 });

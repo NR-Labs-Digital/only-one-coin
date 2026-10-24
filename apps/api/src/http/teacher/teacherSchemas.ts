@@ -14,12 +14,14 @@ const WeeklySlotResponseSchema = z.object({
 
 export const TeacherContractResponseSchema = z.object({
   id: z.string().uuid(),
-  fileName: z.string(),
-  fileSizeBytes: z.number().int(),
-  uploadedAt: z.string(),
+  recordedAt: z.string(),
   /** Calendar dates, `YYYY-MM-DD`. */
   startsAt: z.string(),
   endsAt: z.string(),
+  /** The PDF of a contract filed under OOC-81 — opens via `…/file`. */
+  file: z.object({ name: z.string(), sizeBytes: z.number().int() }).nullable(),
+  /** The template version a generated contract prints from — via `…/document` (OOC-124). */
+  templateVersion: z.number().int().nullable(),
 });
 
 export const TeacherRowResponseSchema = z.object({
@@ -47,7 +49,7 @@ export const TeacherRowResponseSchema = z.object({
 export const TeacherDetailResponseSchema = TeacherRowResponseSchema.extend({
   availability: z.array(WeeklySlotResponseSchema),
   classGroups: z.array(ClassGroupItemSchema),
-  /** Every filing, newest first; the first is `contract` (OOC-81). */
+  /** Every contract, newest first; the first is `contract` (OOC-81, OOC-124). */
   contracts: z.array(TeacherContractResponseSchema),
   /** The backoffice's alert window (OOC-41), for the contract badge. */
   contractAlertDays: z.number().int(),
@@ -77,11 +79,11 @@ const day = (date: Date) => date.toISOString().slice(0, 10);
 export function serializeContract(contract: TeacherContractSummary) {
   return {
     id: contract.id,
-    fileName: contract.fileName,
-    fileSizeBytes: contract.fileSizeBytes,
-    uploadedAt: contract.uploadedAt.toISOString(),
+    recordedAt: contract.recordedAt.toISOString(),
     startsAt: day(contract.startsOn),
     endsAt: day(contract.endsOn),
+    file: contract.file,
+    templateVersion: contract.templateVersion,
   };
 }
 

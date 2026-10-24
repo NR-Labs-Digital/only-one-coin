@@ -1,16 +1,22 @@
-import { teacherAvailability, teacherContracts } from "@ooc/db";
+import { documentTemplateVersions, teacherAvailability, teacherContracts } from "@ooc/db";
 import type { WeeklySlot } from "@ooc/domain";
 import { asc, desc, eq } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import type { ClassGroupItem, ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
 import { toHourMinute } from "./DrizzleTeacherRepository.js";
-import type { ListTeachersQuery, TeacherContractSummary, TeacherListRow } from "./ListTeachersQuery.js";
+import {
+  contractSummaryColumns,
+  toContractSummary,
+  type ListTeachersQuery,
+  type TeacherContractSummary,
+  type TeacherListRow,
+} from "./ListTeachersQuery.js";
 
 export interface TeacherDetail extends TeacherListRow {
   availability: WeeklySlot[];
   /** Every class group allocated to them, retired ones included and flagged. */
   classGroups: ClassGroupItem[];
-  /** Every filing, newest first — the first one is `contract` (OOC-81). */
+  /** Every contract, newest first — the first one is `contract` (OOC-81, OOC-124). */
   contracts: TeacherContractSummary[];
 }
 
@@ -42,15 +48,9 @@ export class GetTeacherQuery {
         .orderBy(asc(teacherAvailability.weekday), asc(teacherAvailability.startTime)),
       this.classGroups.run({ teacherId: id }),
       this.db
-        .select({
-          id: teacherContracts.id,
-          fileName: teacherContracts.fileName,
-          fileSizeBytes: teacherContracts.fileSizeBytes,
-          uploadedAt: teacherContracts.createdAt,
-          startsOn: teacherContracts.startsOn,
-          endsOn: teacherContracts.endsOn,
-        })
+        .select(contractSummaryColumns())
         .from(teacherContracts)
+        .leftJoin(documentTemplateVersions, eq(documentTemplateVersions.id, teacherContracts.templateVersionId))
         .where(eq(teacherContracts.teacherId, id))
         .orderBy(desc(teacherContracts.createdAt), desc(teacherContracts.id)),
     ]);
@@ -63,7 +63,7 @@ export class GetTeacherQuery {
         endTime: toHourMinute(slot.endTime),
       })),
       classGroups,
-      contracts,
+      contracts: contracts.map(toContractSummary),
     };
   }
 }

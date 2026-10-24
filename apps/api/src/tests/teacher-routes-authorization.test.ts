@@ -24,10 +24,11 @@ const CASES: [string, string, Role[]][] = [
   ["PUT", `/api/v1/teachers/${ID}/availability`, [...NEVER, "analyst"]],
   ["PUT", `/api/v1/teachers/${ID}/status`, [...NEVER, "analyst"]],
   ["POST", "/api/v1/teachers", [...NEVER, "analyst", "academic_supervisor"]],
-  // Contracts (OOC-81): filing is an edit; opening is a read, not for the teacher.
-  ["POST", `/api/v1/teachers/${ID}/contract-uploads`, [...NEVER, "analyst"]],
-  ["POST", `/api/v1/teachers/${ID}/contracts`, [...NEVER, "analyst"]],
+  // Contracts (OOC-124): generating records one, so it is an edit; opening a
+  // filed one or printing a recorded one again is a read, not for the teacher.
+  ["POST", `/api/v1/teachers/${ID}/contract-document`, [...NEVER, "analyst"]],
   ["GET", `/api/v1/teachers/${ID}/contracts/${ID}/file`, NEVER],
+  ["GET", `/api/v1/teachers/${ID}/contracts/${ID}/document`, NEVER],
 ];
 
 const FLAT = CASES.flatMap(([method, url, refused]) => refused.map((role) => [method, url, role] as const));

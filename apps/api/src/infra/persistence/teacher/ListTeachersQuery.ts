@@ -1,4 +1,4 @@
-import { classGroups, teacherContracts, teacherLanguages, teachers } from "@ooc/db";
+import { classGroups, documentTemplateVersions, teacherContracts, teacherLanguages, teachers } from "@ooc/db";
 import type { IPlatformSettingsRepository, TeacherStatus } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -8,11 +8,46 @@ export const TEACHER_DIRECTORY_PAGE_SIZE = 15;
 
 export interface TeacherContractSummary {
   id: string;
-  fileName: string;
-  fileSizeBytes: number;
-  uploadedAt: Date;
+  /** When it was recorded — generated (OOC-124) or filed (OOC-81). */
+  recordedAt: Date;
   startsOn: Date;
   endsOn: Date;
+  /** The uploaded PDF of a contract filed under OOC-81; null for a generated one. */
+  file: { name: string; sizeBytes: number } | null;
+  /** The template version a generated contract prints from; null for a filed one. */
+  templateVersion: number | null;
+}
+
+/** The columns a contract summary is read from, for the roster and the file alike. */
+export function contractSummaryColumns() {
+  return {
+    id: teacherContracts.id,
+    recordedAt: teacherContracts.createdAt,
+    startsOn: teacherContracts.startsOn,
+    endsOn: teacherContracts.endsOn,
+    fileName: teacherContracts.fileName,
+    fileSizeBytes: teacherContracts.fileSizeBytes,
+    templateVersion: documentTemplateVersions.version,
+  };
+}
+
+export function toContractSummary(row: {
+  id: string;
+  recordedAt: Date;
+  startsOn: Date;
+  endsOn: Date;
+  fileName: string | null;
+  fileSizeBytes: number | null;
+  templateVersion: number | null;
+}): TeacherContractSummary {
+  return {
+    id: row.id,
+    recordedAt: row.recordedAt,
+    startsOn: row.startsOn,
+    endsOn: row.endsOn,
+    file: row.fileName !== null && row.fileSizeBytes !== null ? { name: row.fileName, sizeBytes: row.fileSizeBytes } : null,
+    templateVersion: row.templateVersion,
+  };
 }
 
 export interface TeacherListRow {
@@ -91,19 +126,15 @@ export class ListTeachersQuery {
     private readonly settings: IPlatformSettingsRepository,
   ) {}
 
-  /** The latest filing per teacher — "contrato vigente" is the most recent (0025). */
+  /** The latest contract per teacher — "contrato vigente" is the most recent (0025). */
   private latestContract() {
     return this.db
       .selectDistinctOn([teacherContracts.teacherId], {
         teacherId: teacherContracts.teacherId,
-        id: teacherContracts.id,
-        fileName: teacherContracts.fileName,
-        fileSizeBytes: teacherContracts.fileSizeBytes,
-        uploadedAt: teacherContracts.createdAt,
-        startsOn: teacherContracts.startsOn,
-        endsOn: teacherContracts.endsOn,
+        ...contractSummaryColumns(),
       })
       .from(teacherContracts)
+      .leftJoin(documentTemplateVersions, eq(documentTemplateVersions.id, teacherContracts.templateVersionId))
       .orderBy(teacherContracts.teacherId, desc(teacherContracts.createdAt), desc(teacherContracts.id))
       .as("contract");
   }
@@ -125,11 +156,12 @@ export class ListTeachersQuery {
           Number,
         ),
         contractId: contract.id,
-        contractFileName: contract.fileName,
-        contractFileSizeBytes: contract.fileSizeBytes,
-        contractUploadedAt: contract.uploadedAt,
+        contractRecordedAt: contract.recordedAt,
         contractStartsOn: contract.startsOn,
         contractEndsOn: contract.endsOn,
+        contractFileName: contract.fileName,
+        contractFileSizeBytes: contract.fileSizeBytes,
+        contractTemplateVersion: contract.templateVersion,
         contractDaysLeft: this.daysLeft(contract),
       })
       .from(teachers)
@@ -246,19 +278,18 @@ function toListRow(row: SelectedRow): TeacherListRow {
   const { teacher } = row;
   const contract: TeacherContractSummary | null =
     row.contractId !== null &&
-    row.contractFileName !== null &&
-    row.contractFileSizeBytes !== null &&
-    row.contractUploadedAt !== null &&
+    row.contractRecordedAt !== null &&
     row.contractStartsOn !== null &&
     row.contractEndsOn !== null
-      ? {
+      ? toContractSummary({
           id: row.contractId,
-          fileName: row.contractFileName,
-          fileSizeBytes: row.contractFileSizeBytes,
-          uploadedAt: row.contractUploadedAt,
+          recordedAt: row.contractRecordedAt,
           startsOn: row.contractStartsOn,
           endsOn: row.contractEndsOn,
-        }
+          fileName: row.contractFileName,
+          fileSizeBytes: row.contractFileSizeBytes,
+          templateVersion: row.contractTemplateVersion,
+        })
       : null;
 
   return {

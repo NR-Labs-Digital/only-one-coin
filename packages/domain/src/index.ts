@@ -38,32 +38,13 @@ export type { ITeacherRepository } from "./teacher/TeacherRepository.js";
 export {
   TeacherAlreadyRegisteredError,
   TeacherNotFoundError,
-  TeacherContractUploadMissingError,
-  TeacherContractInvalidFileError,
-  TeacherContractAlreadyFiledError,
   TeacherContractNotFoundError,
 } from "./teacher/errors.js";
-export {
-  TeacherContract,
-  TeacherContractPropsSchema,
-  FileTeacherContractSchema,
-  TEACHER_CONTRACT_CONTENT_TYPE,
-  TEACHER_CONTRACT_MAX_BYTES,
-  teacherContractObjectKey,
-  looksLikePdf,
-} from "./teacher/TeacherContract.js";
-export type { TeacherContractProps, FileTeacherContractDTO } from "./teacher/TeacherContract.js";
+export { TeacherContract, TeacherContractPropsSchema, TeacherContractPeriodSchema } from "./teacher/TeacherContract.js";
+export type { TeacherContractProps, TeacherContractFile, TeacherContractPeriodDTO } from "./teacher/TeacherContract.js";
 export type { ITeacherContractRepository } from "./teacher/TeacherContractRepository.js";
-export type { ITeacherContractStorage, PresignedContractUpload } from "./teacher/TeacherContractStorage.js";
-export type { IPdfInspector } from "./teacher/PdfInspector.js";
-export {
-  RequestTeacherContractUploadUseCase,
-  FileTeacherContractUseCase,
-  OpenTeacherContractUseCase,
-  TEACHER_CONTRACT_URL_TTL_SECONDS,
-  type RequestTeacherContractUploadOutput,
-  type FileTeacherContractInput,
-} from "./teacher/TeacherContractUseCases.js";
+export type { ITeacherContractStorage } from "./teacher/TeacherContractStorage.js";
+export { OpenTeacherContractUseCase, TEACHER_CONTRACT_URL_TTL_SECONDS } from "./teacher/TeacherContractUseCases.js";
 export { RegisterTeacherUseCase, type RegisterTeacherInput } from "./teacher/RegisterTeacherUseCase.js";
 export { UpdateTeacherUseCase, type UpdateTeacherInput } from "./teacher/UpdateTeacherUseCase.js";
 export {

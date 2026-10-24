@@ -5,7 +5,7 @@ import {
   type DocumentTemplateDraft,
   type IDocumentTemplateRepository,
 } from "@ooc/domain";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 
@@ -58,6 +58,15 @@ export class DrizzleDocumentTemplateRepository implements IDocumentTemplateRepos
       .from(documentTemplateVersions)
       .where(eq(documentTemplateVersions.kind, kind))
       .orderBy(desc(documentTemplateVersions.version))
+      .limit(1);
+    return row ? toVersion(row) : null;
+  }
+
+  async findVersion(kind: string, id: string): Promise<DocumentTemplateVersion | null> {
+    const [row] = await this.db
+      .select()
+      .from(documentTemplateVersions)
+      .where(and(eq(documentTemplateVersions.kind, kind), eq(documentTemplateVersions.id, id)))
       .limit(1);
     return row ? toVersion(row) : null;
   }

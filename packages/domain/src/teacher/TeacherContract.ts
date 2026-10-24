@@ -1,37 +1,9 @@
+// TODO: switch to native crypto.randomUUIDv7() once engines.node requires >=26 (LTS ~out/2026)
+import { v7 as uuid } from "uuid";
 import { z } from "zod";
 import { BaseModel, BaseModelPropsSchema } from "../shared/base/BaseModel.js";
 import { InvalidFieldsError } from "../shared/base/errors/InvalidFieldsError.js";
 import { toFieldErrors } from "../student/fields.js";
-
-/**
- * A signed contract is filed as a PDF — the scan of the paper both sides
- * signed. One type keeps the check honest: the bytes are sniffed for `%PDF-`
- * before a row is written, and there is no image to re-encode.
- */
-export const TEACHER_CONTRACT_CONTENT_TYPE = "application/pdf";
-
-/** The bucket's own POST policy refuses anything larger (`content-length-range`). */
-export const TEACHER_CONTRACT_MAX_BYTES = 10 * 1024 * 1024;
-
-/** Every PDF opens with these five bytes. */
-export const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d] as const;
-
-const FILE_NAME_MAX = 200;
-
-/**
- * Where an upload lands, built on the server from the teacher in the URL and
- * an id the server minted — never a key or a name the client chose (CLAUDE.md
- * §8). Filing rebuilds the same key from the same two ids, so a client cannot
- * point a filing at an object under another teacher.
- */
-export function teacherContractObjectKey(teacherId: string, contractUploadId: string): string {
-  return `teacher-contracts/${teacherId}/${contractUploadId}`;
-}
-
-/** True when the bytes start like a PDF. */
-export function looksLikePdf(head: Uint8Array): boolean {
-  return PDF_MAGIC.every((byte, index) => head[index] === byte);
-}
 
 /**
  * `YYYY-MM-DD`, a calendar day — stored as midnight UTC, like a birth date.
@@ -47,23 +19,9 @@ const CalendarDayField = z
   }, "invalid")
   .transform((value) => new Date(`${value}T00:00:00Z`));
 
-/**
- * The name the person sees on the file. Only what is after the last slash or
- * backslash — some browsers hand over a path — and never empty.
- */
-const ContractFileNameField = z
-  .string()
-  .transform((value) => value.split(/[\\/]/).pop()!.trim())
-  .pipe(z.string().min(1, "required").max(FILE_NAME_MAX, "too_long"));
-
-/**
- * What filing needs besides the bytes: the name to show and the period the
- * contract covers. File, start and end come together or not at all (CLAUDE.md
- * §1) — all three are required here, and the bytes are checked by the usecase.
- */
-export const FileTeacherContractSchema = z
+/** The period a contract covers, as the panel sends it. */
+export const TeacherContractPeriodSchema = z
   .object({
-    fileName: ContractFileNameField,
     startsOn: CalendarDayField,
     endsOn: CalendarDayField,
   })
@@ -73,67 +31,86 @@ export const FileTeacherContractSchema = z
     }
   });
 
-export type FileTeacherContractDTO = z.input<typeof FileTeacherContractSchema>;
+export type TeacherContractPeriodDTO = z.input<typeof TeacherContractPeriodSchema>;
+
+/**
+ * The PDF of a contract filed before OOC-124, when the signed copy was
+ * uploaded (OOC-81). Rows recorded since then have none.
+ */
+export interface TeacherContractFile {
+  objectKey: string;
+  fileName: string;
+  fileSizeBytes: number;
+}
 
 export const TeacherContractPropsSchema = BaseModelPropsSchema.extend({
   teacherId: z.string().uuid(),
-  objectKey: z.string().min(1),
-  fileName: z.string().min(1),
-  fileSizeBytes: z.number().int().positive(),
+  file: z
+    .object({
+      objectKey: z.string().min(1),
+      fileName: z.string().min(1),
+      fileSizeBytes: z.number().int().positive(),
+    })
+    .nullable(),
+  /** The published template version the contract was generated from. */
+  templateVersionId: z.string().uuid().nullable(),
   startsOn: z.coerce.date(),
   endsOn: z.coerce.date(),
-  /** Better Auth "user".id of whoever filed it. */
-  uploadedBy: z.string().min(1),
+  /** Better Auth "user".id of whoever recorded it. */
+  recordedBy: z.string().min(1),
 });
 
 export type TeacherContractProps = z.infer<typeof TeacherContractPropsSchema>;
 
 /**
- * A signed contract, filed (OOC-81). Append-only, like the table (0025):
- * correcting a filing is filing a new one, and the newest is the one in force.
- * No `update`, no `softDelete` — there is nothing on it to change.
+ * A teacher's contract: the period it covers, which is what the roster's
+ * alert watches (CLAUDE.md §1). Since OOC-124 it is recorded when the contract
+ * is generated, with the template version the text came from, so the same
+ * text prints again; the signed copy is kept outside the platform (decision
+ * of 23/10/2026). Rows filed under OOC-81 carry the uploaded PDF instead.
+ *
+ * Append-only, like the table (0025): correcting one is recording a new one,
+ * and the newest is the one in force. No `update`, no `softDelete`.
  */
 export class TeacherContract extends BaseModel {
   public readonly teacherId: string;
-  public readonly objectKey: string;
-  public readonly fileName: string;
-  public readonly fileSizeBytes: number;
+  public readonly file: TeacherContractFile | null;
+  public readonly templateVersionId: string | null;
   public readonly startsOn: Date;
   public readonly endsOn: Date;
-  public readonly uploadedBy: string;
+  public readonly recordedBy: string;
 
   constructor(props: TeacherContractProps) {
     super(props);
     this.teacherId = props.teacherId;
-    this.objectKey = props.objectKey;
-    this.fileName = props.fileName;
-    this.fileSizeBytes = props.fileSizeBytes;
+    this.file = props.file;
+    this.templateVersionId = props.templateVersionId;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
-    this.uploadedBy = props.uploadedBy;
+    this.recordedBy = props.recordedBy;
   }
 
-  /** Throws `InvalidFieldsError` (paths under `contract.`) when the form breaks a rule. */
-  static file(params: {
-    id: string;
+  /**
+   * The contract generated from `templateVersionId` for this period. Throws
+   * `InvalidFieldsError` (paths under `contract.`) when the period breaks a rule.
+   */
+  static record(params: {
     teacherId: string;
-    objectKey: string;
-    fileSizeBytes: number;
-    uploadedBy: string;
-    contract: FileTeacherContractDTO;
+    templateVersionId: string;
+    recordedBy: string;
+    period: TeacherContractPeriodDTO;
   }): TeacherContract {
-    const parsed = FileTeacherContractSchema.safeParse(params.contract);
+    const parsed = TeacherContractPeriodSchema.safeParse(params.period);
     if (!parsed.success) throw new InvalidFieldsError(toFieldErrors(parsed.error.issues, "contract"));
 
     return new TeacherContract({
-      id: params.id,
+      id: uuid(),
       teacherId: params.teacherId,
-      objectKey: params.objectKey,
-      fileName: parsed.data.fileName,
-      fileSizeBytes: params.fileSizeBytes,
+      file: null,
+      templateVersionId: params.templateVersionId,
       startsOn: parsed.data.startsOn,
       endsOn: parsed.data.endsOn,
-      uploadedBy: params.uploadedBy,
+      recordedBy: params.recordedBy,
     });
   }
 }

@@ -1,30 +1,21 @@
 import {
-  FileTeacherContractUseCase,
   InvalidFieldsError,
   OpenTeacherContractUseCase,
-  RequestTeacherContractUploadUseCase,
   Teacher,
-  TEACHER_CONTRACT_CONTENT_TYPE,
-  TEACHER_CONTRACT_MAX_BYTES,
-  TeacherContractAlreadyFiledError,
-  TeacherContractInvalidFileError,
+  TeacherContract,
   TeacherContractNotFoundError,
-  TeacherContractUploadMissingError,
-  TeacherNotFoundError,
-  teacherContractObjectKey,
   type CreateTeacherDTO,
 } from "@ooc/domain";
-import { PDFDocument } from "pdf-lib";
-import { beforeAll, describe, expect, it } from "vitest";
-import { PdfLibInspector } from "@/infra/pdf/PdfLibInspector.js";
+import { describe, expect, it } from "vitest";
 import { contentDisposition } from "@/infra/storage/TigrisTeacherContractStorage.js";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
-import { FakeTeacherContractRepository, FakeTeacherContractStorage, FakeTeacherRepository } from "./fakes/teacher.js";
+import { FakeTeacherContractRepository, FakeTeacherContractStorage } from "./fakes/teacher.js";
 
 /**
- * OOC-81: a signed contract goes straight to the bucket, is filed with the
- * period it covers, and opens through a five-minute link. Only a PDF is
- * filed; every filing and every opening is in the audit log.
+ * OOC-124: a contract is recorded as the period it covers and the template
+ * version it was generated from — nothing is uploaded. The contracts filed as
+ * a PDF under OOC-81 still open through a five-minute link, and every opening
+ * is in the audit log. Generating is in `document-templates.test.ts`.
  */
 
 const ANA: CreateTeacherDTO = {
@@ -43,234 +34,112 @@ const ANA: CreateTeacherDTO = {
   availability: [],
 };
 
-/** A real one-page PDF, built once. */
-let PDF: Uint8Array;
-/**
- * A header with nothing behind it — byte for byte the 45-byte file the first
- * cut of this feature accepted and filed. It starts with `%PDF-`, ends with
- * `%%EOF`, and has no page to open.
- */
-const HOLLOW_PDF = new TextEncoder().encode("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
-
-beforeAll(async () => {
-  const document = await PDFDocument.create();
-  document.addPage();
-  PDF = await document.save();
-});
-const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-const UPLOAD_ID = "018f2b5c-0000-7000-8000-0000000000aa";
-const FORM = { fileName: "Contrato Ana Quispe 2026.pdf", startsOn: "2026-03-01", endsOn: "2026-12-31" };
+const VERSION_ID = "11111111-1111-4111-8111-111111111111";
+const FILED_ID = "018f2b5c-0000-7000-8000-0000000000aa";
+const OTHER_TEACHER = "018f2b5c-0000-7000-8000-0000000000bb";
 
 function setup() {
   const teacher = Teacher.create(ANA);
-  const teachers = new FakeTeacherRepository(teacher);
   const contracts = new FakeTeacherContractRepository();
   const storage = new FakeTeacherContractStorage();
   const audit = new FakeAuditLogRepository();
-  return {
-    teacher,
-    contracts,
-    storage,
-    audit,
-    key: teacherContractObjectKey(teacher.id, UPLOAD_ID),
-    request: new RequestTeacherContractUploadUseCase(teachers, storage),
-    file: new FileTeacherContractUseCase(teachers, contracts, storage, new PdfLibInspector(), audit),
-    open: new OpenTeacherContractUseCase(contracts, storage, audit),
-  };
+  const key = `teacher-contracts/${teacher.id}/${FILED_ID}`;
+  // A contract filed under OOC-81, the way the row reads back.
+  const filed = new TeacherContract({
+    id: FILED_ID,
+    teacherId: teacher.id,
+    file: { objectKey: key, fileName: "Contrato Ana Quispe 2026.pdf", fileSizeBytes: 2048 },
+    templateVersionId: null,
+    startsOn: new Date("2026-03-01T00:00:00Z"),
+    endsOn: new Date("2026-12-31T00:00:00Z"),
+    recordedBy: "staff-1",
+  });
+  return { teacher, contracts, storage, audit, key, filed, open: new OpenTeacherContractUseCase(contracts, storage, audit) };
 }
 
-describe("RequestTeacherContractUploadUseCase", () => {
-  it("mints a PDF-only, size-capped target under the teacher, writing nothing", async () => {
-    const { request, storage, teacher, contracts } = setup();
+describe("TeacherContract.record", () => {
+  it("records the period and the template version, with no file", () => {
+    const contract = TeacherContract.record({
+      teacherId: "018f2b5c-0000-7000-8000-000000000001",
+      templateVersionId: VERSION_ID,
+      recordedBy: "staff-1",
+      period: { startsOn: "2026-03-01", endsOn: "2026-12-31" },
+    });
 
-    const result = await request.run({ teacherId: teacher.id });
-
-    expect(storage.targets).toEqual([
-      {
-        objectKey: teacherContractObjectKey(teacher.id, result.contractUploadId),
-        contentType: TEACHER_CONTRACT_CONTENT_TYPE,
-        maxBytes: TEACHER_CONTRACT_MAX_BYTES,
-      },
-    ]);
-    expect(contracts.rows).toHaveLength(0);
+    expect(contract).toMatchObject({ file: null, templateVersionId: VERSION_ID, recordedBy: "staff-1" });
+    expect(contract.startsOn.toISOString()).toBe("2026-03-01T00:00:00.000Z");
+    expect(contract.endsOn.toISOString()).toBe("2026-12-31T00:00:00.000Z");
   });
 
-  it("refuses a teacher that is not on file", async () => {
-    const { request } = setup();
-    await expect(request.run({ teacherId: "018f2b5c-0000-7000-8000-0000000000ff" })).rejects.toBeInstanceOf(
-      TeacherNotFoundError,
+  it("refuses a period that ends before it starts, or a day that does not exist", () => {
+    const record = (startsOn: string, endsOn: string) =>
+      TeacherContract.record({
+        teacherId: "018f2b5c-0000-7000-8000-000000000001",
+        templateVersionId: VERSION_ID,
+        recordedBy: "staff-1",
+        period: { startsOn, endsOn },
+      });
+
+    expect(() => record("2026-12-31", "2026-03-01")).toThrow(InvalidFieldsError);
+    expect(() => record("2026-12-31", "2026-03-01")).toThrow(
+      expect.objectContaining({ fields: [{ path: "contract.endsOn", code: "invalid" }] }),
+    );
+    expect(() => record("", "2026-02-30")).toThrow(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          { path: "contract.startsOn", code: "invalid" },
+          { path: "contract.endsOn", code: "invalid" },
+        ]),
+      }),
     );
   });
 });
 
-describe("FileTeacherContractUseCase", () => {
-  it("files the PDF with its period, under the key the server built, and audits it", async () => {
-    const { file, storage, contracts, audit, teacher, key } = setup();
-    storage.objects.set(key, PDF);
+describe("OpenTeacherContractUseCase", () => {
+  it("signs a five-minute link to a filed contract under its name and audits the opening", async () => {
+    const { open, contracts, storage, audit, teacher, key, filed } = setup();
+    await contracts.create(filed);
 
-    const contract = await file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM });
+    const result = await open.run({ actorId: "staff-2", teacherId: teacher.id, contractId: FILED_ID });
 
-    expect(contract).toMatchObject({
-      id: UPLOAD_ID,
-      teacherId: teacher.id,
-      objectKey: key,
-      fileName: FORM.fileName,
-      fileSizeBytes: PDF.length,
-      uploadedBy: "staff-1",
-    });
-    expect(contract.startsOn.toISOString()).toBe("2026-03-01T00:00:00.000Z");
-    expect(contract.endsOn.toISOString()).toBe("2026-12-31T00:00:00.000Z");
-    expect(contracts.rows).toHaveLength(1);
+    expect(result.url).toContain(key);
+    expect(storage.downloads).toEqual([
+      { objectKey: key, fileName: "Contrato Ana Quispe 2026.pdf", expiresInSeconds: 300 },
+    ]);
     expect(audit.appended).toEqual([
       expect.objectContaining({
-        actorId: "staff-1",
-        action: "teacher.contract_filed",
+        actorId: "staff-2",
+        action: "teacher.contract_viewed",
         targetId: teacher.id,
-        metadata: { contractId: UPLOAD_ID },
+        metadata: { contractId: FILED_ID },
       }),
     ]);
   });
 
-  it("keeps only the name after the last path separator", async () => {
-    const { file, storage, teacher, key } = setup();
-    storage.objects.set(key, PDF);
-
-    const contract = await file.run({
-      actorId: "staff-1",
-      teacherId: teacher.id,
-      contractUploadId: UPLOAD_ID,
-      contract: { ...FORM, fileName: "C:\\fakepath\\contrato.pdf" },
-    });
-
-    expect(contract.fileName).toBe("contrato.pdf");
-  });
-
-  it("refuses an upload that never landed", async () => {
-    const { file, teacher, contracts } = setup();
+  it("answers 404 for a contract of another teacher, without signing anything", async () => {
+    const { open, contracts, storage, audit, filed } = setup();
+    await contracts.create(filed);
 
     await expect(
-      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
-    ).rejects.toBeInstanceOf(TeacherContractUploadMissingError);
-    expect(contracts.rows).toHaveLength(0);
-  });
-
-  it("refuses and removes a file that is not a PDF, whatever it was called", async () => {
-    const { file, storage, teacher, contracts, audit, key } = setup();
-    storage.objects.set(key, PNG);
-
-    await expect(
-      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
-    ).rejects.toBeInstanceOf(TeacherContractInvalidFileError);
-    expect(storage.deleted).toEqual([key]);
-    expect(contracts.rows).toHaveLength(0);
+      open.run({ actorId: "staff-2", teacherId: OTHER_TEACHER, contractId: FILED_ID }),
+    ).rejects.toBeInstanceOf(TeacherContractNotFoundError);
+    expect(storage.downloads).toHaveLength(0);
     expect(audit.appended).toHaveLength(0);
   });
 
-  it("refuses and removes a file that claims to be a PDF but has no page to open", async () => {
-    const { file, storage, teacher, contracts, key } = setup();
-    expect(HOLLOW_PDF.length).toBe(45);
-    storage.objects.set(key, HOLLOW_PDF);
-
-    await expect(
-      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
-    ).rejects.toBeInstanceOf(TeacherContractInvalidFileError);
-    expect(storage.deleted).toEqual([key]);
-    expect(contracts.rows).toHaveLength(0);
-  });
-
-  it("refuses a file over the cap without reading it", async () => {
-    const { file, storage, teacher, key } = setup();
-    storage.objects.set(key, new Uint8Array(TEACHER_CONTRACT_MAX_BYTES + 1));
-
-    await expect(
-      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
-    ).rejects.toBeInstanceOf(TeacherContractInvalidFileError);
-    expect(storage.reads).toHaveLength(0);
-    expect(storage.deleted).toEqual([key]);
-  });
-
-  it("refuses a period that ends before it starts, keeping the upload for a corrected try", async () => {
-    const { file, storage, teacher, contracts, key } = setup();
-    storage.objects.set(key, PDF);
-
-    const attempt = file.run({
-      actorId: "staff-1",
-      teacherId: teacher.id,
-      contractUploadId: UPLOAD_ID,
-      contract: { ...FORM, startsOn: "2026-12-31", endsOn: "2026-03-01" },
-    });
-
-    await expect(attempt).rejects.toBeInstanceOf(InvalidFieldsError);
-    await expect(attempt).rejects.toMatchObject({ fields: [{ path: "contract.endsOn", code: "invalid" }] });
-    expect(storage.objects.has(key)).toBe(true);
-    expect(contracts.rows).toHaveLength(0);
-  });
-
-  it("refuses a filing without a name or a date", async () => {
-    const { file, storage, teacher, key } = setup();
-    storage.objects.set(key, PDF);
-
-    await expect(
-      file.run({
-        actorId: "staff-1",
+  it("answers 404 for a generated contract — there is no file to open", async () => {
+    const { open, contracts, storage, teacher } = setup();
+    const generated = await contracts.create(
+      TeacherContract.record({
         teacherId: teacher.id,
-        contractUploadId: UPLOAD_ID,
-        contract: { fileName: "  ", startsOn: "", endsOn: "2026-02-30" },
+        templateVersionId: VERSION_ID,
+        recordedBy: "staff-1",
+        period: { startsOn: "2026-03-01", endsOn: "2026-12-31" },
       }),
-    ).rejects.toMatchObject({
-      fields: expect.arrayContaining([
-        { path: "contract.fileName", code: "required" },
-        { path: "contract.startsOn", code: "invalid" },
-        { path: "contract.endsOn", code: "invalid" },
-      ]),
-    });
-  });
-
-  it("only reaches uploads made for the teacher in the URL", async () => {
-    const { file, storage, teacher } = setup();
-    // Somebody else's upload, under another teacher's prefix.
-    storage.objects.set(teacherContractObjectKey("018f2b5c-0000-7000-8000-0000000000bb", UPLOAD_ID), PDF);
+    );
 
     await expect(
-      file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM }),
-    ).rejects.toBeInstanceOf(TeacherContractUploadMissingError);
-  });
-
-  it("refuses filing the same upload twice", async () => {
-    const { file, storage, teacher, key } = setup();
-    storage.objects.set(key, PDF);
-    const input = { actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM };
-
-    await file.run(input);
-    await expect(file.run(input)).rejects.toBeInstanceOf(TeacherContractAlreadyFiledError);
-  });
-});
-
-describe("OpenTeacherContractUseCase", () => {
-  it("signs a five-minute link under the filed name and audits the opening", async () => {
-    const { file, open, storage, audit, teacher, key } = setup();
-    storage.objects.set(key, PDF);
-    await file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM });
-
-    const result = await open.run({ actorId: "staff-2", teacherId: teacher.id, contractId: UPLOAD_ID });
-
-    expect(result.url).toContain(key);
-    expect(storage.downloads).toEqual([{ objectKey: key, fileName: FORM.fileName, expiresInSeconds: 300 }]);
-    expect(audit.appended.at(-1)).toMatchObject({
-      actorId: "staff-2",
-      action: "teacher.contract_viewed",
-      targetId: teacher.id,
-      metadata: { contractId: UPLOAD_ID },
-    });
-  });
-
-  it("answers 404 for a contract of another teacher, without signing anything", async () => {
-    const { file, open, storage, teacher, key } = setup();
-    storage.objects.set(key, PDF);
-    await file.run({ actorId: "staff-1", teacherId: teacher.id, contractUploadId: UPLOAD_ID, contract: FORM });
-
-    await expect(
-      open.run({ actorId: "staff-2", teacherId: "018f2b5c-0000-7000-8000-0000000000bb", contractId: UPLOAD_ID }),
+      open.run({ actorId: "staff-2", teacherId: teacher.id, contractId: generated.id }),
     ).rejects.toBeInstanceOf(TeacherContractNotFoundError);
     expect(storage.downloads).toHaveLength(0);
   });

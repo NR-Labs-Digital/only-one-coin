@@ -16,16 +16,18 @@ const CalendarDaySchema = z
 
 /**
  * The teacher contract, filled from the teacher file and the published
- * template (OOC-123), as a PDF download. Built on demand and never stored: the
- * signed copy is kept outside the platform (decision of 23/10/2026). Who may
- * generate it is who corrects the file — the analyst reads, never issues.
+ * template (OOC-123), as a PDF download. Generating it records the contract
+ * period (OOC-124) — the row the roster's alert watches — while the PDF itself
+ * is never stored: the signed copy is kept outside the platform (decision of
+ * 23/10/2026). Who may generate it is who corrects the file — the analyst
+ * reads, never issues.
  */
 export const generateTeacherContractRoute = RouteBuilder.post("/teachers/:teacherId/contract-document")
   .docs({
     tags: ["Teachers"],
-    summary: "Download the teacher contract as PDF",
+    summary: "Generate the teacher contract: record its period and download the PDF",
     description:
-      "Fills the published contract template with the teacher file and the given period. Responds with the PDF itself (application/pdf).",
+      "Fills the published contract template with the teacher file and the given period, records the contract (period, template version, who generated it) and responds with the PDF itself (application/pdf). Writes audit_log.",
   })
   .roles(...TEACHER_EDIT_ROLES)
   .params(TeacherParamsSchema)
@@ -35,7 +37,7 @@ export const generateTeacherContractRoute = RouteBuilder.post("/teachers/:teache
   .response(422, ErrorResponseSchema)
   .response(503, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { pdf, templateVersion } = await container.documents.teacherContract.generate({
+    const { pdf, contractId, templateVersion } = await container.documents.teacherContract.generate({
       actorId: request.currentUser!.id,
       teacherId: request.params.teacherId,
       startsOn: request.body.startsOn,
@@ -46,5 +48,6 @@ export const generateTeacherContractRoute = RouteBuilder.post("/teachers/:teache
       .header("Content-Type", "application/pdf")
       .header("Cache-Control", "no-store")
       .header("X-Template-Version", String(templateVersion))
+      .header("X-Contract-Id", contractId)
       .send(Buffer.from(pdf));
   });
