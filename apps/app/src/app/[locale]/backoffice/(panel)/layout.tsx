@@ -8,6 +8,7 @@ import {
   canBrowseCatalog,
   canBrowseReports,
   canConfigureSettings,
+  canViewAuditLog,
   canManageEmail,
   canManageFeatureFlags,
   canManageStaff,
@@ -224,6 +225,19 @@ export default async function BackofficePanelLayout({
                 href: '/backoffice/settings',
                 label: t('nav.settings'),
                 hiddenFromOthers: hidden('backoffice.settings'),
+              },
+            ]
+          : []),
+        /* The general audit log reads the whole platform's trail, so it is
+           shown only to who may read it — management and the analyst. The
+           role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
+        ...(canViewAuditLog(staff.role) && flags['backoffice.audit']
+          ? [
+              {
+                key: 'audit' as const,
+                href: '/backoffice/audit',
+                label: t('nav.audit'),
+                hiddenFromOthers: hidden('backoffice.audit'),
               },
             ]
           : []),

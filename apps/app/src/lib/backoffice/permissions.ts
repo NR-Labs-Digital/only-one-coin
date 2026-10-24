@@ -196,6 +196,16 @@ export function canExportStudents(role: StaffRole): boolean {
 }
 
 /**
+ * Who reads the general audit log (OOC-122): management, and the analyst, who
+ * observes every area without editing any. The log names students, payments
+ * and staff across the platform, so a cargo that works one area does not read
+ * it. The enforcing check is `AUDIT_LOG_ROLES` on the routes in `apps/api`.
+ */
+export function canViewAuditLog(role: StaffRole): boolean {
+  return isManagement(role) || role === 'analyst'
+}
+
+/**
  * Who sends a student their portal access from the file — the same audience
  * as the file itself (`GetStudentRoute`) and the API route behind the button
  * (`IssuePortalAccessRoute`). Billing settles money; it does not hand out
