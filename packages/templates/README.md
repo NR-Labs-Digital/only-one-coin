@@ -9,7 +9,7 @@ A engine de templates do projeto: **todo texto que alguém edita e o código pre
 | Só os placeholders do tipo | `check` lê todas as variáveis do template por **análise estática** (sem renderizar) e recusa a que o schema do tipo não oferece, com linha e coluna. `render` nunca roda template que não passa no `check`. |
 | Nada lê arquivo | `include`, `render`, `layout` e `block` são recusados no parse (`forbidden_tag`). Um template é um texto só. |
 | Valor nunca vira markup | Tipo `html` escapa todo valor (`<script>` sai como texto). Tipo `text` não escapa — assunto de e-mail mostraria `&amp;`. |
-| Sem branco silencioso | Filtro inexistente falha no `check`; valor ausente na hora de imprimir falha o `render` (`missing_value`). Dentro de `{% if %}` / `unless` e com `\| default:` o ausente é permitido — é assim que o template protege um campo opcional. |
+| Sem branco silencioso | Filtro inexistente falha no `check`; valor ausente na hora de imprimir falha o `render` (`missing_value`) — e `null` conta como ausente (o modo estrito do Liquid só barra `undefined`, então a engine tira os `null` antes de renderizar). Dentro de `{% if %}` / `unless` e com `\| default:` o ausente é permitido — é assim que o template protege um campo opcional. |
 | Com teto | Tamanho do texto (`maxSourceLength`, padrão 100 mil caracteres), tempo de render (`renderLimitMs`, padrão 1 s) e memória. |
 | Erro é código | `check` devolve `issues` com `code` (`syntax_error`, `unknown_variable`, `unknown_filter`, `forbidden_tag`, `too_large`); `render` lança `TemplateRenderError` com `code` (`invalid_template`, `invalid_data`, `missing_value`, `limit_exceeded`, `render_failed`). Nunca a mensagem do Liquid — a tela traduz o código (`CLAUDE.md` §4). |
 
@@ -60,4 +60,4 @@ const list = placeholdersOf(teacherContract);
 
 ## O que **não** está aqui (ainda)
 
-O pacote só transforma texto + dados em texto. Guardar o modelo versionado no banco, o editor com preview no backoffice e converter o HTML em PDF são as próximas peças do OOC-123. A conversão para PDF é decisão de infraestrutura em aberto (ex.: Chromium headless no Fly ou serviço à parte) e precisa passar pelo dono antes (`CLAUDE.md` §3).
+O pacote só transforma texto + dados em texto. Guardar o modelo versionado, a moldura do documento e a conversão para PDF (WeasyPrint) moram em `apps/api` — ver "Documentos editáveis" no `apps/api/CLAUDE.md`.
