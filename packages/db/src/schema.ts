@@ -1084,6 +1084,11 @@ export const auditLog = pgTable(
     // the day's approvals (OOC-67) on every visit, and would otherwise scan
     // the whole trail.
     index("audit_log_action_created_at_idx").on(table.action, table.createdAt),
+    // The general log (OOC-122) pages the whole trail newest first by
+    // `(created_at, id)` — without this every unfiltered page sorts every row
+    // ever written — and filters by who did it.
+    index("audit_log_created_at_id_idx").on(table.createdAt, table.id),
+    index("audit_log_actor_id_created_at_idx").on(table.actorId, table.createdAt),
   ],
 );
 

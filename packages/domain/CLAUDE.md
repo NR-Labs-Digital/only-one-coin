@@ -28,6 +28,8 @@ As regras de campo da ficha (normalização, formato do documento por tipo, celu
 
 `src/catalog/landingCourseKeys.ts` (subpath `@ooc/domain/landing-course-keys`, OOC-117) é o segundo, pela mesma regra e mais apertada: **sem dependência nenhuma**, nem `zod` — além do Next, é importado pelo build do Astro (`apps/landing`). É a lista de páginas da landing que vendem curso; o `Course` a valida com `z.enum` do lado de cá.
 
+`src/identity/auditCatalog.ts` (subpath `@ooc/domain/audit-catalog`, OOC-122) é o terceiro, mesma regra do anterior — sem dependência e sem import relativo: o vocabulário da bitácora geral (ação gravada → chave de tela, entidade e onde a entrada guarda o id do registro; nomes de campo → chave de rótulo). As colunas de `platform_settings` estão repetidas ali como lista literal, e o teste do catálogo em `apps/api` as amarra a `PLATFORM_SETTING_COLUMNS`.
+
 Dois schemas por entidade, de propósito: `StudentPropsSchema`/`GuardianPropsSchema` são o que **carrega** do banco (frouxo — linha antiga e import legado ainda precisam abrir); `CreateStudentSchema`/`CreateGuardianSchema` são o que um registro **novo** precisa cumprir (normaliza, depois checa). `create()` recusa com `InvalidFieldsError` — campo + código, nunca frase.
 
 ---
