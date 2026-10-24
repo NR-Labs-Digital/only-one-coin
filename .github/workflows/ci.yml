@@ -136,6 +136,11 @@ jobs:
       # A engine de templates (OOC-123): placeholder fora do tipo, tag que lê
       # arquivo, escape e formatação — pura, sem rede nem banco.
       - run: pnpm --filter @ooc/templates test
+      # A escada de resolução das feature flags do app (quem vê o que está
+      # desligado) — pura, sem request nem API. Mora neste job, e não num
+      # próprio, para não precisar de mais um check obrigatório na proteção
+      # da main.
+      - run: pnpm --filter @ooc/app test
 
   # Portão de CI item 6 — migration precisa rodar limpo num banco vazio.
   migrations:

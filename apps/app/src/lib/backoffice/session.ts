@@ -1,8 +1,39 @@
 import { cache } from 'react'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
-import { apiFetch } from './api-client'
+import { apiFetch, resolveSessionCookie } from './api-client'
 import type { StaffUser } from './types'
+
+type StaffSessionRead =
+  | { ok: true; staff: StaffUser }
+  | { ok: false; reason: string | null }
+
+/**
+ * The one `/me` of the request. Memoized so the shell, the gates and the
+ * feature-flag resolver (which asks who is browsing, `lib/feature-flags/
+ * server.ts`) share a single round trip — the body is parsed once here,
+ * because a response can only be read once.
+ */
+const readMe = cache(async (): Promise<StaffSessionRead> => {
+  const response = await apiFetch('/api/v1/me')
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { reason?: string } | null
+    return { ok: false, reason: body?.reason ?? null }
+  }
+  return { ok: true, staff: (await response.json()) as StaffUser }
+})
+
+/**
+ * The signed-in staff member, or null — never a redirect. For the readers that
+ * render with or without a session (the feature-flag resolver runs on the
+ * invite page too); every screen of the panel uses `getStaffSession` below.
+ * No session cookie, no request to the API at all.
+ */
+export const readStaffSession = cache(async (): Promise<StaffUser | null> => {
+  if (!(await resolveSessionCookie())) return null
+  const read = await readMe()
+  return read.ok ? read.staff : null
+})
 
 /**
  * The signed-in staff member, read from the real session — never a client
@@ -27,21 +58,20 @@ import type { StaffUser } from './types'
  */
 export const getStaffSession = cache(
   async (loginHref: '/backoffice' | '/docente' = '/backoffice'): Promise<StaffUser> => {
-  const response = await apiFetch('/api/v1/me')
+  const read = await readMe()
 
-  if (!response.ok) {
+  if (!read.ok) {
     const locale = await getLocale()
-    const body = (await response.json().catch(() => null)) as { reason?: string } | null
     // The second factor is enrolled on the backoffice login's own step
     // (OOC-29); every other refusal goes back to the door the reader came in by.
     const href =
-      body?.reason === 'auth.mfa_enrollment_required' ? '/backoffice?mfa=setup' : loginHref
+      read.reason === 'auth.mfa_enrollment_required' ? '/backoffice?mfa=setup' : loginHref
     redirect({ href, locale })
     // redirect() throws NEXT_REDIRECT — unreachable, closes TS control flow.
     throw new Error('unreachable')
   }
 
-  return (await response.json()) as StaffUser
+  return read.staff
   },
 )
 

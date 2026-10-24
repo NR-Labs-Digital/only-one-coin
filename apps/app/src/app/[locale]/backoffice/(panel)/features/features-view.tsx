@@ -25,7 +25,7 @@ export interface FlagRow {
   override: { enabled: boolean; byName: string | null; at: string } | null
   /** What this flag alone resolves to, before its parent has a say. */
   own: boolean
-  /** What a reader actually gets — the parent chain applied. */
+  /** What everybody without an unlock gets — the parent chain applied. */
   effective: boolean
   source: 'env' | 'panel' | 'environment' | 'code'
 }
@@ -110,11 +110,12 @@ interface Group {
 export function FeaturesView({
   rows,
   appEnv,
-  unlocked,
+  unlock,
 }: {
   rows: FlagRow[]
   appEnv: string
-  unlocked: boolean
+  /** Which unlock lets this reader see what is off — the rows never include it. */
+  unlock: 'preview' | 'owner' | null
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
@@ -213,9 +214,9 @@ export function FeaturesView({
           {t('features.not_production', { env: appEnv })}
         </Callout>
       )}
-      {unlocked && (
+      {unlock && (
         <Callout tone="info" icon="eye">
-          {t('features.internal_unlock')}
+          {unlock === 'preview' ? t('features.internal_unlock') : t('features.owner_unlock')}
         </Callout>
       )}
 

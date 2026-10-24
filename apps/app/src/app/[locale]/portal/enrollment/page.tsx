@@ -76,7 +76,7 @@ export default async function EnrollmentPage({
   setRequestLocale(raw)
   const t = await getTranslations('portal')
 
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('portal')
   const { enrollments } = await getPortalView()
 
   function card(e: Enrollment) {
