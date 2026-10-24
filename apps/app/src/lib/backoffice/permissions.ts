@@ -92,6 +92,16 @@ export function canConfigureCourse(role: StaffRole): boolean {
 }
 
 /**
+ * Who takes a course, plan, class group or period off the catalog and puts it
+ * back — the roles the API declares on retire/restore (CLAUDE.md §1, "quem
+ * aposenta e reativa é quem abre turma"). Billing settles money; it does not
+ * decide what stops being sold.
+ */
+export function canRetireCatalogEntry(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor'
+}
+
+/**
  * Who opens the payments section at all. Billing settles, the analyst observes,
  * support answers "did my payment go through" — and nobody academic-only needs
  * the money screens.

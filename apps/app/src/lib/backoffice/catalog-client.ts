@@ -1,4 +1,4 @@
-import type { CatalogErrorKey } from './types'
+import type { CatalogEntryKind, CatalogErrorKey } from './types'
 
 export type CatalogWriteResult<T> = { ok: true; data: T } | { ok: false; error: CatalogErrorKey }
 
@@ -55,5 +55,41 @@ export async function catalogWrite<T = { id: string }>(
     return { ok: false, error: catalogErrorKey(failure?.reason) }
   } catch {
     return { ok: false, error: 'generic' }
+  }
+}
+
+/** What a retire or restore answers, and what the state read answers before one. */
+export interface CatalogEntryState {
+  retiredAt: string | null
+  liveEnrollments: number
+}
+
+/**
+ * Retires or restores any catalog entry. The answer carries how many
+ * enrollments were still standing on it — never a refusal (CLAUDE.md §1).
+ */
+export function setCatalogEntryOnOffer(
+  kind: CatalogEntryKind,
+  id: string,
+  verb: 'retire' | 'restore',
+): Promise<CatalogWriteResult<CatalogEntryState>> {
+  return catalogWrite<CatalogEntryState>(`/${kind}/${encodeURIComponent(id)}/${verb}`, 'POST')
+}
+
+/**
+ * How many enrollments an entry still carries, read before retiring it so the
+ * confirmation can say so (OOC-70). Null when the count could not be read.
+ */
+export async function readCatalogEntryState(
+  kind: CatalogEntryKind,
+  id: string,
+  signal?: AbortSignal,
+): Promise<CatalogEntryState | null> {
+  try {
+    const response = await fetch(`/api/v1/catalog/${kind}/${encodeURIComponent(id)}/state`, { signal })
+    if (!response.ok) return null
+    return (await response.json()) as CatalogEntryState
+  } catch {
+    return null
   }
 }

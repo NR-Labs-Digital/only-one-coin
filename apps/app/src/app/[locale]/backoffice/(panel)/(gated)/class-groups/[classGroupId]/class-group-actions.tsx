@@ -10,11 +10,12 @@ import type {
   CourseRow,
   TeacherOption,
 } from '@/lib/backoffice/types'
-import { catalogWrite } from '@/lib/backoffice/catalog-client'
+import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { NEXT_CLASS_GROUP_STATUS } from '@/lib/backoffice/class-group-status'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 import {
   Sheet,
   SheetContent,
@@ -65,8 +66,9 @@ type Confirming = 'advance' | 'retire' | 'restore' | null
  * Status only moves forward, one step, after an inline confirmation that says
  * what the step means — there is no way back, a class group opened by mistake
  * is retired from the catalog instead (CLAUDE.md §1, "Catálogo sai do ar, não
- * some"). Retiring is never blocked by live enrollments: the toast says how
- * many were still standing. A retired class group only offers to come back.
+ * some"). Retiring is never blocked by live enrollments: the confirmation
+ * says how many are still standing before the click (OOC-70), and the toast
+ * repeats it after. A retired class group only offers to come back.
  * Every write goes through `apps/api`, which is what actually decides
  * (CLAUDE.md §8); this re-reads the page afterwards.
  */
@@ -118,10 +120,7 @@ export function ClassGroupActions({
   async function setOnCatalog(verb: 'retire' | 'restore') {
     setPending(true)
     setError(null)
-    const result = await catalogWrite<{ liveEnrollments: number }>(
-      `/class_group/${encodeURIComponent(group.id)}/${verb}`,
-      'POST',
-    )
+    const result = await setCatalogEntryOnOffer('class_group', group.id, verb)
     setPending(false)
     if (!result.ok) {
       setError(result.error)
@@ -227,12 +226,16 @@ export function ClassGroupActions({
       )}
 
       {confirming === 'retire' && (
-        <Confirmation
-          text={t('class_group_actions.confirm_retire')}
-          pending={pending}
-          onConfirm={() => void setOnCatalog('retire')}
-          onCancel={() => setConfirming(null)}
-        />
+        <div className="mt-3">
+          <RetireConfirmation
+            kind="class_group"
+            id={group.id}
+            text={t('class_group_actions.confirm_retire')}
+            pending={pending}
+            onConfirm={() => void setOnCatalog('retire')}
+            onCancel={() => setConfirming(null)}
+          />
+        </div>
       )}
 
       {next && missingDates && (

@@ -48,6 +48,16 @@ const CASES: [string, string, Role][] = [
   ["GET", "/api/v1/catalog/teacher-options", "academic_supervisor"],
   ["GET", "/api/v1/catalog/teacher-options", "teacher"],
   ["POST", `/api/v1/catalog/waitlist/${ID}/leave`, "support"],
+  // Retiring and restoring (CLAUDE.md §1): whoever opens class groups, never
+  // billing or a reader — and the live-enrollment count read before it
+  // follows the same gate (OOC-70).
+  ["POST", `/api/v1/catalog/plan/${ID}/retire`, "billing"],
+  ["POST", `/api/v1/catalog/academic_period/${ID}/retire`, "analyst"],
+  ["POST", `/api/v1/catalog/plan/${ID}/restore`, "academic_supervisor"],
+  ["POST", `/api/v1/catalog/academic_period/${ID}/restore`, "sales"],
+  ["GET", `/api/v1/catalog/plan/${ID}/state`, "billing"],
+  ["GET", `/api/v1/catalog/academic_period/${ID}/state`, "analyst"],
+  ["GET", `/api/v1/catalog/course/${ID}/state`, "support"],
 ];
 
 let app: FastifyInstance;

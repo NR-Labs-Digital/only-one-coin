@@ -54,6 +54,7 @@ import {
   ResolvePortalSignInEmailUseCase,
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
+  GetCatalogEntryStateUseCase,
   SettlePaymentUseCase,
   RequestReceiptRereadUseCase,
   RemoveStaffAccessUseCase,
@@ -317,6 +318,7 @@ export interface AppUseCases {
   catalog: {
     retire: RetireCatalogEntryUseCase;
     restore: RestoreCatalogEntryUseCase;
+    getState: GetCatalogEntryStateUseCase;
     createCourse: CreateCourseUseCase;
     updateCourse: UpdateCourseUseCase;
     createPlan: CreatePlanUseCase;
@@ -590,6 +592,7 @@ function buildContainer(): AppContainer {
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
+  const getCatalogEntryState = new GetCatalogEntryStateUseCase(catalogEntryRepository);
   const createCourse = new CreateCourseUseCase(courseRepository, auditLogRepository);
   const updateCourse = new UpdateCourseUseCase(courseRepository, auditLogRepository);
   const createPlan = new CreatePlanUseCase(courseRepository, planRepository, auditLogRepository);
@@ -809,6 +812,7 @@ function buildContainer(): AppContainer {
       catalog: {
         retire: retireCatalogEntry,
         restore: restoreCatalogEntry,
+        getState: getCatalogEntryState,
         createCourse,
         updateCourse,
         createPlan,

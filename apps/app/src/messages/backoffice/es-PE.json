@@ -1271,7 +1271,17 @@
       "copy_into_existing": "Copiar aulas a este período",
       "empty": "Todavía no hay períodos.",
       "copy": "Copiar aulas",
-      "copied_into": "{copied, plural, =0 {No había aulas para copiar.} one {# aula copiada como borrador.} other {# aulas copiadas como borrador.}}{skipped, plural, =0 {} other { # fuera de catálogo no se copiaron.}}"
+      "copied_into": "{copied, plural, =0 {No había aulas para copiar.} one {# aula copiada como borrador.} other {# aulas copiadas como borrador.}}{skipped, plural, =0 {} other { # fuera de catálogo no se copiaron.}}",
+      "edit": "Editar período",
+      "edit_hint": "Cambiar las fechas del período no mueve las fechas de inicio de sus aulas.",
+      "save": "Guardar",
+      "saved": "Período actualizado",
+      "retire": "Sacar del catálogo",
+      "restore": "Volver al catálogo",
+      "confirm_retire": "Las aulas de {name} dejan de ofrecerse en la matrícula. Las matrículas ya hechas no cambian y siguen en el libro.",
+      "confirm_restore": "{name} vuelve al catálogo, con sus aulas en el estado que tenían.",
+      "retired_notice": "{count, plural, =0 {Período fuera de catálogo.} one {Período fuera de catálogo. # matrícula sigue en curso.} other {Período fuera de catálogo. # matrículas siguen en curso.}}",
+      "restored": "Período de vuelta en el catálogo"
     },
     "class_group": {
       "back_to_list": "Volver a las aulas",
@@ -1535,7 +1545,13 @@
       "load_error": "No pudimos cargar los planes.",
       "inactive": "Fuera de venta",
       "created": "Plan creado",
-      "price_scheduled": "Precio programado"
+      "price_scheduled": "Precio programado",
+      "retire": "Sacar de venta",
+      "restore": "Volver a la venta",
+      "confirm_retire": "El plan deja de ofrecerse en la matrícula. Las matrículas ya hechas mantienen su precio.",
+      "confirm_restore": "El plan vuelve a ofrecerse en la matrícula, con su precio vigente.",
+      "retired": "{count, plural, =0 {Plan fuera de venta.} one {Plan fuera de venta. # matrícula sigue en curso.} other {Plan fuera de venta. # matrículas siguen en curso.}}",
+      "restored": "Plan de vuelta a la venta"
     },
     "course_options": {
       "close": "Cerrar",
@@ -1551,7 +1567,11 @@
       "active": "Curso en catálogo",
       "active_hint": "Sacarlo del catálogo no cierra las aulas en curso: solo deja de ofrecerse.",
       "save": "Guardar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "identity_title": "Datos del curso",
+      "identity_hint": "El nombre y el nivel cambian en todas partes, también en las matrículas ya hechas.",
+      "summary": "Resumen",
+      "summary_hint": "Qué es el curso, en palabras del alumno. Si queda vacío, el portal no muestra «Sobre el curso»."
     },
     "landing_key": {
       "label": "Página en la web",
@@ -2302,6 +2322,14 @@
       "tab_preview": "Vista previa",
       "load_error_title": "No se pudo abrir el documento",
       "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico."
+    },
+    "catalog_retire": {
+      "counting": "Contando las matrículas que siguen en curso…",
+      "count_failed": "No pudimos contar las matrículas en curso. Puedes seguir igual: sacarlo del catálogo no cancela ninguna.",
+      "none_live": "Ninguna matrícula sigue en curso aquí.",
+      "live": "{count, plural, one {# matrícula sigue en curso. No se cancela: sigue en el libro de matrículas.} other {# matrículas siguen en curso. No se cancelan: siguen en el libro de matrículas.}}",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
     }
   }
 }
