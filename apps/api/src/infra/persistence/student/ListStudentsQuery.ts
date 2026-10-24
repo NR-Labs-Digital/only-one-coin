@@ -1,4 +1,4 @@
-import { classGroups, enrollments, students } from "@ooc/db";
+import { auditLog, classGroups, enrollments, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { CURRENT_CLASS_GROUP_STATUSES } from "@/infra/persistence/enrollment/ListEnrollmentsQuery.js";
@@ -146,15 +146,30 @@ export interface StudentDirectoryPage {
   counts: { all: number; active: number; former: number; noEnrollment: number; minors: number };
 }
 
+/** Rows per round trip of an export — one screen is 15, the whole base 30k+. */
+export const EXPORT_BATCH_SIZE = 2000;
+
+/** `audit_log.target_id` of a directory export: the directory, not a student. */
+export const STUDENT_DIRECTORY_TARGET = "student_directory";
+
+export interface StudentDirectoryExport {
+  /** Students the filters matched when the export was recorded. */
+  rowCount: number;
+  batches: AsyncGenerator<StudentListRow[]>;
+}
+
 /**
  * Read-only, same reasoning as the rest of this folder for living outside
  * `packages/domain`: nothing here protects a business invariant, it only
- * shapes a read. Two readers, one join:
+ * shapes a read. Three readers, one join:
  *
  * - `directory` — the student directory (OOC-76). Search, status and age run
  *   in Postgres and the result pages by offset, like the enrollment ledger.
  *   It leaves out students whose only enrollments are still reserved: they
  *   are being settled in Payments (OOC-55).
+ * - `exportDirectory` — the same filters over every page, as a file
+ *   (OOC-121). Its one write is its own `audit_log` entry, the same as a look
+ *   at a receipt (`PaymentReceiptImageQuery`).
  * - `search` — the manual enrollment and waitlist pickers (CLAUDE.md §1, "a
  *   exceção, não um segundo caminho"): a short match list that still finds
  *   the student under review, so nobody registers the person twice.
@@ -194,8 +209,13 @@ export class ListStudentsQuery {
       .as("stats");
   }
 
-  async directory(filters: StudentDirectoryFilters = {}): Promise<StudentDirectoryPage> {
-    const page = Math.max(1, Math.floor(filters.page ?? 1));
+  /**
+   * What the directory's filters mean in SQL — shared by the screen and the
+   * export (OOC-121), so the file holds exactly who the tab, the search and
+   * the chip listed. `base` is the search alone, which is what the counters
+   * see; `narrowed` adds the tab and the age filter.
+   */
+  private directoryScope(filters: Omit<StudentDirectoryFilters, "page">) {
     const stats = this.enrollmentStats();
 
     const confirmed = sql`coalesce(${stats.confirmed}, 0)`;
@@ -231,26 +251,36 @@ export class ListStudentsQuery {
     const narrowed: SQL[] = [...base, tabSql(filters.status)];
     if (filters.minor) narrowed.push(isMinorSql);
 
+    const columns = {
+      id: students.id,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      nationalIdType: students.nationalIdType,
+      nationalId: students.nationalId,
+      email: students.email,
+      phone: students.phone,
+      birthDate: students.birthDate,
+      country: students.country,
+      region: students.region,
+      city: students.city,
+      createdAt: students.createdAt,
+      updatedAt: students.updatedAt,
+      totalEnrollments: sql<number>`coalesce(${stats.total}, 0)`.mapWith(Number),
+      confirmedEnrollments: sql<number>`${confirmed}`.mapWith(Number),
+      currentEnrollments: sql<number>`${current}`.mapWith(Number),
+      lastEnrollmentAt: stats.lastAt,
+    };
+
+    return { stats, base, narrowed, columns, tabSql, isMinorSql, isActive, isFormer, isNoEnrollment };
+  }
+
+  async directory(filters: StudentDirectoryFilters = {}): Promise<StudentDirectoryPage> {
+    const page = Math.max(1, Math.floor(filters.page ?? 1));
+    const { stats, base, narrowed, columns, tabSql, isMinorSql, isActive, isFormer, isNoEnrollment } =
+      this.directoryScope(filters);
+
     const rowsPromise = this.db
-      .select({
-        id: students.id,
-        firstName: students.firstName,
-        lastName: students.lastName,
-        nationalIdType: students.nationalIdType,
-        nationalId: students.nationalId,
-        email: students.email,
-        phone: students.phone,
-        birthDate: students.birthDate,
-        country: students.country,
-        region: students.region,
-        city: students.city,
-        createdAt: students.createdAt,
-        updatedAt: students.updatedAt,
-        totalEnrollments: sql<number>`coalesce(${stats.total}, 0)`.mapWith(Number),
-        confirmedEnrollments: sql<number>`${confirmed}`.mapWith(Number),
-        currentEnrollments: sql<number>`${current}`.mapWith(Number),
-        lastEnrollmentAt: stats.lastAt,
-      })
+      .select(columns)
       .from(students)
       .leftJoin(stats, eq(stats.studentId, students.id))
       .where(and(...narrowed))
@@ -295,6 +325,79 @@ export class ListStudentsQuery {
         minors: counted?.minors ?? 0,
       },
     };
+  }
+
+  /**
+   * The directory as a file (OOC-121): every student the same filters list,
+   * not one page. Personal data leaving in bulk (Ley 29733), so the export
+   * is written to `audit_log` before the first row is read — a download
+   * cut halfway still happened. The entry keeps the tab, the age filter and
+   * whether a search narrowed the list, never the search text: that is a
+   * name or a document, and the trail is append-only (CLAUDE.md §8).
+   *
+   * The rows come in batches walked by the `(created_at, id)` cursor at full
+   * microsecond precision, so 30k students are never one result set held in
+   * memory, and the API answers other requests between batches.
+   */
+  async exportDirectory(
+    filters: Omit<StudentDirectoryFilters, "page">,
+    actorId: string,
+  ): Promise<StudentDirectoryExport> {
+    const { stats, narrowed } = this.directoryScope(filters);
+    const [counted] = await this.db
+      .select({ rows: sql<number>`count(*)`.mapWith(Number) })
+      .from(students)
+      .leftJoin(stats, eq(stats.studentId, students.id))
+      .where(and(...narrowed));
+    const rowCount = counted?.rows ?? 0;
+
+    await this.db.insert(auditLog).values({
+      actorId,
+      action: "student.directory_exported",
+      targetId: STUDENT_DIRECTORY_TARGET,
+      metadata: {
+        status: filters.status ?? "all",
+        minor: filters.minor === true,
+        searched: Boolean(filters.q?.trim()),
+        sort: filters.sort ?? "newest",
+        rowCount,
+      },
+    });
+
+    return { rowCount, batches: this.exportBatches(filters) };
+  }
+
+  private async *exportBatches(filters: Omit<StudentDirectoryFilters, "page">): AsyncGenerator<StudentListRow[]> {
+    const oldest = filters.sort === "oldest";
+    let cursor: StudentListCursor | null = null;
+
+    for (;;) {
+      const { stats, narrowed, columns } = this.directoryScope(filters);
+      const after: SQL | undefined = cursor
+        ? oldest
+          ? sql`(${students.createdAt}, ${students.id}) > (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)`
+          : sql`(${students.createdAt}, ${students.id}) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)`
+        : undefined;
+
+      const rows = await this.db
+        .select({
+          ...columns,
+          cursorAt: sql<string>`to_char(${students.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+        })
+        .from(students)
+        .leftJoin(stats, eq(stats.studentId, students.id))
+        .where(and(...narrowed, after))
+        .orderBy(
+          ...(oldest ? [asc(students.createdAt), asc(students.id)] : [desc(students.createdAt), desc(students.id)]),
+        )
+        .limit(EXPORT_BATCH_SIZE);
+
+      if (rows.length > 0) yield rows.map((row) => toListRow({ ...row, reservedEnrollments: 0 }));
+      if (rows.length < EXPORT_BATCH_SIZE) return;
+
+      const last: { cursorAt: string; id: string } = rows[rows.length - 1]!;
+      cursor = { createdAt: last.cursorAt, id: last.id };
+    }
   }
 
   /** The pickers' short match list — by partial name or document, under review included. */

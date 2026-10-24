@@ -16,6 +16,7 @@ const ID = "018f2b5c-0000-7000-8000-000000000001";
 
 const ROUTES: [string, string][] = [
   ["GET", "/api/v1/students"],
+  ["GET", "/api/v1/students/export"],
   ["GET", "/api/v1/students/search?q=ro"],
   ["POST", "/api/v1/students"],
   ["GET", `/api/v1/students/${ID}`],

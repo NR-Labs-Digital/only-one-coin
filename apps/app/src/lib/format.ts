@@ -283,3 +283,25 @@ export function formatWeekRange(firstDay: string, lastDay: string, locale: Local
   const sameYear = firstDay.slice(0, 4) === lastDay.slice(0, 4)
   return `${part(firstDay, !sameYear)} – ${part(lastDay, true)}`
 }
+
+/**
+ * A timestamp for a file a spreadsheet opens: `2026-09-01 10:00`, in
+ * America/Lima. Sortable as text and read as a date by every spreadsheet,
+ * whatever the reader's language — unlike `01 sept 10:00`.
+ */
+export function formatSpreadsheetDateTime(iso: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: LIMA_TZ,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value]),
+  )
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`
+}

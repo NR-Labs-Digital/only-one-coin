@@ -17,6 +17,7 @@ import { getPortalMeRoute } from "@/http/portal/GetPortalMeRoute.js";
 import { getPortalOverviewRoute } from "@/http/portal/GetPortalOverviewRoute.js";
 import { getPortalPaymentReceiptRoute } from "@/http/portal/GetPortalPaymentReceiptRoute.js";
 import { registerStudentRoute } from "@/http/student/RegisterStudentRoute.js";
+import { exportStudentsRoute } from "@/http/student/ExportStudentsRoute.js";
 import { listStudentsRoute } from "@/http/student/ListStudentsRoute.js";
 import { searchStudentsRoute } from "@/http/student/SearchStudentsRoute.js";
 import { getStudentRoute } from "@/http/student/GetStudentRoute.js";
@@ -157,6 +158,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getPortalPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(registerStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStudentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(exportStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(searchStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateStudentRoute);
