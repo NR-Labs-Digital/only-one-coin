@@ -324,6 +324,7 @@
         "teacher_rejoined_roster": "Docente voltou ao quadro",
         "teacher_contract_filed": "Contrato do docente arquivado",
         "teacher_contract_viewed": "Contrato do docente consultado",
+        "teacher_contract_generated": "Contrato do docente gerado",
         "role_changed": "Cargo alterado",
         "staff_invite_created": "Convite à equipe enviado",
         "staff_invite_renewed": "Convite à equipe renovado",
@@ -340,6 +341,7 @@
         "staff_mfa_recovery_codes_regenerated": "Códigos de recuperação renovados",
         "platform_setting_updated": "Configuração alterada",
         "feature_flag_changed": "Funcionalidade ligada ou desligada",
+        "document_template_published": "Modelo de documento publicado",
         "audit_log_exported": "Auditoria exportada"
       },
       "field": {

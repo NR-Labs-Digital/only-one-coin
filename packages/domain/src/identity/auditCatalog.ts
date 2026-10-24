@@ -138,6 +138,7 @@ export const AUDIT_ACTIONS = {
   "teacher.rejoined_roster": { key: "teacher_rejoined_roster", entity: "teacher", subject: "target" },
   "teacher.contract_filed": { key: "teacher_contract_filed", entity: "teacher", subject: "target" },
   "teacher.contract_viewed": { key: "teacher_contract_viewed", entity: "teacher", subject: "target" },
+  "teacher_contract.generated": { key: "teacher_contract_generated", entity: "teacher", subject: "target" },
 
   "role.promote": { key: "role_changed", entity: "staff", subject: "target" },
   "staff.invite_created": { key: "staff_invite_created", entity: "staff", subject: "none" },
@@ -160,6 +161,7 @@ export const AUDIT_ACTIONS = {
 
   ...PLATFORM_SETTING_ACTIONS,
   "feature_flag.override": { key: "feature_flag_changed", entity: "platform", subject: "none" },
+  "document_template.published": { key: "document_template_published", entity: "platform", subject: "none" },
   "audit_log.exported": { key: "audit_log_exported", entity: "platform", subject: "none" },
 } as const satisfies Record<string, AuditActionEntry>;
 

@@ -324,6 +324,7 @@
         "teacher_rejoined_roster": "Teacher back on the roster",
         "teacher_contract_filed": "Teacher contract filed",
         "teacher_contract_viewed": "Teacher contract viewed",
+        "teacher_contract_generated": "Teacher contract generated",
         "role_changed": "Role changed",
         "staff_invite_created": "Team invitation sent",
         "staff_invite_renewed": "Team invitation renewed",
@@ -340,6 +341,7 @@
         "staff_mfa_recovery_codes_regenerated": "Recovery codes renewed",
         "platform_setting_updated": "Setting changed",
         "feature_flag_changed": "Feature turned on or off",
+        "document_template_published": "Document template published",
         "audit_log_exported": "Audit log exported"
       },
       "field": {
