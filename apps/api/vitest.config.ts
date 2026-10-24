@@ -1,5 +1,23 @@
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+
+/**
+ * How many test processes to run at once. Each one imports the whole API
+ * (Fastify, Better Auth, sharp, the AWS SDK) and holds ~300 MB; vitest's
+ * default of one per core asked a 16-core WSL with 7.7 GB for 4 GB+ on top of
+ * the dev servers, and the machine started killing processes. Locally the
+ * count follows the memory free right now (~700 MB of headroom per process,
+ * at most 4 — 4 ran the suite in ~30 s); CI keeps vitest's default.
+ * `VITEST_MAX_WORKERS` overrides both.
+ */
+function maxWorkers(): number | undefined {
+  const forced = Number(process.env.VITEST_MAX_WORKERS);
+  if (forced > 0) return forced;
+  if (process.env.CI) return undefined;
+  const fitting = Math.floor(os.freemem() / (700 * 1024 * 1024));
+  return Math.max(1, Math.min(fitting, 4));
+}
 
 export default defineConfig({
   resolve: {
@@ -13,6 +31,7 @@ export default defineConfig({
     conditions: ["development"],
   },
   test: {
+    maxWorkers: maxWorkers(),
     // The *.integration.test.ts suites need a real, migrated Postgres and run
     // from vitest.integration.config.ts (`pnpm test:api:db`). Keeping them out
     // here is what lets `pnpm test` stay a pure-domain run with no database.
