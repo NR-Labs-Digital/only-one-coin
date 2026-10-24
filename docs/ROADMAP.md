@@ -45,7 +45,7 @@ entra aqui ou vira sessão nova.
 | 0 — Espinha dorsal | 10 | 3 | 0 | Faltam as tabelas acadêmicas (notas, frequência, certificado), o seed de comprovantes e o domínio de staging |
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 8 | 4 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
-| 3 — Backoffice | 3 | 3 | 4 | Alunos, turmas, Pagos, equipe e docentes reais. Semana de 19–23/10 fecha o operacional (abaixo); notas, conciliação e relatórios ficam para depois |
+| 3 — Backoffice | 5 | 1 | 4 | Alunos, turmas, Pagos, equipe, docentes e auditoria reais. Semana de 19–23/10 fecha o operacional (abaixo); notas, conciliação e relatórios ficam para depois |
 | 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32); faltam enlace da aula, módulos/mensalidade, trâmites pagos e documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
@@ -59,9 +59,9 @@ Fora desta semana, de propósito: notas e frequência (37), certificados (45, OO
 | --- | --- | --- |
 | Docentes | ~~OOC-79 (conta ↔ ficha, fim do `DEMO_TEACHER_ID`)~~ ✅ → ~~OOC-82 (portal `/docente` sobre o PR #136, com dado real) + OOC-101~~ ✅ · ~~OOC-81 (contrato)~~ ✅ | 21 · 23 · 22/10 |
 | Configurações e catálogo | OOC-41 (parâmetros reais) · OOC-70 (editar curso, aposentar plano, editar/aposentar período) · ~~OOC-61 (flags desligados visíveis para os donos)~~ ✅ | 21 · 20 · 20/10 |
-| Pagos, Alunos, Auditoria | OOC-120 (ordenação por confiança, atalhos, reprocessar) · ~~OOC-121 (exportar alunos)~~ ✅ · OOC-122 (tela de auditoria) | 22 · 23 · 23/10 |
+| Pagos, Alunos, Auditoria | OOC-120 (ordenação por confiança, atalhos, reprocessar) · ~~OOC-121 (exportar alunos)~~ ✅ · ~~OOC-122 (tela de auditoria)~~ ✅ | 22 · 23 · 23/10 |
 
-Esperando decisão: OOC-72 (como chega o consentimento do apoderado), confirmar quem exporta alunos (OOC-121 saiu com os três que corrigem a ficha, `STUDENT_EXPORT_ROLES`), quem vê a auditoria (OOC-122), a regra de suspensão de aluno, e as regras de nota que o PR #136 grava no `CLAUDE.md`.
+Esperando decisão: OOC-72 (como chega o consentimento do apoderado), confirmar quem exporta alunos (OOC-121 saiu com os três que corrigem a ficha, `STUDENT_EXPORT_ROLES`), confirmar quem vê a auditoria (OOC-122 saiu com `master`/`admin`/`analyst`, `AUDIT_LOG_ROLES`), a regra de suspensão de aluno, e as regras de nota que o PR #136 grava no `CLAUDE.md`.
 
 ---
 
@@ -143,7 +143,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 37 | **Frequência e notas** | Registro por sessão, interface para celular do docente, tolerante a conexão ruim | Funciona em 3G lento; perda de conexão não perde o registro | ⬜ OOC-38, OOC-102 |
 | 38 | **Conciliação bancária** | Upload de extrato CSV, casamento por número de operação, relatório de divergência | Extrato de 500 linhas casado, com os não conciliados listados | ⬜ OOC-39 |
 | 39 | **Relatórios e tablero** | Matrículas por período/curso/região, ingressos, retenção, impacto social, materialized views noturnas | Relatório carrega em < 2s; agregação não é ao vivo | ⬜ Tela mock (OOC-40). Home do painel com dado real (OOC-67), agregada ao vivo — exceção decidida pelo dono em 11/10/2026: os relatórios desta sessão seguem em view noturna, a home não ("matrículas de hoje" numa view noturna seria sempre zero) |
-| 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco | 🟡 A trava no banco existe (`0011`), e há bitácora de cargo na Equipe (OOC-69) e a aba Atividade do aluno. Falta a tela geral com filtro e exportação (OOC-122) |
+| 40 | **Auditoria** | Tela de bitácora, filtros, exportação | Tentativa de alterar ou apagar registro falha no banco | ✅ A trava no banco existe (`0011`), com bitácora de cargo na Equipe (OOC-69) e a aba Atividade do aluno. Tela geral `/backoffice/audit` (OOC-122): filtros por período (dias de Lima), autor, ação e entidade no servidor, paginação por cursor (índices na `0034`), link para a entidade quando ela existe, e exportação CSV registrada no próprio `audit_log`. Quem vê (`master`/`admin`/`analyst`) ainda a confirmar com o dono |
 
 ---
 
