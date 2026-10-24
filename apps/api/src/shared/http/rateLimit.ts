@@ -42,6 +42,11 @@ export const RATE_LIMITS = {
   /** Turning on the second factor: typing the code (Better Auth also burns a code after 5 misses). */
   staffMfaConfirm: { name: "staff-mfa-confirm", by: "user", limit: 20, windowSeconds: 15 * MINUTE },
 
+  /** The student directory as a file (OOC-121), per account. Each one is the
+   * whole base walked in batches and personal data leaving in bulk — a
+   * handful an hour is a working day of reports, not a scraper. */
+  studentExport: { name: "student-export", by: "user", limit: 10, windowSeconds: 60 * MINUTE },
+
   /** Better Auth's catch-all: sign-in, sign-out, session refresh. */
   auth: { name: "auth:ip", by: "ip", limit: 60, windowSeconds: 5 * MINUTE },
   /** Liveness probes and the root banner. */
