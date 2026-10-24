@@ -239,6 +239,13 @@
       "when": 1792701432755,
       "tag": "0033_teacher_invite_link",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792807519458,
+      "tag": "0034_audit_log_listing",
+      "breakpoints": true
     }
   ]
 }

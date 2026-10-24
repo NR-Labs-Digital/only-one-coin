@@ -620,3 +620,25 @@ export {
   ConfirmEmailVerificationUseCase,
   type ConfirmEmailVerificationInput,
 } from "./enrollment/ConfirmEmailVerificationUseCase.js";
+
+// The general audit log's vocabulary (OOC-122) — also read raw by apps/app
+// through the `@ooc/domain/audit-catalog` subpath.
+export {
+  AUDIT_ACTION_KEYS,
+  AUDIT_ACTIONS,
+  AUDIT_ENTITIES,
+  AUDIT_FIELD_KEYS,
+  AUDIT_FIELDS,
+  AUDITED_PLATFORM_SETTINGS,
+  CATALOG_KIND_ENTITY,
+  auditEntityOf,
+  auditFieldsOf,
+  storedActionsOf,
+} from "./identity/auditCatalog.js";
+export type {
+  AuditActionKey,
+  AuditEntity,
+  AuditField,
+  AuditStoredAction,
+  AuditSubject,
+} from "./identity/auditCatalog.js";

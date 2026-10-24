@@ -11,7 +11,8 @@
     },
     "./fields": "./src/student/fields.ts",
     "./landing-course-keys": "./src/catalog/landingCourseKeys.ts",
-    "./password-policy": "./src/identity/StudentPasswordPolicy.ts"
+    "./password-policy": "./src/identity/StudentPasswordPolicy.ts",
+    "./audit-catalog": "./src/identity/auditCatalog.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
