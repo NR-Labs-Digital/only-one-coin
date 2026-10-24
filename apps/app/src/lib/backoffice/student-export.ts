@@ -1,4 +1,4 @@
-import { CSV_BOM, csvLine } from './csv'
+import { CSV_BOM, csvLine, ndjsonToCsv } from './csv'
 import type { NationalIdType, StudentRow, StudentStatus } from './types'
 import { countryName } from '@/lib/geo'
 import { formatSpreadsheetDateTime } from '@/lib/format'
@@ -73,38 +73,10 @@ export function studentExportLine(row: StudentRow, labels: StudentExportLabels):
   return csvLine(STUDENT_EXPORT_COLUMNS.map((key) => cells[key]))
 }
 
-/**
- * NDJSON in, CSV out, as it streams: the file is never held whole in the
- * function. A line split across two chunks waits in `pending` for its end.
- */
+/** The API's NDJSON as the CSV the reader downloads. */
 export function ndjsonToStudentCsv(
   source: ReadableStream<Uint8Array>,
   labels: StudentExportLabels,
 ): ReadableStream<Uint8Array> {
-  const decoder = new TextDecoder()
-  const encoder = new TextEncoder()
-  let pending = ''
-  const toCsv = (lines: string[]) =>
-    lines
-      .filter((line) => line.trim() !== '')
-      .map((line) => studentExportLine(JSON.parse(line) as StudentRow, labels))
-      .join('')
-
-  return source.pipeThrough(
-    new TransformStream<Uint8Array, Uint8Array>({
-      start(controller) {
-        controller.enqueue(encoder.encode(studentExportHeader(labels)))
-      },
-      transform(chunk, controller) {
-        const lines = (pending + decoder.decode(chunk, { stream: true })).split('\n')
-        pending = lines.pop() ?? ''
-        const csv = toCsv(lines)
-        if (csv) controller.enqueue(encoder.encode(csv))
-      },
-      flush(controller) {
-        const csv = toCsv([pending + decoder.decode()])
-        if (csv) controller.enqueue(encoder.encode(csv))
-      },
-    }),
-  )
+  return ndjsonToCsv<StudentRow>(source, studentExportHeader(labels), (row) => studentExportLine(row, labels))
 }

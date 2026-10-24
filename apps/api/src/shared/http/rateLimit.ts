@@ -46,6 +46,8 @@ export const RATE_LIMITS = {
    * whole base walked in batches and personal data leaving in bulk — a
    * handful an hour is a working day of reports, not a scraper. */
   studentExport: { name: "student-export", by: "user", limit: 10, windowSeconds: 60 * MINUTE },
+  /** The audit log as a file (OOC-122), per account — same reasoning as the student export. */
+  auditExport: { name: "audit-export", by: "user", limit: 10, windowSeconds: 60 * MINUTE },
 
   /** Better Auth's catch-all: sign-in, sign-out, session refresh. */
   auth: { name: "auth:ip", by: "ip", limit: 60, windowSeconds: 5 * MINUTE },

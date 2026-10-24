@@ -126,6 +126,12 @@ export const FEATURE_FLAGS = {
     parent: 'backoffice',
     production: true,
   },
+  /** The general audit log (OOC-122). */
+  'backoffice.audit': {
+    surface: 'backoffice',
+    parent: 'backoffice',
+    production: true,
+  },
 
   /* --------------------------------------------------------------- docente */
 

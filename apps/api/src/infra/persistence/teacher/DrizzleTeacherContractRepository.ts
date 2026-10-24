@@ -9,7 +9,7 @@ function toContract(row: ContractRow): TeacherContract {
   return new TeacherContract({
     id: row.id,
     teacherId: row.teacherId,
-    // The 0035 CHECK keeps the three together; a row has all of them or none.
+    // The 0036 CHECK keeps the three together; a row has all of them or none.
     file:
       row.objectKey !== null && row.fileName !== null && row.fileSizeBytes !== null
         ? { objectKey: row.objectKey, fileName: row.fileName, fileSizeBytes: row.fileSizeBytes }

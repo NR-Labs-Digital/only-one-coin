@@ -1,5 +1,5 @@
 {
-  "id": "2cd36f0a-c888-4ad7-b69f-5f4e2587564c",
+  "id": "d9149184-d1e9-4e78-b30d-be4a0c3a92cc",
   "prevId": "322a8dd9-3e95-49b7-945a-ad230ca52a6f",
   "version": "7",
   "dialect": "postgresql",
@@ -126,6 +126,48 @@
           "columns": [
             {
               "expression": "action",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_log_created_at_id_idx": {
+          "name": "audit_log_created_at_id_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_log_actor_id_created_at_idx": {
+          "name": "audit_log_actor_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "actor_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3477,25 +3519,19 @@
           "name": "object_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "file_name": {
           "name": "file_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "file_size_bytes": {
           "name": "file_size_bytes",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
-        },
-        "template_version_id": {
-          "name": "template_version_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "starts_on": {
           "name": "starts_on",
@@ -3574,19 +3610,6 @@
           ],
           "onDelete": "restrict",
           "onUpdate": "no action"
-        },
-        "teacher_contracts_template_version_id_fk": {
-          "name": "teacher_contracts_template_version_id_fk",
-          "tableFrom": "teacher_contracts",
-          "tableTo": "document_template_versions",
-          "columnsFrom": [
-            "template_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3600,14 +3623,6 @@
         "teacher_contracts_period_check": {
           "name": "teacher_contracts_period_check",
           "value": "\"teacher_contracts\".\"starts_on\" <= \"teacher_contracts\".\"ends_on\""
-        },
-        "teacher_contracts_file_check": {
-          "name": "teacher_contracts_file_check",
-          "value": "(\"teacher_contracts\".\"object_key\" is null) = (\"teacher_contracts\".\"file_name\" is null) and (\"teacher_contracts\".\"object_key\" is null) = (\"teacher_contracts\".\"file_size_bytes\" is null)"
-        },
-        "teacher_contracts_source_check": {
-          "name": "teacher_contracts_source_check",
-          "value": "\"teacher_contracts\".\"object_key\" is not null or \"teacher_contracts\".\"template_version_id\" is not null"
         }
       },
       "isRLSEnabled": false

@@ -650,6 +650,7 @@ sessão nenhuma.
 | `backoffice.reports` | backoffice | Relatórios |
 | `backoffice.staff` | backoffice | Equipe (cargos, MFA) |
 | `backoffice.settings` | backoffice | Configuração da plataforma |
+| `backoffice.audit` | backoffice | Auditoria (bitácora geral, OOC-122) |
 | `teacher` | docente | O portal do docente (`/docente`, login e shell próprios — mesma app) |
 | `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele (dado real desde a OOC-82). **`production: false`**: ligar é decisão do dono |
 | `teacher.grades` | docente | Ficha de notas (nota do exame final, DA, lote, observações, relatório CSV). **`production: false`** até OOC-38/OOC-102 — grava só na tela |

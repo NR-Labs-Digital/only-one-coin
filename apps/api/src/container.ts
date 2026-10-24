@@ -52,6 +52,7 @@ import {
   ResolvePortalSignInEmailUseCase,
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
+  GetCatalogEntryStateUseCase,
   SettlePaymentUseCase,
   RequestReceiptRereadUseCase,
   RemoveStaffAccessUseCase,
@@ -188,6 +189,7 @@ import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRos
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
+import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
@@ -311,6 +313,7 @@ export interface AppUseCases {
   catalog: {
     retire: RetireCatalogEntryUseCase;
     restore: RestoreCatalogEntryUseCase;
+    getState: GetCatalogEntryStateUseCase;
     createCourse: CreateCourseUseCase;
     updateCourse: UpdateCourseUseCase;
     createPlan: CreatePlanUseCase;
@@ -352,6 +355,7 @@ export interface AppQueries {
   classGroupRoster: ClassGroupRosterQuery;
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
+  auditLog: AuditLogQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
 }
 
@@ -583,6 +587,7 @@ function buildContainer(): AppContainer {
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
+  const getCatalogEntryState = new GetCatalogEntryStateUseCase(catalogEntryRepository);
   const createCourse = new CreateCourseUseCase(courseRepository, auditLogRepository);
   const updateCourse = new UpdateCourseUseCase(courseRepository, auditLogRepository);
   const createPlan = new CreatePlanUseCase(courseRepository, planRepository, auditLogRepository);
@@ -658,6 +663,7 @@ function buildContainer(): AppContainer {
   const getOwnClassGroup = new GetOwnClassGroupUseCase(teacherRepository, teachingReader);
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
+  const auditLogQuery = new AuditLogQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
 
   return {
@@ -794,6 +800,7 @@ function buildContainer(): AppContainer {
       catalog: {
         retire: retireCatalogEntry,
         restore: restoreCatalogEntry,
+        getState: getCatalogEntryState,
         createCourse,
         updateCourse,
         createPlan,
@@ -834,6 +841,7 @@ function buildContainer(): AppContainer {
       classGroupRoster,
       listStaff,
       listStaffRoleChanges,
+      auditLog: auditLogQuery,
       getPasswordChangedAt,
     },
   };

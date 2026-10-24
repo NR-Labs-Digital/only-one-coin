@@ -7,6 +7,7 @@ import {
   canConfigureCourse,
   canCreateCourse,
   canManagePrices,
+  canRetireCatalogEntry,
 } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
@@ -58,6 +59,7 @@ export default async function CoursesPage({
           canCreate={canCreateCourse(staff.role)}
           canConfigure={canConfigureCourse(staff.role)}
           canManagePrices={canManagePrices(staff.role)}
+          canRetire={canRetireCatalogEntry(staff.role)}
         />
       )}
     </div>

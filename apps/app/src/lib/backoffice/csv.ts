@@ -41,3 +41,43 @@ export function downloadBlob(fileName: string, blob: Blob): void {
 export function downloadCsv(fileName: string, csv: string): void {
   downloadBlob(fileName, new Blob([csv], { type: 'text/csv;charset=utf-8' }))
 }
+
+/**
+ * NDJSON in, CSV out, as it streams — what an export route handler hands the
+ * browser: `apps/api` picks the rows, this writes them in the reader's
+ * language, and the file is never held whole in the function. `header` is the
+ * first bytes (BOM and titles); a line split across two chunks waits in
+ * `pending` for its end.
+ */
+export function ndjsonToCsv<T>(
+  source: ReadableStream<Uint8Array>,
+  header: string,
+  line: (row: T) => string,
+): ReadableStream<Uint8Array> {
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let pending = ''
+  const toCsv = (lines: string[]) =>
+    lines
+      .filter((text) => text.trim() !== '')
+      .map((text) => line(JSON.parse(text) as T))
+      .join('')
+
+  return source.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(header))
+      },
+      transform(chunk, controller) {
+        const lines = (pending + decoder.decode(chunk, { stream: true })).split('\n')
+        pending = lines.pop() ?? ''
+        const csv = toCsv(lines)
+        if (csv) controller.enqueue(encoder.encode(csv))
+      },
+      flush(controller) {
+        const csv = toCsv([pending + decoder.decode()])
+        if (csv) controller.enqueue(encoder.encode(csv))
+      },
+    }),
+  )
+}

@@ -61,6 +61,7 @@ import { listOpenClassGroupsRoute } from "@/http/catalog/ListOpenClassGroupsRout
 import { getPublicCatalogRoute } from "@/http/catalog/GetPublicCatalogRoute.js";
 import { retireCatalogEntryRoute } from "@/http/catalog/RetireCatalogEntryRoute.js";
 import { restoreCatalogEntryRoute } from "@/http/catalog/RestoreCatalogEntryRoute.js";
+import { getCatalogEntryStateRoute } from "@/http/catalog/GetCatalogEntryStateRoute.js";
 import { listCoursesRoute } from "@/http/catalog/ListCoursesRoute.js";
 import { getCourseRoute } from "@/http/catalog/GetCourseRoute.js";
 import { createCourseRoute } from "@/http/catalog/CreateCourseRoute.js";
@@ -93,6 +94,9 @@ import { regenerateOwnRecoveryCodesRoute } from "@/http/identity/RegenerateOwnRe
 import { disableOwnMfaRoute } from "@/http/identity/DisableOwnMfaRoute.js";
 import { listStaffRoute } from "@/http/identity/ListStaffRoute.js";
 import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesRoute.js";
+import { exportAuditLogRoute } from "@/http/audit/ExportAuditLogRoute.js";
+import { listAuditActorsRoute } from "@/http/audit/ListAuditActorsRoute.js";
+import { listAuditLogRoute } from "@/http/audit/ListAuditLogRoute.js";
 import { createStaffInviteRoute } from "@/http/identity/CreateStaffInviteRoute.js";
 import { renewStaffInviteRoute } from "@/http/identity/RenewStaffInviteRoute.js";
 import { cancelStaffInviteRoute } from "@/http/identity/CancelStaffInviteRoute.js";
@@ -206,6 +210,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getPublicCatalogRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(retireCatalogEntryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(restoreCatalogEntryRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getCatalogEntryStateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listCoursesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getCourseRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createCourseRoute);
@@ -238,6 +243,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(disableOwnMfaRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoleChangesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listAuditLogRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listAuditActorsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(exportAuditLogRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renewStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(cancelStaffInviteRoute);

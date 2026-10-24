@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { CatalogErrorKey, CourseRow, PlanDetail } from '@/lib/backoffice/types'
-import { catalogWrite } from '@/lib/backoffice/catalog-client'
+import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
 import {
@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { BoIcon } from '@/components/backoffice/icons'
+import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -26,21 +27,35 @@ const primaryButtonClass =
 const secondaryButtonClass =
   'inline-flex min-h-tap items-center rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink'
 
-type Notice = { kind: 'created' | 'price_scheduled' } | { kind: 'error'; error: CatalogErrorKey }
+const dangerButtonClass =
+  'inline-flex min-h-tap items-center rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-red-700 transition hover:border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40'
+
+type Notice =
+  | { kind: 'created' | 'price_scheduled' | 'restored' }
+  | { kind: 'retired'; liveEnrollments: number }
+  | { kind: 'error'; error: CatalogErrorKey }
 
 /**
  * A course's plans and the history of each price (OOC-36). Prices are
  * versioned and never edited (CLAUDE.md §5): the only write here for money is
  * "schedule a new price", and the sheet says so where the reader would look
  * for an edit button.
+ *
+ * Taking a plan off sale is a separate gate from pricing it: whoever opens
+ * class groups decides what stops being sold (CLAUDE.md §1, the retire route's
+ * roles), the same way they retire a class group. Enrollments already made on
+ * it keep their price; the confirmation says how many are still standing.
  */
 export function CoursePlansSheet({
   course,
   canManage,
+  canRetire,
   onClose,
 }: {
   course: CourseRow | null
   canManage: boolean
+  /** Retire and restore a plan — master, admin and enrollment_supervisor. */
+  canRetire: boolean
   onClose: () => void
 }) {
   const t = useTranslations('bo')
@@ -126,7 +141,9 @@ export function CoursePlansSheet({
               ) : (
                 notice && (
                   <p role="status" className="text-sm text-emerald-700">
-                    {t(`plans.${notice.kind}`)}
+                    {notice.kind === 'retired'
+                      ? t('plans.retired', { count: notice.liveEnrollments })
+                      : t(`plans.${notice.kind}`)}
                   </p>
                 )
               )}
@@ -142,7 +159,13 @@ export function CoursePlansSheet({
               )}
 
               {plans?.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} canManage={canManage} onChanged={(next) => changed(next, course.id)} />
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  canManage={canManage}
+                  canRetire={canRetire}
+                  onChanged={(next) => changed(next, course.id)}
+                />
               ))}
 
               {canManage && plans && (
@@ -159,10 +182,12 @@ export function CoursePlansSheet({
 function PlanCard({
   plan,
   canManage,
+  canRetire,
   onChanged,
 }: {
   plan: PlanDetail
   canManage: boolean
+  canRetire: boolean
   onChanged: (notice: Notice | null) => Promise<void>
 }) {
   const t = useTranslations('bo')
@@ -171,6 +196,7 @@ function PlanCard({
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(plan.name)
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState<'retire' | 'restore' | null>(null)
 
   const now = Date.now()
   const current = plan.prices.find((price) => price.id === plan.currentPriceId)
@@ -189,6 +215,22 @@ function PlanCard({
     }
     setRenaming(false)
     await onChanged(null)
+  }
+
+  async function setOnSale(verb: 'retire' | 'restore') {
+    setBusy(true)
+    const result = await setCatalogEntryOnOffer('plan', plan.id, verb)
+    setBusy(false)
+    if (!result.ok) {
+      await onChanged({ kind: 'error', error: result.error })
+      return
+    }
+    setConfirming(null)
+    await onChanged(
+      verb === 'retire'
+        ? { kind: 'retired', liveEnrollments: result.data.liveEnrollments }
+        : { kind: 'restored' },
+    )
   }
 
   async function schedule(amountCents: number, validFrom: string | undefined) {
@@ -318,6 +360,39 @@ function PlanCard({
             </>
           )}
         </div>
+      )}
+
+      {canRetire && !renaming && confirming === null && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirming(plan.active ? 'retire' : 'restore')}
+            className={plan.active ? dangerButtonClass : secondaryButtonClass}
+          >
+            {t(plan.active ? 'plans.retire' : 'plans.restore')}
+          </button>
+        </div>
+      )}
+
+      {confirming === 'retire' && (
+        <RetireConfirmation
+          kind="plan"
+          id={plan.id}
+          text={t('plans.confirm_retire')}
+          pending={busy}
+          onConfirm={() => void setOnSale('retire')}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
+
+      {confirming === 'restore' && (
+        <CatalogConfirmation
+          text={t('plans.confirm_restore')}
+          pending={busy}
+          onConfirm={() => void setOnSale('restore')}
+          onCancel={() => setConfirming(null)}
+        />
       )}
 
       {canManage && pricing && (

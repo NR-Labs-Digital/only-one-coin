@@ -482,7 +482,7 @@ export const teacherAvailability = pgTable(
 // same text can be printed again) — the signed copy is kept outside the
 // platform. Rows filed before that (OOC-81) carry the uploaded PDF instead:
 // `object_key`, `file_name` and `file_size_bytes` come together or not at
-// all, and every row has a file or a template version (0035). "No contract"
+// all, and every row has a file or a template version (0036). "No contract"
 // is no row. Append-only (0025 lock): correcting one is recording a new one.
 // The current contract is the latest by `created_at`. `uploaded_by` is
 // whoever recorded it — Better Auth's "user".id, FK hand-written in 0025; the
@@ -1104,6 +1104,11 @@ export const auditLog = pgTable(
     // the day's approvals (OOC-67) on every visit, and would otherwise scan
     // the whole trail.
     index("audit_log_action_created_at_idx").on(table.action, table.createdAt),
+    // The general log (OOC-122) pages the whole trail newest first by
+    // `(created_at, id)` — without this every unfiltered page sorts every row
+    // ever written — and filters by who did it.
+    index("audit_log_created_at_id_idx").on(table.createdAt, table.id),
+    index("audit_log_actor_id_created_at_idx").on(table.actorId, table.createdAt),
   ],
 );
 

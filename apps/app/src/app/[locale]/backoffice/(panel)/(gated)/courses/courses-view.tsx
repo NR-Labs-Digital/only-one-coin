@@ -38,11 +38,14 @@ export function CoursesView({
   canCreate,
   canConfigure,
   canManagePrices,
+  canRetire,
 }: {
   rows: CourseRow[]
   canCreate: boolean
   canConfigure: boolean
   canManagePrices: boolean
+  /** Take a course or a plan off the catalog, and put it back. */
+  canRetire: boolean
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
@@ -83,6 +86,12 @@ export function CoursesView({
    * checkout still opens, with nothing chosen, so nobody would notice
    * otherwise. Shown to whoever can fix it.
    */
+  /** The languages already in use — the hint under the language field names them. */
+  const languages = useMemo(
+    () => [...new Map(courses.map((row) => [row.language.id, row.language])).values()],
+    [courses],
+  )
+
   const unlinkedPages = useMemo(() => {
     const holders = landingKeyHolders(courses)
     return LANDING_COURSE_KEYS.filter((key) => !holders.has(key))
@@ -176,7 +185,7 @@ export function CoursesView({
       {creating && (
         <NewCourseForm
           courses={courses}
-          languages={[...new Map(courses.map((row) => [row.language.id, row.language])).values()]}
+          languages={languages}
           onCancel={() => setCreating(false)}
           onCreated={() => {
             setCreating(false)
@@ -371,7 +380,8 @@ export function CoursesView({
       <CourseOptionsSheet
         course={configuring}
         courses={courses}
-        canLinkLanding={canCreate}
+        canEditIdentity={canCreate}
+        languages={languages}
         onClose={() => setConfiguring(null)}
         onSaved={(message, live) => {
           setToast(
@@ -390,6 +400,7 @@ export function CoursesView({
       <CoursePlansSheet
         course={pricing}
         canManage={canManagePrices}
+        canRetire={canRetire}
         onClose={() => {
           setPricing(null)
           // The row's plan count and price warning come from the server.

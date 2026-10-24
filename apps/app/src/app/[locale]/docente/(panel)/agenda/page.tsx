@@ -35,6 +35,15 @@ export default async function TeacherAgendaPage({
           title={t('teacher_home.load_error_title')}
           body={t('teacher_home.load_error_body')}
         />
+      ) : classGroups.length === 0 ? (
+        /* Nothing to teach: the same state as the home, not an empty
+           calendar (OOC-101). `agenda.empty` stays for the teacher whose
+           class groups have no dates yet to draw. */
+        <EmptyState
+          icon="courses"
+          title={t('teacher_home.no_active_title')}
+          body={t('teacher_home.no_active_body')}
+        />
       ) : (
         <TeacherAgenda
           groups={classGroups

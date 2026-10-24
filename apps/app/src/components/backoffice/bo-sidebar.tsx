@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Home,
   Mail,
+  ScrollText,
   Settings,
   ToggleRight,
   UserCog,
@@ -56,6 +57,7 @@ const icons = {
   email: Mail,
   reports: BarChart3,
   staff: UserCog,
+  audit: ScrollText,
   features: ToggleRight,
   settings: Settings,
 } satisfies Record<string, LucideIcon>
