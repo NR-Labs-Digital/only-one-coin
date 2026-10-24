@@ -175,6 +175,17 @@ export function canEditStudent(role: StaffRole): boolean {
 }
 
 /**
+ * Who takes the directory away as a CSV (OOC-121): the same three who keep the
+ * file, so nobody exports a document or contact the ficha would not show them.
+ * `sales` and `support` answer for one student at a time; the whole base does
+ * not leave with them. The enforcing check is `STUDENT_EXPORT_ROLES` on the
+ * route in `apps/api`.
+ */
+export function canExportStudents(role: StaffRole): boolean {
+  return canEditStudent(role)
+}
+
+/**
  * Who sends a student their portal access from the file — the same audience
  * as the file itself (`GetStudentRoute`) and the API route behind the button
  * (`IssuePortalAccessRoute`). Billing settles money; it does not hand out
