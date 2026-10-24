@@ -58,7 +58,7 @@ Fora desta semana, de propósito: notas e frequência (37), certificados (45, OO
 | Frente | Tickets | Prazo |
 | --- | --- | --- |
 | Docentes | ~~OOC-79 (conta ↔ ficha, fim do `DEMO_TEACHER_ID`)~~ ✅ → ~~OOC-82 (portal `/docente` sobre o PR #136, com dado real) + OOC-101~~ ✅ · OOC-81 (contrato) | 21 · 23 · 22/10 |
-| Configurações e catálogo | OOC-41 (parâmetros reais) · OOC-70 (editar curso, aposentar plano, editar/aposentar período) · OOC-61 (flags desligados visíveis para os donos) | 21 · 20 · 20/10 |
+| Configurações e catálogo | OOC-41 (parâmetros reais) · OOC-70 (editar curso, aposentar plano, editar/aposentar período) · ~~OOC-61 (flags desligados visíveis para os donos)~~ ✅ | 21 · 20 · 20/10 |
 | Pagos, Alunos, Auditoria | OOC-120 (ordenação por confiança, atalhos, reprocessar) · OOC-121 (exportar alunos) · OOC-122 (tela de auditoria) | 22 · 23 · 23/10 |
 
 Esperando decisão: OOC-72 (como chega o consentimento do apoderado), quem exporta alunos (OOC-121) e quem vê a auditoria (OOC-122), a regra de suspensão de aluno, e as regras de nota que o PR #136 grava no `CLAUDE.md`.
