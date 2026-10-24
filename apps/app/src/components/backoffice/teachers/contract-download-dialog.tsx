@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { generateContract, type ContractDocumentFailure } from '@/lib/backoffice/contract-download'
 import {
   Dialog,
   DialogContent,
@@ -11,30 +12,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-/** Why the contract did not come out, as something the dialog can say. */
-type ContractDownloadFailure =
-  | 'not_published'
-  | 'out_of_order'
-  | 'missing_value'
-  | 'unavailable'
-  | 'failed'
-
 const ERROR_KEY = {
   not_published: 'teachers.contract_download_error_not_published',
   out_of_order: 'teachers.contract_dates_out_of_order',
   missing_value: 'teachers.contract_download_error_missing_value',
   unavailable: 'teachers.contract_download_error_unavailable',
   failed: 'teachers.contract_download_error_failed',
-} as const satisfies Record<ContractDownloadFailure, string>
-
-/** The API's `reason`, reduced to the dialog's message — never shown as is (CLAUDE.md §4). */
-function failureOf(status: number, reason: string | undefined): ContractDownloadFailure {
-  if (reason === 'document_template.not_published') return 'not_published'
-  if (reason === 'teacher_contract.period_out_of_order') return 'out_of_order'
-  if (reason === 'document_template.missing_value') return 'missing_value'
-  if (status === 503) return 'unavailable'
-  return 'failed'
-}
+} as const satisfies Record<ContractDocumentFailure, string>
 
 /** Today in Lima, `YYYY-MM-DD` — the day the contract would usually start. */
 function todayInLima(): string {
@@ -48,28 +32,31 @@ const labelClass =
   'text-xs font-medium uppercase tracking-wide text-muted-foreground'
 
 /**
- * Downloads the teacher contract, filled from the file and the published
- * template (OOC-123). The period is asked here because the contract prints
- * it; nothing is recorded — the PDF is built on demand and the signed copy is
- * kept outside the platform (decision of 23/10/2026; recording the period is
- * OOC-124).
+ * Generates the teacher contract, filled from the file and the published
+ * template (OOC-123). The period asked here is printed on the contract and
+ * recorded with it (OOC-124) — it is what the roster's alert watches. The PDF
+ * is never stored, and the signed copy is kept outside the platform (decision
+ * of 23/10/2026).
  */
 export function ContractDownloadDialog({
   open,
   teacherId,
   teacherName,
   onClose,
+  onGenerated,
 }: {
   open: boolean
   teacherId: string
   teacherName: string
   onClose: () => void
+  /** The contract was recorded and its PDF saved. */
+  onGenerated: () => void
 }) {
   const t = useTranslations('bo')
   const [startsOn, setStartsOn] = useState('')
   const [endsOn, setEndsOn] = useState('')
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<ContractDownloadFailure | null>(null)
+  const [error, setError] = useState<ContractDocumentFailure | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -85,32 +72,18 @@ export function ContractDownloadDialog({
     if (!ready) return
     setPending(true)
     setError(null)
-    try {
-      const response = await fetch(
-        `/api/v1/teachers/${encodeURIComponent(teacherId)}/contract-document`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ startsOn, endsOn }),
-        },
-      )
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { reason?: string } | null
-        setError(failureOf(response.status, body?.reason))
-        return
-      }
-      const url = URL.createObjectURL(await response.blob())
-      const link = document.createElement('a')
-      link.href = url
-      link.download = t('teachers.contract_download_file_name', { name: teacherName })
-      link.click()
-      URL.revokeObjectURL(url)
-      onClose()
-    } catch {
-      setError('failed')
-    } finally {
-      setPending(false)
+    const result = await generateContract({
+      teacherId,
+      startsOn,
+      endsOn,
+      fileName: t('teachers.contract_download_file_name', { name: teacherName }),
+    })
+    setPending(false)
+    if (!result.ok) {
+      setError(result.failure)
+      return
     }
+    onGenerated()
   }
 
   return (

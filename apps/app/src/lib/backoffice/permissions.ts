@@ -135,10 +135,11 @@ export function canEditTeachers(role: StaffRole): boolean {
 }
 
 /**
- * Who downloads a filed contract (OOC-81) — the roster's readers, analyst
- * included; the teacher does not, even on their own file. Mirrors
- * `TEACHER_READ_ROLES` on `GET /teachers/:id/contracts/:id/file`. Filing one
- * is an edit: `canEditTeachers`.
+ * Who downloads a recorded contract — the roster's readers, analyst included;
+ * the teacher does not, even on their own file. Mirrors `TEACHER_READ_ROLES`
+ * on `GET /teachers/:id/contracts/:id/document` (generated, OOC-124) and
+ * `…/file` (filed, OOC-81). Generating one records it, so it is an edit:
+ * `canEditTeachers`.
  */
 export function canOpenTeacherContracts(role: StaffRole): boolean {
   return canManageTeachers(role)
