@@ -1665,7 +1665,21 @@
       "load_error_title": "The teacher roster could not be loaded",
       "load_error_body": "The system did not respond. Reload the page; if nothing changes, let the tech team know.",
       "save_error_duplicate": "A teacher is already registered with this document.",
-      "save_error_generic": "Could not save. Try again in a moment."
+      "save_error_generic": "Could not save. Try again in a moment.",
+      "contract_download_action": "Generate contract",
+      "contract_download_title": "Generate contract",
+      "contract_download_hint": "The contract comes from the published template, with this file's details and the period you choose. It is not kept on the platform: print it, sign it and keep the signed copy.",
+      "contract_download_starts": "Start date",
+      "contract_download_ends": "End date",
+      "contract_download_confirm": "Download PDF",
+      "contract_download_cancel": "Cancel",
+      "contract_download_close": "Close",
+      "contract_download_pending": "Preparing the contract…",
+      "contract_download_file_name": "Contract - {name}.pdf",
+      "contract_download_error_not_published": "There is no published contract template yet.",
+      "contract_download_error_missing_value": "The template uses a detail this file does not have. Complete the file or adjust the template.",
+      "contract_download_error_unavailable": "The PDF could not be generated right now. Try again in a few minutes.",
+      "contract_download_error_failed": "The contract could not be downloaded. Try again."
     },
     "teacher_status": {
       "active": "Active",
@@ -1959,7 +1973,8 @@
       "load_error_title": "Could not load the settings",
       "load_error_body": "The system did not answer. Reload the page; if it keeps happening, tell the technical team.",
       "rules_load_error_title": "Could not load the academic rules",
-      "rules_load_error_body": "Without the passing grade and the certificate deadline this screen cannot tell who passed. Reload the page; if it keeps happening, tell the technical team."
+      "rules_load_error_body": "Without the passing grade and the certificate deadline this screen cannot tell who passed. Reload the page; if it keeps happening, tell the technical team.",
+      "documents_title": "Documents"
     },
     "features": {
       "title": "Features",
@@ -2194,6 +2209,97 @@
       "case_image": "Enlarge the receipt",
       "case_reread": "Ask for a new reading",
       "case_escape": "Step back / close"
+    },
+    "documents": {
+      "fields": {
+        "teacher": {
+          "fullName": "Full name",
+          "firstName": "First names",
+          "lastName": "Last names",
+          "documentType": "Document type",
+          "nationalId": "Document number",
+          "nationality": "Nationality",
+          "email": "Email",
+          "phone": "Mobile",
+          "address": "Address",
+          "city": "City",
+          "region": "Region",
+          "country": "Country",
+          "languages": "Languages taught"
+        },
+        "contract": {
+          "startsOn": "Contract start",
+          "endsOn": "Contract end"
+        },
+        "issuedOn": "Issue date",
+        "org": {
+          "legalName": "Legal name",
+          "ruc": "RUC",
+          "address": "Company address"
+        }
+      },
+      "groups": {
+        "teacher": "Teacher",
+        "contract": "Contract",
+        "org": "Company"
+      },
+      "kind": {
+        "teacher_contract": "Teacher contract"
+      },
+      "intro": "Write the text as in any document. Each teacher's details go in with “Insert data” and fill themselves in when the contract is downloaded. The preview shows the PDF as it will come out, with sample data.",
+      "editor_label": "Document text",
+      "preview_label": "PDF preview",
+      "preview_title": "Preview",
+      "preview_sample": "With sample data",
+      "preview_pending": "Updating the preview…",
+      "preview_page": "Page {page} of {pages}",
+      "preview_error_has_issues": "Fix the details marked in red to see the preview.",
+      "preview_error_missing_value": "The sample lacks a detail the text prints.",
+      "preview_error_unavailable": "The preview is not available right now. Try again in a few minutes.",
+      "preview_error_failed": "The preview could not be updated.",
+      "published_version": "Version {version} published on {date}",
+      "never_published": "No version published yet",
+      "unsaved_changes": "Unsaved changes",
+      "draft_saved": "Draft saved on {date}",
+      "draft_not_published": "the draft is not published yet",
+      "save_draft": "Save draft",
+      "publish": "Publish",
+      "cancel": "Cancel",
+      "publish_confirm_title": "Publish the document",
+      "publish_confirm_body": "From now on, every contract downloaded will use this text. Ones already downloaded do not change.",
+      "publish_confirm": "Yes, publish",
+      "notice_saved": "Draft saved.",
+      "notice_published": "Published. New contracts already use this text.",
+      "notice_unchanged": "This text was already the published version.",
+      "error_save_failed": "The draft could not be saved. Try again.",
+      "error_publish_failed": "It could not be published. Try again.",
+      "error_publish_conflict": "Someone else published at the same time. Reload the page and check the text.",
+      "issues_title": "Before publishing, fix this:",
+      "issue_syntax_error": "There is an unclosed data instruction in the text.",
+      "issue_unknown_variable": "There is a detail this document does not recognize (marked in red). Delete it and insert it again from “Insert data”.",
+      "issue_unknown_filter": "There is a data format that does not exist.",
+      "issue_forbidden_tag": "The text uses an instruction that is not allowed in documents.",
+      "issue_too_large": "The text is too long.",
+      "issue_other": "The text has a problem that prevents publishing.",
+      "unknown_field": "Unrecognized detail",
+      "insert_field": "Insert data",
+      "tool_bold": "Bold",
+      "tool_italic": "Italic",
+      "tool_underline": "Underline",
+      "tool_title": "Title",
+      "tool_subtitle": "Subtitle",
+      "tool_bullets": "Bulleted list",
+      "tool_numbers": "Numbered list",
+      "tool_align_left": "Align left",
+      "tool_align_center": "Center",
+      "tool_align_right": "Align right",
+      "tool_align_justify": "Justify",
+      "tool_undo": "Undo",
+      "tool_redo": "Redo",
+      "tab_edit": "Edit",
+      "tab_preview": "Preview",
+      "load_error_title": "The document could not be opened",
+      "load_error_body": "The system did not respond. Reload the page; if it persists, tell the tech team."
     }
   }
 }

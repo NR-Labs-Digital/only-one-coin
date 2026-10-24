@@ -1,0 +1,15 @@
+{
+  "frame": {
+    "ruc": "RUC",
+    "page": "Página",
+    "pageOf": "de"
+  },
+  "nationalIdTypes": {
+    "DNI": "DNI",
+    "CE": "Carné de extranjería",
+    "passport": "Pasaporte"
+  },
+  "teacherContract": {
+    "starterBody": "<p style=\"text-align: center\"><strong>[TEXTO DE EJEMPLO — reemplácelo por el modelo de contrato de la institución]</strong></p><h1 style=\"text-align: center\">CONTRATO DE LOCACIÓN DE SERVICIOS</h1><p style=\"text-align: justify\">Conste por el presente documento el contrato de locación de servicios que celebran, de una parte, <strong>{{ org.legalName }}</strong>, con RUC N.º {{ org.ruc }} y domicilio en {{ org.address }}, a quien en adelante se denominará <strong>LA INSTITUCIÓN</strong>; y, de la otra parte, <strong>{{ teacher.fullName }}</strong>, identificado(a) con {{ teacher.documentType }} N.º {{ teacher.nationalId }}, de nacionalidad {{ teacher.nationality }}, con domicilio en {{ teacher.address }}, a quien en adelante se denominará <strong>EL LOCADOR</strong>; en los términos y condiciones siguientes:</p><h2>PRIMERA: OBJETO</h2><p style=\"text-align: justify\">EL LOCADOR se compromete a prestar servicios de enseñanza de {{ teacher.languages }} en las aulas virtuales que LA INSTITUCIÓN le asigne.</p><h2>SEGUNDA: PLAZO</h2><p style=\"text-align: justify\">El presente contrato rige desde el {{ contract.startsOn | local_date }} hasta el {{ contract.endsOn | local_date }}.</p><p style=\"text-align: justify\">Firmado en Lima, el {{ issuedOn | local_date }}.</p><p><br></p><p>______________________________<br>{{ org.legalName }}</p><p><br></p><p>______________________________<br>{{ teacher.fullName }}<br>{{ teacher.documentType }} N.º {{ teacher.nationalId }}</p>"
+  }
+}

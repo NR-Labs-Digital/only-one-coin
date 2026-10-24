@@ -1304,3 +1304,42 @@ export const platformSettings = pgTable(
     check("platform_settings_contract_alert_days_check", sql`${table.contractAlertDays} between 1 and 180`),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Editable document templates (OOC-123)
+// ---------------------------------------------------------------------------
+
+// The workbench: one draft per document kind, rewritten on every save and
+// allowed to be wrong. A draft issues nothing, so it is an ordinary mutable
+// row. `updated_by` is Better Auth's "user".id — FK written by hand in 0034.
+export const documentTemplateDrafts = pgTable(
+  "document_template_drafts",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    body: text("body").notNull(),
+    updatedBy: text("updated_by").notNull(),
+    ...timestamps(),
+  },
+  (table) => [uniqueIndex("document_template_drafts_kind_uidx").on(table.kind)],
+);
+
+// What documents are issued from: append-only (0034 lock), numbered per kind.
+// The one in force is the highest `version`; a document generated from it
+// points here and keeps pointing after a newer one is published.
+// `published_by` is Better Auth's "user".id — FK written by hand in 0034.
+export const documentTemplateVersions = pgTable(
+  "document_template_versions",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    version: integer("version").notNull(),
+    body: text("body").notNull(),
+    publishedBy: text("published_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("document_template_versions_kind_version_uidx").on(table.kind, table.version),
+    check("document_template_versions_version_check", sql`${table.version} > 0`),
+  ],
+);

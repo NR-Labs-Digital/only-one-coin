@@ -177,6 +177,23 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("teacher_contracts"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A published template version is what documents were issued from (OOC-123).
+  it("refuses UPDATE on document_template_versions", async () => {
+    expect(
+      await answerTo(`update document_template_versions set body = 'tampered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on document_template_versions", async () => {
+    expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_GRANT);
+  });
+
+  it("still rewrites a document template draft", async () => {
+    expect(
+      await answerTo(`update document_template_drafts set body = body where id = '${NO_SUCH_ID}'`),
+    ).toBe("SUCCEEDED");
+  });
+
   it("still moves a teacher out of the roster", async () => {
     expect(await answerTo(`update teachers set status = 'inactive' where id = '${NO_SUCH_ID}'`)).toBe("SUCCEEDED");
   });
@@ -227,6 +244,20 @@ describe("table owner (TRIGGER layer)", () => {
   // No inbound foreign key, so the trigger — not Postgres' FK rule — refuses.
   it("blocks TRUNCATE on teacher_contracts", async () => {
     expect(await answerTo("truncate teacher_contracts")).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses UPDATE on document_template_versions", async () => {
+    expect(
+      await answerTo(`update document_template_versions set body = 'tampered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on document_template_versions", async () => {
+    expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("blocks TRUNCATE on document_template_versions", async () => {
+    expect(await answerTo("truncate document_template_versions")).toBe(DENIED_BY_TRIGGER);
   });
 
   it("still appends to audit_log", async () => {

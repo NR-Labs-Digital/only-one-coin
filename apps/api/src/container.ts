@@ -34,6 +34,8 @@ import {
   RegisterStudentUseCase,
   RegisterTeacherUseCase,
   SetTeacherRosterStatusUseCase,
+  SaveDocumentTemplateDraftUseCase,
+  PublishDocumentTemplateUseCase,
   RequestTeacherContractUploadUseCase,
   FileTeacherContractUseCase,
   OpenTeacherContractUseCase,
@@ -80,6 +82,7 @@ import {
   type IPlanPriceLookup,
   type IPlanRepository,
   type IPlatformSettingsRepository,
+  type IDocumentTemplateRepository,
   type IPortalAccessRepository,
   type IPublicEnrollmentRepository,
   type IReceiptExtractionRepository,
@@ -142,6 +145,12 @@ import { DrizzleReceiptExtractionRepository } from "./infra/persistence/enrollme
 import { createS3Client } from "./infra/storage/s3Client.js";
 import { TigrisReceiptStorage } from "./infra/storage/TigrisReceiptStorage.js";
 import { ReceiptObjectStore } from "./infra/storage/ReceiptObjectStore.js";
+import { TemplateEngine } from "@ooc/templates";
+import { DocumentTemplateCompiler } from "./documents/documentKinds.js";
+import { DocumentPreviewService } from "./documents/DocumentPreviewService.js";
+import { TeacherContractDocumentService } from "./documents/TeacherContractDocumentService.js";
+import { WeasyPrintRenderer } from "./infra/pdf/WeasyPrintRenderer.js";
+import { DrizzleDocumentTemplateRepository } from "./infra/persistence/document/DrizzleDocumentTemplateRepository.js";
 import { TigrisTeacherContractStorage } from "./infra/storage/TigrisTeacherContractStorage.js";
 import { PdfLibInspector } from "./infra/pdf/PdfLibInspector.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
@@ -226,6 +235,8 @@ export interface AppRepositories {
   staffPasswordReset: IStaffPasswordResetRepository;
   featureFlagOverride: IFeatureFlagOverrideRepository;
   platformSettings: IPlatformSettingsRepository;
+  /** Editable document templates (OOC-123): drafts and published versions. */
+  templates: IDocumentTemplateRepository;
 }
 
 export interface AppUseCases {
@@ -269,6 +280,10 @@ export interface AppUseCases {
   payment: {
     settlePayment: SettlePaymentUseCase;
     requestReceiptReread: RequestReceiptRereadUseCase;
+  };
+  document: {
+    saveDraft: SaveDocumentTemplateDraftUseCase;
+    publish: PublishDocumentTemplateUseCase;
   };
   staff: {
     promoteRole: PromoteUserRoleUseCase;
@@ -373,6 +388,15 @@ export interface AppStorage {
   objectStore: ReceiptObjectStore;
 }
 
+/** Editable documents (OOC-123): the template engine, the HTML → PDF renderer and the preview. */
+export interface AppDocuments {
+  engine: TemplateEngine;
+  compiler: DocumentTemplateCompiler;
+  preview: DocumentPreviewService;
+  /** The filled teacher contract, from the published template. */
+  teacherContract: TeacherContractDocumentService;
+}
+
 /** The public-route protection (OOC-24): what stands between a burst of
  * requests and Postgres. On its own Redis connection — see createEdgeRedis. */
 export interface AppEdge {
@@ -391,6 +415,7 @@ export interface AppContainer {
   identity: AppIdentity;
   notifications: AppNotifications;
   storage: AppStorage;
+  documents: AppDocuments;
   edge: AppEdge;
   repositories: AppRepositories;
   useCases: AppUseCases;
@@ -435,6 +460,7 @@ function buildContainer(): AppContainer {
   const receiptExtractionRepository = new DrizzleReceiptExtractionRepository(db);
   const receiptRereadRepository = new DrizzleReceiptRereadRepository(db);
   const platformSettingsRepository = new DrizzlePlatformSettingsRepository(db);
+  const documentTemplateRepository = new DrizzleDocumentTemplateRepository(db);
   const userRoleRepository = new DrizzleUserRoleRepository(db);
   const auditLogRepository = new DrizzleAuditLogRepository(db);
   const staffInviteRepository = new DrizzleStaffInviteRepository(db);
@@ -464,6 +490,17 @@ function buildContainer(): AppContainer {
   const receiptObjectStore = new ReceiptObjectStore(s3Client, config.BUCKET_NAME);
   const teacherContractStorage = new TigrisTeacherContractStorage(s3Client, config.BUCKET_NAME);
   const teacherContractRepository = new DrizzleTeacherContractRepository(db);
+
+  // Editable documents (OOC-123)
+  const templateEngine = new TemplateEngine();
+  const documentCompiler = new DocumentTemplateCompiler(templateEngine);
+  const documentPreview = new DocumentPreviewService(
+    templateEngine,
+    new WeasyPrintRenderer(),
+    documentCompiler,
+    documentTemplateRepository,
+    teacherRepository,
+  );
 
   // Use cases
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
@@ -656,6 +693,17 @@ function buildContainer(): AppContainer {
     storage: {
       objectStore: receiptObjectStore,
     },
+    documents: {
+      engine: templateEngine,
+      compiler: documentCompiler,
+      preview: documentPreview,
+      teacherContract: new TeacherContractDocumentService(
+        documentPreview,
+        documentTemplateRepository,
+        teacherRepository,
+        auditLogRepository,
+      ),
+    },
     repositories: {
       catalogEntry: catalogEntryRepository,
       course: courseRepository,
@@ -680,6 +728,7 @@ function buildContainer(): AppContainer {
       staffPasswordReset: staffPasswordResetRepository,
       featureFlagOverride: featureFlagOverrideRepository,
       platformSettings: platformSettingsRepository,
+      templates: documentTemplateRepository,
     },
     useCases: {
       teacher: {
@@ -728,6 +777,10 @@ function buildContainer(): AppContainer {
       payment: {
         settlePayment,
         requestReceiptReread: new RequestReceiptRereadUseCase(receiptRereadRepository),
+      },
+      document: {
+        saveDraft: new SaveDocumentTemplateDraftUseCase(documentTemplateRepository, documentCompiler),
+        publish: new PublishDocumentTemplateUseCase(documentTemplateRepository, documentCompiler, auditLogRepository),
       },
       staff: {
         promoteRole,

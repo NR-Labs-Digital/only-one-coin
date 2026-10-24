@@ -188,7 +188,7 @@ const fullName = (first: string, last: string) => `${first} ${last}`.trim();
  * a setting), is no subject: the screen names the entity and links nothing.
  *
  * Paged by the `(created_at, id)` cursor at full microsecond precision
- * (`audit_log_created_at_id_idx`, migration 0034).
+ * (`audit_log_created_at_id_idx`, migration 0035).
  */
 export class AuditLogQuery {
   constructor(private readonly db: Db) {}

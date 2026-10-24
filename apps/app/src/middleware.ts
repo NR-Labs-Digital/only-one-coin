@@ -71,6 +71,9 @@ const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com'
 // Valor dinâmico contínuo não tem classe possível, então estilo inline fica
 // liberado; o vetor que a CSP existe pra fechar é script, e script-src segue
 // nonce + strict-dynamic.
+// `worker-src 'self'`: the document editor draws its PDF preview with pdf.js,
+// whose worker is a file of our own bundle (OOC-123). Without it a worker falls
+// back to script-src, where 'strict-dynamic' ignores 'self' and refuses it.
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development'
   return `
@@ -81,6 +84,7 @@ function buildCsp(nonce: string): string {
     font-src 'self';
     connect-src 'self'${receiptBucketOrigin()};
     frame-src ${TURNSTILE_ORIGIN};
+    worker-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';

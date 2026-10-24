@@ -15,6 +15,7 @@ const contract = defineTemplateKind({
       fullName: z.string().describe("Nombre completo del docente"),
       nationalId: z.string(),
       phone: z.string().optional(),
+      region: z.string().nullable(),
     }),
     org: z.object({ legalName: z.string(), ruc: z.string() }),
     contract: z.object({ startsOn: z.string(), endsOn: z.string(), feeCents: z.number().int() }),
@@ -22,7 +23,7 @@ const contract = defineTemplateKind({
     signedAt: z.coerce.date(),
   }),
   sample: {
-    teacher: { fullName: "Ana Quispe", nationalId: "12345678" },
+    teacher: { fullName: "Ana Quispe", nationalId: "12345678", region: null },
     org: { legalName: "INGLES POR UN SOL S.A.C.", ruc: "20613918028" },
     contract: { startsOn: "2026-11-01", endsOn: "2026-12-31", feeCents: 150000 },
     groups: [
@@ -106,7 +107,7 @@ describe("render", () => {
     const html = await engine.render(
       contract,
       "<p>{{ teacher.fullName }} · RUC {{ org.ruc }}</p>",
-      { ...contract.sample, teacher: { fullName: "<script>x</script>", nationalId: "1" } },
+      { ...contract.sample, teacher: { fullName: "<script>x</script>", nationalId: "1", region: null } },
       { locale: "es-PE" },
     );
     expect(html).toBe("<p>&lt;script&gt;x&lt;/script&gt; · RUC 20613918028</p>");
@@ -164,6 +165,15 @@ describe("render", () => {
       .catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(TemplateRenderError);
     expect(error).toMatchObject({ code: "missing_value" });
+  });
+
+  it("fails on a nullable value left empty too — null is not a value to print", async () => {
+    await expect(
+      engine.renderSample(contract, "Región: {{ teacher.region }}", { locale: "es-PE" }),
+    ).rejects.toMatchObject({ code: "missing_value" });
+    expect(
+      await engine.renderSample(contract, '{{ teacher.region | default: "—" }}', { locale: "es-PE" }),
+    ).toBe("—");
   });
 
   it("lets the template guard an optional value itself", async () => {

@@ -1665,7 +1665,21 @@
       "load_error_title": "Não foi possível carregar o quadro de docentes",
       "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar igual, avise a equipe técnica.",
       "save_error_duplicate": "Já existe um docente cadastrado com este documento.",
-      "save_error_generic": "Não foi possível salvar. Tente de novo em instantes."
+      "save_error_generic": "Não foi possível salvar. Tente de novo em instantes.",
+      "contract_download_action": "Gerar contrato",
+      "contract_download_title": "Gerar contrato",
+      "contract_download_hint": "O contrato sai do modelo publicado, com os dados desta ficha e o período que você escolher. Ele não fica salvo na plataforma: imprima, assine e guarde a cópia assinada.",
+      "contract_download_starts": "Início da vigência",
+      "contract_download_ends": "Fim da vigência",
+      "contract_download_confirm": "Baixar PDF",
+      "contract_download_cancel": "Cancelar",
+      "contract_download_close": "Fechar",
+      "contract_download_pending": "Preparando o contrato…",
+      "contract_download_file_name": "Contrato - {name}.pdf",
+      "contract_download_error_not_published": "Ainda não há um modelo de contrato publicado.",
+      "contract_download_error_missing_value": "O modelo usa um dado que esta ficha não tem. Complete a ficha ou ajuste o modelo.",
+      "contract_download_error_unavailable": "Não foi possível gerar o PDF agora. Tente de novo em alguns minutos.",
+      "contract_download_error_failed": "Não foi possível baixar o contrato. Tente de novo."
     },
     "teacher_status": {
       "active": "Ativo",
@@ -1959,7 +1973,8 @@
       "load_error_title": "Não foi possível carregar as configurações",
       "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar, avise a equipe técnica.",
       "rules_load_error_title": "Não foi possível carregar as regras acadêmicas",
-      "rules_load_error_body": "Sem a nota mínima e o prazo do certificado esta tela não consegue decidir quem foi aprovado. Recarregue a página; se continuar, avise a equipe técnica."
+      "rules_load_error_body": "Sem a nota mínima e o prazo do certificado esta tela não consegue decidir quem foi aprovado. Recarregue a página; se continuar, avise a equipe técnica.",
+      "documents_title": "Documentos"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2194,6 +2209,97 @@
       "case_image": "Ampliar o comprovante",
       "case_reread": "Pedir uma nova leitura",
       "case_escape": "Voltar um passo / fechar"
+    },
+    "documents": {
+      "fields": {
+        "teacher": {
+          "fullName": "Nome completo",
+          "firstName": "Nomes",
+          "lastName": "Sobrenomes",
+          "documentType": "Tipo de documento",
+          "nationalId": "Número do documento",
+          "nationality": "Nacionalidade",
+          "email": "E-mail",
+          "phone": "Celular",
+          "address": "Endereço",
+          "city": "Cidade",
+          "region": "Região",
+          "country": "País",
+          "languages": "Idiomas que ensina"
+        },
+        "contract": {
+          "startsOn": "Início do contrato",
+          "endsOn": "Fim do contrato"
+        },
+        "issuedOn": "Data de emissão",
+        "org": {
+          "legalName": "Razão social",
+          "ruc": "RUC",
+          "address": "Endereço da empresa"
+        }
+      },
+      "groups": {
+        "teacher": "Docente",
+        "contract": "Contrato",
+        "org": "Empresa"
+      },
+      "kind": {
+        "teacher_contract": "Contrato do docente"
+      },
+      "intro": "Escreva o texto como num documento comum. Os dados de cada docente entram por «Inserir dado» e são preenchidos sozinhos ao baixar o contrato. Na pré-visualização você vê o PDF como vai sair, com dados de exemplo.",
+      "editor_label": "Texto do documento",
+      "preview_label": "Pré-visualização do PDF",
+      "preview_title": "Pré-visualização",
+      "preview_sample": "Com dados de exemplo",
+      "preview_pending": "Atualizando a pré-visualização…",
+      "preview_page": "Página {page} de {pages}",
+      "preview_error_has_issues": "Corrija os dados marcados em vermelho para ver a pré-visualização.",
+      "preview_error_missing_value": "Falta no exemplo um dado que o texto imprime.",
+      "preview_error_unavailable": "A pré-visualização não está disponível agora. Tente em alguns minutos.",
+      "preview_error_failed": "Não foi possível atualizar a pré-visualização.",
+      "published_version": "Versão {version} publicada em {date}",
+      "never_published": "Ainda não há versão publicada",
+      "unsaved_changes": "Alterações não salvas",
+      "draft_saved": "Rascunho salvo em {date}",
+      "draft_not_published": "o rascunho ainda não foi publicado",
+      "save_draft": "Salvar rascunho",
+      "publish": "Publicar",
+      "cancel": "Cancelar",
+      "publish_confirm_title": "Publicar o documento",
+      "publish_confirm_body": "A partir de agora, todo contrato baixado usará este texto. Os que já foram baixados não mudam.",
+      "publish_confirm": "Sim, publicar",
+      "notice_saved": "Rascunho salvo.",
+      "notice_published": "Publicado. Os próximos contratos já usam este texto.",
+      "notice_unchanged": "Este texto já era a versão publicada.",
+      "error_save_failed": "Não foi possível salvar o rascunho. Tente de novo.",
+      "error_publish_failed": "Não foi possível publicar. Tente de novo.",
+      "error_publish_conflict": "Outra pessoa publicou ao mesmo tempo. Recarregue a página e revise o texto.",
+      "issues_title": "Antes de publicar, corrija isto:",
+      "issue_syntax_error": "Há uma instrução de dados sem fechar no texto.",
+      "issue_unknown_variable": "Há um dado que este documento não reconhece (marcado em vermelho). Apague e insira de novo por «Inserir dado».",
+      "issue_unknown_filter": "Há um formato de dado que não existe.",
+      "issue_forbidden_tag": "O texto usa uma instrução que não é permitida em documentos.",
+      "issue_too_large": "O texto é longo demais.",
+      "issue_other": "O texto tem um problema que impede a publicação.",
+      "unknown_field": "Dado não reconhecido",
+      "insert_field": "Inserir dado",
+      "tool_bold": "Negrito",
+      "tool_italic": "Itálico",
+      "tool_underline": "Sublinhado",
+      "tool_title": "Título",
+      "tool_subtitle": "Subtítulo",
+      "tool_bullets": "Lista com marcadores",
+      "tool_numbers": "Lista numerada",
+      "tool_align_left": "Alinhar à esquerda",
+      "tool_align_center": "Centralizar",
+      "tool_align_right": "Alinhar à direita",
+      "tool_align_justify": "Justificar",
+      "tool_undo": "Desfazer",
+      "tool_redo": "Refazer",
+      "tab_edit": "Editar",
+      "tab_preview": "Pré-visualização",
+      "load_error_title": "Não foi possível abrir o documento",
+      "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar, avise a equipe técnica."
     }
   }
 }

@@ -620,6 +620,26 @@ export {
   ConfirmEmailVerificationUseCase,
   type ConfirmEmailVerificationInput,
 } from "./enrollment/ConfirmEmailVerificationUseCase.js";
+export {
+  DocumentTemplateVersion,
+  DocumentTemplateVersionPropsSchema,
+  type DocumentTemplateDraft,
+  type DocumentTemplateIssue,
+  type DocumentTemplateVersionProps,
+} from "./document/DocumentTemplate.js";
+export type { IDocumentTemplateCompiler, IDocumentTemplateRepository } from "./document/ports.js";
+export {
+  DocumentKindNotFoundError,
+  DocumentTemplateDraftMissingError,
+  DocumentTemplateHasIssuesError,
+  DocumentTemplateNotPublishedError,
+} from "./document/errors.js";
+export {
+  PublishDocumentTemplateUseCase,
+  SaveDocumentTemplateDraftUseCase,
+  type SaveDocumentTemplateDraftOutput,
+} from "./document/DocumentTemplateUseCases.js";
+export { LEGAL_IDENTITY } from "./legal/legalIdentity.js";
 
 // The general audit log's vocabulary (OOC-122) — also read raw by apps/app
 // through the `@ooc/domain/audit-catalog` subpath.

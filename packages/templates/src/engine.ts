@@ -203,7 +203,7 @@ export class TemplateEngine {
 
     const liquid = this.liquidFor(kind);
     try {
-      return await liquid.parseAndRender(source, parsed.data as Record<string, unknown>, {
+      return await liquid.parseAndRender(source, withoutNulls(parsed.data) as Record<string, unknown>, {
         globals: { [CONTEXT_KEY]: { locale: context.locale, timeZone: context.timeZone ?? DEFAULT_TIME_ZONE } },
       });
     } catch (error) {
@@ -224,6 +224,24 @@ class ForbiddenTagError extends Error {
   ) {
     super(`forbidden tag: ${tag}`);
   }
+}
+
+/**
+ * `null` becomes absent before Liquid sees the data. Liquid's strict mode only
+ * refuses `undefined`, so a nullable field left empty would print as a silent
+ * blank — the one thing a contract must not do. Absent, printing it fails with
+ * `missing_value`, while `{% if %}` and `| default:` still test it.
+ */
+function withoutNulls(value: unknown): unknown {
+  if (value === null) return undefined;
+  if (Array.isArray(value)) return value.map(withoutNulls);
+  if (value instanceof Date || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    const cleaned = withoutNulls(entry);
+    if (cleaned !== undefined) out[key] = cleaned;
+  }
+  return out;
 }
 
 /** Static segments of a variable; a dynamic index (`list[i]`) ends the walk there. */

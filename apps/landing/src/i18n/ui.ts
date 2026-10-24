@@ -3,6 +3,8 @@
 // hardcode display strings inside .astro/.ts. Adding a locale (e.g. Quechua)
 // is just another entry with the same shape.
 
+import { LEGAL_IDENTITY } from "@ooc/domain/legal-identity";
+
 export const defaultLang = "es" as const;
 
 export const languages = {
@@ -244,14 +246,11 @@ export const monthlySessionPrices: Partial<Record<CourseSlug, number>> = {
 // dictionary. The legal pages interpolate these through the {legalName} /
 // {ruc} / {address} / {site} / {phones} / {email} tokens in `i18n/legal.ts`.
 export const org = {
-  // Razão social que responde pelo site — trocada da Asociación Only One Coin
-  // Perú (RUC 20610561463) para a S.A.C., a pedido do dono (04/09/2026). Só o
-  // nome legal muda: a marca continua "Only One Coin" em toda a interface.
-  // Escrita em caixa alta como sai na ficha RUC.
-  legalName: "INGLES POR UN SOL S.A.C.",
-  ruc: "20613918028",
-  address:
-    "Av. Manuel Murillo, Condominio Gral Manuel Murillo 180, Chorrillos, Lima, Perú",
+  // Razão social, RUC e endereço — the same three the documents the API
+  // generates print (OOC-123), so they live in `@ooc/domain/legal-identity`
+  // and nowhere else. Only the legal name changed to the S.A.C. (04/09/2026):
+  // the brand is still "Only One Coin" everywhere in the interface.
+  ...LEGAL_IDENTITY,
   site: "onlyonecoin.edu.pe",
   // Stored in display form, country code included: every surface that shows a
   // number shows the same one, and `tel:` links are derived by stripping the

@@ -402,3 +402,68 @@
     text-align: left;
   }
 }
+
+/* Document editor (OOC-123): the text being edited reads like the document it
+   becomes — headings, lists, alignment — and each piece of data is a chip the
+   person moves or deletes whole. The PDF beside it is the real thing; this is
+   only close enough to write in. */
+@layer components {
+  .doc-editor .ProseMirror {
+    min-height: 24rem;
+    outline: none;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-ink);
+  }
+  .doc-editor .ProseMirror > * + * {
+    margin-top: 0.6em;
+  }
+  .doc-editor .ProseMirror h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+  .doc-editor .ProseMirror h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .doc-editor .ProseMirror h3 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .doc-editor .ProseMirror ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+  }
+  .doc-editor .ProseMirror ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+  }
+  .doc-editor .ProseMirror blockquote {
+    border-left: 3px solid var(--color-line);
+    padding-left: 0.75rem;
+  }
+  .doc-editor .ProseMirror hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .doc-chip {
+    display: inline-block;
+    margin: 0 1px;
+    padding: 0 0.4em;
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--color-brand-blue) 12%, white);
+    color: var(--color-brand-blue-deep);
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .doc-chip.ProseMirror-selectednode {
+    outline: 2px solid var(--color-brand-blue);
+  }
+  .doc-chip-unknown {
+    background: #fde8e8;
+    color: #b42318;
+  }
+}
