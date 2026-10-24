@@ -200,6 +200,7 @@ Se o aluno afirma ter enviado uma imagem (comprovante ou captura do formulário)
 - Horário é **fixo** durante todo o módulo (não muda no meio do módulo).
 - Dias de avaliação têm presença obrigatória.
 - Professor(a) publica seu e-mail de contato no mural "Anúncios" do Classroom.
+- **Contrato do docente (regra da plataforma, decisão do dono de 23/10/2026; OOC-124):** a plataforma gera o contrato a partir do modelo publicado e registra só o **período de vigência** — é dele que sai o alerta de vencimento. A cópia **assinada** não é guardada na plataforma: fica no Drive da coordenação, a menos que alguém peça para guardar aqui. Detalhe em `CLAUDE.md` §1.
 
 ## 9. Atendimento e reclamações
 

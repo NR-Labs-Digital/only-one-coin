@@ -253,6 +253,13 @@
       "when": 1792808570858,
       "tag": "0035_audit_log_listing",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792815274546,
+      "tag": "0036_teacher_contract_period",
+      "breakpoints": true
     }
   ]
 }

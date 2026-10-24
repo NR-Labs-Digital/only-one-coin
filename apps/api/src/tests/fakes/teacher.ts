@@ -1,5 +1,4 @@
 import {
-  TeacherContractAlreadyFiledError,
   type IStaffAccessRepository,
   type ITeacherContractRepository,
   type ITeacherContractStorage,
@@ -90,9 +89,6 @@ export class FakeTeacherContractRepository implements ITeacherContractRepository
   public readonly rows: TeacherContract[] = [];
 
   async create(contract: TeacherContract): Promise<TeacherContract> {
-    if (this.rows.some((row) => row.id === contract.id || row.objectKey === contract.objectKey)) {
-      throw new TeacherContractAlreadyFiledError();
-    }
     this.rows.push(contract);
     return contract;
   }
@@ -102,33 +98,9 @@ export class FakeTeacherContractRepository implements ITeacherContractRepository
   }
 }
 
-/** The bucket, as a map of key → bytes. */
+/** The bucket, as far as opening a filed contract goes. */
 export class FakeTeacherContractStorage implements ITeacherContractStorage {
-  public readonly objects = new Map<string, Uint8Array>();
-  public readonly targets: { objectKey: string; contentType: string; maxBytes: number }[] = [];
-  public readonly deleted: string[] = [];
   public readonly downloads: { objectKey: string; fileName: string; expiresInSeconds: number }[] = [];
-
-  async createUploadTarget(params: { objectKey: string; contentType: string; maxBytes: number }) {
-    this.targets.push(params);
-    return { url: "https://bucket.example.com", fields: { key: params.objectKey } };
-  }
-
-  public readonly reads: string[] = [];
-
-  async size(objectKey: string) {
-    return this.objects.get(objectKey)?.length ?? null;
-  }
-
-  async read(objectKey: string) {
-    this.reads.push(objectKey);
-    return this.objects.get(objectKey) ?? new Uint8Array();
-  }
-
-  async delete(objectKey: string): Promise<void> {
-    this.objects.delete(objectKey);
-    this.deleted.push(objectKey);
-  }
 
   async createDownloadUrl(params: { objectKey: string; fileName: string; expiresInSeconds: number }) {
     this.downloads.push(params);

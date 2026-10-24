@@ -136,9 +136,11 @@ export const AUDIT_ACTIONS = {
   "teacher.availability_updated": { key: "teacher_availability_updated", entity: "teacher", subject: "target" },
   "teacher.left_roster": { key: "teacher_left_roster", entity: "teacher", subject: "target" },
   "teacher.rejoined_roster": { key: "teacher_rejoined_roster", entity: "teacher", subject: "target" },
+  // Written until OOC-124 removed filing; old entries still list.
   "teacher.contract_filed": { key: "teacher_contract_filed", entity: "teacher", subject: "target" },
   "teacher.contract_viewed": { key: "teacher_contract_viewed", entity: "teacher", subject: "target" },
   "teacher_contract.generated": { key: "teacher_contract_generated", entity: "teacher", subject: "target" },
+  "teacher_contract.regenerated": { key: "teacher_contract_regenerated", entity: "teacher", subject: "target" },
 
   "role.promote": { key: "role_changed", entity: "staff", subject: "target" },
   "staff.invite_created": { key: "staff_invite_created", entity: "staff", subject: "none" },

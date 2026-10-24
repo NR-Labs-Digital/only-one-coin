@@ -867,25 +867,28 @@ export interface AvailabilitySlot {
 }
 
 /**
- * The signed contract behind a teacher: a file and the window it covers. The
- * file is what the Asociación can produce if anybody asks; the window is what
- * the panel watches, because a teacher running a class group on an expired
- * contract is the institution's problem, not the teacher's.
+ * A teacher's contract: the window it covers, which is what the panel
+ * watches — a teacher running a class group on an expired contract is the
+ * institution's problem, not the teacher's.
  *
- * Kept as a record of a document rather than as a document: the bytes live in
- * the bucket behind a signed URL, exactly like a receipt (CLAUDE.md §8), and
- * the row keeps only what a list has to be able to show.
+ * Recorded when the contract is generated from the published template
+ * (OOC-124), with the version it was printed from so it prints again; the
+ * signed copy is kept outside the platform. Contracts filed before that
+ * (OOC-81) carry the uploaded PDF instead, behind a signed URL like a receipt
+ * (CLAUDE.md §8).
  */
 export interface TeacherContract {
-  /** The filing — what the download asks for (OOC-81). */
+  /** The record — what a download asks for. */
   id: string
-  /** What was filed, as the file was named. */
-  fileName: string
-  fileSizeBytes: number
-  uploadedAt: string
+  /** When it was generated or filed. */
+  recordedAt: string
   /** The window it covers — ISO date, rendered in America/Lima. */
   startsAt: string
   endsAt: string
+  /** The PDF filed before OOC-124; null for a generated contract. */
+  file: { name: string; sizeBytes: number } | null
+  /** The template version a generated contract prints from; null for a filed one. */
+  templateVersion: number | null
 }
 
 /** One row of the teacher directory. */
@@ -953,8 +956,8 @@ export interface TeacherDetail extends TeacherRow {
   availability: AvailabilitySlot[]
   classGroups: ClassGroupItem[]
   /**
-   * Every contract ever filed, newest first — the first is `contract`. Filing
-   * again adds a row, never replaces one (OOC-81).
+   * Every contract ever recorded, newest first — the first is `contract`. Recording
+   * again adds a row, never replaces one (OOC-81, OOC-124).
    */
   contracts: TeacherContract[]
   /** The backoffice's contract alert window (OOC-41), for the badge. */

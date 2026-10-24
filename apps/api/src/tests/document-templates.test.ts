@@ -9,6 +9,8 @@ import {
   PublishDocumentTemplateUseCase,
   SaveDocumentTemplateDraftUseCase,
   Teacher,
+  TeacherContract,
+  TeacherContractNotFoundError,
   TeacherNotFoundError,
   type DocumentTemplateDraft,
   type IDocumentTemplateRepository,
@@ -27,7 +29,7 @@ import {
 import type { IPdfRenderer } from "@/infra/pdf/WeasyPrintRenderer.js";
 import { WeasyPrintRenderer } from "@/infra/pdf/WeasyPrintRenderer.js";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
-import { FakeTeacherRepository } from "./fakes/teacher.js";
+import { FakeTeacherContractRepository, FakeTeacherRepository } from "./fakes/teacher.js";
 
 /**
  * OOC-123: editable document templates. Drafts may be wrong and are always
@@ -49,6 +51,9 @@ class FakeTemplates implements IDocumentTemplateRepository {
   }
   async findPublished(kind: string) {
     return this.versions.filter((v) => v.kind === kind).sort((a, b) => b.version - a.version)[0] ?? null;
+  }
+  async findVersion(kind: string, id: string) {
+    return this.versions.find((v) => v.kind === kind && v.id === id) ?? null;
   }
   async publish(params: { id: string; kind: string; body: string; publishedBy: string }) {
     const version = new DocumentTemplateVersion({
@@ -289,36 +294,82 @@ describe("DocumentPreviewService", () => {
 describe("TeacherContractDocumentService", () => {
   function contractSetup() {
     const { templates, audit, renderer, preview } = setup();
+    const contracts = new FakeTeacherContractRepository();
     return {
       templates,
       audit,
       renderer,
-      contract: new TeacherContractDocumentService(preview, templates, new FakeTeacherRepository(ANA), audit),
+      contracts,
+      contract: new TeacherContractDocumentService(preview, templates, new FakeTeacherRepository(ANA), contracts, audit),
     };
   }
   const PERIOD = { startsOn: "2026-11-01", endsOn: "2027-10-31" };
+  const PERIOD_BODY =
+    "<p>{{ teacher.fullName }}: {{ contract.startsOn | local_date }} – {{ contract.endsOn | local_date }}</p>";
 
   it("fills the published version with the teacher and the chosen period, and audits who printed it", async () => {
-    const { templates, audit, renderer, contract } = contractSetup();
+    const { templates, audit, renderer, contract, contracts } = contractSetup();
     const v1 = await templates.publish({
       id: "11111111-1111-4111-8111-111111111111",
       kind: "teacher_contract",
-      body: "<p>{{ teacher.fullName }}: {{ contract.startsOn | local_date }} – {{ contract.endsOn | local_date }}</p>",
+      body: PERIOD_BODY,
       publishedBy: "u-admin",
     });
 
     const result = await contract.generate({ actorId: "u-admin", teacherId: ANA.id, ...PERIOD });
 
     expect(result.templateVersion).toBe(1);
+    expect(result.contractId).toBe(contracts.rows[0]!.id);
     expect(renderer.html[0]).toContain("<p>Ana Quispe: 1 de noviembre de 2026 – 31 de octubre de 2027</p>");
     expect(audit.appended).toEqual([
       expect.objectContaining({
         actorId: "u-admin",
         action: "teacher_contract.generated",
         targetId: ANA.id,
-        metadata: { templateVersionId: v1.id, templateVersion: 1 },
+        metadata: { contractId: result.contractId, templateVersionId: v1.id, templateVersion: 1 },
       }),
     ]);
+  });
+
+  it("records the period it printed, the version and who generated it — never a file (OOC-124)", async () => {
+    const { templates, contract, contracts } = contractSetup();
+    const v1 = await templates.publish({
+      id: "11111111-1111-4111-8111-111111111111",
+      kind: "teacher_contract",
+      body: STARTER,
+      publishedBy: "u",
+    });
+
+    await contract.generate({ actorId: "u-admin", teacherId: ANA.id, ...PERIOD });
+
+    expect(contracts.rows).toHaveLength(1);
+    expect(contracts.rows[0]).toMatchObject({
+      teacherId: ANA.id,
+      templateVersionId: v1.id,
+      recordedBy: "u-admin",
+      file: null,
+    });
+    expect(contracts.rows[0]!.startsOn.toISOString()).toBe("2026-11-01T00:00:00.000Z");
+    expect(contracts.rows[0]!.endsOn.toISOString()).toBe("2027-10-31T00:00:00.000Z");
+  });
+
+  it("records nothing when the PDF does not come out", async () => {
+    const { templates, audit, contracts } = contractSetup();
+    await templates.publish({ id: "11111111-1111-4111-8111-111111111111", kind: "teacher_contract", body: STARTER, publishedBy: "u" });
+    const broken = new DocumentPreviewService(
+      engine,
+      {
+        render: () => Promise.reject(new Error("weasyprint died")),
+      },
+      compiler,
+      templates,
+      new FakeTeacherRepository(ANA),
+    );
+    const contract = new TeacherContractDocumentService(broken, templates, new FakeTeacherRepository(ANA), contracts, audit);
+
+    await expect(contract.generate({ actorId: "u", teacherId: ANA.id, ...PERIOD })).rejects.toThrow();
+    expect(contracts.rows).toEqual([]);
+    expect(audit.appended).toEqual([]);
   });
 
   it("prints from the published version, never the draft in progress", async () => {
@@ -331,23 +382,25 @@ describe("TeacherContractDocumentService", () => {
     expect(renderer.html[0]).not.toContain("borrador");
   });
 
-  it("refuses while nothing has been published", async () => {
-    const { templates, audit, contract } = contractSetup();
+  it("refuses while nothing has been published, recording nothing", async () => {
+    const { templates, audit, contract, contracts } = contractSetup();
     await templates.saveDraft({ kind: "teacher_contract", body: STARTER, updatedBy: "u", updatedAt: new Date() });
     await expect(contract.generate({ actorId: "u", teacherId: ANA.id, ...PERIOD })).rejects.toBeInstanceOf(
       DocumentTemplateNotPublishedError,
     );
     expect(audit.appended).toEqual([]);
+    expect(contracts.rows).toEqual([]);
   });
 
-  it("refuses a period that ends on or before it starts", async () => {
-    const { templates, contract } = contractSetup();
+  it("refuses a period that ends on or before it starts, recording nothing", async () => {
+    const { templates, contract, contracts } = contractSetup();
     await templates.publish({ id: "11111111-1111-4111-8111-111111111111", kind: "teacher_contract", body: STARTER, publishedBy: "u" });
     for (const endsOn of ["2026-11-01", "2026-10-31"]) {
       await expect(
         contract.generate({ actorId: "u", teacherId: ANA.id, startsOn: "2026-11-01", endsOn }),
       ).rejects.toBeInstanceOf(ContractPeriodOutOfOrderError);
     }
+    expect(contracts.rows).toEqual([]);
   });
 
   it("answers not found for an unknown teacher", async () => {
@@ -356,6 +409,62 @@ describe("TeacherContractDocumentService", () => {
     await expect(
       contract.generate({ actorId: "u", teacherId: "00000000-0000-4000-8000-000000000000", ...PERIOD }),
     ).rejects.toBeInstanceOf(TeacherNotFoundError);
+  });
+
+  describe("regenerate", () => {
+    it("prints a recorded contract again from its own version and period, after a newer one is published", async () => {
+      const { templates, audit, renderer, contract } = contractSetup();
+      const v1 = await templates.publish({
+        id: "11111111-1111-4111-8111-111111111111",
+        kind: "teacher_contract",
+        body: PERIOD_BODY,
+        publishedBy: "u",
+      });
+      const { contractId } = await contract.generate({ actorId: "u", teacherId: ANA.id, ...PERIOD });
+      await templates.publish({ id: "22222222-2222-4222-8222-222222222222", kind: "teacher_contract", body: "<p>v2</p>", publishedBy: "u" });
+
+      const result = await contract.regenerate({ actorId: "u-analyst", teacherId: ANA.id, contractId });
+
+      expect(result.templateVersion).toBe(1);
+      expect(renderer.html[1]).toContain("<p>Ana Quispe: 1 de noviembre de 2026 – 31 de octubre de 2027</p>");
+      expect(renderer.html[1]).not.toContain("v2");
+      expect(audit.appended.at(-1)).toMatchObject({
+        actorId: "u-analyst",
+        action: "teacher_contract.regenerated",
+        targetId: ANA.id,
+        metadata: { contractId, templateVersionId: v1.id, templateVersion: 1 },
+      });
+    });
+
+    it("answers not found for a contract of another teacher", async () => {
+      const { templates, contract } = contractSetup();
+      await templates.publish({ id: "11111111-1111-4111-8111-111111111111", kind: "teacher_contract", body: STARTER, publishedBy: "u" });
+      const { contractId } = await contract.generate({ actorId: "u", teacherId: ANA.id, ...PERIOD });
+
+      await expect(
+        contract.regenerate({ actorId: "u", teacherId: "00000000-0000-4000-8000-000000000000", contractId }),
+      ).rejects.toBeInstanceOf(TeacherContractNotFoundError);
+    });
+
+    it("answers not found for a contract filed as a PDF — it opens by its file", async () => {
+      const { contract, contracts, renderer } = contractSetup();
+      const filed = await contracts.create(
+        new TeacherContract({
+          id: "018f2b5c-0000-7000-8000-0000000000aa",
+          teacherId: ANA.id,
+          file: { objectKey: "teacher-contracts/x/y", fileName: "contrato.pdf", fileSizeBytes: 10 },
+          templateVersionId: null,
+          startsOn: new Date("2026-03-01T00:00:00Z"),
+          endsOn: new Date("2026-12-31T00:00:00Z"),
+          recordedBy: "u",
+        }),
+      );
+
+      await expect(
+        contract.regenerate({ actorId: "u", teacherId: ANA.id, contractId: filed.id }),
+      ).rejects.toBeInstanceOf(TeacherContractNotFoundError);
+      expect(renderer.html).toEqual([]);
+    });
   });
 });
 

@@ -256,8 +256,11 @@ describe("table owner (TRIGGER layer)", () => {
     expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_TRIGGER);
   });
 
-  it("blocks TRUNCATE on document_template_versions", async () => {
-    expect(await answerTo("truncate document_template_versions")).toBe(DENIED_BY_TRIGGER);
+  // `teacher_contracts` points here since 0036, so a plain TRUNCATE is refused
+  // by Postgres' FK rule first. CASCADE gets past that rule — and the trigger
+  // still refuses, which is the layer this suite is proving.
+  it("blocks TRUNCATE on document_template_versions, even with CASCADE", async () => {
+    expect(await answerTo("truncate document_template_versions cascade")).toBe(DENIED_BY_TRIGGER);
   });
 
   it("still appends to audit_log", async () => {

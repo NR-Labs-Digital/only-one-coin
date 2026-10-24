@@ -4,6 +4,7 @@ import {
   bigint,
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -476,12 +477,16 @@ export const teacherAvailability = pgTable(
   ],
 );
 
-// Signed contracts, filed. A row exists only once a contract was filed, and
-// file, start and end come together (CLAUDE.md §1) — all three NOT NULL;
-// "no contract" is no row. Append-only (0025 lock): correcting a filing is
-// filing a new one. The current contract is the latest by `created_at`, which
-// is the filing date. The bytes live in the bucket under `object_key`.
-// `uploaded_by` is Better Auth's "user".id — FK hand-written in 0025.
+// A teacher's contract period. Since OOC-124 a row is born when the contract
+// is generated from the published template (`template_version_id`, so the
+// same text can be printed again) — the signed copy is kept outside the
+// platform. Rows filed before that (OOC-81) carry the uploaded PDF instead:
+// `object_key`, `file_name` and `file_size_bytes` come together or not at
+// all, and every row has a file or a template version (0036). "No contract"
+// is no row. Append-only (0025 lock): correcting one is recording a new one.
+// The current contract is the latest by `created_at`. `uploaded_by` is
+// whoever recorded it — Better Auth's "user".id, FK hand-written in 0025; the
+// name stays from the upload days (renaming is expand/contract).
 export const teacherContracts = pgTable(
   "teacher_contracts",
   {
@@ -489,19 +494,34 @@ export const teacherContracts = pgTable(
     teacherId: uuid("teacher_id")
       .notNull()
       .references(() => teachers.id, { onDelete: "restrict" }),
-    objectKey: text("object_key").notNull(),
-    fileName: text("file_name").notNull(),
-    fileSizeBytes: integer("file_size_bytes").notNull(),
+    objectKey: text("object_key"),
+    fileName: text("file_name"),
+    fileSizeBytes: integer("file_size_bytes"),
+    templateVersionId: uuid("template_version_id"),
     startsOn: timestamp("starts_on", { withTimezone: true }).notNull(),
     endsOn: timestamp("ends_on", { withTimezone: true }).notNull(),
     uploadedBy: text("uploaded_by").notNull(),
     createdAt: createdAt(),
   },
   (table) => [
+    // Named by hand: the generated name runs past Postgres' 63 characters.
+    foreignKey({
+      name: "teacher_contracts_template_version_id_fk",
+      columns: [table.templateVersionId],
+      foreignColumns: [documentTemplateVersions.id],
+    }).onDelete("restrict"),
     uniqueIndex("teacher_contracts_object_key_uidx").on(table.objectKey),
     index("teacher_contracts_teacher_id_created_at_idx").on(table.teacherId, table.createdAt),
     check("teacher_contracts_file_size_check", sql`${table.fileSizeBytes} > 0`),
     check("teacher_contracts_period_check", sql`${table.startsOn} <= ${table.endsOn}`),
+    check(
+      "teacher_contracts_file_check",
+      sql`(${table.objectKey} is null) = (${table.fileName} is null) and (${table.objectKey} is null) = (${table.fileSizeBytes} is null)`,
+    ),
+    check(
+      "teacher_contracts_source_check",
+      sql`${table.objectKey} is not null or ${table.templateVersionId} is not null`,
+    ),
   ],
 );
 

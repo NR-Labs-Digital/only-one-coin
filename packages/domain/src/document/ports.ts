@@ -9,6 +9,9 @@ export interface IDocumentTemplateRepository {
   /** The version documents are issued from now — the highest number. */
   findPublished(kind: string): Promise<DocumentTemplateVersion | null>;
 
+  /** One published version of `kind` — a document issued from it prints from it again. */
+  findVersion(kind: string, id: string): Promise<DocumentTemplateVersion | null>;
+
   /**
    * Appends the next version of `kind` (1 + the highest) with `body`.
    * Concurrent publishes never get the same number — the unique index on

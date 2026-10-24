@@ -36,8 +36,6 @@ import {
   SetTeacherRosterStatusUseCase,
   SaveDocumentTemplateDraftUseCase,
   PublishDocumentTemplateUseCase,
-  RequestTeacherContractUploadUseCase,
-  FileTeacherContractUseCase,
   OpenTeacherContractUseCase,
   UpdateTeacherAvailabilityUseCase,
   UpdateTeacherUseCase,
@@ -153,7 +151,6 @@ import { TeacherContractDocumentService } from "./documents/TeacherContractDocum
 import { WeasyPrintRenderer } from "./infra/pdf/WeasyPrintRenderer.js";
 import { DrizzleDocumentTemplateRepository } from "./infra/persistence/document/DrizzleDocumentTemplateRepository.js";
 import { TigrisTeacherContractStorage } from "./infra/storage/TigrisTeacherContractStorage.js";
-import { PdfLibInspector } from "./infra/pdf/PdfLibInspector.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
@@ -246,8 +243,6 @@ export interface AppUseCases {
     update: UpdateTeacherUseCase;
     updateAvailability: UpdateTeacherAvailabilityUseCase;
     setRosterStatus: SetTeacherRosterStatusUseCase;
-    requestContractUpload: RequestTeacherContractUploadUseCase;
-    fileContract: FileTeacherContractUseCase;
     openContract: OpenTeacherContractUseCase;
   };
   /** The docente portal: every read scoped by the session's account (OOC-82). */
@@ -704,6 +699,7 @@ function buildContainer(): AppContainer {
         documentPreview,
         documentTemplateRepository,
         teacherRepository,
+        teacherContractRepository,
         auditLogRepository,
       ),
     },
@@ -739,14 +735,6 @@ function buildContainer(): AppContainer {
         update: updateTeacher,
         updateAvailability: updateTeacherAvailability,
         setRosterStatus: setTeacherRosterStatus,
-        requestContractUpload: new RequestTeacherContractUploadUseCase(teacherRepository, teacherContractStorage),
-        fileContract: new FileTeacherContractUseCase(
-          teacherRepository,
-          teacherContractRepository,
-          teacherContractStorage,
-          new PdfLibInspector(),
-          auditLogRepository,
-        ),
         openContract: new OpenTeacherContractUseCase(
           teacherContractRepository,
           teacherContractStorage,
