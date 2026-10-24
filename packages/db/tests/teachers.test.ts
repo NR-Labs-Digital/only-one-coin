@@ -69,6 +69,16 @@ async function insertTeacher(nationalId: string): Promise<string> {
   return rows[0]!.id;
 }
 
+async function insertTemplateVersion(version: number): Promise<string> {
+  const { rows } = await db.query<{ id: string }>(
+    `insert into document_template_versions (kind, version, body, published_by)
+     values ('teacher_contract', $1, '<p>v</p>', $2)
+     returning id`,
+    [version, USER_ID],
+  );
+  return rows[0]!.id;
+}
+
 const CONTRACT_COLUMNS = "teacher_id, object_key, file_name, file_size_bytes, starts_on, ends_on, uploaded_by";
 
 describe("teacher_contracts", () => {
@@ -83,8 +93,46 @@ describe("teacher_contracts", () => {
     ).toBe("SUCCEEDED");
   });
 
+  it("records a generated contract: the period and a template version, no file (OOC-124)", async () => {
+    const teacher = await insertTeacher("70000005");
+    const version = await insertTemplateVersion(1);
+    expect(
+      await answerTo(
+        `insert into teacher_contracts (teacher_id, template_version_id, starts_on, ends_on, uploaded_by)
+         values ($1, $2, '2026-03-01', '2026-12-31', $3)`,
+        [teacher, version, USER_ID],
+      ),
+    ).toBe("SUCCEEDED");
+  });
+
+  it("refuses a contract with neither a file nor a template version", async () => {
+    const teacher = await insertTeacher("70000006");
+    expect(
+      await answerTo(
+        `insert into teacher_contracts (teacher_id, starts_on, ends_on, uploaded_by)
+         values ($1, '2026-03-01', '2026-12-31', $2)`,
+        [teacher, USER_ID],
+      ),
+    ).toBe(CHECK_VIOLATION);
+  });
+
   it.each([
-    ["the file", "null, 'contrato.pdf', 1024, '2026-03-01', '2026-12-31'"],
+    ["no key", "null, 'contrato.pdf', 1024"],
+    ["no name", "'contracts/t/6.pdf', null, 1024"],
+    ["no size", "'contracts/t/7.pdf', 'contrato.pdf', null"],
+  ])("refuses half a file (%s), even with a template version", async (_missing, file) => {
+    const teacher = await insertTeacher("70000007");
+    const version = await insertTemplateVersion(2);
+    expect(
+      await answerTo(
+        `insert into teacher_contracts (${CONTRACT_COLUMNS}, template_version_id)
+         values ($1, ${file}, '2026-03-01', '2026-12-31', $2, $3)`,
+        [teacher, USER_ID, version],
+      ),
+    ).toBe(CHECK_VIOLATION);
+  });
+
+  it.each([
     ["the start", "'contracts/t/2.pdf', 'contrato.pdf', 1024, null, '2026-12-31'"],
     ["the end", "'contracts/t/3.pdf', 'contrato.pdf', 1024, '2026-03-01', null"],
   ])("refuses a contract without %s", async (_missing, values) => {
@@ -195,6 +243,7 @@ describe("foreign keys", () => {
       "class_groups_teacher_id_teachers_id_fk",
       "teacher_availability_teacher_id_teachers_id_fk",
       "teacher_contracts_teacher_id_teachers_id_fk",
+      "teacher_contracts_template_version_id_fk",
       "teacher_contracts_uploaded_by_user_id_fk",
       "teacher_languages_teacher_id_teachers_id_fk",
       "teachers_user_id_user_id_fk",
