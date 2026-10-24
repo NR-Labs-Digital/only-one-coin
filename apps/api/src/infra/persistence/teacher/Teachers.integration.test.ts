@@ -1,6 +1,14 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups, courses, platformSettings, teacherContracts } from "@ooc/db";
-import { ClassGroup, Teacher, TeacherAlreadyRegisteredError, type CreateTeacherDTO } from "@ooc/domain";
+import {
+  ClassGroup,
+  Teacher,
+  TeacherAlreadyRegisteredError,
+  TeacherContract,
+  TeacherContractAlreadyFiledError,
+  teacherContractObjectKey,
+  type CreateTeacherDTO,
+} from "@ooc/domain";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -9,6 +17,7 @@ import type { Db } from "@/infra/db/client.js";
 import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { DrizzleClassGroupRepository } from "@/infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
+import { DrizzleTeacherContractRepository } from "./DrizzleTeacherContractRepository.js";
 import { DrizzleTeacherRepository } from "./DrizzleTeacherRepository.js";
 import { GetTeacherQuery } from "./GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./ListTeacherOptionsQuery.js";
@@ -345,6 +354,63 @@ describe("GetTeacherQuery", () => {
       expect(file?.classGroups.map((item) => item.id)).toEqual([group]);
 
       expect(await get.run("018f2b5c-9000-7000-8000-00000000ffff")).toBeNull();
+    });
+  });
+});
+
+describe("DrizzleTeacherContractRepository (OOC-81)", () => {
+  const FIRST = "018f2b5c-9000-7000-8000-0000000000c1";
+  const SECOND = "018f2b5c-9000-7000-8000-0000000000c2";
+
+  function filing(teacherId: string, id: string, endsOn: string): TeacherContract {
+    return TeacherContract.file({
+      id,
+      teacherId,
+      objectKey: teacherContractObjectKey(teacherId, id),
+      fileSizeBytes: 2048,
+      uploadedBy: UPLOADER,
+      contract: { fileName: `contrato-${id.slice(-2)}.pdf`, startsOn: "2026-01-01", endsOn },
+    });
+  }
+
+  it("files, reads back per teacher, and the file lists every filing newest first", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const contracts = new DrizzleTeacherContractRepository(tx);
+      const get = new GetTeacherQuery(
+        tx,
+        new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx)),
+        new ListClassGroupsQuery(tx),
+      );
+      const ana = await teachers.create(Teacher.create(ANA));
+      const luis = await teachers.create(Teacher.create(LUIS));
+
+      const first = await contracts.create(filing(ana.id, FIRST, "2026-06-30"));
+      await contracts.create(filing(ana.id, SECOND, "2026-12-31"));
+
+      expect(first.endsOn.toISOString()).toBe("2026-06-30T00:00:00.000Z");
+      expect((await contracts.findForTeacher(ana.id, FIRST))?.fileName).toBe("contrato-c1.pdf");
+      expect(await contracts.findForTeacher(luis.id, FIRST)).toBeNull();
+
+      const file = await get.run(ana.id);
+      // One transaction fixes `now()`, so both share `created_at` and the id
+      // (UUIDv7, later is larger) breaks the tie — the same order the roster uses.
+      expect(file?.contracts.map((contract) => contract.id)).toEqual([SECOND, FIRST]);
+      expect(file?.contract?.id).toBe(file?.contracts[0]?.id);
+    });
+  });
+
+  it("refuses filing the same upload twice", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const contracts = new DrizzleTeacherContractRepository(tx);
+      const ana = await teachers.create(Teacher.create(ANA));
+
+      await contracts.create(filing(ana.id, FIRST, "2026-06-30"));
+      // Last statement: the refused insert aborts the surrounding transaction.
+      await expect(contracts.create(filing(ana.id, FIRST, "2026-06-30"))).rejects.toBeInstanceOf(
+        TeacherContractAlreadyFiledError,
+      );
     });
   });
 });

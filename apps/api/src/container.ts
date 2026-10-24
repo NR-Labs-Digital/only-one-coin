@@ -34,6 +34,9 @@ import {
   RegisterStudentUseCase,
   RegisterTeacherUseCase,
   SetTeacherRosterStatusUseCase,
+  RequestTeacherContractUploadUseCase,
+  FileTeacherContractUseCase,
+  OpenTeacherContractUseCase,
   UpdateTeacherAvailabilityUseCase,
   UpdateTeacherUseCase,
   ListOwnClassGroupsUseCase,
@@ -139,11 +142,14 @@ import { DrizzleReceiptExtractionRepository } from "./infra/persistence/enrollme
 import { createS3Client } from "./infra/storage/s3Client.js";
 import { TigrisReceiptStorage } from "./infra/storage/TigrisReceiptStorage.js";
 import { ReceiptObjectStore } from "./infra/storage/ReceiptObjectStore.js";
+import { TigrisTeacherContractStorage } from "./infra/storage/TigrisTeacherContractStorage.js";
+import { PdfLibInspector } from "./infra/pdf/PdfLibInspector.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
 import { StudentActivityQuery } from "./infra/persistence/student/StudentActivityQuery.js";
 import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTeacherRepository.js";
+import { DrizzleTeacherContractRepository } from "./infra/persistence/teacher/DrizzleTeacherContractRepository.js";
 import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
@@ -227,6 +233,9 @@ export interface AppUseCases {
     update: UpdateTeacherUseCase;
     updateAvailability: UpdateTeacherAvailabilityUseCase;
     setRosterStatus: SetTeacherRosterStatusUseCase;
+    requestContractUpload: RequestTeacherContractUploadUseCase;
+    fileContract: FileTeacherContractUseCase;
+    openContract: OpenTeacherContractUseCase;
   };
   /** The docente portal: every read scoped by the session's account (OOC-82). */
   teaching: {
@@ -451,6 +460,8 @@ function buildContainer(): AppContainer {
   const s3Client = createS3Client(config);
   const receiptStorage = new TigrisReceiptStorage(s3Client, config.BUCKET_NAME);
   const receiptObjectStore = new ReceiptObjectStore(s3Client, config.BUCKET_NAME);
+  const teacherContractStorage = new TigrisTeacherContractStorage(s3Client, config.BUCKET_NAME);
+  const teacherContractRepository = new DrizzleTeacherContractRepository(db);
 
   // Use cases
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
@@ -673,6 +684,19 @@ function buildContainer(): AppContainer {
         update: updateTeacher,
         updateAvailability: updateTeacherAvailability,
         setRosterStatus: setTeacherRosterStatus,
+        requestContractUpload: new RequestTeacherContractUploadUseCase(teacherRepository, teacherContractStorage),
+        fileContract: new FileTeacherContractUseCase(
+          teacherRepository,
+          teacherContractRepository,
+          teacherContractStorage,
+          new PdfLibInspector(),
+          auditLogRepository,
+        ),
+        openContract: new OpenTeacherContractUseCase(
+          teacherContractRepository,
+          teacherContractStorage,
+          auditLogRepository,
+        ),
       },
       teaching: {
         listOwnClassGroups,
