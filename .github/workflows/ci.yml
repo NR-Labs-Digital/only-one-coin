@@ -129,6 +129,9 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      # WeasyPrint: a suíte de documentos (OOC-123) gera um PDF de verdade com
+      # o mesmo motor da imagem da API (apps/api/Dockerfile).
+      - run: sudo apt-get update -q && sudo apt-get install -y -q weasyprint fonts-dejavu-core
       - run: pnpm --filter @ooc/api test
       # A conversão da resposta do modelo de OCR (valor → centavos, data de
       # Lima → UTC) — pura, sem rede: o modelo em si nunca roda no CI.

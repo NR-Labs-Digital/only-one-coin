@@ -18,6 +18,7 @@ COPY packages/domain/package.json packages/domain/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/notifications/package.json packages/notifications/package.json
 COPY packages/ocr/package.json packages/ocr/package.json
+COPY packages/templates/package.json packages/templates/package.json
 COPY packages/db/package.json packages/db/package.json
 # pnpm precisa do manifest de todo workspace member pra validar o lockfile
 # compartilhado, mesmo filtrando a instalação só pro grafo do @ooc/api.
@@ -29,9 +30,10 @@ COPY packages/domain packages/domain
 COPY packages/queue packages/queue
 COPY packages/notifications packages/notifications
 COPY packages/ocr packages/ocr
+COPY packages/templates packages/templates
 COPY packages/db packages/db
 COPY apps/api apps/api
-RUN pnpm --filter @ooc/domain --filter @ooc/queue --filter @ooc/notifications --filter @ooc/ocr --filter @ooc/db --filter @ooc/api build
+RUN pnpm --filter @ooc/domain --filter @ooc/queue --filter @ooc/notifications --filter @ooc/ocr --filter @ooc/templates --filter @ooc/db --filter @ooc/api build
 # Empacota só o @ooc/api e suas deps de produção (workspace + npm) num
 # diretório autocontido — sem TypeScript/tsx/devDependencies. "--legacy"
 # porque este workspace não usa injected dependencies (pnpm 10+ default).
@@ -39,6 +41,12 @@ RUN pnpm deploy --filter=@ooc/api --prod --legacy /prod/api
 
 # --- runner: só o resultado do deploy, sem toolchain de build ---
 FROM base AS runner
+# WeasyPrint: HTML → PDF dos documentos editáveis (OOC-123), chamado como
+# comando pelo `WeasyPrintRenderer` (~0,5 s e ~60 MB por render). Motor de
+# impressão, não navegador — por isso não um Chromium. DejaVu é a fonte que a
+# moldura do documento pede primeiro (`documents/frame.ts`); sem ela o PDF sai
+# com a fonte que o fontconfig achar.
+RUN apk add --no-cache weasyprint font-dejavu
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/api .

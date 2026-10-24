@@ -52,11 +52,11 @@ primary_region = "gru"
     timeout = "5s"
     path = "/health"
 
-# Menor VM que a Fly oferece — ~US$1,94/mês sempre ligado
-# (docs/INFRAESTRUTURA.md). Volume ainda baixo (nada de fila real rodando
-# ainda, CLAUDE.md §1) não justifica mais que isso; ajustar com
-# `fly scale memory`/`fly scale vm` se o volume de pico (até 20.000
-# matrículas/mês) apertar — sem precisar tocar em código.
+# shared-cpu-1x, 512 MB desde 23/10/2026 (OOC-123): o WeasyPrint gera os PDFs
+# dos documentos na mesma VM (~60 MB por render, até 2 de uma vez —
+# `WeasyPrintRenderer`), e 256 MB não deixavam folga para isso mais a API e
+# os workers. Ajustar com `fly scale memory`/`fly scale vm` se o volume de pico
+# (até 20.000 matrículas/mês) apertar — sem precisar tocar em código.
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
