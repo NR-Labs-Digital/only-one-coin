@@ -69,7 +69,7 @@ export default async function BackofficeHomePage({
 
   const staff = await getStaffSession()
 
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('backoffice')
   const readsPayments = canViewPayments(staff.role)
   const readsCatalog = canBrowseCatalog(staff.role)
 

@@ -24,7 +24,7 @@ export default async function PortalLayout({
   // The portal as a whole. Off, the student portal simply is not on the air —
   // shell included, so nothing under it can be reached by URL (CLAUDE.md §5).
   await requireFeature('portal')
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('portal')
 
   const { student, notifications } = await getPortalView()
   const fullName = `${student.firstName} ${student.lastName}`
