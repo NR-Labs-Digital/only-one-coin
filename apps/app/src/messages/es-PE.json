@@ -179,6 +179,7 @@
   "preview": {
     "badge": "Modo interno",
     "description": "Estás viendo funciones que todavía no están activas para nadie más.",
-    "exit": "Salir"
+    "exit": "Salir",
+    "owner_description": "Tu cuenta ve funciones que están apagadas para todos los demás."
   }
 }
