@@ -10,6 +10,7 @@ import { ContractBadge } from '@/components/backoffice/contract-badge'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FieldMessage } from '../field-message'
+import { ContractDownloadDialog } from './contract-download-dialog'
 import {
   contractDownloadUrl,
   fileContract,
@@ -57,6 +58,7 @@ export function ContractSection({
   const [opening, setOpening] = useState<string | null>(null)
   const [openFailed, setOpenFailed] = useState(false)
   const [filed, setFiled] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   const current = teacher.contract
   const earlier = teacher.contracts.filter((contract) => contract.id !== current?.id)
@@ -188,17 +190,38 @@ export function ContractSection({
       )}
 
       {canEdit && !filing && (
-        <button
-          type="button"
-          onClick={() => {
-            setFiled(false)
-            setFiling(true)
-          }}
-          className="mt-3 inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
-        >
-          <BoIcon name="plus" size={15} />
-          {current ? t('teachers.contract_replace') : t('teachers.contract_file')}
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {/* The contract to print and sign, filled from this file and the
+              published template. Built on demand, never stored (OOC-123). */}
+          <button
+            type="button"
+            onClick={() => setGenerating(true)}
+            className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-brand-blue transition hover:bg-sky-soft"
+          >
+            <BoIcon name="doc" size={15} />
+            {t('teachers.contract_download_action')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFiled(false)
+              setFiling(true)
+            }}
+            className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+          >
+            <BoIcon name="plus" size={15} />
+            {current ? t('teachers.contract_replace') : t('teachers.contract_file')}
+          </button>
+        </div>
+      )}
+
+      {canEdit && (
+        <ContractDownloadDialog
+          open={generating}
+          teacherId={teacher.id}
+          teacherName={`${teacher.firstName} ${teacher.lastName}`}
+          onClose={() => setGenerating(false)}
+        />
       )}
 
       {canEdit && filing && (

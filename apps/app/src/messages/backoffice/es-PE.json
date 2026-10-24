@@ -1512,7 +1512,21 @@
       "load_error_title": "No se pudo cargar la plana docente",
       "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "save_error_duplicate": "Ya hay un docente registrado con este documento.",
-      "save_error_generic": "No se pudo guardar. Inténtalo de nuevo en un momento."
+      "save_error_generic": "No se pudo guardar. Inténtalo de nuevo en un momento.",
+      "contract_download_action": "Generar contrato",
+      "contract_download_title": "Generar contrato",
+      "contract_download_hint": "El contrato sale del modelo publicado, con los datos de esta ficha y el período que elijas. No se guarda en la plataforma: imprímelo, fírmalo y guarda la copia firmada.",
+      "contract_download_starts": "Inicio de vigencia",
+      "contract_download_ends": "Fin de vigencia",
+      "contract_download_confirm": "Descargar PDF",
+      "contract_download_cancel": "Cancelar",
+      "contract_download_close": "Cerrar",
+      "contract_download_pending": "Preparando el contrato…",
+      "contract_download_file_name": "Contrato - {name}.pdf",
+      "contract_download_error_not_published": "Todavía no hay un modelo de contrato publicado.",
+      "contract_download_error_missing_value": "El modelo usa un dato que esta ficha no tiene. Completa la ficha o ajusta el modelo.",
+      "contract_download_error_unavailable": "No se pudo generar el PDF ahora. Inténtalo de nuevo en unos minutos.",
+      "contract_download_error_failed": "No se pudo descargar el contrato. Inténtalo de nuevo."
     },
     "teacher_status": {
       "active": "Activo",

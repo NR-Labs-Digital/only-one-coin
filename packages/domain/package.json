@@ -11,6 +11,7 @@
     },
     "./fields": "./src/student/fields.ts",
     "./landing-course-keys": "./src/catalog/landingCourseKeys.ts",
+    "./legal-identity": "./src/legal/legalIdentity.ts",
     "./password-policy": "./src/identity/StudentPasswordPolicy.ts"
   },
   "scripts": {

@@ -1512,7 +1512,21 @@
       "load_error_title": "Não foi possível carregar o quadro de docentes",
       "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar igual, avise a equipe técnica.",
       "save_error_duplicate": "Já existe um docente cadastrado com este documento.",
-      "save_error_generic": "Não foi possível salvar. Tente de novo em instantes."
+      "save_error_generic": "Não foi possível salvar. Tente de novo em instantes.",
+      "contract_download_action": "Gerar contrato",
+      "contract_download_title": "Gerar contrato",
+      "contract_download_hint": "O contrato sai do modelo publicado, com os dados desta ficha e o período que você escolher. Ele não fica salvo na plataforma: imprima, assine e guarde a cópia assinada.",
+      "contract_download_starts": "Início da vigência",
+      "contract_download_ends": "Fim da vigência",
+      "contract_download_confirm": "Baixar PDF",
+      "contract_download_cancel": "Cancelar",
+      "contract_download_close": "Fechar",
+      "contract_download_pending": "Preparando o contrato…",
+      "contract_download_file_name": "Contrato - {name}.pdf",
+      "contract_download_error_not_published": "Ainda não há um modelo de contrato publicado.",
+      "contract_download_error_missing_value": "O modelo usa um dado que esta ficha não tem. Complete a ficha ou ajuste o modelo.",
+      "contract_download_error_unavailable": "Não foi possível gerar o PDF agora. Tente de novo em alguns minutos.",
+      "contract_download_error_failed": "Não foi possível baixar o contrato. Tente de novo."
     },
     "teacher_status": {
       "active": "Ativo",
