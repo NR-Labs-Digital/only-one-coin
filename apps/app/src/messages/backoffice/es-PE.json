@@ -1781,7 +1781,8 @@
       "load_error_title": "No se pudo cargar la configuración",
       "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "rules_load_error_title": "No se pudieron cargar las reglas académicas",
-      "rules_load_error_body": "Sin la nota mínima y el plazo del certificado esta pantalla no puede decidir quién aprueba. Recarga la página; si sigue igual, avisa al equipo técnico."
+      "rules_load_error_body": "Sin la nota mínima y el plazo del certificado esta pantalla no puede decidir quién aprueba. Recarga la página; si sigue igual, avisa al equipo técnico.",
+      "documents_title": "Documentos"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2014,6 +2015,97 @@
       "case_image": "Ampliar el comprobante",
       "case_reread": "Pedir una nueva lectura",
       "case_escape": "Volver un paso / cerrar"
+    },
+    "documents": {
+      "fields": {
+        "teacher": {
+          "fullName": "Nombre completo",
+          "firstName": "Nombres",
+          "lastName": "Apellidos",
+          "documentType": "Tipo de documento",
+          "nationalId": "Número de documento",
+          "nationality": "Nacionalidad",
+          "email": "Correo",
+          "phone": "Celular",
+          "address": "Dirección",
+          "city": "Ciudad",
+          "region": "Región",
+          "country": "País",
+          "languages": "Idiomas que enseña"
+        },
+        "contract": {
+          "startsOn": "Inicio del contrato",
+          "endsOn": "Fin del contrato"
+        },
+        "issuedOn": "Fecha de emisión",
+        "org": {
+          "legalName": "Razón social",
+          "ruc": "RUC",
+          "address": "Domicilio de la empresa"
+        }
+      },
+      "groups": {
+        "teacher": "Docente",
+        "contract": "Contrato",
+        "org": "Empresa"
+      },
+      "kind": {
+        "teacher_contract": "Contrato del docente"
+      },
+      "intro": "Escribe el texto como en un documento normal. Los datos de cada docente se agregan con «Insertar dato» y se completan solos al descargar el contrato. En la vista previa ves el PDF tal como saldrá, con datos de ejemplo.",
+      "editor_label": "Texto del documento",
+      "preview_label": "Vista previa del PDF",
+      "preview_title": "Vista previa",
+      "preview_sample": "Con datos de ejemplo",
+      "preview_pending": "Actualizando la vista previa…",
+      "preview_page": "Página {page} de {pages}",
+      "preview_error_has_issues": "Corrige los datos marcados en rojo para ver la vista previa.",
+      "preview_error_missing_value": "Al ejemplo le falta un dato que el texto imprime.",
+      "preview_error_unavailable": "La vista previa no está disponible ahora. Inténtalo en unos minutos.",
+      "preview_error_failed": "No se pudo actualizar la vista previa.",
+      "published_version": "Versión {version} publicada el {date}",
+      "never_published": "Todavía no hay una versión publicada",
+      "unsaved_changes": "Cambios sin guardar",
+      "draft_saved": "Borrador guardado el {date}",
+      "draft_not_published": "el borrador aún no está publicado",
+      "save_draft": "Guardar borrador",
+      "publish": "Publicar",
+      "cancel": "Cancelar",
+      "publish_confirm_title": "Publicar el documento",
+      "publish_confirm_body": "Desde ahora, todo contrato que se descargue usará este texto. Los que ya se descargaron no cambian.",
+      "publish_confirm": "Sí, publicar",
+      "notice_saved": "Borrador guardado.",
+      "notice_published": "Publicado. Los próximos contratos ya usan este texto.",
+      "notice_unchanged": "Este texto ya era la versión publicada.",
+      "error_save_failed": "No se pudo guardar el borrador. Inténtalo de nuevo.",
+      "error_publish_failed": "No se pudo publicar. Inténtalo de nuevo.",
+      "error_publish_conflict": "Otra persona publicó al mismo tiempo. Recarga la página y revisa el texto.",
+      "issues_title": "Antes de publicar, corrige esto:",
+      "issue_syntax_error": "Hay una instrucción de datos sin cerrar en el texto.",
+      "issue_unknown_variable": "Hay un dato que este documento no reconoce (marcado en rojo). Bórralo e insértalo de nuevo desde «Insertar dato».",
+      "issue_unknown_filter": "Hay un formato de dato que no existe.",
+      "issue_forbidden_tag": "El texto usa una instrucción que no está permitida en documentos.",
+      "issue_too_large": "El texto es demasiado largo.",
+      "issue_other": "El texto tiene un problema que impide publicarlo.",
+      "unknown_field": "Dato no reconocido",
+      "insert_field": "Insertar dato",
+      "tool_bold": "Negrita",
+      "tool_italic": "Cursiva",
+      "tool_underline": "Subrayado",
+      "tool_title": "Título",
+      "tool_subtitle": "Subtítulo",
+      "tool_bullets": "Lista con viñetas",
+      "tool_numbers": "Lista numerada",
+      "tool_align_left": "Alinear a la izquierda",
+      "tool_align_center": "Centrar",
+      "tool_align_right": "Alinear a la derecha",
+      "tool_align_justify": "Justificar",
+      "tool_undo": "Deshacer",
+      "tool_redo": "Rehacer",
+      "tab_edit": "Editar",
+      "tab_preview": "Vista previa",
+      "load_error_title": "No se pudo abrir el documento",
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico."
     }
   }
 }

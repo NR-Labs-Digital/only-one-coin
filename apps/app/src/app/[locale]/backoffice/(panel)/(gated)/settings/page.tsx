@@ -3,7 +3,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { canConfigureSettings } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { SectionTabs } from '@/components/backoffice/section-tabs'
+import { SettingsTabs } from './settings-tabs'
 import { AcademicSettingsForm } from './academic-form'
 
 /**
@@ -44,21 +44,7 @@ export default async function SettingsPage({
   }
 
 
-  const tabs = (
-    <SectionTabs
-      tabs={[
-        {
-          href: '/backoffice/settings',
-          label: t('settings.academic_title'),
-          exact: true,
-        },
-        {
-          href: '/backoffice/settings/receipts',
-          label: t('settings.receipts_title'),
-        },
-      ]}
-    />
-  )
+  const tabs = <SettingsTabs />
 
   /* A failure is shown as a failure: a form filled with made-up numbers would
      look saved, and saving it would overwrite the real ones. */

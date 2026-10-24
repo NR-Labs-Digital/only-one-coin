@@ -51,6 +51,20 @@ export type BoIconName =
   | 'video'
   | 'copy'
   | 'spinner'
+  | 'bold'
+  | 'italic'
+  | 'underline'
+  | 'heading-1'
+  | 'heading-2'
+  | 'list-bullet'
+  | 'list-ordered'
+  | 'align-left'
+  | 'align-center'
+  | 'align-right'
+  | 'align-justify'
+  | 'undo'
+  | 'redo'
+  | 'tag'
 
 const paths: Record<BoIconName, ReactElement> = {
   dashboard: <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" />,
@@ -138,6 +152,20 @@ const paths: Record<BoIconName, ReactElement> = {
   copy: <path d="M9 9h10v11H9zM5 15V4h10" />,
   video: <path d="M4 7h11v10H4zM15 10.5 20 7.5v9l-5-3" />,
   spinner: <path d="M12 3a9 9 0 1 1-9 9" />,
+  bold: <path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" />,
+  italic: <path d="M10 5h8M6 19h8M14 5l-4 14" />,
+  underline: <path d="M7 4v7a5 5 0 0 0 10 0V4M5 20h14" />,
+  'heading-1': <path d="M4 6v12M12 6v12M4 12h8M16.5 10.5 19 9v9" />,
+  'heading-2': <path d="M4 6v12M12 6v12M4 12h8M16.5 10.5a2.2 2.2 0 1 1 3.6 1.7L16.5 18H21" />,
+  'list-bullet': <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
+  'list-ordered': <path d="M10 6h10M10 12h10M10 18h10M4 5l1.5-1V9M4 14.5a1.5 1.5 0 1 1 2.5 1.1L4 18h3" />,
+  'align-left': <path d="M4 6h16M4 10h10M4 14h16M4 18h10" />,
+  'align-center': <path d="M4 6h16M7 10h10M4 14h16M7 18h10" />,
+  'align-right': <path d="M4 6h16M10 10h10M4 14h16M10 18h10" />,
+  'align-justify': <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />,
+  undo: <path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />,
+  redo: <path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />,
+  tag: <path d="M3 12V4h8l9 9-8 8zM7.5 7.5h.01" />,
 }
 
 export function BoIcon({
