@@ -4,8 +4,10 @@ import { cookies } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutTeacher } from '../actions'
 import { getTeacherSession } from '@/lib/backoffice/session'
-import { getFeatureFlags } from '@/lib/feature-flags/server'
+import { getFeatureView } from '@/lib/feature-flags/server'
+import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
 import { initials } from '@/lib/format'
+import { InternalPreviewBadge } from '@/components/internal-preview-badge'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
 import { BoUserMenu } from '@/components/backoffice/bo-user-menu'
 import {
@@ -40,7 +42,8 @@ export default async function TeacherPanelLayout({
   const t = await getTranslations('bo')
 
   // Independent reads of apps/api, memoized per request — asked together.
-  const [staff, flags] = await Promise.all([getTeacherSession(), getFeatureFlags()])
+  const [staff, view] = await Promise.all([getTeacherSession(), getFeatureView('teacher')])
+  const { flags } = view
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
 
   /* No badge on "My class groups" yet: what it would count — the final
@@ -50,7 +53,14 @@ export default async function TeacherPanelLayout({
   const groups: BoNavGroup[] = [
     {
       key: 'home',
-      items: [{ key: 'dashboard', href: '/docente/home', label: t('nav.dashboard') }],
+      items: [
+        {
+          key: 'dashboard',
+          href: '/docente/home',
+          label: t('nav.dashboard'),
+          hiddenFromOthers: isHiddenFromEverybody(view, 'teacher'),
+        },
+      ],
     },
     {
       key: 'teaching',
@@ -60,6 +70,7 @@ export default async function TeacherPanelLayout({
           key: 'class_groups',
           href: '/docente/class-groups',
           label: t('nav.my_class_groups'),
+          hiddenFromOthers: isHiddenFromEverybody(view, 'teacher'),
         },
         ...(flags['teacher.agenda']
           ? [
@@ -67,6 +78,7 @@ export default async function TeacherPanelLayout({
                 key: 'agenda' as const,
                 href: '/docente/agenda',
                 label: t('nav.agenda'),
+                hiddenFromOthers: isHiddenFromEverybody(view, 'teacher.agenda'),
               },
             ]
           : []),
@@ -117,6 +129,7 @@ export default async function TeacherPanelLayout({
         <BoSidebar
           groups={groups}
           soonLabel={t('nav.soon')}
+          hiddenLabel={t('nav.hidden_from_others')}
           a11y={{
             title: t('nav.sidebar_title'),
             description: t('nav.sidebar_description'),
@@ -147,6 +160,13 @@ export default async function TeacherPanelLayout({
           </main>
         </SidebarInset>
       </SidebarProvider>
+      {/* Same banner as the backoffice's: an owners' account sees what is off
+          for every teacher (`lib/feature-flags/resolve.ts`) — the grade sheet
+          that writes only on screen among it — and is told so on every
+          screen. The preview cookie's banner comes from the root layout. */}
+      {view.unlock === 'owner' && surfaceHasHiddenFlags(view, 'teacher') && (
+        <InternalPreviewBadge mode="owner" />
+      )}
     </TooltipProvider>
   )
 }

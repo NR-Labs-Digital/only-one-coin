@@ -871,6 +871,8 @@ export interface AvailabilitySlot {
  * the row keeps only what a list has to be able to show.
  */
 export interface TeacherContract {
+  /** The filing — what the download asks for (OOC-81). */
+  id: string
   /** What was filed, as the file was named. */
   fileName: string
   fileSizeBytes: number
@@ -944,6 +946,11 @@ export interface TeacherRow {
 export interface TeacherDetail extends TeacherRow {
   availability: AvailabilitySlot[]
   classGroups: ClassGroupItem[]
+  /**
+   * Every contract ever filed, newest first — the first is `contract`. Filing
+   * again adds a row, never replaces one (OOC-81).
+   */
+  contracts: TeacherContract[]
   /** The backoffice's contract alert window (OOC-41), for the badge. */
   contractAlertDays: number
 }

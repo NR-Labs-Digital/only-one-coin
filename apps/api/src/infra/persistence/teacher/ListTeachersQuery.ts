@@ -7,6 +7,7 @@ import type { Db } from "@/infra/db/client.js";
 export const TEACHER_DIRECTORY_PAGE_SIZE = 15;
 
 export interface TeacherContractSummary {
+  id: string;
   fileName: string;
   fileSizeBytes: number;
   uploadedAt: Date;
@@ -95,6 +96,7 @@ export class ListTeachersQuery {
     return this.db
       .selectDistinctOn([teacherContracts.teacherId], {
         teacherId: teacherContracts.teacherId,
+        id: teacherContracts.id,
         fileName: teacherContracts.fileName,
         fileSizeBytes: teacherContracts.fileSizeBytes,
         uploadedAt: teacherContracts.createdAt,
@@ -122,6 +124,7 @@ export class ListTeachersQuery {
         studentCount: sql<number>`(select coalesce(sum(${classGroups.seatsTaken}), 0) from ${classGroups} where ${running})`.mapWith(
           Number,
         ),
+        contractId: contract.id,
         contractFileName: contract.fileName,
         contractFileSizeBytes: contract.fileSizeBytes,
         contractUploadedAt: contract.uploadedAt,
@@ -242,12 +245,14 @@ type SelectedRow = Awaited<ReturnType<ReturnType<ListTeachersQuery["select"]>["e
 function toListRow(row: SelectedRow): TeacherListRow {
   const { teacher } = row;
   const contract: TeacherContractSummary | null =
+    row.contractId !== null &&
     row.contractFileName !== null &&
     row.contractFileSizeBytes !== null &&
     row.contractUploadedAt !== null &&
     row.contractStartsOn !== null &&
     row.contractEndsOn !== null
       ? {
+          id: row.contractId,
           fileName: row.contractFileName,
           fileSizeBytes: row.contractFileSizeBytes,
           uploadedAt: row.contractUploadedAt,

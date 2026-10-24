@@ -68,15 +68,46 @@ tela que apenas não estoura na horizontal ainda não é uma tela de celular.
 
 Detalhe e histórico: `docs/ARCHITECTURE.md` §7.1.
 
-## Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026; recuperação da tela 17/09/2026)
+## Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026; recuperação da tela 17/09/2026; donos veem o desligado 23/10/2026)
 
 **As três superfícies de `apps/app` são geridas por feature flag: portal do
 aluno, backoffice e painel do docente.** Uma flag ligada significa que a seção
 aparece em produção; desligada significa que ela **não existe em produção** —
 some da navegação e a URL responde 404 — e continua inteira **para nós**: local,
-deploy de preview da Vercel e, em produção, para quem abriu o destravamento
-interno (`/api/preview?token=…`, cookie de 12 h, com tarja em toda tela dizendo
-que aquilo não está ativo para mais ninguém).
+deploy de preview da Vercel e, em produção, por dois destravamentos — o
+**cookie interno** (`/api/preview?token=…`, 12 h) e a **conta dos donos** no
+backoffice e no portal do docente (abaixo) —, sempre com tarja dizendo que
+aquilo não está ativo para mais ninguém.
+
+- **Conta dos donos vê o que está desligado no backoffice e no docente
+  (23/10/2026, OOC-61).** Até aqui só o cookie destravava, então desligar uma
+  seção em Funcionalidades a tirava também de quem acabou de desligá-la — e
+  desligar `backoffice` trancava os donos fora do painel. Agora sessão de staff
+  com `isOwnerEmail` (os mesmos domínios que abrem Funcionalidades,
+  `@admin.com` incluído) resolve **toda flag de superfície `backoffice` e
+  `teacher`** como ligada, por cima de painel, env e pai — a mesma precedência
+  que o cookie sempre teve. Mecanismo em `lib/feature-flags/resolve.ts`
+  (puro, testado em `resolve.test.ts`, `pnpm --filter @ooc/app test`):
+  - **A superfície é da tela, não da flag.** `getFeatureFlags(surface)` /
+    `getFeatureView(surface)` recebem a superfície da tela que pergunta;
+    `requireFeature(key)` usa a da própria chave. Só superfície de staff lê a
+    sessão — **página do portal nunca faz `/me`**, e flag `portal.*` continua
+    respondendo só ao cookie, porque lá a sessão é de aluno.
+  - **Ler a sessão é opcional e não quebra página.** Sem cookie de sessão
+    (convite, reset de senha, login do docente) nem chega a chamar a API;
+    leitura que falha resolve como "não dono", nunca erro. O `/me` é um só por
+    request (`readMe` em `lib/backoffice/session.ts`, compartilhado com
+    `getStaffSession`).
+  - **Sempre marcado.** O shell do backoffice e o do docente mostram a tarja
+    (variante sem "Sair" — é a conta, não o navegador) enquanto houver algo
+    naquela superfície desligado para os demais, e o item de menu dessa seção
+    leva um ponto âmbar com "Apagada para os demais" (o cookie marca o menu do
+    mesmo jeito).
+  - **Funcionalidades reporta o que os outros veem** (`view.everybody`), nunca
+    o que o leitor vê — quem abre a tela é dono, e com o estado dele toda linha
+    diria "no ar".
+  - Continua não sendo controle de acesso: o dono vê a seção, e o papel na
+    rota da API decide o que ele faz nela.
 
 - **Flag não é controle de acesso.** Quem pode o quê continua sendo o papel
   declarado na rota em `apps/api` (`CLAUDE.md` §8). A flag diz se a

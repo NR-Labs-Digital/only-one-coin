@@ -15,7 +15,10 @@ import {
 } from '@/lib/backoffice/permissions'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
 import { getBackofficeSession } from '@/lib/backoffice/session'
-import { getFeatureFlags } from '@/lib/feature-flags/server'
+import { getFeatureView } from '@/lib/feature-flags/server'
+import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
+import type { FeatureFlagKey } from '@/lib/feature-flags/registry'
+import { InternalPreviewBadge } from '@/components/internal-preview-badge'
 import { initials } from '@/lib/format'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
 import { BoUserMenu } from '@/components/backoffice/bo-user-menu'
@@ -58,7 +61,11 @@ export default async function BackofficePanelLayout({
   // The session and the flags are independent reads of apps/api — asked
   // together, so the shell pays one round trip for both instead of two. A
   // teacher is sent to the docente portal from inside the session read.
-  const [staff, flags] = await Promise.all([getBackofficeSession(), getFeatureFlags()])
+  const [staff, view] = await Promise.all([getBackofficeSession(), getFeatureView('backoffice')])
+  const { flags } = view
+  // An entry this reader sees only through an unlock — an owners' account or
+  // the preview cookie — is marked as off for everybody else (`resolve.ts`).
+  const hidden = (key: FeatureFlagKey) => isHiddenFromEverybody(view, key)
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
@@ -83,7 +90,12 @@ export default async function BackofficePanelLayout({
          section of the panel — it is where the panel starts. */
       key: 'home',
       items: [
-        { key: 'dashboard', href: '/backoffice/home', label: t('nav.dashboard') },
+        {
+          key: 'dashboard',
+          href: '/backoffice/home',
+          label: t('nav.dashboard'),
+          hiddenFromOthers: hidden('backoffice'),
+        },
       ],
     },
     {
@@ -96,6 +108,7 @@ export default async function BackofficePanelLayout({
                 key: 'students' as const,
                 href: '/backoffice/students',
                 label: t('nav.students'),
+                hiddenFromOthers: hidden('backoffice.students'),
               },
             ]
           : []),
@@ -103,6 +116,7 @@ export default async function BackofficePanelLayout({
           key: 'enrollments' as const,
           href: '/backoffice/enrollments',
           label: t('nav.enrollments'),
+          hiddenFromOthers: hidden('backoffice.enrollments'),
         }] : []),
         ...(flags['backoffice.payments'] ? [{
           /* One entry for the three screens of the section — the ledger, the
@@ -111,6 +125,7 @@ export default async function BackofficePanelLayout({
           key: 'payments' as const,
           href: '/backoffice/payments',
           label: t('nav.payments'),
+          hiddenFromOthers: hidden('backoffice.payments'),
           badge: pendingReview,
         }] : []),
       ],
@@ -130,6 +145,7 @@ export default async function BackofficePanelLayout({
           href: '/backoffice/class-groups',
           alsoMatches: ['/backoffice/courses'],
           label: t('nav.academic'),
+          hiddenFromOthers: hidden('backoffice.academic'),
         }] : []),
         ...(flags['backoffice.teachers']
           ? [
@@ -137,6 +153,7 @@ export default async function BackofficePanelLayout({
                 key: 'teachers' as const,
                 href: '/backoffice/teachers',
                 label: t('nav.teachers'),
+                hiddenFromOthers: hidden('backoffice.teachers'),
               },
             ]
           : []),
@@ -158,6 +175,7 @@ export default async function BackofficePanelLayout({
                 key: 'email' as const,
                 href: '/backoffice/emails',
                 label: t('nav.email'),
+                hiddenFromOthers: hidden('backoffice.email'),
               },
             ]
           : []),
@@ -173,6 +191,7 @@ export default async function BackofficePanelLayout({
                 key: 'reports' as const,
                 href: '/backoffice/reports',
                 label: t('nav.reports'),
+                hiddenFromOthers: hidden('backoffice.reports'),
               },
             ]
           : []),
@@ -187,6 +206,7 @@ export default async function BackofficePanelLayout({
                 key: 'staff' as const,
                 href: '/backoffice/team',
                 label: t('nav.staff'),
+                hiddenFromOthers: hidden('backoffice.staff'),
               },
             ]
           : []),
@@ -203,6 +223,7 @@ export default async function BackofficePanelLayout({
                 key: 'settings' as const,
                 href: '/backoffice/settings',
                 label: t('nav.settings'),
+                hiddenFromOthers: hidden('backoffice.settings'),
               },
             ]
           : []),
@@ -274,6 +295,7 @@ export default async function BackofficePanelLayout({
           <BoSidebar
             groups={groups}
             soonLabel={t('nav.soon')}
+            hiddenLabel={t('nav.hidden_from_others')}
             a11y={{
               title: t('nav.sidebar_title'),
               description: t('nav.sidebar_description'),
@@ -326,6 +348,13 @@ export default async function BackofficePanelLayout({
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>
+      {/* The owners' account sees what is off for everybody else; the banner
+          says so on every screen, the way the preview cookie's does. The
+          cookie's own banner is drawn by the root layout, so it is not drawn
+          twice here. */}
+      {view.unlock === 'owner' && surfaceHasHiddenFlags(view, 'backoffice') && (
+        <InternalPreviewBadge mode="owner" />
+      )}
     </>
   )
 }

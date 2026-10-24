@@ -26,7 +26,7 @@ export default async function CourseDetailPage({
   setRequestLocale(raw)
   const t = await getTranslations('portal')
 
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('portal')
   // Looked up among the student's own enrollments only — an id from the URL
   // that is not theirs is a 404, never someone else's course (CLAUDE.md §8).
   const { enrollments } = await getPortalView()
