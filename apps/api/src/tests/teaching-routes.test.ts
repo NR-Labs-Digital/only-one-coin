@@ -215,3 +215,50 @@ describe("the id in the URL is not proof of whose class group it is", () => {
     expect(response.json()).toEqual({ items: [{ enrollmentId: ID, studentName: "Lucía Zapata" }] });
   });
 });
+
+/**
+ * No active course is a state of the portal, not a refusal (OOC-101): the
+ * teacher still signs in and is answered an empty list and a zeroed summary,
+ * which the home reads as "No tienes cursos activos".
+ */
+describe("a teacher with no active class group gets an empty portal", () => {
+  const EMPTY_SUMMARY = { teaching: 0, inPortal: 0, students: 0 };
+
+  it("answers an empty list and a zeroed summary when nothing is allocated", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(teacherFile(A_TEACHER));
+    vi.spyOn(container.repositories.teaching, "listClassGroupsOf").mockResolvedValue([]);
+    const count = vi.spyOn(container.repositories.teaching, "countStudents");
+
+    const list = await inject("GET", "/api/v1/teaching/class-groups");
+    const summary = await inject("GET", "/api/v1/teaching/summary");
+
+    expect(list.statusCode).toBe(200);
+    expect(list.json()).toEqual({ items: [] });
+    expect(summary.statusCode).toBe(200);
+    expect(summary.json()).toEqual(EMPTY_SUMMARY);
+    expect(count).not.toHaveBeenCalled();
+  });
+
+  it("leaves out the class groups coordination closed or still drafts", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(teacherFile(A_TEACHER));
+    vi.spyOn(container.repositories.teaching, "listClassGroupsOf").mockResolvedValue([
+      { ...group(A_GROUP, A_TEACHER), status: "closed" },
+      { ...group(ID, A_TEACHER), status: "draft" },
+    ]);
+
+    expect((await inject("GET", "/api/v1/teaching/class-groups")).json()).toEqual({ items: [] });
+    expect((await inject("GET", "/api/v1/teaching/summary")).json()).toEqual(EMPTY_SUMMARY);
+  });
+
+  it("answers the same to an account linked to no file, without a read for a null id", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(null);
+    const list = vi.spyOn(container.repositories.teaching, "listClassGroupsOf");
+
+    expect((await inject("GET", "/api/v1/teaching/class-groups")).json()).toEqual({ items: [] });
+    expect((await inject("GET", "/api/v1/teaching/summary")).json()).toEqual(EMPTY_SUMMARY);
+    expect(list).not.toHaveBeenCalled();
+  });
+});
