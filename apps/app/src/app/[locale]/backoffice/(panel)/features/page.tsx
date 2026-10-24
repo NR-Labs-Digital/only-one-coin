@@ -9,7 +9,7 @@ import {
   flagEnvVar,
   type FeatureFlagKey,
 } from '@/lib/feature-flags/registry'
-import { getFeatureFlags, isInternalPreview } from '@/lib/feature-flags/server'
+import { getFeatureView } from '@/lib/feature-flags/server'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { FeaturesView, type FlagRow } from './features-view'
 
@@ -55,11 +55,14 @@ export default async function FeatureFlagsPage({
     )
   }
 
-  const [overrides, effective, unlocked] = await Promise.all([
+  const [overrides, view] = await Promise.all([
     listFeatureFlagOverrides(),
-    getFeatureFlags(),
-    isInternalPreview(),
+    getFeatureView('backoffice'),
   ])
+  /* What everybody else gets, never what this reader does: whoever is on this
+     screen is an owner, and an owner sees every staff flag on — reported as
+     what is on the air, every switch here would read "live". */
+  const effective = view.everybody
 
   const byKey = new Map(overrides.map((row) => [row.key, row]))
 
@@ -114,7 +117,7 @@ export default async function FeatureFlagsPage({
       <FeaturesView
         rows={rows}
         appEnv={featureEnv.APP_ENV}
-        unlocked={unlocked}
+        unlock={view.unlock}
       />
     </div>
   )

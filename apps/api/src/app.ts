@@ -17,6 +17,7 @@ import { getPortalMeRoute } from "@/http/portal/GetPortalMeRoute.js";
 import { getPortalOverviewRoute } from "@/http/portal/GetPortalOverviewRoute.js";
 import { getPortalPaymentReceiptRoute } from "@/http/portal/GetPortalPaymentReceiptRoute.js";
 import { registerStudentRoute } from "@/http/student/RegisterStudentRoute.js";
+import { exportStudentsRoute } from "@/http/student/ExportStudentsRoute.js";
 import { listStudentsRoute } from "@/http/student/ListStudentsRoute.js";
 import { searchStudentsRoute } from "@/http/student/SearchStudentsRoute.js";
 import { getStudentRoute } from "@/http/student/GetStudentRoute.js";
@@ -36,6 +37,9 @@ import { getDocumentTemplateRoute } from "@/http/document/GetDocumentTemplateRou
 import { saveDocumentTemplateDraftRoute } from "@/http/document/SaveDocumentTemplateDraftRoute.js";
 import { previewDocumentTemplateRoute } from "@/http/document/PreviewDocumentTemplateRoute.js";
 import { publishDocumentTemplateRoute } from "@/http/document/PublishDocumentTemplateRoute.js";
+import { requestTeacherContractUploadRoute } from "@/http/teacher/RequestTeacherContractUploadRoute.js";
+import { fileTeacherContractRoute } from "@/http/teacher/FileTeacherContractRoute.js";
+import { openTeacherContractRoute } from "@/http/teacher/OpenTeacherContractRoute.js";
 import { saveGuardianRoute } from "@/http/student/SaveGuardianRoute.js";
 import { listStudentActivityRoute } from "@/http/student/ListStudentActivityRoute.js";
 import { issuePortalAccessRoute } from "@/http/student/IssuePortalAccessRoute.js";
@@ -159,6 +163,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getPortalPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(registerStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStudentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(exportStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(searchStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateStudentRoute);
@@ -176,6 +181,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(saveDocumentTemplateDraftRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(previewDocumentTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(publishDocumentTemplateRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestTeacherContractUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(fileTeacherContractRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(openTeacherContractRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnClassGroupRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupStudentsRoute);

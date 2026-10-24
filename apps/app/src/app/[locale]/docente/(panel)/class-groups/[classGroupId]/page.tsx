@@ -28,7 +28,7 @@ export default async function TeacherClassGroupPage({
   const [staff, group, flags] = await Promise.all([
     getTeacherSession(),
     getOwnClassGroup(classGroupId),
-    getFeatureFlags(),
+    getFeatureFlags('teacher'),
   ])
   if (group === 'not_found') notFound()
 

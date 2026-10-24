@@ -1,11 +1,17 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, enrollments, planPrices, plans, students } from "@ooc/db";
-import { eq } from "drizzle-orm";
+import { academicPeriods, auditLog, classGroups, courses, enrollments, planPrices, plans, students } from "@ooc/db";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
-import { DIRECTORY_PAGE_SIZE, ListStudentsQuery } from "./ListStudentsQuery.js";
+import {
+  DIRECTORY_PAGE_SIZE,
+  EXPORT_BATCH_SIZE,
+  ListStudentsQuery,
+  STUDENT_DIRECTORY_TARGET,
+  type StudentListRow,
+} from "./ListStudentsQuery.js";
 
 /**
  * OOC-55: the student directory is people who got in, plus people registered
@@ -318,5 +324,94 @@ describe("pagination across rows that share one timestamp", () => {
 
     expect(seen).toHaveLength(seededIds.length);
     expect(new Set(seen)).toEqual(new Set(seededIds));
+  });
+});
+
+async function drain(batches: AsyncGenerator<StudentListRow[]>): Promise<StudentListRow[]> {
+  const rows: StudentListRow[] = [];
+  for await (const batch of batches) rows.push(...batch);
+  return rows;
+}
+
+/**
+ * OOC-121: the export is the directory's filters over every page, and every
+ * export leaves an `audit_log` entry — with the filters, never the search text.
+ */
+describe("directory export", () => {
+  const ACTOR = "export-actor-integration";
+
+  it("lists exactly who the same filters list on screen", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      await seed(tx);
+
+      for (const filters of [
+        { q: SURNAME },
+        { q: SURNAME, status: "active" as const },
+        { q: SURNAME, status: "no_enrollment" as const },
+        { q: SURNAME, minor: true },
+        { q: SURNAME, sort: "oldest" as const },
+      ]) {
+        const screen = await query.directory(filters);
+        const exported = await query.exportDirectory(filters, ACTOR);
+        const rows = await drain(exported.batches);
+
+        expect(rows.map((row) => row.id), JSON.stringify(filters)).toEqual(screen.items.map((row) => row.id));
+        expect(rows).toEqual(screen.items);
+        expect(exported.rowCount).toBe(screen.total);
+      }
+    });
+  });
+
+  it("records who exported, the filters and the row count, never the search text", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      await seed(tx);
+
+      const exported = await query.exportDirectory({ q: SURNAME, status: "active", minor: false }, ACTOR);
+      const [entry] = await tx
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.actorId, ACTOR), eq(auditLog.action, "student.directory_exported")));
+
+      expect(entry?.targetId).toBe(STUDENT_DIRECTORY_TARGET);
+      expect(entry?.metadata).toEqual({ status: "active", minor: false, searched: true, sort: "newest", rowCount: 2 });
+      expect(JSON.stringify(entry?.metadata)).not.toContain(SURNAME);
+      expect(exported.rowCount).toBe(2);
+    });
+  });
+
+  it("walks every row once across batches, even when a bulk insert shares one timestamp", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      const count = EXPORT_BATCH_SIZE + 7;
+      const tied = new Date("2026-09-07T18:32:28.541Z");
+      const inserted = await tx
+        .insert(students)
+        .values(
+          Array.from({ length: count }, (_, i) => ({
+            firstName: `Row${i}`,
+            lastName: "Exportbatch",
+            nationalIdType: "DNI",
+            nationalId: `EXPBATCH${i}`,
+            email: `exp.${i}@gmail.com`,
+            phone: "+51900000000",
+            birthDate: ADULT,
+            country: "PE",
+            city: "Lima",
+            createdAt: tied,
+          })),
+        )
+        .returning({ id: students.id });
+
+      for (const sort of ["newest", "oldest"] as const) {
+        const exported = await query.exportDirectory({ q: "Exportbatch", sort }, ACTOR);
+        const ids = (await drain(exported.batches)).map((row) => row.id);
+
+        expect(exported.rowCount).toBe(count);
+        expect(ids).toHaveLength(count);
+        expect(new Set(ids)).toEqual(new Set(inserted.map((row) => row.id)));
+      }
+    });
   });
 });

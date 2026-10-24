@@ -462,7 +462,8 @@ As três superfícies de `apps/app` — **portal do aluno**, **backoffice** e o
 > **Ligada:** a seção aparece em produção, para quem tem o papel.
 > **Desligada:** a seção não existe em produção — some da navegação e a URL
 > responde **404** — e continua inteira para nós: local, deploy de preview da
-> Vercel e, em produção, para quem abriu o destravamento interno.
+> Vercel e, em produção, para quem abriu o destravamento interno — e, no
+> backoffice e no portal do docente, para a conta dos donos (§8.3).
 
 Flag **não é controle de acesso.** O que uma pessoa *pode fazer* continua sendo
 o papel declarado na rota em `apps/api` (`CLAUDE.md` §8). A flag decide se a
@@ -591,6 +592,27 @@ colocaria toda tela pela metade no ar.
 Nada disso chega ao cliente: a resolução é server-only e componente de cliente
 recebe o booleano já resolvido por prop — a lista do que existe mas está
 desligado não vai no bundle.
+
+**O segundo destravamento: a conta dos donos (23/10/2026, OOC-61).** Sessão de
+staff com e-mail num domínio dos donos (`isOwnerEmail`) resolve ligada toda
+flag de superfície `backoffice` e `teacher` — sem cookie, sem prazo, porque é a
+conta e não o navegador. Por quê: com só o cookie, quem desligava uma seção em
+Funcionalidades perdia a seção junto com todo mundo, e desligar `backoffice`
+trancava os donos fora do painel.
+
+| | Cookie (`preview`) | Conta dos donos (`owner`) |
+| --- | --- | --- |
+| Superfícies | as três | `backoffice`, `teacher` — o portal do aluno roda com sessão de aluno |
+| Precedência | acima de env, painel e pai | igual |
+| Tarja | layout raiz, toda tela, com "Sair" | shell do backoffice/docente, enquanto houver algo desligado na superfície, sem "Sair" |
+| Menu | item marcado "desligada para os demais" | igual |
+
+A lógica é pura (`lib/feature-flags/resolve.ts`, com teste) e devolve dois
+estados: o que **este request** vê (`flags`) e o que **todo mundo** vê
+(`everybody`). Funcionalidades mostra o segundo. A sessão só é lida quando a
+tela que pergunta é de staff, só se houver cookie de sessão, e falha resolve
+como "não dono" — a página de convite e o login do docente renderizam sem
+sessão nenhuma.
 
 ### 8.4 Onde a flag é aplicada
 

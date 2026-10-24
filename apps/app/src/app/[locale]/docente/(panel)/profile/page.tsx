@@ -50,6 +50,7 @@ export default async function TeacherProfilePage({
         teacher={teacher}
         catalogue={[]}
         canEdit={false}
+        canOpenContracts={false}
         classGroupBase="/docente/class-groups"
       />
     </div>

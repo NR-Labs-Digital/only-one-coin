@@ -179,6 +179,7 @@
   "preview": {
     "badge": "Internal mode",
     "description": "You are seeing features that are not live for anyone else yet.",
-    "exit": "Exit"
+    "exit": "Exit",
+    "owner_description": "Your account sees features that are off for everyone else."
   }
 }

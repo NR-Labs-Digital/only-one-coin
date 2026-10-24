@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition, type MouseEvent } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/navigation'
 import type { StudentDirectoryPage } from '@/lib/backoffice/students'
 import {
@@ -23,6 +23,7 @@ import {
   toolbarSearchClass,
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { downloadBlob } from '@/lib/backoffice/csv'
 import { studentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
@@ -48,16 +49,20 @@ export function StudentsTable({
   directory,
   query,
   canCreate,
+  canExport,
 }: {
   directory: StudentDirectoryPage
   query: StudentDirectoryQuery
   canCreate: boolean
+  canExport: boolean
 }) {
   const t = useTranslations('bo')
+  const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
   /**
    * True while the server renders the page just asked for. The table stays
    * on screen, dimmed, instead of blanking: the rows being replaced are still
@@ -89,6 +94,40 @@ export function StudentsTable({
     // `navigate` closes over `query`, which is already a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, query])
+
+  /**
+   * The export (OOC-121) is what the URL says the screen shows — tab, search,
+   * age filter — every page, written by the server. Not the loaded rows: a
+   * page is 15 of 30k. A search still being typed has not reached the URL,
+   * so the file follows the list on screen, not the box.
+   */
+  async function exportDirectory() {
+    setExporting(true)
+    try {
+      const search = studentDirectorySearchParams({ ...query, page: 1 })
+      search.set('locale', locale)
+      const response = await fetch(`/api/backoffice/students/export?${search}`)
+      if (!response.ok) {
+        setToast(
+          response.status === 403
+            ? t('student_export.error_forbidden')
+            : response.status === 429
+              ? t('student_export.error_rate_limited')
+              : t('student_export.error_generic'),
+        )
+        return
+      }
+      const count = Number(response.headers.get('x-row-count'))
+      const blob = await response.blob()
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+      downloadBlob(t('student_export.file_name', { date: today }), blob)
+      if (Number.isFinite(count)) setToast(t('student_export.done', { count }))
+    } catch {
+      setToast(t('student_export.error_generic'))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const { items: pageRows, total, pageSize, counts } = directory
   const activeFilters = query.minor ? 1 : 0
@@ -177,16 +216,33 @@ export function StudentsTable({
               filling `/enrollment` themselves (CLAUDE.md §1). Hidden from
               whoever may not use it — the enforcing check is the role on the
               route in `apps/api` (CLAUDE.md §8). */}
-          {canCreate && !creating && (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className="ml-auto inline-flex items-center gap-1.5 self-start rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
-            >
-              <BoIcon name="plus" size={16} />
-              {t('students.new_student')}
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-2 self-start">
+            {/* Personal data leaving in bulk: shown only to who keeps the
+                file; the API enforces it, audits it and rate-limits it. */}
+            {canExport && (
+              <button
+                type="button"
+                onClick={() => void exportDirectory()}
+                disabled={exporting}
+                title={t('student_export.hint')}
+                aria-busy={exporting}
+                className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:bg-cream disabled:opacity-60"
+              >
+                <BoIcon name="download" size={16} />
+                {exporting ? t('student_export.exporting') : t('student_export.export')}
+              </button>
+            )}
+            {canCreate && !creating && (
+              <button
+                type="button"
+                onClick={() => setCreating(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+              >
+                <BoIcon name="plus" size={16} />
+                {t('students.new_student')}
+              </button>
+            )}
+          </div>
         </Toolbar>
 
       </div>

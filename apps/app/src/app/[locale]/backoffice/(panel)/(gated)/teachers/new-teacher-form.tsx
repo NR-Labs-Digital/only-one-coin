@@ -41,9 +41,9 @@ const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
  * roster with no windows cannot be allocated to anything, so the class group
  * that prompted the hire still has nobody to run it.
  *
- * The contract is filed on the teacher's own file once the upload exists
- * (OOC-81) — until then the directory flags the new teacher as "sin contrato",
- * which is the truth.
+ * The contract is filed afterwards, on the teacher's own file (OOC-81) — until
+ * then the directory flags the new teacher as "sin contrato", which is the
+ * truth.
  *
  * Saves through `POST /teachers` (OOC-78), a usecase in `apps/api` that holds
  * the same field rules and refuses a document already on the roster. Creating

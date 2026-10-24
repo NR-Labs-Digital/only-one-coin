@@ -8,7 +8,7 @@ import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 // The directory's filters (OOC-76), all applied by Postgres. Absent means
 // "all", except the tab, which opens on who studies now (OOC-116). `q` keeps a two-character floor so a keystroke is not a full-table
 // ILIKE; `minor` is the literal "true" a URL carries.
-const ListStudentsQuerySchema = z.object({
+export const ListStudentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   q: z.string().trim().min(2).max(100).optional(),
   status: z.enum(["active", "former", "no_enrollment", "all"]).default("active"),

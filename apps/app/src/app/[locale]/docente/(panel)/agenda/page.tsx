@@ -23,7 +23,7 @@ export default async function TeacherAgendaPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
-  const [classGroups, flags] = await Promise.all([listOwnClassGroups(), getFeatureFlags()])
+  const [classGroups, flags] = await Promise.all([listOwnClassGroups(), getFeatureFlags('teacher')])
   const now = isoToLimaDateTime(new Date().toISOString())
 
   return (
