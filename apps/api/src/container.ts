@@ -145,6 +145,7 @@ import { ReceiptObjectStore } from "./infra/storage/ReceiptObjectStore.js";
 import { TemplateEngine } from "@ooc/templates";
 import { DocumentTemplateCompiler } from "./documents/documentKinds.js";
 import { DocumentPreviewService } from "./documents/DocumentPreviewService.js";
+import { TeacherContractDocumentService } from "./documents/TeacherContractDocumentService.js";
 import { WeasyPrintRenderer } from "./infra/pdf/WeasyPrintRenderer.js";
 import { DrizzleDocumentTemplateRepository } from "./infra/persistence/document/DrizzleDocumentTemplateRepository.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
@@ -381,6 +382,8 @@ export interface AppDocuments {
   engine: TemplateEngine;
   compiler: DocumentTemplateCompiler;
   preview: DocumentPreviewService;
+  /** The filled teacher contract, from the published template. */
+  teacherContract: TeacherContractDocumentService;
 }
 
 /** The public-route protection (OOC-24): what stands between a burst of
@@ -478,6 +481,13 @@ function buildContainer(): AppContainer {
   // Editable documents (OOC-123)
   const templateEngine = new TemplateEngine();
   const documentCompiler = new DocumentTemplateCompiler(templateEngine);
+  const documentPreview = new DocumentPreviewService(
+    templateEngine,
+    new WeasyPrintRenderer(),
+    documentCompiler,
+    documentTemplateRepository,
+    teacherRepository,
+  );
 
   // Use cases
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
@@ -672,12 +682,12 @@ function buildContainer(): AppContainer {
     documents: {
       engine: templateEngine,
       compiler: documentCompiler,
-      preview: new DocumentPreviewService(
-        templateEngine,
-        new WeasyPrintRenderer(),
-        documentCompiler,
+      preview: documentPreview,
+      teacherContract: new TeacherContractDocumentService(
+        documentPreview,
         documentTemplateRepository,
         teacherRepository,
+        auditLogRepository,
       ),
     },
     repositories: {

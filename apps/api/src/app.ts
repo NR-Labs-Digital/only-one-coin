@@ -31,6 +31,7 @@ import { registerTeacherRoute } from "@/http/teacher/RegisterTeacherRoute.js";
 import { updateTeacherRoute } from "@/http/teacher/UpdateTeacherRoute.js";
 import { updateTeacherAvailabilityRoute } from "@/http/teacher/UpdateTeacherAvailabilityRoute.js";
 import { setTeacherRosterStatusRoute } from "@/http/teacher/SetTeacherRosterStatusRoute.js";
+import { generateTeacherContractRoute } from "@/http/teacher/GenerateTeacherContractRoute.js";
 import { getDocumentTemplateRoute } from "@/http/document/GetDocumentTemplateRoute.js";
 import { saveDocumentTemplateDraftRoute } from "@/http/document/SaveDocumentTemplateDraftRoute.js";
 import { previewDocumentTemplateRoute } from "@/http/document/PreviewDocumentTemplateRoute.js";
@@ -170,6 +171,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherAvailabilityRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setTeacherRosterStatusRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(generateTeacherContractRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getDocumentTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(saveDocumentTemplateDraftRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(previewDocumentTemplateRoute);

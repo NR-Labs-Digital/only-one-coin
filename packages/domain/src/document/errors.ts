@@ -27,3 +27,14 @@ export class DocumentTemplateHasIssuesError extends UnableToProcessEntryError {
     });
   }
 }
+
+/** Real documents are issued from the published version only — none exists yet. */
+export class DocumentTemplateNotPublishedError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "document_template.not_published",
+      message: "The template has no published version to issue documents from.",
+      ...params,
+    });
+  }
+}

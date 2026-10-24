@@ -604,6 +604,7 @@ export {
   DocumentKindNotFoundError,
   DocumentTemplateDraftMissingError,
   DocumentTemplateHasIssuesError,
+  DocumentTemplateNotPublishedError,
 } from "./document/errors.js";
 export {
   PublishDocumentTemplateUseCase,
