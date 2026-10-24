@@ -1,5 +1,6 @@
 import {
   CatalogEntryNotFoundError,
+  GetCatalogEntryStateUseCase,
   RestoreCatalogEntryUseCase,
   RetireCatalogEntryUseCase,
   type AuditLogEntry,
@@ -67,6 +68,7 @@ let repository: FakeCatalogEntryRepository;
 let auditLog: FakeAuditLogRepository;
 let retire: RetireCatalogEntryUseCase;
 let restore: RestoreCatalogEntryUseCase;
+let getState: GetCatalogEntryStateUseCase;
 
 beforeEach(() => {
   const entries = new Map<string, CatalogEntryState>([
@@ -78,6 +80,7 @@ beforeEach(() => {
   auditLog = new FakeAuditLogRepository();
   retire = new RetireCatalogEntryUseCase(repository, auditLog);
   restore = new RestoreCatalogEntryUseCase(repository, auditLog);
+  getState = new GetCatalogEntryStateUseCase(repository);
 });
 
 describe("RetireCatalogEntryUseCase", () => {
@@ -153,6 +156,29 @@ describe("RestoreCatalogEntryUseCase", () => {
   it("refuses an entry that is not on file", async () => {
     await expect(
       restore.run({ actorId: ACTOR, kind: "academic_period", id: "018f2b5c-0000-7000-8000-0000000000ff" }),
+    ).rejects.toBeInstanceOf(CatalogEntryNotFoundError);
+  });
+});
+
+describe("GetCatalogEntryStateUseCase", () => {
+  // The count the confirmation shows before retiring (OOC-70): the warning is
+  // only a warning while the person can still say no.
+  it("answers the live enrollments before anything is retired", async () => {
+    const state = await getState.run({ kind: "class_group", id: A_CLASS_GROUP });
+
+    expect(state).toMatchObject({ retiredAt: null, liveEnrollments: 12 });
+  });
+
+  it("is a read: it writes nothing and leaves no audit line", async () => {
+    await getState.run({ kind: "class_group", id: A_CLASS_GROUP });
+
+    expect(await repository.find("class_group", A_CLASS_GROUP)).toMatchObject({ retiredAt: null });
+    expect(auditLog.appended).toHaveLength(0);
+  });
+
+  it("refuses an entry that is not on file", async () => {
+    await expect(
+      getState.run({ kind: "plan", id: "018f2b5c-0000-7000-8000-0000000000ff" }),
     ).rejects.toBeInstanceOf(CatalogEntryNotFoundError);
   });
 });

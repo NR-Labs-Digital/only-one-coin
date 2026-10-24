@@ -540,6 +540,10 @@ export {
   type RestoreCatalogEntryOutput,
 } from "./catalog/RestoreCatalogEntryUseCase.js";
 export {
+  GetCatalogEntryStateUseCase,
+  type GetCatalogEntryStateInput,
+} from "./catalog/GetCatalogEntryStateUseCase.js";
+export {
   PaymentRejectionReasonSchema,
   type PaymentRejectionReason,
   type PaymentDecision,
