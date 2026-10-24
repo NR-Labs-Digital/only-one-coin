@@ -1271,7 +1271,17 @@
       "copy_into_existing": "Copy class groups into this period",
       "empty": "No periods yet.",
       "copy": "Copy class groups",
-      "copied_into": "{copied, plural, =0 {There were no class groups to copy.} one {# class group copied as a draft.} other {# class groups copied as drafts.}}{skipped, plural, =0 {} other { # off the catalog were not copied.}}"
+      "copied_into": "{copied, plural, =0 {There were no class groups to copy.} one {# class group copied as a draft.} other {# class groups copied as drafts.}}{skipped, plural, =0 {} other { # off the catalog were not copied.}}",
+      "edit": "Edit period",
+      "edit_hint": "Changing the period's dates does not move its class groups' start dates.",
+      "save": "Save",
+      "saved": "Period updated",
+      "retire": "Take off the catalog",
+      "restore": "Put back in the catalog",
+      "confirm_retire": "The class groups in {name} are no longer offered at enrollment. Enrollments already made do not change and stay in the ledger.",
+      "confirm_restore": "{name} comes back to the catalog, with its class groups as they were.",
+      "retired_notice": "{count, plural, =0 {Period off the catalog.} one {Period off the catalog. # enrollment is still running.} other {Period off the catalog. # enrollments are still running.}}",
+      "restored": "Period back in the catalog"
     },
     "class_group": {
       "back_to_list": "Back to class groups",
@@ -1535,7 +1545,13 @@
       "load_error": "We couldn't load the plans.",
       "inactive": "Off sale",
       "created": "Plan created",
-      "price_scheduled": "Price scheduled"
+      "price_scheduled": "Price scheduled",
+      "retire": "Take off sale",
+      "restore": "Put back on sale",
+      "confirm_retire": "The plan is no longer offered at enrollment. Enrollments already made keep their price.",
+      "confirm_restore": "The plan is offered at enrollment again, at its current price.",
+      "retired": "{count, plural, =0 {Plan off sale.} one {Plan off sale. # enrollment is still running.} other {Plan off sale. # enrollments are still running.}}",
+      "restored": "Plan back on sale"
     },
     "course_options": {
       "close": "Close",
@@ -1551,7 +1567,11 @@
       "active": "Course in catalog",
       "active_hint": "Taking it out of the catalog does not end running class groups: it just stops being offered.",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "identity_title": "Course details",
+      "identity_hint": "The name and level change everywhere, including on enrollments already made.",
+      "summary": "Summary",
+      "summary_hint": "What the course is, in the student's words. Left blank, the portal hides “About the course”."
     },
     "landing_key": {
       "label": "Website page",
@@ -2302,6 +2322,14 @@
       "tab_preview": "Preview",
       "load_error_title": "The document could not be opened",
       "load_error_body": "The system did not respond. Reload the page; if it persists, tell the tech team."
+    },
+    "catalog_retire": {
+      "counting": "Counting the enrollments still running…",
+      "count_failed": "We couldn't count the running enrollments. You can go ahead anyway: taking it off the catalog cancels none of them.",
+      "none_live": "No enrollment is still running here.",
+      "live": "{count, plural, one {# enrollment is still running. It is not cancelled: it stays in the enrollment ledger.} other {# enrollments are still running. They are not cancelled: they stay in the enrollment ledger.}}",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     }
   }
 }

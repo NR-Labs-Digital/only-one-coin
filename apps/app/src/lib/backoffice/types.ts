@@ -685,6 +685,12 @@ export interface CourseRow {
   hasPriceInForce: boolean
 }
 
+/**
+ * The four things the catalog is made of, as the retire/restore routes name
+ * them (`CatalogEntryKindSchema` in packages/domain).
+ */
+export type CatalogEntryKind = 'course' | 'plan' | 'class_group' | 'academic_period'
+
 /** The subset of a course that coordination may change. */
 export type CourseOptions = Pick<
   CourseRow,
