@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { LanguageGlobe } from '@/components/language-globe'
-import { CheckCircleIcon, KeyIcon, ShieldIcon } from './icons'
-import { BackofficeLoginForm, type InitialLoginStep } from './backoffice-login-form'
+import { CheckCircleIcon, KeyIcon, ShieldIcon } from '@/components/backoffice/auth-icons'
+import { StaffLoginForm, type InitialLoginStep } from '@/components/backoffice/staff-login-form'
 
 /**
  * Backoffice entry point — deliberately discreet: never linked from the landing
@@ -130,7 +130,7 @@ export default async function BackofficePage({
 
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <BackofficeLoginForm initialStep={initialStep} />
+            <StaffLoginForm initialStep={initialStep} />
 
             <p className="mt-8 flex items-start gap-2 text-xs text-muted-foreground">
               <ShieldIcon size={14} className="mt-0.5 shrink-0 text-brand-blue" />

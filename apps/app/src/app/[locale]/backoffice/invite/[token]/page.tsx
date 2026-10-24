@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/backoffice/api-client'
 import { isInviteExpired } from '@/lib/backoffice/invite'
 import { requireFeature } from '@/lib/feature-flags/server'
 import type { StaffRole } from '@/lib/backoffice/types'
-import { CheckCircleIcon, ShieldIcon } from '../../icons'
+import { CheckCircleIcon, ShieldIcon } from '@/components/backoffice/auth-icons'
 import { InviteCompletionForm } from './invite-completion-form'
 
 /**

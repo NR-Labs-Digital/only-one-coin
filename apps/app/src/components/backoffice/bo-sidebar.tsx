@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpen,
+  CalendarDays,
   CalendarRange,
   ChevronDown,
   ClipboardList,
@@ -49,6 +50,7 @@ const icons = {
   enrollments: ClipboardList,
   payments: CreditCard,
   class_groups: CalendarRange,
+  agenda: CalendarDays,
   courses: BookOpen,
   teachers: GraduationCap,
   email: Mail,
@@ -73,6 +75,13 @@ export interface BoNavItem {
   /** Module already agreed on but not built yet — shown disabled, not hidden. */
   soon?: boolean
   badge?: number
+  /**
+   * On for this reader only — the section's flag is off for everybody else,
+   * and the reader sees it through an unlock (`lib/feature-flags/resolve.ts`).
+   * Marked, never drawn like a live entry: a section someone opens every day
+   * without knowing it is off is the one they tell a student to go find.
+   */
+  hiddenFromOthers?: boolean
 }
 
 export interface BoNavGroup {
@@ -115,12 +124,15 @@ function isActive(pathname: string, item: Pick<BoNavItem, 'href' | 'alsoMatches'
 export function BoSidebar({
   groups,
   soonLabel,
+  hiddenLabel,
   a11y,
   brand,
   footer,
 }: {
   groups: BoNavGroup[]
   soonLabel: string
+  /** Said beside an entry marked `hiddenFromOthers`. */
+  hiddenLabel: string
   /** Screen-reader copy for the mobile drawer (CLAUDE.md §4). */
   a11y: { title: string; description: string; close: string; toggle: string }
   brand: ReactNode
@@ -215,12 +227,25 @@ export function BoSidebar({
                             <SidebarMenuButton
                               asChild
                               isActive={active}
-                              tooltip={item.label}
+                              tooltip={
+                                item.hiddenFromOthers
+                                  ? `${item.label} — ${hiddenLabel}`
+                                  : item.label
+                              }
                               className={menuItemClass}
                             >
                               <Link href={item.href}>
                                 <Icon />
                                 <span className="truncate">{item.label}</span>
+                                {item.hiddenFromOthers && (
+                                  <>
+                                    <span
+                                      aria-hidden="true"
+                                      className="size-1.5 shrink-0 rounded-full bg-amber-400"
+                                    />
+                                    <span className="sr-only">{hiddenLabel}</span>
+                                  </>
+                                )}
                               </Link>
                             </SidebarMenuButton>
                             {item.badge !== undefined && item.badge > 0 && (

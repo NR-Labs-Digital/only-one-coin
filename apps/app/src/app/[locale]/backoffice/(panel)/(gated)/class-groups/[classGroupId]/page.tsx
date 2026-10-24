@@ -2,10 +2,6 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import {
-  getClassGroupFor,
-  listClassGroupsFor,
-} from '@/lib/backoffice/mock-data'
-import {
   getCatalogClassGroup,
   getClassGroupRoster,
   listCatalogCourses,
@@ -19,23 +15,18 @@ import {
   canBrowseCatalog,
   canCreateClassGroup,
   canCreateEnrollment,
-  canManageEnrollment,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import type { StaffUser } from '@/lib/backoffice/types'
 import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import {
   Card,
-  EmptyState,
   Field,
   Meter,
   StatusBadge,
 } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
-import { ClassGroupCertificates } from './class-group-certificates'
 import { ClassGroupActions } from './class-group-actions'
 import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
@@ -45,8 +36,8 @@ import { AutoGrid } from '@/components/layout/auto-grid'
 type Translate = Awaited<ReturnType<typeof getTranslations<'bo'>>>
 
 /**
- * One class group. A teacher still reads the mock (their scope needs the
- * teachers context, Sessão 36); everyone else reads the catalog API (OOC-35).
+ * One class group, as coordination reads it — from the catalog API (OOC-35).
+ * A teacher reads their own in the docente portal (`/docente/class-groups`).
  * The certificate deadline is computed here, on the server: doing it in a
  * client component would let the server and the client disagree across a day
  * boundary.
@@ -61,10 +52,6 @@ export default async function ClassGroupDetailPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-
-  if (isRestrictedToOwnClassGroups(staff.role)) {
-    return <TeacherClassGroupDetail staff={staff} classGroupId={classGroupId} locale={locale as Locale} t={t} />
-  }
 
   /* Billing sees no academic data: the page answers 404 (the catalog API
      answers it 403). The role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
@@ -203,105 +190,6 @@ export default async function ClassGroupDetailPage({
           canEnroll={canCreateEnrollment(staff.role)}
         />
       )}
-    </div>
-  )
-}
-
-/**
- * The teacher's view of one of their class groups — still the mock, unchanged:
- * the roster, grades and certificates have no API yet (Sessão 36).
- *
- * Somebody else's class group answers exactly like one that does not exist.
- * Hiding the link would stop nobody — the id in the URL is guessable
- * (anti-IDOR, CLAUDE.md §8).
- */
-async function TeacherClassGroupDetail({
-  staff,
-  classGroupId,
-  locale,
-  t,
-}: {
-  staff: StaffUser
-  classGroupId: string
-  locale: Locale
-  t: Translate
-}) {
-  const group = getClassGroupFor(staff, classGroupId)
-  if (!group) notFound()
-
-  /* The certificate rules — passing grade and deadline — are the backoffice's
-     (OOC-41). Without them the batch cannot be judged, so the page says so
-     instead of judging it on a guess. */
-  const settings = await getPlatformSettings()
-  if (!settings) {
-    return (
-      <div className="flex flex-col gap-5">
-        <BackToList t={t} />
-        <EmptyState icon="alert" title={t('settings.rules_load_error_title')} body={t('settings.rules_load_error_body')} />
-      </div>
-    )
-  }
-
-  const deadline = addBusinessDays(group.endDate, settings.certificateDeadlineBusinessDays)
-  const businessDaysLeft = businessDaysUntil(deadline, new Date())
-
-  return (
-    <div className="flex flex-col gap-5">
-      <BackToList t={t} />
-
-      <Card className="p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-ink">
-              {group.courseName}
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {`${group.language.name} · ${group.academicPeriodName}`}
-            </p>
-          </div>
-          {/* Modality is not shown: the institution is 100% virtual
-              (`docs/REGRAS-NEGOCIO.md` §8), so the badge always read "online"
-              and carried no information. */}
-          <StatusBadge
-            tone={classGroupTone[group.status]}
-            label={t(`class_group_status.${group.status}`)}
-          />
-        </div>
-
-        {/* Period lives in the subtitle above, so it is not repeated here. The
-            date range is split in two fields on purpose: as one string it hit
-            the field's truncation and lost the end date. */}
-        <AutoGrid as="dl" min="17rem" className="mt-5">
-          <Field label={t('class_group.field_code')}>
-            <span className="tabular-nums">{group.code}</span>
-          </Field>
-          <Field label={t('class_group.field_teacher')}>{group.teacherName}</Field>
-          <Field label={t('class_group.field_schedule')}>
-            {`${group.weekdays.map((day) => t(`weekday.${day}`)).join('/')} · ${group.startTime}`}
-          </Field>
-          <Field label={t('class_group.field_start')}>
-            {formatDate(group.startDate, locale)}
-          </Field>
-          <Field label={t('class_group.field_end')}>
-            {formatDate(group.endDate, locale)}
-          </Field>
-          <SeatsField
-            label={t('class_group.field_seats')}
-            taken={group.seatsTaken}
-            capacity={group.capacity}
-          />
-        </AutoGrid>
-      </Card>
-
-      <ClassGroupCertificates
-        group={group}
-        classGroups={listClassGroupsFor(staff)}
-        canManage={canManageEnrollment(staff.role)}
-        // Date only: the deadline is a calendar day, not an instant.
-        deadlineIso={deadline.toISOString().slice(0, 10)}
-        businessDaysLeft={businessDaysLeft}
-        passingGrade={settings.passingGrade}
-      />
     </div>
   )
 }

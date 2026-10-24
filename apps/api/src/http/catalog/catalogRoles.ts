@@ -4,7 +4,7 @@ import type { Role } from "@ooc/domain";
  * Who reads the catalog in the backoffice — the same people who read the
  * enrollment ledger (apps/app permissions.ts canBrowseEnrollments). Billing
  * settles money and sees no academic data; a teacher sees their own class
- * groups through a scope this catalog does not have yet (Sessão 36).
+ * groups through `/teaching` (OOC-82), scoped by the session in the usecase.
  */
 export const CATALOG_READ_ROLES = [
   "master",

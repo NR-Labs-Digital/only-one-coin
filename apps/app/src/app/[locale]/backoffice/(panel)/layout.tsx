@@ -12,12 +12,13 @@ import {
   canManageFeatureFlags,
   canManageStaff,
   canViewPayments,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
-import { getTeacher } from '@/lib/backoffice/mock-data'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
-import { getStaffSession } from '@/lib/backoffice/session'
-import { getFeatureFlags } from '@/lib/feature-flags/server'
+import { getBackofficeSession } from '@/lib/backoffice/session'
+import { getFeatureView } from '@/lib/feature-flags/server'
+import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
+import type { FeatureFlagKey } from '@/lib/feature-flags/registry'
+import { InternalPreviewBadge } from '@/components/internal-preview-badge'
 import { initials } from '@/lib/format'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
 import { BoUserMenu } from '@/components/backoffice/bo-user-menu'
@@ -58,25 +59,18 @@ export default async function BackofficePanelLayout({
   // is the one screen the `backoffice` flag must never be able to hide
   // (CLAUDE.md §5).
   // The session and the flags are independent reads of apps/api — asked
-  // together, so the shell pays one round trip for both instead of two.
-  const [staff, flags] = await Promise.all([getStaffSession(), getFeatureFlags()])
+  // together, so the shell pays one round trip for both instead of two. A
+  // teacher is sent to the docente portal from inside the session read.
+  const [staff, view] = await Promise.all([getBackofficeSession(), getFeatureView('backoffice')])
+  const { flags } = view
+  // An entry this reader sees only through an unlock — an owners' account or
+  // the preview cookie — is marked as off for everybody else (`resolve.ts`).
+  const hidden = (key: FeatureFlagKey) => isHiddenFromEverybody(view, key)
   const monogram = initials(staff.firstName, staff.lastName)
 
   // shadcn writes this cookie from the trigger; reading it here avoids the
   // sidebar flashing open before hydration.
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
-
-  /**
-   * A teacher gets the panel narrowed to their own work: their class groups
-   * and their own ficha. The money, the student directory and the
-   * administration group are not theirs to open — and the sidebar says so by
-   * not offering them, rather than by letting the click fail.
-   *
-   * This is the screen honouring the rule, never enforcing it: the check that
-   * counts compares the authenticated `teacher_id` inside the usecase in
-   * `apps/api` (CLAUDE.md §8).
-   */
-  const restricted = isRestrictedToOwnClassGroups(staff.role)
 
   /* The queue count behind the Payments badge, asked only by a cargo the API
      serves the queue to — anybody else would get a 403, and the badge would
@@ -88,52 +82,20 @@ export default async function BackofficePanelLayout({
       : null
   const pendingReview = reviewQueue?.total ?? 0
 
-  /* The teacher's badge is their own queue — the final grades still open
-     across their class groups. Same role as the review-queue badge below:
-     it is what the panel gets opened for. */
-  const pendingGrades =
-    restricted && staff.teacherId
-      ? (getTeacher(staff.teacherId)?.pendingGrades ?? 0)
-      : 0
-
   /* A group whose every section is off is not an empty dropdown — it is not a
      group. Only `home` is unconditional: it is where the panel starts. */
-  const allGroups: BoNavGroup[] = restricted
-    ? [
-        {
-          key: 'home',
-          items: [
-            { key: 'dashboard', href: '/backoffice/home', label: t('nav.dashboard') },
-          ],
-        },
-        {
-          key: 'academic',
-          label: t('nav.group_academic'),
-          /* The teacher's class groups are the academic section, seen through
-             their own scope — so they answer to the same flag as everyone
-             else's. Off, the docente panel keeps only its dashboard. */
-          items: flags['backoffice.academic']
-            ? [
-                {
-                  key: 'class_groups' as const,
-                  href: '/backoffice/class-groups',
-                  label: t('nav.my_class_groups'),
-                  badge: pendingGrades,
-                },
-                /* No "Minha ficha" here: what belongs to the reader — their
-                   ficha, their account — lives in the user dropdown at the
-                   bottom of the rail, not among the work modules. */
-              ]
-            : [],
-        },
-      ]
-    : [
+  const allGroups: BoNavGroup[] = [
     {
       /* No label, so it renders loose above the dropdowns. Home is not a
          section of the panel — it is where the panel starts. */
       key: 'home',
       items: [
-        { key: 'dashboard', href: '/backoffice/home', label: t('nav.dashboard') },
+        {
+          key: 'dashboard',
+          href: '/backoffice/home',
+          label: t('nav.dashboard'),
+          hiddenFromOthers: hidden('backoffice'),
+        },
       ],
     },
     {
@@ -146,6 +108,7 @@ export default async function BackofficePanelLayout({
                 key: 'students' as const,
                 href: '/backoffice/students',
                 label: t('nav.students'),
+                hiddenFromOthers: hidden('backoffice.students'),
               },
             ]
           : []),
@@ -153,6 +116,7 @@ export default async function BackofficePanelLayout({
           key: 'enrollments' as const,
           href: '/backoffice/enrollments',
           label: t('nav.enrollments'),
+          hiddenFromOthers: hidden('backoffice.enrollments'),
         }] : []),
         ...(flags['backoffice.payments'] ? [{
           /* One entry for the three screens of the section — the ledger, the
@@ -161,6 +125,7 @@ export default async function BackofficePanelLayout({
           key: 'payments' as const,
           href: '/backoffice/payments',
           label: t('nav.payments'),
+          hiddenFromOthers: hidden('backoffice.payments'),
           badge: pendingReview,
         }] : []),
       ],
@@ -180,6 +145,7 @@ export default async function BackofficePanelLayout({
           href: '/backoffice/class-groups',
           alsoMatches: ['/backoffice/courses'],
           label: t('nav.academic'),
+          hiddenFromOthers: hidden('backoffice.academic'),
         }] : []),
         ...(flags['backoffice.teachers']
           ? [
@@ -187,6 +153,7 @@ export default async function BackofficePanelLayout({
                 key: 'teachers' as const,
                 href: '/backoffice/teachers',
                 label: t('nav.teachers'),
+                hiddenFromOthers: hidden('backoffice.teachers'),
               },
             ]
           : []),
@@ -208,6 +175,7 @@ export default async function BackofficePanelLayout({
                 key: 'email' as const,
                 href: '/backoffice/emails',
                 label: t('nav.email'),
+                hiddenFromOthers: hidden('backoffice.email'),
               },
             ]
           : []),
@@ -223,6 +191,7 @@ export default async function BackofficePanelLayout({
                 key: 'reports' as const,
                 href: '/backoffice/reports',
                 label: t('nav.reports'),
+                hiddenFromOthers: hidden('backoffice.reports'),
               },
             ]
           : []),
@@ -237,6 +206,7 @@ export default async function BackofficePanelLayout({
                 key: 'staff' as const,
                 href: '/backoffice/team',
                 label: t('nav.staff'),
+                hiddenFromOthers: hidden('backoffice.staff'),
               },
             ]
           : []),
@@ -253,6 +223,7 @@ export default async function BackofficePanelLayout({
                 key: 'settings' as const,
                 href: '/backoffice/settings',
                 label: t('nav.settings'),
+                hiddenFromOthers: hidden('backoffice.settings'),
               },
             ]
           : []),
@@ -310,14 +281,7 @@ export default async function BackofficePanelLayout({
       roleLabel={t(`role.${staff.role}`)}
       monogram={monogram}
       profileLabel={t('nav.profile')}
-      teacherFile={
-        restricted && staff.teacherId
-          ? {
-              href: `/backoffice/teachers/${staff.teacherId}`,
-              label: t('nav.my_profile'),
-            }
-          : null
-      }
+      teacherFile={null}
       logoutLabel={t('nav.logout')}
       logout={logoutStaff}
     />
@@ -331,6 +295,7 @@ export default async function BackofficePanelLayout({
           <BoSidebar
             groups={groups}
             soonLabel={t('nav.soon')}
+            hiddenLabel={t('nav.hidden_from_others')}
             a11y={{
               title: t('nav.sidebar_title'),
               description: t('nav.sidebar_description'),
@@ -383,6 +348,13 @@ export default async function BackofficePanelLayout({
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>
+      {/* The owners' account sees what is off for everybody else; the banner
+          says so on every screen, the way the preview cookie's does. The
+          cookie's own banner is drawn by the root layout, so it is not drawn
+          twice here. */}
+      {view.unlock === 'owner' && surfaceHasHiddenFlags(view, 'backoffice') && (
+        <InternalPreviewBadge mode="owner" />
+      )}
     </>
   )
 }

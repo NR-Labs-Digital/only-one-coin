@@ -68,15 +68,46 @@ tela que apenas não estoura na horizontal ainda não é uma tela de celular.
 
 Detalhe e histórico: `docs/ARCHITECTURE.md` §7.1.
 
-## Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026; recuperação da tela 17/09/2026)
+## Feature flags — o que está no ar em produção (decisão 06/09/2026; interruptor no painel 08/09/2026; leitura pública 09/09/2026; recuperação da tela 17/09/2026; donos veem o desligado 23/10/2026)
 
 **As três superfícies de `apps/app` são geridas por feature flag: portal do
 aluno, backoffice e painel do docente.** Uma flag ligada significa que a seção
 aparece em produção; desligada significa que ela **não existe em produção** —
 some da navegação e a URL responde 404 — e continua inteira **para nós**: local,
-deploy de preview da Vercel e, em produção, para quem abriu o destravamento
-interno (`/api/preview?token=…`, cookie de 12 h, com tarja em toda tela dizendo
-que aquilo não está ativo para mais ninguém).
+deploy de preview da Vercel e, em produção, por dois destravamentos — o
+**cookie interno** (`/api/preview?token=…`, 12 h) e a **conta dos donos** no
+backoffice e no portal do docente (abaixo) —, sempre com tarja dizendo que
+aquilo não está ativo para mais ninguém.
+
+- **Conta dos donos vê o que está desligado no backoffice e no docente
+  (23/10/2026, OOC-61).** Até aqui só o cookie destravava, então desligar uma
+  seção em Funcionalidades a tirava também de quem acabou de desligá-la — e
+  desligar `backoffice` trancava os donos fora do painel. Agora sessão de staff
+  com `isOwnerEmail` (os mesmos domínios que abrem Funcionalidades,
+  `@admin.com` incluído) resolve **toda flag de superfície `backoffice` e
+  `teacher`** como ligada, por cima de painel, env e pai — a mesma precedência
+  que o cookie sempre teve. Mecanismo em `lib/feature-flags/resolve.ts`
+  (puro, testado em `resolve.test.ts`, `pnpm --filter @ooc/app test`):
+  - **A superfície é da tela, não da flag.** `getFeatureFlags(surface)` /
+    `getFeatureView(surface)` recebem a superfície da tela que pergunta;
+    `requireFeature(key)` usa a da própria chave. Só superfície de staff lê a
+    sessão — **página do portal nunca faz `/me`**, e flag `portal.*` continua
+    respondendo só ao cookie, porque lá a sessão é de aluno.
+  - **Ler a sessão é opcional e não quebra página.** Sem cookie de sessão
+    (convite, reset de senha, login do docente) nem chega a chamar a API;
+    leitura que falha resolve como "não dono", nunca erro. O `/me` é um só por
+    request (`readMe` em `lib/backoffice/session.ts`, compartilhado com
+    `getStaffSession`).
+  - **Sempre marcado.** O shell do backoffice e o do docente mostram a tarja
+    (variante sem "Sair" — é a conta, não o navegador) enquanto houver algo
+    naquela superfície desligado para os demais, e o item de menu dessa seção
+    leva um ponto âmbar com "Apagada para os demais" (o cookie marca o menu do
+    mesmo jeito).
+  - **Funcionalidades reporta o que os outros veem** (`view.everybody`), nunca
+    o que o leitor vê — quem abre a tela é dono, e com o estado dele toda linha
+    diria "no ar".
+  - Continua não sendo controle de acesso: o dono vê a seção, e o papel na
+    rota da API decide o que ele faz nela.
 
 - **Flag não é controle de acesso.** Quem pode o quê continua sendo o papel
   declarado na rota em `apps/api` (`CLAUDE.md` §8). A flag diz se a
@@ -147,11 +178,11 @@ A ponta do backend (rotas `.owners()`, `feature_flag_overrides`) está em `apps/
 
 ## Pontos de entrada separados (portal ≠ backoffice)
 
-Um **único backend de auth** (um só provedor de auth, um só registro de usuários) — a separação de acesso é a checagem de **`role`** em `apps/api`, nunca a tela. Mas **duas telas de login distintas**, pelo mesmo app Next.js (não são dois deploys):
+Um **único backend de auth** (um só provedor de auth, um só registro de usuários) — a separação de acesso é a checagem de **`role`** em `apps/api`, nunca a tela. Mas **três telas de login distintas**, pelo mesmo app Next.js (não são dois deploys):
 
 - **Portal do aluno** — `/` ou `/portal`, linkado da landing, indexável, sem MFA. **Sem auto-cadastro**: a aprovação do pagamento cria a conta e o aluno recebe por e-mail um link para definir a senha, não se registra. **Sessão real (05/10/2026):** toda página de `/portal` chama `getStudentSession` (`lib/portal/session.ts` → `GET /api/v1/portal/me`) e qualquer não-OK, inclusive sessão de staff, volta a `/login`. Telas `/login` (proxy same-origin para `/api/v1/portal/sign-in`), `/forgot-password` e `/access/[token]`; logout real por `lib/auth/sign-out.ts`, compartilhado com o backoffice. **Dados reais (OOC-32, 07/10/2026):** as telas leem `getPortalView` (`GET /api/v1/portal/overview`, memoizado por requisição); o que ainda não tem backend chega vazio, nunca como persona de exemplo — não existe mais mock no portal. Para o aluno, `pending` e `under_review` são um estado só (`lib/portal/overview.ts`): "pendente" ao lado de dinheiro já enviado vira "pague de novo", e a diferença é veredito do semáforo, que é do revisor.
 - **Backoffice** — path interno `/backoffice`, **nunca linkado na landing nem indexável**, MFA no fluxo (OOC-29): depois da senha, a tela pede o código enviado ao e-mail (ou um código de recuperação); conta de `master`/`admin`/`billing` sem o fator cai no passo de ativação (`/backoffice?mfa=setup`, para onde `getStaffSession` manda quem a API recusa com `auth.mfa_enrollment_required`). Ativar, regenerar códigos e desligar (só onde é opcional) ficam em *Mi cuenta*. A tela só guia — quem exige é a API. Esse caminho todo é defesa em profundidade, não a defesa.
-- **Docente** entra pelo backoffice, mas vê só as próprias turmas — checagem no usecase, não filtro solto.
+- **Portal do docente** — `/docente`, **porta própria** (antes o docente entrava pelo backoffice com o menu estreitado): login próprio, shell próprio, nunca linkado na landing nem indexável. Mesmo Better Auth, mesmo `/me` e o mesmo formulário de login (`components/backoffice/staff-login-form.tsx`, com os passos de MFA), que termina em `/docente/home` — a separação é o cargo lido no servidor, em `lib/backoffice/session.ts`: `teacher` em `/backoffice` vai para `/docente/home` (`getBackofficeSession()`, a única linha do backoffice que nomeia o cargo `teacher`), qualquer outro cargo em `/docente` volta para `/backoffice/home` (`getTeacherSession()`). **Quem decide a porta é só o cargo, nunca o vínculo com a ficha:** conta `teacher` sem ficha (`teacherId: null`, aberta antes da OOC-79) fica no portal com escopo vazio — mandá-la ao backoffice criaria um loop de redirect, porque o backoffice devolve todo docente pra cá. **Dado real desde a OOC-82:** as telas leem `lib/docente/teaching.ts` (`/api/v1/teaching/*`), que não manda id de docente nenhum — o escopo é o usecase da API, que compara a ficha da sessão com a turma; a tela não filtra nada. A turma abre no próprio endereço (`/docente/class-groups/[id]`), e o de outro docente é 404. O que o PR #136 trouxe sem backend (ficha de notas, avisos, acessos da turma) fica atrás de `teacher.grades`, `teacher.notices` e `teacher.class_links`, desligadas em produção — nada "salvo só nesta tela" chega a um docente. O portal inteiro responde à flag `teacher`.
 - **Redirect por `role` sempre server-side.** O cliente nunca escolhe "sou aluno/sou admin"; o `role` vem do banco, lido por `apps/api`.
 
 ### Dois domínios, um deploy (decisão 29/09/2026)
@@ -168,6 +199,12 @@ continua no domínio do backoffice, nunca expõe o path interno.
 Domínio dedicado não substitui a defesa real (RBAC em `apps/api`) nem some do
 Certificate Transparency log só por não estar linkado — é só mais uma camada,
 igual o path discreto já era.
+
+### Código compartilhado entre superfícies (23/10/2026)
+
+**Uma superfície nunca importa da pasta de rota de outra.** O que `/portal`, `/backoffice` e `/docente` usam em comum mora em `src/components/` ou `src/lib/` — nunca `import … from '../../../backoffice/(panel)/(gated)/…'` de dentro de `docente/`. A pasta de rota é da tela dela: renomear um segmento, um route group ou mover um arquivo ali não pode quebrar outra porta, e quem lê `backoffice/` não pode precisar saber que o docente depende daquilo. Server action também é por superfície (`backoffice/actions.ts`, `docente/actions.ts`). Peça que passa a servir uma segunda porta **muda de pasta no mesmo PR** — como a tela de conta (`components/backoffice/account/`) quando o portal do docente nasceu.
+
+A dívida que o PR #136 deixou foi zerada na OOC-82: o formulário de login e seus ícones (`components/backoffice/staff-login-form.tsx`, `auth-icons.tsx`) e a ficha do docente (`components/backoffice/teachers/`, com `availability-fields`; `lib/backoffice/save-teacher.ts`; `components/backoffice/field-message.tsx`) saíram das pastas de rota do backoffice. O que é só do docente mora em `lib/docente/` (`teaching.ts`, `agenda.ts`).
 
 ## RBAC na UI
 

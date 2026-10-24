@@ -57,7 +57,7 @@ Isso não proíbe usar RLS depois como camada **extra** de defesa em profundidad
 | `student` | Portal do aluno | MVP | Vê os próprios dados, status de matrícula, materiais, certificados | Nunca acessa dado de outro aluno, nem manipulando URL |
 | `guardian` | Portal do aluno | MVP | Dá consentimento, acompanha dados do(s) menor(es) sob sua responsabilidade | Vinculado explicitamente ao(s) estudante(s); não é papel genérico |
 | `mass_approver` | Backoffice | **Fase 2** | Aprovação em lote de casos já validados com alta confiança pela IA | No MVP, aprovação é sempre individual por `treasury`/`coordinator`. Aprovação em lote sempre gera auditoria individual por caso, nunca um log agregado |
-| `teacher` (docente) | Backoffice (visão restrita) | **Fase 2** | Vê e edita **apenas as próprias turmas** (frequência, notas) | Não vê aluno/turma de outro docente — checagem no usecase, não escondida na tela |
+| `teacher` (docente) | Portal do docente (`/docente`, porta própria desde 07/10/2026) | **Fase 2** | Vê e edita **apenas as próprias turmas** (frequência, notas) | Não vê aluno/turma de outro docente — checagem no usecase, não escondida na tela |
 
 `mass_approver` e `teacher` não bloqueiam o lançamento: aprovação em lote é otimização de operação em escala, e gestão de frequência/notas pode ficar fora do primeiro lançamento se o produto inicial for só matrícula + acesso liberado. `guardian` fica no MVP porque consentimento do responsável é exigência legal desde o dia um (público menor de idade), não conveniência.
 
@@ -462,7 +462,8 @@ As três superfícies de `apps/app` — **portal do aluno**, **backoffice** e o
 > **Ligada:** a seção aparece em produção, para quem tem o papel.
 > **Desligada:** a seção não existe em produção — some da navegação e a URL
 > responde **404** — e continua inteira para nós: local, deploy de preview da
-> Vercel e, em produção, para quem abriu o destravamento interno.
+> Vercel e, em produção, para quem abriu o destravamento interno — e, no
+> backoffice e no portal do docente, para a conta dos donos (§8.3).
 
 Flag **não é controle de acesso.** O que uma pessoa *pode fazer* continua sendo
 o papel declarado na rota em `apps/api` (`CLAUDE.md` §8). A flag decide se a
@@ -592,6 +593,27 @@ Nada disso chega ao cliente: a resolução é server-only e componente de client
 recebe o booleano já resolvido por prop — a lista do que existe mas está
 desligado não vai no bundle.
 
+**O segundo destravamento: a conta dos donos (23/10/2026, OOC-61).** Sessão de
+staff com e-mail num domínio dos donos (`isOwnerEmail`) resolve ligada toda
+flag de superfície `backoffice` e `teacher` — sem cookie, sem prazo, porque é a
+conta e não o navegador. Por quê: com só o cookie, quem desligava uma seção em
+Funcionalidades perdia a seção junto com todo mundo, e desligar `backoffice`
+trancava os donos fora do painel.
+
+| | Cookie (`preview`) | Conta dos donos (`owner`) |
+| --- | --- | --- |
+| Superfícies | as três | `backoffice`, `teacher` — o portal do aluno roda com sessão de aluno |
+| Precedência | acima de env, painel e pai | igual |
+| Tarja | layout raiz, toda tela, com "Sair" | shell do backoffice/docente, enquanto houver algo desligado na superfície, sem "Sair" |
+| Menu | item marcado "desligada para os demais" | igual |
+
+A lógica é pura (`lib/feature-flags/resolve.ts`, com teste) e devolve dois
+estados: o que **este request** vê (`flags`) e o que **todo mundo** vê
+(`everybody`). Funcionalidades mostra o segundo. A sessão só é lida quando a
+tela que pergunta é de staff, só se houver cookie de sessão, e falha resolve
+como "não dono" — a página de convite e o login do docente renderizam sem
+sessão nenhuma.
+
 ### 8.4 Onde a flag é aplicada
 
 - **Rota:** `layout.tsx` da seção chama `requireFeature('<chave>')`, que faz
@@ -628,9 +650,13 @@ desligado não vai no bundle.
 | `backoffice.reports` | backoffice | Relatórios |
 | `backoffice.staff` | backoffice | Equipe (cargos, MFA) |
 | `backoffice.settings` | backoffice | Configuração da plataforma |
-| `teacher` | docente | O painel do docente (mesma app, rail estreita) |
+| `teacher` | docente | O portal do docente (`/docente`, login e shell próprios — mesma app) |
+| `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele (dado real desde a OOC-82). **`production: false`**: ligar é decisão do dono |
+| `teacher.grades` | docente | Ficha de notas (nota do exame final, DA, lote, observações, relatório CSV). **`production: false`** até OOC-38/OOC-102 — grava só na tela |
+| `teacher.notices` | docente | Avisos à turma. **`production: false`**, sem ticket — grava só na tela |
+| `teacher.class_links` | docente | Meet, Classroom, material do módulo e Classroom dos alunos. **`production: false`** até OOC-98/OOC-100/OOC-94 — sem dado na API |
 
-Todas nascem aqui com `production: true` porque **todas já estão no ar**: o
+Todas as de cima, menos as `teacher.*` filhas, nasceram com `production: true` porque **já estavam no ar**: o
 registro chegou para gerir o que se expõe, não para aposentar tela sem aviso.
 Desligar qualquer uma agora é um clique em Funcionalidades — e toda troca fica
 no `audit_log` (`feature_flag.override`, com o valor de antes e o de depois).

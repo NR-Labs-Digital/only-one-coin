@@ -6,7 +6,7 @@ import { LanguageGlobe } from '@/components/language-globe'
 import { apiFetch } from '@/lib/backoffice/api-client'
 import { isInviteExpired } from '@/lib/backoffice/invite'
 import { requireFeature } from '@/lib/feature-flags/server'
-import { CheckCircleIcon, ShieldIcon } from '../../icons'
+import { CheckCircleIcon, ShieldIcon } from '@/components/backoffice/auth-icons'
 import { PasswordResetForm } from './password-reset-form'
 
 /**

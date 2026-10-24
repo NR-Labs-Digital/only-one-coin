@@ -9,13 +9,13 @@ import { formatDateRange, formatDateTime, formatFileSize, type Locale } from '@/
 import { ContractBadge } from '@/components/backoffice/contract-badge'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
-import { FieldMessage } from '../../students/field-message'
+import { FieldMessage } from '../field-message'
 import {
   contractDownloadUrl,
   fileContract,
   type ContractField,
   type ContractFilingFailure,
-} from './contract-filing'
+} from '@/lib/backoffice/contract-filing'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'

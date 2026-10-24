@@ -23,7 +23,7 @@ export default async function DashboardPage({
   setRequestLocale(raw)
   const t = await getTranslations('portal')
 
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('portal')
   const { student, enrollments, nextClass } = await getPortalView()
   const current = enrollments.filter((e) => e.status !== 'completed')
 

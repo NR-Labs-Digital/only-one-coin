@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
-import { listClassGroupRostersFor } from '@/lib/backoffice/mock-data'
 import {
   listCatalogClassGroups,
   listCatalogCourses,
@@ -8,17 +7,14 @@ import {
   listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import {
   canBrowseCatalog,
   canCreateClassGroup,
-  isRestrictedToOwnClassGroups,
 } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { ClassGroupsView } from './class-groups-view'
 import { PeriodBar } from './period-bar'
-import { TeacherClassGroups } from './teacher-class-groups'
 
 /**
  * Class group directory, one sales period at a time. The period comes from the
@@ -33,41 +29,14 @@ export default async function ClassGroupsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ group?: string; period?: string }>
+  searchParams: Promise<{ period?: string }>
 }) {
   const { locale } = await params
-  const { group, period } = await searchParams
+  const { period } = await searchParams
   setRequestLocale(locale)
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  const restricted = isRestrictedToOwnClassGroups(staff.role)
-
-  /* The teacher's half of the section is a different screen, not a filtered
-     copy of the directory: their few turmas as tabs, and under the open tab
-     the whole management of that group, student by student. The rosters come
-     scoped by the session's `teacherId` (CLAUDE.md §8) — and the check that
-     enforces it is the usecase in `apps/api`, not this line. */
-  if (restricted) {
-    // What "approved" means is the backoffice's (OOC-41). Without it the
-    // grade sheet cannot tell pass from fail, so it says it could not load.
-    const settings = await getPlatformSettings()
-    return (
-      <div className="flex flex-col gap-5">
-        <PageHeader title={t('nav.my_class_groups')} />
-        {settings ? (
-          <TeacherClassGroups
-            groups={listClassGroupRostersFor(staff)}
-            teacherName={`${staff.firstName} ${staff.lastName}`}
-            initialGroupId={group ?? null}
-            passingGrade={settings.passingGrade}
-          />
-        ) : (
-          <EmptyState icon="alert" title={t('settings.rules_load_error_title')} body={t('settings.rules_load_error_body')} />
-        )}
-      </div>
-    )
-  }
 
   if (!canBrowseCatalog(staff.role)) notFound()
 

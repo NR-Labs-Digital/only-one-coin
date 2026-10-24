@@ -1,4 +1,4 @@
-import type { StaffRole, StaffUser } from './types'
+import type { StaffRole } from './types'
 
 /**
  * Screen-level gates. These decide what a staff member *sees*, never what they
@@ -67,20 +67,6 @@ function isManagement(role: StaffRole): boolean {
  */
 export function canCreateClassGroup(role: StaffRole): boolean {
   return isManagement(role) || role === 'enrollment_supervisor'
-}
-
-/**
- * Who may issue a document or fire the batch. A teacher can, but only for their
- * own class groups — that scope check lives in the usecase, comparing the
- * authenticated `teacher_id` against the class group's (CLAUDE.md §8).
- */
-export function canIssueCertificates(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor' ||
-    role === 'teacher'
-  )
 }
 
 /**
@@ -168,9 +154,10 @@ export function canCreateTeacher(role: StaffRole): boolean {
 }
 
 /**
- * Who may browse the whole student directory. A teacher sees the students of
- * their own class groups, reached through the class group; billing settles
- * money and has no business in the directory.
+ * Who may browse the whole student directory. Billing settles money and has
+ * no business in the directory. A teacher never reaches the backoffice — they
+ * read the names of their own class groups in the docente portal — and stays
+ * refused here all the same, so a matrix read outside the shell cannot say yes.
  */
 export function canBrowseStudents(role: StaffRole): boolean {
   return role !== 'teacher' && role !== 'billing'
@@ -205,32 +192,6 @@ export function canEditStudent(role: StaffRole): boolean {
  */
 export function canIssuePortalAccess(role: StaffRole): boolean {
   return isManagement(role) || role === 'enrollment_supervisor'
-}
-
-/**
- * Who records a final grade — the teacher of that class group, nobody else.
- * The grade is what the docente signs, and everything downstream reads it: the
- * certificate (grade ≥ 14, `docs/REGRAS-NEGOCIO.md` §3) and the module
- * progression both hang off it. As everywhere else this only decides whether
- * the roster draws inputs: the enforcing check compares the authenticated
- * `teacher_id` against the class group inside the usecase (CLAUDE.md §8).
- */
-export function canRecordGrades(
-  staff: Pick<StaffUser, 'role' | 'teacherId'>,
-  group: { teacherId: string },
-): boolean {
-  return staff.role === 'teacher' && staff.teacherId === group.teacherId
-}
-
-/**
- * Whether the panel must be narrowed to the signed-in teacher's own class
- * groups (`docs/ARCHITECTURE.md` §3). The screen honours it so the reader is
- * not shown doors that would fail; the enforcing check compares the
- * authenticated `teacher_id` against the class group inside the usecase, and it
- * is the only one that counts (CLAUDE.md §8).
- */
-export function isRestrictedToOwnClassGroups(role: StaffRole): boolean {
-  return role === 'teacher'
 }
 
 /**

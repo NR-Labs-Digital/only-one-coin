@@ -22,7 +22,7 @@ import {
   EyeOffIcon,
   LockIcon,
   MailIcon,
-} from './icons'
+} from './auth-icons'
 
 type Step =
   | 'credentials'
@@ -42,8 +42,6 @@ export type InitialLoginStep = 'mfa' | 'mfa_setup'
 
 /** Seconds before "send another code" works again — the e-mail takes a few to arrive. */
 const RESEND_COOLDOWN_SECONDS = 30
-
-const HOME = '/backoffice/home'
 
 function Heading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -85,7 +83,22 @@ function Heading({ title, subtitle }: { title: string; subtitle: string }) {
  * language. Only a request that never got that answer — network, 5xx — shows
  * an error.
  */
-export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLoginStep }) {
+export function StaffLoginForm({
+  initialStep,
+  homeHref = '/backoffice/home',
+  heading,
+}: {
+  initialStep?: InitialLoginStep
+  /**
+   * Where a finished sign-in lands — password, second factor or recovery code
+   * alike. The docente portal passes its own home; the role read server-side
+   * there sends anybody else back here (CLAUDE.md §8) — the form never decides
+   * who is who.
+   */
+  homeHref?: '/backoffice/home' | '/docente/home'
+  /** Already translated by the page; the backoffice copy when absent. */
+  heading?: { title: string; subtitle: string }
+} = {}) {
   const t = useTranslations('backoffice')
   const locale = useLocale()
   const router = useRouter()
@@ -193,7 +206,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
       return
     }
 
-    router.push(HOME)
+    router.push(homeHref)
   }
 
   async function submitCode(
@@ -405,7 +418,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
         <RecoveryCodes
           codes={recoveryCodes}
           doneLabel={t('mfa_setup_done')}
-          onDone={() => router.push(HOME)}
+          onDone={() => router.push(homeHref)}
         />
       </div>
     )
@@ -451,7 +464,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
   if (step === 'mfa_recovery') {
     return (
       <form
-        onSubmit={(event) => void submitCode(event, verifyRecoveryCode, () => router.push(HOME))}
+        onSubmit={(event) => void submitCode(event, verifyRecoveryCode, () => router.push(homeHref))}
         className={cardClass}
         noValidate
       >
@@ -506,7 +519,7 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
   if (step === 'mfa') {
     return (
       <form
-        onSubmit={(event) => void submitCode(event, verifySignInCode, () => router.push(HOME))}
+        onSubmit={(event) => void submitCode(event, verifySignInCode, () => router.push(homeHref))}
         className={cardClass}
         noValidate
       >
@@ -552,7 +565,10 @@ export function BackofficeLoginForm({ initialStep }: { initialStep?: InitialLogi
 
   return (
     <form onSubmit={(event) => void onCredentials(event)} className={cardClass} noValidate>
-      <Heading title={t('title')} subtitle={t('subtitle')} />
+      <Heading
+        title={heading?.title ?? t('title')}
+        subtitle={heading?.subtitle ?? t('subtitle')}
+      />
 
       {error && (
         <div

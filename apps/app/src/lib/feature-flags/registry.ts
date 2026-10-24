@@ -130,12 +130,51 @@ export const FEATURE_FLAGS = {
   /* --------------------------------------------------------------- docente */
 
   /**
-   * The teacher's panel: the same app with the rail narrowed to their own
-   * class groups. It hangs off `backoffice` because it *is* the backoffice —
-   * a docente signs in through the same door (CLAUDE.md §8). Off, a teacher
-   * session meets a 404 instead of a panel; every other cargo is untouched.
+   * The docente portal (`/docente`): its own login and shell, same app and
+   * same auth as the backoffice — which is why it still hangs off
+   * `backoffice`. Off, `/docente` (login included) answers 404; every other
+   * cargo is untouched.
    */
   teacher: { surface: 'teacher', parent: 'backoffice', production: true },
+
+  /**
+   * Agenda: the teacher's classes on a calendar, week and month, derived
+   * from their class groups — read from the API since OOC-82. Still off in
+   * production: turning it on is the owner's call, not a side effect of the
+   * data becoming real.
+   */
+  'teacher.agenda': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+
+  /*
+   * The class group's tools that came with the portal (PR #136) and still
+   * have no API: each one keeps its screen for us, but writes only on screen,
+   * so none of them may reach a teacher in production (OOC-82). The flag goes
+   * on in the PR that gives the tool its backend.
+   */
+
+  /** The grade sheet — final exam grade, DA, batch, observations, the CSV report — and the certificate batch. OOC-38, OOC-102, OOC-33. */
+  'teacher.grades': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+  /** Notices to the class group. No ticket yet. */
+  'teacher.notices': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+  /** Meet, Classroom, the module's material and the students' Classroom link. OOC-98, OOC-100, OOC-94. */
+  'teacher.class_links': {
+    surface: 'teacher',
+    parent: 'teacher',
+    production: false,
+  },
+
 } as const satisfies Record<string, FeatureFlagSpec>
 
 /*

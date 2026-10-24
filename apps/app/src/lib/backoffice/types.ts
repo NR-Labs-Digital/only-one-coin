@@ -507,6 +507,32 @@ export interface ClassGroupRow {
    * is not counted: they left the roster, not a grade behind.
    */
   pendingGrades: number
+  /**
+   * Where the class happens — every class is online, on Google Meet with the
+   * material on Classroom (`docs/REGRAS-NEGOCIO.md` §8). External links the
+   * coordination pastes when it opens the group, never an integration
+   * (CLAUDE.md §2). Null while nobody has pasted it yet.
+   */
+  meetUrl: string | null
+  classroomUrl: string | null
+  /**
+   * The module this class group is teaching, 1-based — each class group runs
+   * one module at a time (`docs/REGRAS-NEGOCIO.md` §3). Null when the course
+   * is not split in modules.
+   */
+  moduleNumber: number | null
+  /**
+   * The module's material — a Google Drive link coordination sets once per
+   * module in the backoffice, and every class group on that module reads.
+   */
+  moduleMaterialsUrl: string | null
+  /**
+   * The Classroom link the teacher hands to the students: set by the teacher
+   * on their own class group, shown to the enrolled students in their portal.
+   * Not the same link as `classroomUrl`, which is what coordination gives
+   * the teacher.
+   */
+  studentClassroomUrl: string | null
 }
 
 /** One weekly meeting of a class group, `HH:mm` in America/Lima. */
@@ -783,6 +809,22 @@ export type ProcedureBlockReason =
 
 export interface ClassGroupDetail extends ClassGroupRow {
   students: ClassGroupStudent[]
+  /** The teacher's notices to the class group, newest first. */
+  notices: ClassGroupNotice[]
+}
+
+/**
+ * A notice the teacher posts to the whole class group. It reaches every
+ * enrolled student in their portal — the course page and the bell. Free text,
+ * the teacher's own words; append-only like an observation: a notice that went
+ * out to thirty students is corrected by posting another one.
+ */
+export interface ClassGroupNotice {
+  id: string
+  text: string
+  /** ISO 8601 UTC, rendered in America/Lima. */
+  postedAt: string
+  authorName: string
 }
 
 /** Why a student is out of the batch — a code the locale turns into text. */

@@ -36,11 +36,12 @@ import {
   teacherTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
-import { AvailabilityFields, slotsAreValid } from '../availability-fields'
-import { saveTeacher, type TeacherSaveFailure } from '../save-teacher'
-import { FieldMessage } from '../../students/field-message'
+import { AvailabilityFields, slotsAreValid } from './availability-fields'
+import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
+import { FieldMessage } from '../field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { ContractSection } from './contract-section'
+import { WeekGrid } from '@/components/backoffice/week-grid'
 
 type Tab = 'data' | 'availability' | 'class_groups'
 
@@ -76,6 +77,7 @@ export function TeacherFile({
   catalogue,
   canEdit,
   canOpenContracts,
+  classGroupBase = '/backoffice/class-groups',
 }: {
   teacher: TeacherDetail
   /** Every language the catalog offers — what a teacher may be cleared for. */
@@ -83,6 +85,12 @@ export function TeacherFile({
   canEdit: boolean
   /** Downloads a filed contract — the roster's readers, not the teacher (OOC-81). */
   canOpenContracts: boolean
+  /**
+   * Where a class group of the file opens. The same ficha is read by
+   * coordination in the backoffice and by the teacher in their own portal,
+   * and each has its own door to a class group.
+   */
+  classGroupBase?: '/backoffice/class-groups' | '/docente/class-groups'
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -581,63 +589,10 @@ export function TeacherFile({
               {/* The week, with what was already allocated laid on top: the
                   question this answers is where the next class group fits,
                   not what the teacher wrote down. */}
-              <AutoGrid min="6rem" gap="gap-2">
-                {columns.map((column) => (
-                  <div
-                    key={column.weekday}
-                    className="flex flex-col gap-1.5 rounded-lg border border-line bg-sky-soft p-2"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t(`weekday.${column.weekday}`)}
-                    </p>
-
-                    {column.slots.length === 0 && column.classes.length === 0 && (
-                      <p className="text-xs text-slate-400">—</p>
-                    )}
-
-                    {column.slots.map((slot, index) => (
-                      <p
-                        key={`${slot.startTime}-${index}`}
-                        className="rounded border border-dashed border-brand-blue/40 bg-white px-1.5 py-1 text-[11px] font-semibold tabular-nums text-brand-blue-deep"
-                      >
-                        {`${slot.startTime}–${slot.endTime}`}
-                      </p>
-                    ))}
-
-                    {column.classes.map((item) => (
-                      <Link
-                        key={`${item.id}-${item.startTime}`}
-                        href={`/backoffice/class-groups/${item.id}`}
-                        title={item.courseName}
-                        className={`rounded px-1.5 py-1 text-[11px] font-semibold transition ${
-                          item.outside
-                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                            : 'bg-brand-blue text-white hover:bg-brand-blue-deep'
-                        }`}
-                      >
-                        <span className="block truncate tabular-nums">
-                          {`${item.startTime} · ${item.code}`}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </AutoGrid>
-
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-4 rounded border border-dashed border-brand-blue/60 bg-white" />
-                  {t('availability.legend_free')}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-4 rounded bg-brand-blue" />
-                  {t('availability.legend_allocated')}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-4 rounded bg-amber-300" />
-                  {t('availability.legend_outside')}
-                </span>
-              </div>
+              <WeekGrid
+                columns={columns}
+                hrefOf={(id) => `${classGroupBase}/${id}`}
+              />
             </>
           )}
         </Card>
@@ -677,7 +632,7 @@ export function TeacherFile({
                   <tr key={group.id}>
                     <td className={`${tdClass} whitespace-nowrap`}>
                       <Link
-                        href={`/backoffice/class-groups/${group.id}`}
+                        href={`${classGroupBase}/${group.id}`}
                         className="font-semibold text-ink transition hover:text-brand-blue"
                       >
                         {group.courseName}

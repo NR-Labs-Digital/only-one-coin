@@ -179,6 +179,7 @@
   "preview": {
     "badge": "Modo interno",
     "description": "Você está vendo funcionalidades que ainda não estão ativas para mais ninguém.",
-    "exit": "Sair"
+    "exit": "Sair",
+    "owner_description": "Sua conta vê funcionalidades que estão desligadas para todo o resto."
   }
 }

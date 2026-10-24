@@ -48,6 +48,8 @@ export type BoIconName =
   | 'globe'
   | 'more'
   | 'link'
+  | 'video'
+  | 'copy'
   | 'spinner'
 
 const paths: Record<BoIconName, ReactElement> = {
@@ -133,6 +135,8 @@ const paths: Record<BoIconName, ReactElement> = {
   /* Three-quarter arc, not a full circle — a closed ring gives `animate-spin`
      nothing to show motion against. Pair with `className="animate-spin"` at
      the call site; this glyph never spins on its own. */
+  copy: <path d="M9 9h10v11H9zM5 15V4h10" />,
+  video: <path d="M4 7h11v10H4zM15 10.5 20 7.5v9l-5-3" />,
   spinner: <path d="M12 3a9 9 0 1 1-9 9" />,
 }
 

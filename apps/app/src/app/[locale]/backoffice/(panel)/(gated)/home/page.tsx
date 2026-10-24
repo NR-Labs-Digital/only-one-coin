@@ -19,11 +19,7 @@ import {
 import { listCatalogClassGroups } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
-import {
-  canBrowseCatalog,
-  canViewPayments,
-  isRestrictedToOwnClassGroups,
-} from '@/lib/backoffice/permissions'
+import { canBrowseCatalog, canViewPayments } from '@/lib/backoffice/permissions'
 import type { PaymentReviewItem } from '@/lib/backoffice/types'
 import {
   formatDate,
@@ -49,7 +45,6 @@ import {
 } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { TeacherHome } from './teacher-home'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 /**
@@ -74,13 +69,7 @@ export default async function BackofficeHomePage({
 
   const staff = await getStaffSession()
 
-  /* A teacher gets their own home, not this one with the money removed — see
-     `TeacherHome` for why it is a separate screen. */
-  if (isRestrictedToOwnClassGroups(staff.role)) {
-    return <TeacherHome staff={staff} locale={locale} />
-  }
-
-  const flags = await getFeatureFlags()
+  const flags = await getFeatureFlags('backoffice')
   const readsPayments = canViewPayments(staff.role)
   const readsCatalog = canBrowseCatalog(staff.role)
 

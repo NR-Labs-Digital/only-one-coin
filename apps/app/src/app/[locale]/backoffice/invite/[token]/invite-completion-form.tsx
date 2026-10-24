@@ -10,7 +10,7 @@ import {
   EyeOffIcon,
   LockIcon,
   MailIcon,
-} from '../../icons'
+} from '@/components/backoffice/auth-icons'
 
 /**
  * The one thing this screen exists to collect: a password nobody else ever

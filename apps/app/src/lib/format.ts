@@ -250,3 +250,36 @@ export function formatPercent(fraction: number, locale: Locale): string {
     maximumFractionDigits: 1,
   }).format(fraction)
 }
+
+/**
+ * The agenda's titles, from a date-only `YYYY-MM-DD` (a calendar day, so read
+ * in UTC — never shifted into Lima). `octubre de 2026` for the month view;
+ * `6 – 12 oct 2026` for a week.
+ */
+export function formatMonthYear(day: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(intlLocale[locale], {
+    timeZone: 'UTC',
+    month: 'long',
+    year: 'numeric',
+  })
+    .format(new Date(`${day}T00:00:00Z`))
+    .replace(/\s/g, ' ')
+}
+
+export function formatWeekRange(firstDay: string, lastDay: string, locale: Locale): string {
+  /* Not `Intl.formatRange`: Node and the browser disagree on the invisible
+     spaces it puts around the dash, and the page fails hydration over a
+     character nobody can see. Two plain dates and a fixed dash instead, with
+     every exotic space folded to a plain one. */
+  const part = (day: string, withYear: boolean) =>
+    new Intl.DateTimeFormat(intlLocale[locale], {
+      timeZone: 'UTC',
+      day: 'numeric',
+      month: 'short',
+      ...(withYear ? { year: 'numeric' as const } : {}),
+    })
+      .format(new Date(`${day}T00:00:00Z`))
+      .replace(/\s/g, ' ')
+  const sameYear = firstDay.slice(0, 4) === lastDay.slice(0, 4)
+  return `${part(firstDay, !sameYear)} – ${part(lastDay, true)}`
+}
