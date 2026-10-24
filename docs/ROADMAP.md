@@ -155,7 +155,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 42 | **Painel do aluno** | Cursos, horário, data de início, enlace à aula, estado de matrícula e pagamento | Constancia visível na tela, sem depender do e-mail | 🟡 OOC-32: cursos, horário, data de início, próxima aula, estado de matrícula e pagamento leem `GET /portal/overview`. Faltam o enlace da aula (OOC-98), módulos/cadeado (OOC-94/OOC-85), mensalidade (OOC-86) e a constancia (OOC-33/OOC-83) |
 | 43 | **Materiais e reenvio** | Materiais e links de gravação, carga de novo comprovante pelo portal | Nenhum vídeo no Storage — só link externo | ⬜ O aluno já reabre o comprovante enviado (URL de 5 min, OOC-32); materiais e reenvio pelo portal ainda não — OOC-100, OOC-62 |
 | 44 | **Notas, frequência e perfil** | Visualização de notas e avanço, perfil editável, dados do apoderado | — | 🟡 Perfil e apoderado reais, só leitura (OOC-32); o aluno editar o próprio contato é o OOC-110; notas e avanço dependem da 37 |
-| 45 | **Certificados** | Constancia e certificado em PDF, código de verificação, página pública de validação | Página pública valida sem expor dado pessoal além do nome e curso | ⬜ OOC-33, OOC-59 (em P3, 23/11: dependem de notas) |
+| 45 | **Certificados** | Constancia e certificado em PDF, código de verificação, página pública de validação | Página pública valida sem expor dado pessoal além do nome e curso | ⬜ OOC-33, OOC-59 (em P3, 23/11: dependem de notas). Base pronta: engine de templates editáveis em `packages/templates` (LiquidJS, OOC-123, 23/10/2026) — faltam modelo versionado no banco, editor com preview e a conversão HTML → PDF (infra a decidir) |
 
 > **Marco:** aprovação das Fases 3 e 4. Libera 25% do pagamento.
 
