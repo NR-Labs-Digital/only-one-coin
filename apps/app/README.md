@@ -33,7 +33,7 @@ que muda a tela.
 
 | Tela | Estado |
 | --- | --- |
-| Checkout público (`/enrollment`) | **Real**: hold de vaga, verificação do Gmail do aluno por código de 6 dígitos, upload por URL assinada, Turnstile, submit |
+| Checkout público (`/enrollment`) | **Real**: hold de vaga, verificação do Gmail do aluno por código de 6 dígitos, upload por URL assinada, Turnstile, submit. Acima de 1180px de janela cresce na régua da landing, até 1,5× (OOC-125) |
 | Login do aluno (`/login`, `/forgot-password`, `/access/[token]`) | **Real**: e-mail ou documento, definir/recuperar senha por link |
 | Portal do aluno (`/portal/*`) | **Real** (OOC-32): sessão (`GET /portal/me`) e dados (`GET /portal/overview`) — ficha, apoderado, matrículas, pagamentos, próxima aula, comprovante por URL assinada. Sem backend ainda, chegam vazios: módulos/mensalidade/cadeado, documentos, trâmites pagos, avisos, ofertas de continuação. Perfil só leitura |
 | Login, convite e senha do staff | **Real** (Better Auth), com MFA por código de e-mail (OOC-29): desafio no login, código de recuperação, ativação obrigatória para `master`/`admin`/`billing` |

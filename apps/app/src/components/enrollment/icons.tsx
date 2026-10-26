@@ -50,12 +50,17 @@ const paths: Record<CheckoutIconName, ReactElement> = {
 export function CheckoutIcon({
   name,
   size = 20,
+  style,
   ...props
 }: { name: CheckoutIconName; size?: number } & SVGProps<SVGSVGElement>) {
+  // `size` is px at the 16px root, emitted as rem so the icon grows with the
+  // checkout's ruler (`globals.css`, OOC-125) instead of shrinking beside text.
+  const length = `${size / 16}rem`
   return (
     <svg
       width={size}
       height={size}
+      style={{ width: length, height: length, ...style }}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

@@ -262,6 +262,28 @@
     }
   }
 
+  /**
+   * The public checkout grows with the window, on the landing's ruler (OOC-125).
+   *
+   * Whoever reaches /matricula comes from the landing, which is drawn at 1180px
+   * and grows up to 1.5× on a large monitor (`--dp`, apps/landing/CLAUDE.md).
+   * The checkout stayed frozen in a 768px column with 14px text — at a 1600px
+   * window, a tiny form in the middle of a blank page, right after a giant
+   * hero. Now the document root follows the same ruler: 16px up to a 1180px
+   * window (nothing changes below that, phones included), then 1/1180 of the
+   * window, capped at 24px. Every size in the checkout is rem — column, type,
+   * padding, radius — so it grows as one drawing, with no jump.
+   *
+   * On the root, not the wrapper, because rem only listens to `<html>`; the
+   * `:has` ties the ruler to pages that mount the checkout shell and no other.
+   * A rem media query still reads 16px (the initial value, not this one), so
+   * the breakpoints do not move with it.
+   */
+  @media (min-width: 1180px) {
+    html:has([data-checkout-ruler]) {
+      font-size: min(24px, 1.35593vw);
+    }
+  }
 }
 
 /**

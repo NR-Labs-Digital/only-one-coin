@@ -210,7 +210,7 @@ export function StepCourse({
                   modules: item.modules,
                 })}
               >
-                <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-sky px-2.5 py-1 text-[11px] font-semibold text-brand-blue-deep">
+                <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-sky px-2.5 py-1 text-[0.6875rem] font-semibold text-brand-blue-deep">
                   <CheckoutIcon name="user" size={12} />
                   {t('step.course.min_age', { age: item.minAge })}
                 </span>
@@ -245,7 +245,7 @@ export function StepCourse({
                   })}
                 >
                   {option.seatsLeft <= SCARCE_SEATS && (
-                    <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-yellow/20 px-2.5 py-1 text-[11px] font-semibold text-brand-yellow-deep">
+                    <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-yellow/20 px-2.5 py-1 text-[0.6875rem] font-semibold text-brand-yellow-deep">
                       <CheckoutIcon name="seat" size={12} />
                       {t('step.course.seats_left', { count: option.seatsLeft })}
                     </span>
@@ -284,12 +284,12 @@ export function StepCourse({
                     aside={
                       open ? (
                         left <= SCARCE_SEATS ? (
-                          <span className="shrink-0 rounded-full bg-brand-yellow/20 px-2 py-0.5 text-[11px] font-semibold text-brand-yellow-deep">
+                          <span className="shrink-0 rounded-full bg-brand-yellow/20 px-2 py-0.5 text-[0.6875rem] font-semibold text-brand-yellow-deep">
                             {t('step.course.seats_left', { count: left })}
                           </span>
                         ) : null
                       ) : (
-                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] font-semibold text-muted-foreground">
                           {t('step.course.group_full')}
                         </span>
                       )

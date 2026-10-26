@@ -27,7 +27,7 @@ export function Card({
   as?: 'div' | 'section' | 'li' | 'form'
 }) {
   return (
-    <Tag className={`rounded-[20px] border border-line bg-white shadow-card ${className}`}>
+    <Tag className={`rounded-[1.25rem] border border-line bg-white shadow-card ${className}`}>
       {children}
     </Tag>
   )
@@ -226,8 +226,8 @@ export function DotGrid({ className = '' }: { className?: string }) {
       className={`pointer-events-none absolute size-28 opacity-30 ${className}`}
       style={{
         backgroundImage:
-          'radial-gradient(var(--color-brand-blue) 2.4px, transparent 2.4px)',
-        backgroundSize: '16px 16px',
+          'radial-gradient(var(--color-brand-blue) 0.15rem, transparent 0.15rem)',
+        backgroundSize: '1rem 1rem',
       }}
     />
   )
@@ -290,7 +290,7 @@ export function PrimaryButton({
      encostada na direita é a que mais erra o dedo — além de parecer opcional
      ao lado de um formulário que ocupa a tela toda. */
   const className =
-    'inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-blue px-7 py-3.5 text-[15px] font-bold text-white shadow-blue transition hover:-translate-y-0.5 hover:bg-brand-yellow hover:text-ink hover:shadow-yellow disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:w-auto'
+    'inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-blue px-7 py-3.5 text-[0.9375rem] font-bold text-white shadow-blue transition hover:-translate-y-0.5 hover:bg-brand-yellow hover:text-ink hover:shadow-yellow disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:w-auto'
 
   if (href) {
     return (
@@ -332,7 +332,7 @@ export function GhostButton({
          is too light to read on white. Disabled drops the hover entirely: a
          control that lights up under the finger and then does nothing reads
          as broken. */
-      className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-transparent px-6 py-3.5 text-[15px] font-bold text-muted-foreground transition hover:border-brand-yellow hover:bg-brand-yellow/10 hover:text-brand-yellow-deep disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent disabled:text-muted-foreground disabled:opacity-60 sm:w-auto"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-transparent px-6 py-3.5 text-[0.9375rem] font-bold text-muted-foreground transition hover:border-brand-yellow hover:bg-brand-yellow/10 hover:text-brand-yellow-deep disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent disabled:text-muted-foreground disabled:opacity-60 sm:w-auto"
     >
       {children}
     </button>
