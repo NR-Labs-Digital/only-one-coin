@@ -57,44 +57,10 @@ export function EyeOffIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
   )
 }
 
-export function ArrowLeftIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props}>
-      <path d="M19 12H5m0 0 6-6m-6 6 6 6" />
-    </Svg>
-  )
-}
-
 export function ArrowRightIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
   return (
     <Svg {...props}>
       <path d="M5 12h14m0 0-7-7m7 7-7 7" />
-    </Svg>
-  )
-}
-
-export function CalendarIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props}>
-      <rect x="3" y="5" width="18" height="16" rx="2.5" />
-      <path d="M3 10h18M8 3v4M16 3v4" />
-    </Svg>
-  )
-}
-
-export function ReceiptIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props}>
-      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
-    </Svg>
-  )
-}
-
-export function CertificateIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="9" r="5" />
-      <path d="m8.5 13.5-1 7.5 4.5-2.5 4.5 2.5-1-7.5" />
     </Svg>
   )
 }

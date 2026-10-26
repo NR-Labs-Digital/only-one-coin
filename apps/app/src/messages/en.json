@@ -12,11 +12,6 @@
     "generic_error": "We couldn't sign you in with those details. Check your details and your password.",
     "error_reference": "Reference code: {errorId}",
     "back_to_site": "Back to site",
-    "brand_title": "Your classes, your enrollment and your documents in one place.",
-    "brand_body": "Once your enrollment is approved, we e-mail you a link to create your password.",
-    "highlight_1": "Your classes and weekly schedule",
-    "highlight_2": "The status of your enrollment and payment",
-    "highlight_3": "Your certificates and enrollment records",
     "no_account_title": "Don't have an account yet?",
     "no_account_body": "Enroll and, once it is approved, we'll e-mail you the link to create your password.",
     "no_account_cta": "Go to enrollment",
@@ -33,6 +28,9 @@
     "national_id_type_DNI": "DNI",
     "national_id_type_CE": "Foreigner ID card (CE)",
     "national_id_type_passport": "Passport"
+  },
+  "auth_banner": {
+    "welcome": "Welcome!"
   },
   "portal_auth": {
     "forgot_title": "Recover your access",
@@ -97,11 +95,6 @@
     "recover_sent_title": "Check your email",
     "recover_sent_body": "If that address belongs to a panel account, the link to set a new password is on its way.",
     "back_to_login": "Back to sign in",
-    "brand_title": "The whole cycle, in one place.",
-    "brand_body": "Enrollments, receipts, seats and students of Asociación Only One Coin Perú, on a single screen.",
-    "highlight_1_title": "Role-based access",
-    "highlight_2_title": "Two-factor",
-    "highlight_3_title": "Everything is logged",
     "invite_title": "Hi, {name}",
     "invite_subtitle": "You were invited to Only One Coin as {role}. Choose a password to finish creating your account.",
     "invite_email_label": "E-mail",

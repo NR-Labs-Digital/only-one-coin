@@ -2120,10 +2120,6 @@
     },
     "teacher_portal": {
       "badge": "Teacher",
-      "brand_title": "Your classes, in one place.",
-      "highlight_students": "The students of every class group",
-      "highlight_schedule": "Your days and times, class group by class group",
-      "highlight_profile": "Your file, always at hand",
       "login_title": "Teacher portal",
       "login_subtitle": "Sign in with the account coordination gave you.",
       "nav_group": "My teaching",

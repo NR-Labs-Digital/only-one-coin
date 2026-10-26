@@ -73,15 +73,6 @@ export function LockIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
   )
 }
 
-export function KeyIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props}>
-      <path d="M14.5 10.5a4 4 0 1 0-4 4l1.5 1.5-1 1 1 1-1.5 1.5-2-2v-2.5" />
-      <circle cx="16.5" cy="8.5" r="4.5" />
-    </Svg>
-  )
-}
-
 export function CheckCircleIcon(props: { size?: number } & SVGProps<SVGSVGElement>) {
   return (
     <Svg {...props}>

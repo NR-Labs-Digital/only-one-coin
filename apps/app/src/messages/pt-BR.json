@@ -12,11 +12,6 @@
     "generic_error": "Não foi possível entrar com esses dados. Confira seus dados e sua senha.",
     "error_reference": "Código de referência: {errorId}",
     "back_to_site": "Voltar ao site",
-    "brand_title": "Suas aulas, sua matrícula e seus documentos num só lugar.",
-    "brand_body": "Quando sua matrícula é aprovada, enviamos um link para você criar sua senha.",
-    "highlight_1": "Suas aulas e horários da semana",
-    "highlight_2": "A situação da sua matrícula e do pagamento",
-    "highlight_3": "Seus comprovantes e certificados",
     "no_account_title": "Ainda não tem conta?",
     "no_account_body": "Matricule-se e, quando for aprovada, enviaremos o link para criar sua senha.",
     "no_account_cta": "Ir para a matrícula",
@@ -33,6 +28,9 @@
     "national_id_type_DNI": "DNI",
     "national_id_type_CE": "Carteira de estrangeiro (CE)",
     "national_id_type_passport": "Passaporte"
+  },
+  "auth_banner": {
+    "welcome": "Bem-vindo!"
   },
   "portal_auth": {
     "forgot_title": "Recupere seu acesso",
@@ -97,11 +95,6 @@
     "recover_sent_title": "Confira seu e-mail",
     "recover_sent_body": "Se esse e-mail pertence a uma conta do painel, o link para criar uma nova senha chega por lá.",
     "back_to_login": "Voltar ao acesso",
-    "brand_title": "Todo o ciclo, num lugar só.",
-    "brand_body": "Matrículas, comprovantes, vagas e alunos da Asociación Only One Coin Perú, numa tela só.",
-    "highlight_1_title": "Acesso por cargo",
-    "highlight_2_title": "Dois fatores",
-    "highlight_3_title": "Tudo fica registrado",
     "invite_title": "Olá, {name}",
     "invite_subtitle": "Você foi convidado para a Only One Coin como {role}. Escolha uma senha para terminar de criar sua conta.",
     "invite_email_label": "E-mail",
