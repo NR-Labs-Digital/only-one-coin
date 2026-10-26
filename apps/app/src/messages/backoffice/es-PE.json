@@ -1477,6 +1477,7 @@
     },
     "courses": {
       "title": "Cursos",
+      "back_to_list": "Volver a cursos",
       "search_label": "Buscar cursos",
       "search_placeholder": "Curso, idioma o nivel",
       "new_course": "Nuevo curso",
@@ -1522,7 +1523,6 @@
     },
     "plans": {
       "title": "Planes y precios",
-      "subtitle": "{course} · {language}",
       "empty": "Este curso todavía no tiene planes. Sin plan con precio, no aparece en la matrícula.",
       "current": "Vigente",
       "scheduled": "Desde el {date}",
@@ -1541,9 +1541,7 @@
       "rename": "Renombrar",
       "save": "Guardar",
       "cancel": "Cancelar",
-      "close": "Cerrar",
       "no_edit_rule": "Un precio nunca se edita: para corregirlo, programa uno nuevo.",
-      "load_error": "No pudimos cargar los planes.",
       "inactive": "Fuera de venta",
       "created": "Plan creado",
       "price_scheduled": "Precio programado",
@@ -1555,8 +1553,6 @@
       "restored": "Plan de vuelta a la venta"
     },
     "course_options": {
-      "close": "Cerrar",
-      "subtitle": "Opciones del curso · {language}",
       "applies_forward": "Lo que cambies acá vale para las aulas que se abran después. Las que ya están corriendo mantienen la regla con la que el alumno se matriculó.",
       "min_age": "Edad mínima",
       "modules": "Módulos",

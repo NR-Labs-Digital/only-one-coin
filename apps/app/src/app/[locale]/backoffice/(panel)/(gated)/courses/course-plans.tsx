@@ -1,19 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import type { CatalogErrorKey, CourseRow, PlanDetail } from '@/lib/backoffice/types'
+import type { CatalogErrorKey, PlanDetail } from '@/lib/backoffice/types'
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { BoIcon } from '@/components/backoffice/icons'
+import { Card, SectionTitle } from '@/components/backoffice/ui'
 import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 
 const fieldClass =
@@ -41,141 +36,76 @@ type Notice =
  * "schedule a new price", and the sheet says so where the reader would look
  * for an edit button.
  *
+ * Every action here writes on its own — there is no Save at the bottom — so
+ * this section sits apart from the course options, whose Save it has nothing
+ * to do with (OOC-126: the two used to be stacked side panels, and staff
+ * looked for the plan change under the options' Save button).
+ *
  * Taking a plan off sale is a separate gate from pricing it: whoever opens
  * class groups decides what stops being sold (CLAUDE.md §1, the retire route's
  * roles), the same way they retire a class group. Enrollments already made on
  * it keep their price; the confirmation says how many are still standing.
  */
-export function CoursePlansSheet({
-  course,
+export function CoursePlans({
+  courseId,
+  plans,
   canManage,
   canRetire,
-  onClose,
 }: {
-  course: CourseRow | null
+  courseId: string
+  plans: PlanDetail[]
   canManage: boolean
   /** Retire and restore a plan — master, admin and enrollment_supervisor. */
   canRetire: boolean
-  onClose: () => void
 }) {
   const t = useTranslations('bo')
-  const [plans, setPlans] = useState<PlanDetail[] | null>(null)
-  const [loadFailed, setLoadFailed] = useState(false)
+  const router = useRouter()
   const [notice, setNotice] = useState<Notice | null>(null)
 
-  // Only the newest request may write state: a slow answer for a course the
-  // user already left must never land under another course's title.
-  const currentId = useRef<string | null>(null)
-  currentId.current = course?.id ?? null
-  const inflight = useRef<AbortController | null>(null)
-
-  const load = useCallback(async (id: string) => {
-    inflight.current?.abort()
-    const controller = new AbortController()
-    inflight.current = controller
-    setLoadFailed(false)
-    try {
-      const response = await fetch(`/api/v1/catalog/courses/${id}`, {
-        signal: controller.signal,
-      })
-      if (!response.ok) throw new Error(String(response.status))
-      const body = (await response.json()) as { plans: PlanDetail[] }
-      if (inflight.current !== controller) return
-      setPlans(body.plans)
-    } catch {
-      if (controller.signal.aborted || inflight.current !== controller) return
-      setLoadFailed(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    setPlans(null)
-    setNotice(null)
-    if (course) void load(course.id)
-    return () => {
-      inflight.current?.abort()
-      inflight.current = null
-    }
-  }, [course, load])
-
-  async function changed(next: Notice | null, writtenId: string) {
-    // A write that finished after the sheet moved on must not touch the new course.
-    if (currentId.current !== writtenId) return
+  // The plans come from the server: a write reloads the page's data, which
+  // also refreshes the "no price" badge in the header.
+  function changed(next: Notice | null) {
     setNotice(next)
-    if (next?.kind !== 'error') await load(writtenId)
+    if (next?.kind !== 'error') router.refresh()
   }
 
   return (
-    <Sheet
-      open={course !== null}
-      onOpenChange={(open) => {
-        if (!open) onClose()
-      }}
-    >
-      <SheetContent
-        side="right"
-        closeLabel={t('plans.close')}
-        className="w-full gap-0 overflow-y-auto bg-white p-0 sm:max-w-md"
-      >
-        {course && (
-          <>
-            <SheetHeader className="gap-2 border-b border-line p-5 pr-14">
-              <SheetTitle className="text-base font-semibold text-ink">
-                {t('plans.title')}
-              </SheetTitle>
-              <SheetDescription>
-                {t('plans.subtitle', { course: course.name, language: course.language.name })}
-              </SheetDescription>
-            </SheetHeader>
+    <Card as="section" className="flex flex-col gap-4 p-5">
+      <SectionTitle icon="payments">{t('plans.title')}</SectionTitle>
 
-            <div className="flex flex-col gap-4 p-5">
-              <p className="flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">
-                <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                {t('plans.no_edit_rule')}
-              </p>
+      <p className="flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">
+        <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+        {t('plans.no_edit_rule')}
+      </p>
 
-              {notice?.kind === 'error' ? (
-                <p role="alert" className="text-sm text-red-700">
-                  {t(`catalog_errors.${notice.error}`)}
-                </p>
-              ) : (
-                notice && (
-                  <p role="status" className="text-sm text-emerald-700">
-                    {notice.kind === 'retired'
-                      ? t('plans.retired', { count: notice.liveEnrollments })
-                      : t(`plans.${notice.kind}`)}
-                  </p>
-                )
-              )}
+      {notice?.kind === 'error' ? (
+        <p role="alert" className="text-sm text-red-700">
+          {t(`catalog_errors.${notice.error}`)}
+        </p>
+      ) : (
+        notice && (
+          <p role="status" className="text-sm text-emerald-700">
+            {notice.kind === 'retired'
+              ? t('plans.retired', { count: notice.liveEnrollments })
+              : t(`plans.${notice.kind}`)}
+          </p>
+        )
+      )}
 
-              {loadFailed && (
-                <p role="alert" className="text-sm text-red-700">
-                  {t('plans.load_error')}
-                </p>
-              )}
+      {plans.length === 0 && <p className="text-sm text-muted-foreground">{t('plans.empty')}</p>}
 
-              {plans && plans.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t('plans.empty')}</p>
-              )}
+      {plans.map((plan) => (
+        <PlanCard
+          key={plan.id}
+          plan={plan}
+          canManage={canManage}
+          canRetire={canRetire}
+          onChanged={changed}
+        />
+      ))}
 
-              {plans?.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  canManage={canManage}
-                  canRetire={canRetire}
-                  onChanged={(next) => changed(next, course.id)}
-                />
-              ))}
-
-              {canManage && plans && (
-                <NewPlanForm courseId={course.id} onChanged={(next) => changed(next, course.id)} />
-              )}
-            </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+      {canManage && <NewPlanForm courseId={courseId} onChanged={changed} />}
+    </Card>
   )
 }
 
@@ -188,7 +118,7 @@ function PlanCard({
   plan: PlanDetail
   canManage: boolean
   canRetire: boolean
-  onChanged: (notice: Notice | null) => Promise<void>
+  onChanged: (notice: Notice | null) => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -210,11 +140,11 @@ function PlanCard({
     const result = await catalogWrite(`/plans/${plan.id}`, 'PATCH', { name: name.trim() })
     setBusy(false)
     if (!result.ok) {
-      await onChanged({ kind: 'error', error: result.error })
+      onChanged({ kind: 'error', error: result.error })
       return
     }
     setRenaming(false)
-    await onChanged(null)
+    onChanged(null)
   }
 
   async function setOnSale(verb: 'retire' | 'restore') {
@@ -222,11 +152,11 @@ function PlanCard({
     const result = await setCatalogEntryOnOffer('plan', plan.id, verb)
     setBusy(false)
     if (!result.ok) {
-      await onChanged({ kind: 'error', error: result.error })
+      onChanged({ kind: 'error', error: result.error })
       return
     }
     setConfirming(null)
-    await onChanged(
+    onChanged(
       verb === 'retire'
         ? { kind: 'retired', liveEnrollments: result.data.liveEnrollments }
         : { kind: 'restored' },
@@ -241,11 +171,11 @@ function PlanCard({
     })
     setBusy(false)
     if (!result.ok) {
-      await onChanged({ kind: 'error', error: result.error })
+      onChanged({ kind: 'error', error: result.error })
       return
     }
     setPricing(false)
-    await onChanged({ kind: 'price_scheduled' })
+    onChanged({ kind: 'price_scheduled' })
   }
 
   return (
@@ -485,7 +415,7 @@ function NewPlanForm({
   onChanged,
 }: {
   courseId: string
-  onChanged: (notice: Notice | null) => Promise<void>
+  onChanged: (notice: Notice | null) => void
 }) {
   const t = useTranslations('bo')
   const [open, setOpen] = useState(false)
@@ -501,12 +431,12 @@ function NewPlanForm({
     })
     setBusy(false)
     if (!result.ok) {
-      await onChanged({ kind: 'error', error: result.error })
+      onChanged({ kind: 'error', error: result.error })
       return
     }
     setName('')
     setOpen(false)
-    await onChanged({ kind: 'created' })
+    onChanged({ kind: 'created' })
   }
 
   if (!open) {

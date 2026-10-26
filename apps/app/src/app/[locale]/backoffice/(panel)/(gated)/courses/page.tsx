@@ -2,13 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { listCatalogCourses } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
-import {
-  canBrowseCatalog,
-  canConfigureCourse,
-  canCreateCourse,
-  canManagePrices,
-  canRetireCatalogEntry,
-} from '@/lib/backoffice/permissions'
+import { canBrowseCatalog, canCreateCourse } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { CoursesView } from './courses-view'
@@ -54,13 +48,7 @@ export default async function CoursesPage({
           />
         </Card>
       ) : (
-        <CoursesView
-          rows={rows}
-          canCreate={canCreateCourse(staff.role)}
-          canConfigure={canConfigureCourse(staff.role)}
-          canManagePrices={canManagePrices(staff.role)}
-          canRetire={canRetireCatalogEntry(staff.role)}
-        />
+        <CoursesView rows={rows} canCreate={canCreateCourse(staff.role)} />
       )}
     </div>
   )
