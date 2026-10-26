@@ -70,7 +70,7 @@ export function LanguageSwitcher() {
     <details ref={box} className="group relative">
       <summary
         aria-label={t('label')}
-        className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border-[1.5px] border-line bg-white px-3.5 py-2 text-[13px] font-bold text-ink transition hover:border-brand-blue hover:text-brand-blue [&::-webkit-details-marker]:hidden"
+        className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border-[1.5px] border-line bg-white px-3.5 py-2 text-[0.8125rem] font-bold text-ink transition hover:border-brand-blue hover:text-brand-blue [&::-webkit-details-marker]:hidden"
       >
         <CheckoutIcon name="globe" size={18} className="text-brand-blue" />
         <span>{locale.toUpperCase()}</span>
@@ -81,7 +81,7 @@ export function LanguageSwitcher() {
         />
       </summary>
 
-      <ul className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[168px] list-none rounded-2xl border border-line bg-white p-1.5 shadow-float">
+      <ul className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[10.5rem] list-none rounded-2xl border border-line bg-white p-1.5 shadow-float">
         {routing.locales.map((code) => {
           const active = code === locale
           return (
@@ -92,13 +92,13 @@ export function LanguageSwitcher() {
                 disabled={pending}
                 aria-current={active ? 'true' : undefined}
                 onClick={() => pick(code)}
-                className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-semibold transition ${
+                className={`flex w-full items-center gap-2.5 rounded-[0.625rem] px-3 py-2.5 text-left font-semibold transition ${
                   active
                     ? 'bg-sky text-brand-blue'
                     : 'text-muted-foreground hover:bg-sky hover:text-ink'
                 }`}
               >
-                <span className="w-[26px] text-[11px] font-extrabold tracking-wide text-brand-blue">
+                <span className="w-[1.625rem] text-[0.6875rem] font-extrabold tracking-wide text-brand-blue">
                   {code.toUpperCase()}
                 </span>
                 <span className="text-sm">{t(code)}</span>

@@ -43,6 +43,9 @@ export default async function EnrollmentLayout({
 
   return (
     <div
+      /* Scales the whole checkout with the window, on the landing's ruler —
+         the rule lives in `globals.css` because rem only reads `<html>`. */
+      data-checkout-ruler=""
       className={`${body.className} flex min-h-dvh flex-col bg-sky-soft text-ink`}
       /* The landing's two washes — yellow high on the right, blue low on the
          left — at the same stops it uses. A form needs calm, so they stay this
@@ -77,7 +80,7 @@ export default async function EnrollmentLayout({
             />
             <span aria-hidden="true" className="hidden h-6 w-px bg-line sm:block" />
             <span
-              className={`${display.className} hidden truncate text-[15px] font-medium text-brand-blue sm:block`}
+              className={`${display.className} hidden truncate text-[0.9375rem] font-medium text-brand-blue sm:block`}
             >
               {t('brand.label')}
             </span>

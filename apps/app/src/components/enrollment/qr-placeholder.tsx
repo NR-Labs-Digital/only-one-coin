@@ -89,7 +89,7 @@ export function QrPlaceholder({ label }: { label: string }) {
         <Finder x={GRID - 7} y={0} />
         <Finder x={0} y={GRID - 7} />
       </svg>
-      <figcaption className="rounded-full bg-brand-yellow/20 px-2.5 py-1 text-[11px] font-semibold text-brand-yellow-deep">
+      <figcaption className="rounded-full bg-brand-yellow/20 px-2.5 py-1 text-[0.6875rem] font-semibold text-brand-yellow-deep">
         {label}
       </figcaption>
     </figure>

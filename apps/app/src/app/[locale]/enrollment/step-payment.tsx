@@ -437,7 +437,7 @@ function CopyRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sky-soft px-3 py-2.5">
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
         <span className="truncate font-mono text-sm font-semibold text-ink">
