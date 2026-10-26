@@ -338,8 +338,9 @@ Três consequências, todas visíveis:
 
 ### Onde breakpoint de viewport continua certo
 
-Quando a tela **é** a janela, sem shell em volta: o split da tela de login
-(`/backoffice`, `lg:grid-cols-[1.05fr_0.95fr]`). Fora disso, breakpoint de
+Quando a tela **é** a janela, sem shell em volta: a banda de marca das telas de
+entrada (`components/auth/auth-banner-layout.tsx`, `sm:`), que substituiu o split
+de duas colunas na OOC-127. Fora disso, breakpoint de
 viewport dentro de `portal/` ou `backoffice/(panel)/` é sinal de tela que vai
 quebrar em monitor diferente.
 

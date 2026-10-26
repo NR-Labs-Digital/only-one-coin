@@ -34,7 +34,7 @@ que muda a tela.
 | Tela | Estado |
 | --- | --- |
 | Checkout público (`/enrollment`) | **Real**: hold de vaga, verificação do Gmail do aluno por código de 6 dígitos, upload por URL assinada, Turnstile, submit. Acima de 1180px de janela cresce na régua da landing, até 1,5× (OOC-125) |
-| Login do aluno (`/login`, `/forgot-password`, `/access/[token]`) | **Real**: e-mail ou documento, definir/recuperar senha por link |
+| Login do aluno (`/login`, `/forgot-password`, `/access/[token]`) | **Real**: e-mail ou documento, definir/recuperar senha por link. Layout de banda de marca no topo (`AuthBannerLayout`, OOC-127), igual às telas de entrada do staff e do docente |
 | Portal do aluno (`/portal/*`) | **Real** (OOC-32): sessão (`GET /portal/me`) e dados (`GET /portal/overview`) — ficha, apoderado, matrículas, pagamentos, próxima aula, comprovante por URL assinada. Sem backend ainda, chegam vazios: módulos/mensalidade/cadeado, documentos, trâmites pagos, avisos, ofertas de continuação. Perfil só leitura |
 | Login, convite e senha do staff | **Real** (Better Auth), com MFA por código de e-mail (OOC-29): desafio no login, código de recuperação, ativação obrigatória para `master`/`admin`/`billing` |
 | Alunos (`/backoffice/students`) | **Real**: diretório com busca/filtros no servidor, abre em Ativos (matrícula vigente), com abas Ativos · Ex-alunos · Sem matrícula · Todos e contador (OOC-116), cadastro, ficha com matrículas, edição de aluno e apoderado, aba Atividade, exportação em CSV do que a tela filtra (OOC-121). Faltam documentos emitidos e trâmites (OOC-33) e suspensão |
