@@ -24,6 +24,14 @@ monitor do lado.
   shells (portal e backoffice).
 - Breakpoint de viewport (`lg:`) só onde a tela **é** a janela — ex.: o split da
   tela de login, que não tem shell em volta.
+- **O checkout público (`/enrollment`) cresce com a janela, na régua da landing
+  (OOC-125, 26/10/2026).** Até 1180px nada muda; acima disso a raiz do documento
+  vale 1/1180 da janela, com teto em 24px (1,5×) — a mesma conta do `--dp` de
+  `apps/landing/CLAUDE.md`. A regra mora em `globals.css`
+  (`html:has([data-checkout-ruler])`), porque rem só lê o `<html>`. Por isso
+  **todo tamanho do checkout é rem**: nada de `text-[15px]` nem ícone em px
+  (`CheckoutIcon`/`WhatsAppMark` recebem `size` em px de 16 e desenham em rem).
+  O que ficar em px não cresce e encolhe ao lado do texto.
 - Scroll horizontal mora no wrapper da tabela, nunca na página. O `<main>` do
   shell leva `min-w-0`: sem isso uma célula que não encolhe empurra o documento
   inteiro e arrasta o header sticky junto.
