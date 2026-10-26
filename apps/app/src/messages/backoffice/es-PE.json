@@ -2120,10 +2120,6 @@
     },
     "teacher_portal": {
       "badge": "Docente",
-      "brand_title": "Tus aulas, en un solo lugar.",
-      "highlight_students": "Los alumnos de cada aula",
-      "highlight_schedule": "Tus días y horarios, aula por aula",
-      "highlight_profile": "Tu ficha, siempre a mano",
       "login_title": "Portal del docente",
       "login_subtitle": "Ingresa con la cuenta que te dio coordinación.",
       "nav_group": "Mis clases",

@@ -1,7 +1,5 @@
-import Image from 'next/image'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { LanguageGlobe } from '@/components/language-globe'
-import { BoIcon } from '@/components/backoffice/icons'
+import { AuthBannerLayout } from '@/components/auth/auth-banner-layout'
 import { StaffLoginForm } from '@/components/backoffice/staff-login-form'
 
 /**
@@ -24,87 +22,14 @@ export default async function TeacherLoginPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo.teacher_portal')
 
-  /* What the portal does today, no more: grades and the class's links are
-     not on the air yet (OOC-82), and a login page is no place to promise them. */
-  const highlights = [
-    { icon: 'students' as const, title: t('highlight_students') },
-    { icon: 'clock' as const, title: t('highlight_schedule') },
-    { icon: 'teachers' as const, title: t('highlight_profile') },
-  ]
-
+  /* Blue where the backoffice is navy, plus the badge, so nobody mistakes one
+     door for the other. */
   return (
-    <div className="grid min-h-dvh bg-sky-soft lg:grid-cols-[1.05fr_0.95fr]">
-      {/* Brand panel — blue where the backoffice is navy, so nobody mistakes
-          one door for the other. Desktop only; the phone gets the header. */}
-      <aside className="relative hidden overflow-hidden bg-brand-blue px-12 py-14 lg:flex lg:flex-col">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-28 h-96 w-96 rounded-full bg-brand-yellow/30 blur-3xl"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-white/20 blur-3xl"
-        />
-
-        <div className="relative flex items-center gap-3">
-          <Image
-            src="/brand/logo.png"
-            alt="Only One Coin"
-            width={768}
-            height={127}
-            priority
-            className="h-9 w-auto"
-          />
-          <span className="rounded-full bg-brand-yellow px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
-            {t('badge')}
-          </span>
-        </div>
-
-        <div className="relative my-auto max-w-md">
-          <h2 className="text-4xl font-semibold leading-tight text-white">
-            {t('brand_title')}
-          </h2>
-
-          <ul className="mt-8 flex flex-col gap-4">
-            {highlights.map(({ icon, title }) => (
-              <li key={title} className="flex items-center gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/15 text-brand-yellow">
-                  <BoIcon name={icon} size={18} />
-                </span>
-                <span className="text-sm font-semibold text-white">{title}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </aside>
-
-      <main className="flex flex-col px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
-        <div className="mb-10 flex items-center justify-between gap-4">
-          <span className="flex items-center gap-2 lg:hidden">
-            <Image
-              src="/brand/logo.png"
-              alt="Only One Coin"
-              width={768}
-              height={127}
-              className="h-7 w-auto"
-            />
-            <span className="rounded-full bg-brand-yellow px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-ink">
-              {t('badge')}
-            </span>
-          </span>
-          <span className="hidden lg:inline" />
-          <LanguageGlobe />
-        </div>
-
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm">
-            <StaffLoginForm
-              homeHref="/docente/home"
-              heading={{ title: t('login_title'), subtitle: t('login_subtitle') }}
-            />
-          </div>
-        </div>
-      </main>
-    </div>
+    <AuthBannerLayout door="teacher" badge={t('badge')}>
+      <StaffLoginForm
+        homeHref="/docente/home"
+        heading={{ title: t('login_title'), subtitle: t('login_subtitle') }}
+      />
+    </AuthBannerLayout>
   )
 }

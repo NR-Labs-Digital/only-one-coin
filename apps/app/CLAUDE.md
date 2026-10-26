@@ -22,8 +22,14 @@ monitor do lado.
 - Split assimétrico (2fr/1fr), que `auto-fit` não expressa: container query
   (`@4xl/page:`). O `@container/page` já está declarado no `<main>` dos dois
   shells (portal e backoffice).
-- Breakpoint de viewport (`lg:`) só onde a tela **é** a janela — ex.: o split da
-  tela de login, que não tem shell em volta.
+- Breakpoint de viewport (`lg:`) só onde a tela **é** a janela — ex.: as telas
+  de entrada, que não têm shell em volta.
+- **Toda tela de entrada usa `AuthBannerLayout`** (`components/auth/`, OOC-127):
+  login, recuperar/definir senha e convite, das três portas. Banda de marca no
+  topo (marca com o balão de boas-vindas, idioma, volta ao site só no aluno) e
+  o formulário centralizado embaixo — o modelo que o cliente pediu. A cor é da
+  porta (`door`): azul no aluno e no docente (que leva o selo), navy no
+  backoffice. Tela de entrada nova entra nela, nunca num painel lateral próprio.
 - **O checkout público (`/enrollment`) cresce com a janela, na régua da landing
   (OOC-125, 26/10/2026).** Até 1180px nada muda; acima disso a raiz do documento
   vale 1/1180 da janela, com teto em 24px (1,5×) — a mesma conta do `--dp` de

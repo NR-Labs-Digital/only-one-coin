@@ -1,5 +1,4 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { env } from '@/env'
 import { Link } from '@/i18n/navigation'
 import { AuthShell } from './auth-shell'
 import { LoginForm } from './login-form'
@@ -22,7 +21,6 @@ export default async function LoginPage({
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('login')
-  const siteUrl = env.NEXT_PUBLIC_LANDING_URL ?? '/'
 
   return (
     <AuthShell>
@@ -40,12 +38,6 @@ export default async function LoginPage({
           <ArrowRightIcon size={16} />
         </Link>
       </div>
-
-      <p className="mt-6 text-center text-xs text-muted-foreground lg:hidden">
-        <a href={siteUrl} className="font-semibold transition hover:text-ink">
-          ← {t('back_to_site')}
-        </a>
-      </p>
     </AuthShell>
   )
 }
