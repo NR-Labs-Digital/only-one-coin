@@ -10,6 +10,13 @@ import type {
   CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
+import {
+  blankedIdentityFields,
+  identityOf,
+  identityPatch,
+  type CourseIdentity,
+  type RequiredIdentityField,
+} from '@/lib/backoffice/course-identity'
 import { BoIcon } from '@/components/backoffice/icons'
 import {
   LiveEnrollmentsNotice,
@@ -29,18 +36,6 @@ const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
 const labelClass = 'text-xs font-medium uppercase tracking-wide text-muted-foreground'
-
-/** What only whoever may create a course may rewrite (`PATCH /catalog/courses/:id`). */
-type IdentityDraft = { name: string; language: string; level: string; summary: string }
-
-function identityDraft(course: CourseRow): IdentityDraft {
-  return {
-    name: course.name,
-    language: course.language.name,
-    level: course.level,
-    summary: course.summary,
-  }
-}
 
 /**
  * Course options — what coordination may change on a course that already
@@ -83,7 +78,7 @@ export function CourseOptionsSheet({
 }) {
   const t = useTranslations('bo')
   const [draft, setDraft] = useState<CourseOptions | null>(null)
-  const [identity, setIdentity] = useState<IdentityDraft | null>(null)
+  const [identity, setIdentity] = useState<CourseIdentity | null>(null)
   const [landingKey, setLandingKey] = useState<LandingCourseKey | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
@@ -93,7 +88,7 @@ export function CourseOptionsSheet({
   useEffect(() => {
     setError(null)
     setLandingKey(course?.landingKey ?? null)
-    setIdentity(course && identityDraft(course))
+    setIdentity(course && identityOf(course))
     setDraft(
       course && {
         minAge: course.minAge,
@@ -110,22 +105,18 @@ export function CourseOptionsSheet({
   const retiring = course !== null && course.active && draft?.active === false
   const live = useLiveEnrollments('course', course?.id ?? '', retiring)
 
-  /** The identity fields that differ from the course, trimmed — what the PATCH carries. */
-  function identityPatch(target: CourseRow, next: IdentityDraft): Partial<IdentityDraft> {
-    const before = identityDraft(target)
-    return Object.fromEntries(
-      (Object.keys(next) as (keyof IdentityDraft)[])
-        .map((key) => [key, next[key].trim()] as const)
-        .filter(([key, value]) => value !== before[key]),
-    )
-  }
-
   // Name, language and level may change but not go blank (the API refuses
-  // them too); the summary may — the portal hides "Sobre el curso" then.
-  const identityReady =
-    !canEditIdentity ||
-    identity === null ||
-    (identity.name.trim() !== '' && identity.language.trim() !== '' && identity.level.trim() !== '')
+  // them too). Only an edit counts: a course that predates OOC-36 has no level,
+  // and that must not lock the rest of the sheet (OOC-126).
+  const blanked =
+    canEditIdentity && course && identity ? blankedIdentityFields(identityPatch(course, identity)) : []
+
+  // Save sits at the bottom of a long sheet; the reason it is off must sit by
+  // the field, or the button just reads as broken.
+  function requiredNotice(field: RequiredIdentityField) {
+    if (!blanked.includes(field)) return null
+    return <span className="text-xs text-red-700">{t('course_options.required')}</span>
+  }
 
   async function save(target: CourseRow, next: CourseOptions) {
     setSaving(true)
@@ -228,16 +219,20 @@ export function CourseOptionsSheet({
                     <input
                       value={identity.name}
                       onChange={(event) => setIdentity({ ...identity, name: event.target.value })}
+                      aria-invalid={blanked.includes('name')}
                       className={fieldClass}
                     />
+                    {requiredNotice('name')}
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className={labelClass}>{t('courses.field_language')}</span>
                     <input
                       value={identity.language}
                       onChange={(event) => setIdentity({ ...identity, language: event.target.value })}
+                      aria-invalid={blanked.includes('language')}
                       className={fieldClass}
                     />
+                    {requiredNotice('language')}
                     {/* Courses group by the language's spelling — a typo here
                         moves the course into a fold of its own. */}
                     <span className="text-xs text-muted-foreground">
@@ -251,8 +246,10 @@ export function CourseOptionsSheet({
                     <input
                       value={identity.level}
                       onChange={(event) => setIdentity({ ...identity, level: event.target.value })}
+                      aria-invalid={blanked.includes('level')}
                       className={fieldClass}
                     />
+                    {requiredNotice('level')}
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className={labelClass}>{t('course_options.summary')}</span>
@@ -286,7 +283,7 @@ export function CourseOptionsSheet({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  disabled={saving || !identityReady || (retiring && live.status === 'loading')}
+                  disabled={saving || blanked.length > 0 || (retiring && live.status === 'loading')}
                   onClick={() => void save(course, draft)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-blue"
                 >

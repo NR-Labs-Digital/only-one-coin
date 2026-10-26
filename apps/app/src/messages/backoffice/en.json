@@ -1572,7 +1572,8 @@
       "identity_title": "Course details",
       "identity_hint": "The name and level change everywhere, including on enrollments already made.",
       "summary": "Summary",
-      "summary_hint": "What the course is, in the student's words. Left blank, the portal hides “About the course”."
+      "summary_hint": "What the course is, in the student's words. Left blank, the portal hides “About the course”.",
+      "required": "Required — the course can't be saved without it."
     },
     "landing_key": {
       "label": "Website page",

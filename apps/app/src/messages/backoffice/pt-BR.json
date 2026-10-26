@@ -1572,7 +1572,8 @@
       "identity_title": "Dados do curso",
       "identity_hint": "O nome e o nível mudam em todo lugar, inclusive nas matrículas já feitas.",
       "summary": "Resumo",
-      "summary_hint": "O que é o curso, nas palavras do aluno. Se ficar vazio, o portal não mostra «Sobre o curso»."
+      "summary_hint": "O que é o curso, nas palavras do aluno. Se ficar vazio, o portal não mostra «Sobre o curso».",
+      "required": "Obrigatório — sem isso não dá para salvar."
     },
     "landing_key": {
       "label": "Página no site",
