@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type { CourseRow } from '@/lib/backoffice/types'
 import {
@@ -16,8 +15,7 @@ import {
 } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
-import { CourseOptionsSheet } from './course-options-sheet'
-import { CoursePlansSheet } from './course-plans-sheet'
+import { Link, useRouter } from '@/i18n/navigation'
 import { NewCourseForm } from './new-course-form'
 import { landingKeyHolders } from './landing-key-field'
 import { LANDING_COURSE_KEYS } from '@ooc/domain/landing-course-keys'
@@ -31,21 +29,14 @@ import { LANDING_COURSE_KEYS } from '@ooc/domain/landing-course-keys'
  * Changing a course changes every class group opened from it afterwards, never
  * the ones already running: a student enrolled under a rule keeps that rule,
  * the same reasoning that freezes the price version at enrollment (CLAUDE.md
- * §5). The sheet says so where the change is made.
+ * §5). The course page says so where the change is made.
  */
 export function CoursesView({
   rows,
   canCreate,
-  canConfigure,
-  canManagePrices,
-  canRetire,
 }: {
   rows: CourseRow[]
   canCreate: boolean
-  canConfigure: boolean
-  canManagePrices: boolean
-  /** Take a course or a plan off the catalog, and put it back. */
-  canRetire: boolean
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
@@ -74,8 +65,6 @@ export function CoursesView({
     fresh.forEach((id) => knownLanguages.current.add(id))
     setOpened((current) => [...current, ...fresh])
   }, [rows])
-  const [configuring, setConfiguring] = useState<CourseRow | null>(null)
-  const [pricing, setPricing] = useState<CourseRow | null>(null)
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -130,12 +119,11 @@ export function CoursesView({
   }
 
   function rowProps(course: CourseRow) {
-    if (!canConfigure) return { className: 'transition' }
     return {
       className: 'cursor-pointer transition hover:bg-sky-soft',
       onClick: (event: MouseEvent<HTMLTableRowElement>) => {
-        if ((event.target as HTMLElement).closest('button')) return
-        setConfiguring(course)
+        if ((event.target as HTMLElement).closest('a')) return
+        router.push(`/backoffice/courses/${course.id}`)
       },
     }
   }
@@ -308,7 +296,14 @@ export function CoursesView({
                     {open &&
                       entry.courses.map((course) => (
                         <tr key={course.id} {...rowProps(course)}>
-                          <td className={`${tdClass} font-semibold`}>{course.name}</td>
+                          <td className={tdClass}>
+                            <Link
+                              href={`/backoffice/courses/${course.id}`}
+                              className="font-semibold text-ink transition hover:text-brand-blue"
+                            >
+                              {course.name}
+                            </Link>
+                          </td>
                           <td className={`${tdClass} text-sm text-muted-foreground`}>
                             {course.level}
                           </td>
@@ -350,12 +345,8 @@ export function CoursesView({
                             )}
                           </td>
                           <td className={tdClass}>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setPricing(course)
-                              }}
+                            <Link
+                              href={`/backoffice/courses/${course.id}#plans`}
                               aria-label={`${t('courses.plans')} · ${course.name}`}
                               className={`-my-2 inline-flex min-h-tap items-center gap-1.5 whitespace-nowrap rounded-lg px-2 text-sm transition hover:bg-sky hover:text-brand-blue ${
                                 course.planCount === 0 ? 'font-semibold text-amber-700' : 'text-muted-foreground'
@@ -365,7 +356,7 @@ export function CoursesView({
                               {course.planCount === 0
                                 ? t('courses.add_plan')
                                 : t('courses.plan_count', { count: course.planCount })}
-                            </button>
+                            </Link>
                           </td>
                         </tr>
                       ))}
@@ -376,37 +367,6 @@ export function CoursesView({
           </Card>
         </>
       )}
-
-      <CourseOptionsSheet
-        course={configuring}
-        courses={courses}
-        canEditIdentity={canCreate}
-        languages={languages}
-        onClose={() => setConfiguring(null)}
-        onSaved={(message, live) => {
-          setToast(
-            message === 'retired'
-              ? t('courses.retired_notice', { count: live ?? 0 })
-              : t(message === 'restored' ? 'courses.restored' : 'courses.saved'),
-          )
-          router.refresh()
-        }}
-        onOpenPlans={(course) => {
-          setConfiguring(null)
-          setPricing(course)
-        }}
-      />
-
-      <CoursePlansSheet
-        course={pricing}
-        canManage={canManagePrices}
-        canRetire={canRetire}
-        onClose={() => {
-          setPricing(null)
-          // The row's plan count and price warning come from the server.
-          router.refresh()
-        }}
-      />
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>

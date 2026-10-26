@@ -1477,6 +1477,7 @@
     },
     "courses": {
       "title": "Courses",
+      "back_to_list": "Back to courses",
       "search_label": "Search courses",
       "search_placeholder": "Course, language or level",
       "new_course": "New course",
@@ -1522,7 +1523,6 @@
     },
     "plans": {
       "title": "Plans and prices",
-      "subtitle": "{course} · {language}",
       "empty": "This course has no plans yet. Without a priced plan it doesn't show up at enrollment.",
       "current": "Current",
       "scheduled": "From {date}",
@@ -1541,9 +1541,7 @@
       "rename": "Rename",
       "save": "Save",
       "cancel": "Cancel",
-      "close": "Close",
       "no_edit_rule": "A price is never edited: to correct it, schedule a new one.",
-      "load_error": "We couldn't load the plans.",
       "inactive": "Off sale",
       "created": "Plan created",
       "price_scheduled": "Price scheduled",
@@ -1555,8 +1553,6 @@
       "restored": "Plan back on sale"
     },
     "course_options": {
-      "close": "Close",
-      "subtitle": "Course options · {language}",
       "applies_forward": "What you change here applies to class groups opened afterwards. Running ones keep the rule the student enrolled under.",
       "min_age": "Minimum age",
       "modules": "Modules",
@@ -1572,7 +1568,8 @@
       "identity_title": "Course details",
       "identity_hint": "The name and level change everywhere, including on enrollments already made.",
       "summary": "Summary",
-      "summary_hint": "What the course is, in the student's words. Left blank, the portal hides “About the course”."
+      "summary_hint": "What the course is, in the student's words. Left blank, the portal hides “About the course”.",
+      "required": "Required — the course can't be saved without it."
     },
     "landing_key": {
       "label": "Website page",

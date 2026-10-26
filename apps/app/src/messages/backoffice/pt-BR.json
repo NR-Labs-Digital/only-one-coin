@@ -1477,6 +1477,7 @@
     },
     "courses": {
       "title": "Cursos",
+      "back_to_list": "Voltar para cursos",
       "search_label": "Buscar cursos",
       "search_placeholder": "Curso, idioma ou nível",
       "new_course": "Novo curso",
@@ -1522,7 +1523,6 @@
     },
     "plans": {
       "title": "Planos e preços",
-      "subtitle": "{course} · {language}",
       "empty": "Este curso ainda não tem planos. Sem plano com preço, ele não aparece na matrícula.",
       "current": "Vigente",
       "scheduled": "A partir de {date}",
@@ -1541,9 +1541,7 @@
       "rename": "Renomear",
       "save": "Salvar",
       "cancel": "Cancelar",
-      "close": "Fechar",
       "no_edit_rule": "Preço nunca é editado: para corrigir, programe um novo.",
-      "load_error": "Não conseguimos carregar os planos.",
       "inactive": "Fora de venda",
       "created": "Plano criado",
       "price_scheduled": "Preço programado",
@@ -1555,8 +1553,6 @@
       "restored": "Plano de volta à venda"
     },
     "course_options": {
-      "close": "Fechar",
-      "subtitle": "Opções do curso · {language}",
       "applies_forward": "O que você mudar aqui vale para as turmas abertas depois. As que já estão em andamento mantêm a regra com que o aluno se matriculou.",
       "min_age": "Idade mínima",
       "modules": "Módulos",
@@ -1572,7 +1568,8 @@
       "identity_title": "Dados do curso",
       "identity_hint": "O nome e o nível mudam em todo lugar, inclusive nas matrículas já feitas.",
       "summary": "Resumo",
-      "summary_hint": "O que é o curso, nas palavras do aluno. Se ficar vazio, o portal não mostra «Sobre o curso»."
+      "summary_hint": "O que é o curso, nas palavras do aluno. Se ficar vazio, o portal não mostra «Sobre o curso».",
+      "required": "Obrigatório — sem isso não dá para salvar."
     },
     "landing_key": {
       "label": "Página no site",
