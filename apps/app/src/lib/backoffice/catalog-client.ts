@@ -26,6 +26,8 @@ const KNOWN: ReadonlySet<CatalogErrorKey> = new Set<CatalogErrorKey>([
   'class_group_teacher_unavailable',
   'class_group_teacher_language',
   'landing_key_taken',
+  'module_materials_incomplete',
+  'module_material_invalid',
 ])
 
 /** `catalog.price_in_past` → `price_in_past`; anything unknown → `generic`. */

@@ -662,6 +662,14 @@ export interface CourseRow {
   /** Minimum age, per course (`docs/REGRAS-NEGOCIO.md` §2). */
   minAge: number
   modules: number
+  /**
+   * One Drive/Docs link per module, in order (OOC-94) — the material the
+   * teacher opens on a class group of that module. Empty on a course that
+   * predates it.
+   */
+  moduleMaterials: string[]
+  /** Some module has no link — flagged "no material", still on sale. */
+  missingModuleMaterials: boolean
   totalHours: number
   certificateRule: CertificateRule
   /** Administrative procedures the course offers (`docs/REGRAS-NEGOCIO.md` §5). */
@@ -696,6 +704,7 @@ export type CourseOptions = Pick<
   CourseRow,
   | 'minAge'
   | 'modules'
+  | 'moduleMaterials'
   | 'totalHours'
   | 'certificateRule'
   | 'allowsFreeze'
@@ -732,6 +741,8 @@ export type CatalogErrorKey =
   | 'class_group_teacher_unavailable'
   | 'class_group_teacher_language'
   | 'landing_key_taken'
+  | 'module_materials_incomplete'
+  | 'module_material_invalid'
 
 export interface PlanPriceItem {
   id: string

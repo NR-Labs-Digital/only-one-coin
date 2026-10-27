@@ -1,7 +1,7 @@
 /**
  * The external links a class group carries — Google Meet for the class,
- * Classroom for the coursework (`docs/REGRAS-NEGOCIO.md` §8), Drive for the
- * module's material. Set by
+ * Classroom for the coursework (`docs/REGRAS-NEGOCIO.md` §8), Drive or Docs
+ * for the module's material (OOC-94). Set by
  * coordination, never generated: the platform does not integrate with either
  * (CLAUDE.md §2).
  *
@@ -11,10 +11,11 @@
  */
 export type ClassLinkKind = 'meet' | 'classroom' | 'drive'
 
-const HOSTS: Record<ClassLinkKind, string> = {
-  meet: 'meet.google.com',
-  classroom: 'classroom.google.com',
-  drive: 'drive.google.com',
+/** `drive` mirrors `MODULE_MATERIAL_HOSTS` in `@ooc/domain` — the API refuses what this lets through. */
+const HOSTS: Record<ClassLinkKind, readonly string[]> = {
+  meet: ['meet.google.com'],
+  classroom: ['classroom.google.com'],
+  drive: ['drive.google.com', 'docs.google.com'],
 }
 
 /**
@@ -31,6 +32,6 @@ export function parseClassLink(raw: string, kind: ClassLinkKind): string | null 
   } catch {
     return null
   }
-  if (url.protocol !== 'https:' || url.hostname !== HOSTS[kind]) return null
+  if (url.protocol !== 'https:' || !HOSTS[kind].includes(url.hostname)) return null
   return url.toString()
 }

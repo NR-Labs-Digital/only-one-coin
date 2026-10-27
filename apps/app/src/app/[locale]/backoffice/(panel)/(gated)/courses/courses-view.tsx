@@ -324,14 +324,28 @@ export function CoursesView({
                               a badge: a pill worn by almost every row stops
                               carrying information. */}
                           <td className={tdClass}>
-                            {course.active && !course.hasPriceInForce ? (
-                              // In the catalog but not for sale: /enrollment
-                              // only offers a course with a price in force.
-                              <StatusBadge
-                                tone="warning"
-                                label={t('courses.no_price_badge')}
-                                title={t('courses.no_price_hint')}
-                              />
+                            {course.active &&
+                            (!course.hasPriceInForce || course.missingModuleMaterials) ? (
+                              <span className="flex flex-wrap gap-1.5">
+                                {/* In the catalog but not for sale: /enrollment
+                                    only offers a course with a price in force. */}
+                                {!course.hasPriceInForce && (
+                                  <StatusBadge
+                                    tone="warning"
+                                    label={t('courses.no_price_badge')}
+                                    title={t('courses.no_price_hint')}
+                                  />
+                                )}
+                                {/* Still on sale, but a module has no material
+                                    for its teacher yet (OOC-94). */}
+                                {course.missingModuleMaterials && (
+                                  <StatusBadge
+                                    tone="warning"
+                                    label={t('courses.no_material_badge')}
+                                    title={t('courses.no_material_hint')}
+                                  />
+                                )}
+                              </span>
                             ) : course.active ? (
                               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />

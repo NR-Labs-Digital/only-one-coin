@@ -367,6 +367,7 @@
         "summary": "Descrição",
         "min_age": "Idade mínima",
         "modules": "Módulos",
+        "module_materials": "Material dos módulos",
         "total_hours": "Horas totais",
         "certificate_rule": "Regra do certificado",
         "allows_freeze": "Permite trancar",
@@ -1519,7 +1520,9 @@
       "plan_count": "{count, plural, one {# plano} other {# planos}}",
       "add_plan": "Adicionar plano",
       "no_price_badge": "Sem preço · fora da venda",
-      "no_price_hint": "Sem um plano com preço vigente, o curso não aparece no formulário de matrícula, mesmo com turmas em inscrição."
+      "no_price_hint": "Sem um plano com preço vigente, o curso não aparece no formulário de matrícula, mesmo com turmas em inscrição.",
+      "no_material_badge": "Sem material",
+      "no_material_hint": "Falta o link de material de algum módulo. Complete nas opções do curso."
     },
     "plans": {
       "title": "Planos e preços",
@@ -1556,6 +1559,11 @@
       "applies_forward": "O que você mudar aqui vale para as turmas abertas depois. As que já estão em andamento mantêm a regra com que o aluno se matriculou.",
       "min_age": "Idade mínima",
       "modules": "Módulos",
+      "module_materials": "Material dos módulos",
+      "module_material": "Material do módulo {n}",
+      "module_materials_hint": "Um link do Google Drive ou Docs por módulo. O docente vai vê-lo na turma.",
+      "module_material_missing": "Falta o link deste módulo.",
+      "module_material_invalid": "Precisa ser um link do Google Drive ou Docs (https).",
       "total_hours": "Horas totais",
       "certificate_rule": "Certificado",
       "procedures": "Procedimentos que oferece",
@@ -2092,7 +2100,9 @@
       "entry_not_found": "Esse item não existe mais no catálogo.",
       "class_group_teacher_unavailable": "Esse docente não está mais no quadro ativo. Escolha outro.",
       "class_group_teacher_language": "Esse docente não ensina o idioma do curso. Escolha outro ou adicione o idioma na ficha dele.",
-      "landing_key_taken": "Outro curso do catálogo já está ligado a essa página do site."
+      "landing_key_taken": "Outro curso do catálogo já está ligado a essa página do site.",
+      "module_materials_incomplete": "Cada módulo precisa do seu link de material.",
+      "module_material_invalid": "Algum link não é do Google Drive ou Docs."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",
