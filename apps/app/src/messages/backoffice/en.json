@@ -2121,7 +2121,6 @@
       "receipt_viewed": "Receipt viewed"
     },
     "class_links": {
-      "meet": "Open Meet",
       "classroom": "Open Classroom"
     },
     "grade_report": {
@@ -2154,15 +2153,6 @@
     },
     "class_resources": {
       "materials": "Materials",
-      "for_students": "Classroom for students",
-      "classroom_placeholder": "https://classroom.google.com/…",
-      "publish": "Publish",
-      "classroom_invalid": "Paste an https://classroom.google.com/… link",
-      "students_see": "The class's students see this link in their portal.",
-      "students_none": "You have not published the Classroom for students yet.",
-      "saved_local_only": "Published on this screen only at {time}: sending it to the student portal is not connected yet.",
-      "published_short": "Published",
-      "not_published_short": "Not published",
       "title": "Class access"
     },
     "class_notices": {

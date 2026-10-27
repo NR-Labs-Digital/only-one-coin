@@ -172,10 +172,11 @@ export interface ClassGroup {
   startDate: string | null
   endDate: string | null
   /**
-   * External Google Meet link only — no video hosting in-platform (CLAUDE.md
-   * §2). Always null until the class group carries one (OOC-98).
+   * The class group's Google Classroom, where the Meet lives — an external
+   * link only, no video hosting in-platform (CLAUDE.md §2). The API sends it
+   * only on a confirmed seat (OOC-98); null otherwise.
    */
-  meetingUrl: string | null
+  classroomUrl: string | null
 }
 
 export interface CourseMaterial {
@@ -393,7 +394,7 @@ export interface NextClassOccurrence {
   teacherName: string
   /** ISO UTC of the next session start. */
   startsAt: string
-  meetingUrl: string | null
+  classroomUrl: string | null
   /** The same cadeado the enrollment carries, so the hero card can honor it. */
   classAccessLock: ClassAccessLock
 }

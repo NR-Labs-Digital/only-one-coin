@@ -174,11 +174,11 @@ export const FEATURE_FLAGS = {
     parent: 'teacher',
     production: false,
   },
-  /** Meet, Classroom, the module's material and the students' Classroom link. OOC-98, OOC-100, OOC-94. */
+  /** The class group's Classroom (real since OOC-98); the module's material joins with OOC-100. */
   'teacher.class_links': {
     surface: 'teacher',
     parent: 'teacher',
-    production: false,
+    production: true,
   },
 
 } as const satisfies Record<string, FeatureFlagSpec>

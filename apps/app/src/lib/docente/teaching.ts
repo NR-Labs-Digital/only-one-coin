@@ -28,6 +28,8 @@ export interface TeachingClassGroup {
   capacity: number
   seatsTaken: number
   status: ClassGroupStatus
+  /** The Google Classroom coordination pasted with the teacher (OOC-98); null = not yet. */
+  classroomUrl: string | null
 }
 
 /** One student of the class group — the name, never the document or the contact. */

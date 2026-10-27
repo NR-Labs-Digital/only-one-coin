@@ -2121,7 +2121,6 @@
       "receipt_viewed": "Comprobante consultado"
     },
     "class_links": {
-      "meet": "Abrir Meet",
       "classroom": "Abrir Classroom"
     },
     "grade_report": {
@@ -2154,15 +2153,6 @@
     },
     "class_resources": {
       "materials": "Materiales",
-      "for_students": "Classroom para los alumnos",
-      "classroom_placeholder": "https://classroom.google.com/…",
-      "publish": "Publicar",
-      "classroom_invalid": "Pega un enlace https://classroom.google.com/…",
-      "students_see": "Los alumnos del aula ven este enlace en su portal.",
-      "students_none": "Todavía no publicaste el Classroom para los alumnos.",
-      "saved_local_only": "Publicado solo en esta pantalla a las {time}: el envío al portal del alumno todavía no está conectado.",
-      "published_short": "Publicado",
-      "not_published_short": "Sin publicar",
       "title": "Accesos del aula"
     },
     "class_notices": {

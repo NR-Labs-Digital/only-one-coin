@@ -27,8 +27,7 @@ describe('parseClassLink', () => {
     expect(parseClassLink('   ', 'drive')).toBe('')
   })
 
-  it('keeps meet and classroom on their own host', () => {
-    expect(parseClassLink('https://docs.google.com/x', 'meet')).toBeNull()
+  it('keeps classroom on its own host', () => {
     expect(parseClassLink('https://docs.google.com/x', 'classroom')).toBeNull()
   })
 })
