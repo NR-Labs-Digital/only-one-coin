@@ -23,6 +23,8 @@ export interface ClassGroupItem {
    * coordination while the class group waits for a real allocation.
    */
   legacyTeacherName: string;
+  /** The Google Classroom coordination pasted (OOC-98); null = nobody yet. */
+  classroomUrl: string | null;
   slots: WeeklySlot[];
   /** ISO 8601, UTC — rendered in America/Lima by the screen. */
   startsOn: string | null;
@@ -128,6 +130,7 @@ export class ListClassGroupsQuery {
       teacherId: row.teacherId,
       teacherName,
       legacyTeacherName: row.teacherName,
+      classroomUrl: row.classroomUrl,
       slots: row.slots as WeeklySlot[],
       startsOn: row.startsOn?.toISOString() ?? null,
       endsOn: row.endsOn?.toISOString() ?? null,

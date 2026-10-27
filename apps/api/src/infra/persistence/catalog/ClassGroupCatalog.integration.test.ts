@@ -223,6 +223,30 @@ describe("class group catalog", { timeout: 30_000 }, () => {
     });
   });
 
+  it("stores, serves and clears the Classroom link (OOC-98)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const groups = new DrizzleClassGroupRepository(tx);
+      const created = await groups.create(
+        ClassGroup.create({
+          courseId: C1,
+          academicPeriodId: PERIOD_A,
+          code: "CGCAT-CLASSROOM",
+          classroomUrl: "https://classroom.google.com/c/abc",
+          slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
+          capacity: 20,
+        }),
+      );
+      expect((await groups.findById(created.id))?.classroomUrl).toBe("https://classroom.google.com/c/abc");
+      const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });
+      expect(listed?.classroomUrl).toBe("https://classroom.google.com/c/abc");
+
+      created.update({ classroomUrl: null });
+      await groups.update(created);
+      expect((await groups.findById(created.id))?.classroomUrl).toBeNull();
+    });
+  });
+
   it("leaves a legacy schedule text alone when the class group has no slots", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
