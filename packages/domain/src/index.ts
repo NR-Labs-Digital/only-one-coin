@@ -437,6 +437,8 @@ export {
   WaitlistEntryClosedError,
   WaitlistEntryNotFoundError,
   LandingKeyTakenError,
+  ModuleMaterialsIncompleteError,
+  ModuleMaterialInvalidError,
 } from "./catalog/errors.js";
 export {
   AcademicPeriod,
@@ -496,7 +498,9 @@ export {
   CourseOptionsSchema,
   CreateCourseSchema,
   LandingCourseKeySchema,
+  MODULE_MATERIAL_HOSTS,
   UpdateCourseSchema,
+  normalizeModuleMaterials,
   type CertificateRule,
   type CourseProps,
   type CreateCourseDTO,

@@ -111,6 +111,10 @@ export const courses = pgTable(
     // the public catalog is meant to show should set a real one.
     level: text("level").notNull().default(""),
     modules: integer("modules").notNull().default(1),
+    // One material link per module, in module order (OOC-94). Empty on a course
+    // written before it — that course warns, it does not lock — so no CHECK on
+    // the length: "empty, or exactly `modules` valid links" is the domain's rule.
+    moduleMaterials: text("module_materials").array().notNull().default(sql`'{}'::text[]`),
     totalHours: integer("total_hours").notNull().default(0),
     // What the course is, in the student's words — the portal shows it under
     // "Sobre el curso". Default '' only so the column lands aditively.

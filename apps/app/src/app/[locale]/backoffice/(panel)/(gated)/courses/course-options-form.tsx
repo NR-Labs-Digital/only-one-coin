@@ -12,6 +12,11 @@ import type {
 } from '@/lib/backoffice/types'
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import {
+  moduleMaterialsChanged,
+  moduleMaterialsPayload,
+  moduleMaterialsReady,
+} from '@/lib/backoffice/module-materials'
+import {
   blankedIdentityFields,
   identityOf,
   identityPatch,
@@ -37,6 +42,7 @@ function optionsOf(course: CourseRow): CourseOptions {
   return {
     minAge: course.minAge,
     modules: course.modules,
+    moduleMaterials: course.moduleMaterials,
     totalHours: course.totalHours,
     certificateRule: course.certificateRule,
     allowsFreeze: course.allowsFreeze,
@@ -97,6 +103,11 @@ export function CourseOptionsForm({
   // and that must not lock the rest of the form (OOC-126).
   const blanked = canEditIdentity ? blankedIdentityFields(identityPatch(course, identity)) : []
 
+  // Module links are asked for only when the modules are touched (OOC-94): a
+  // course that predates them keeps saving its other options.
+  const modulesTouched = moduleMaterialsChanged(draft, course)
+  const materialsBlocked = modulesTouched && !moduleMaterialsReady(draft)
+
   // Save sits at the bottom of a long form; the reason it is off must sit by
   // the field, or the button just reads as broken.
   function requiredNotice(field: RequiredIdentityField) {
@@ -114,12 +125,16 @@ export function CourseOptionsForm({
   async function save() {
     setSaving(true)
     setError(null)
-    const { active, ...options } = draft
+    const { active, modules, moduleMaterials, ...options } = draft
     const changed = (Object.keys(options) as (keyof typeof options)[]).filter(
       (key) => options[key] !== course[key],
     )
-    if (changed.length > 0) {
-      const patch = Object.fromEntries(changed.map((key) => [key, options[key]]))
+    if (changed.length > 0 || modulesTouched) {
+      const patch = {
+        ...Object.fromEntries(changed.map((key) => [key, options[key]])),
+        // The count and its links travel together: the API checks one against the other.
+        ...(modulesTouched && { modules, moduleMaterials: moduleMaterialsPayload({ modules, moduleMaterials }) }),
+      }
       const result = await catalogWrite(`/courses/${course.id}/options`, 'PATCH', patch)
       if (!result.ok) {
         setSaving(false)
@@ -226,7 +241,7 @@ export function CourseOptionsForm({
         </section>
       )}
 
-      <CourseOptionFields value={draft} onChange={setDraft} />
+      <CourseOptionFields value={draft} onChange={setDraft} showMaterialIssues={modulesTouched} />
 
       {retiring && <LiveEnrollmentsNotice state={live} />}
 
@@ -242,7 +257,9 @@ export function CourseOptionsForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={saving || blanked.length > 0 || (retiring && live.status === 'loading')}
+          disabled={
+            saving || blanked.length > 0 || materialsBlocked || (retiring && live.status === 'loading')
+          }
           onClick={() => void save()}
           className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-blue"
         >

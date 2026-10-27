@@ -206,7 +206,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | --- | --- | --- |
 | Modalidade mensual do inglês e adiantar módulos | OOC-86 | 02/09 e 06/09/2026 |
 | Procedimentos pagos além da matrícula (constancia, congelamento, troca de turma) | OOC-83, OOC-84, OOC-105 | 02/09/2026 |
-| Progressão de módulo em lote e curso com módulos | OOC-85, OOC-94, OOC-97 | 02/09/2026 |
+| Progressão de módulo em lote e curso com módulos | OOC-85, OOC-94 (cada curso guarda um link de material — Drive ou Docs — por módulo, exigido ao criar e ao mexer nos módulos; curso antigo aparece "Sin material" e segue editável — em revisão; mostrar o link ao docente é a OOC-100), OOC-97 | 02/09/2026 |
 | Exame de clasificación | sem ticket | 02/09/2026 |
 | Novos cargos e tela de permissões | OOC-57, OOC-95, OOC-96 | 07/09/2026 |
 | Portal do docente (materiais, calendário, convite) | OOC-98 a OOC-101, OOC-103 | — |

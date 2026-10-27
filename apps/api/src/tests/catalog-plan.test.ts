@@ -37,7 +37,7 @@ beforeEach(async () => {
       level: "A1",
       summary: "Francés para principiantes.",
       minAge: 13,
-      modules: 4,
+      modules: 4, moduleMaterials: Array(4).fill("https://drive.google.com/x"),
       totalHours: 80,
       certificateRule: "automatic",
       allowsFreeze: true,

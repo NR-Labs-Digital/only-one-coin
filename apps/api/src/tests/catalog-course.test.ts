@@ -3,6 +3,8 @@ import {
   CourseNotFoundError,
   CreateCourseUseCase,
   LandingKeyTakenError,
+  ModuleMaterialInvalidError,
+  ModuleMaterialsIncompleteError,
   UpdateCourseUseCase,
   type CreateCourseDTO,
 } from "@ooc/domain";
@@ -18,6 +20,13 @@ import { FakeAuditLogRepository, FakeCourseRepository } from "./fakes/catalog.js
 
 const ACTOR = "usr_admin";
 
+const LINKS = [
+  "https://drive.google.com/drive/folders/m1",
+  "https://drive.google.com/drive/folders/m2",
+  "https://docs.google.com/presentation/d/m3",
+  "https://drive.google.com/drive/folders/m4",
+];
+
 const A_COURSE: CreateCourseDTO = {
   name: "Inglés Básico",
   language: "Inglés",
@@ -25,6 +34,7 @@ const A_COURSE: CreateCourseDTO = {
   summary: "Curso de inglés para principiantes.",
   minAge: 13,
   modules: 4,
+  moduleMaterials: LINKS,
   totalHours: 80,
   certificateRule: "automatic",
   allowsFreeze: true,
@@ -93,6 +103,94 @@ describe("UpdateCourseUseCase", () => {
     await expect(
       new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: "018f2b5c-0000-7000-8000-0000000000ff", patch: { minAge: 15 } }),
     ).rejects.toBeInstanceOf(CourseNotFoundError);
+  });
+});
+
+/**
+ * One material link per module (OOC-94): required when a course opens and
+ * whenever its modules change. A course written before OOC-94 has none and
+ * stays editable — it warns, it does not lock.
+ */
+describe("module materials", () => {
+  it("refuses a course with fewer links than modules", () => {
+    expect(() => Course.create({ ...A_COURSE, moduleMaterials: LINKS.slice(0, 3) })).toThrow(
+      ModuleMaterialsIncompleteError,
+    );
+  });
+
+  it.each([
+    "http://drive.google.com/x",
+    "https://drive.google.com.evil.com/x",
+    "https://evil.com/?u=drive.google.com",
+    "javascript:alert(1)",
+    "",
+  ])("refuses %s as a module material", (bad) => {
+    expect(() => Course.create({ ...A_COURSE, moduleMaterials: [bad, ...LINKS.slice(1)] })).toThrow(
+      ModuleMaterialInvalidError,
+    );
+  });
+
+  it("normalizes the links it keeps", () => {
+    const course = Course.create({ ...A_COURSE, moduleMaterials: ["  https://DRIVE.GOOGLE.COM/x ", ...LINKS.slice(1)] });
+    expect(course.moduleMaterials).toEqual(["https://drive.google.com/x", ...LINKS.slice(1)]);
+  });
+
+  // A course written before OOC-94: a module count, no links.
+  const legacy = () => courses.create(new Course({ ...Course.create(A_COURSE), moduleMaterials: [] }));
+  const full = () => courses.create(Course.create(A_COURSE));
+  const update = (id: string, patch: Parameters<UpdateCourseUseCase["run"]>[0]["patch"]) =>
+    new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id, patch });
+
+  it("lets a course without materials change another option", async () => {
+    const course = await legacy();
+    const updated = await update(course.id, { minAge: 15 });
+    expect(updated.minAge).toBe(15);
+    expect(auditLog.appended.map((entry) => entry.metadata)).toEqual([{ fields: ["minAge"] }]);
+  });
+
+  it("does not ask for links when modules is resent unchanged", async () => {
+    const course = await legacy();
+    const updated = await update(course.id, { minAge: 15, modules: 4 });
+    expect(updated.minAge).toBe(15);
+  });
+
+  it("refuses a module count change without links", async () => {
+    const course = await legacy();
+    await expect(update(course.id, { modules: 3 })).rejects.toBeInstanceOf(ModuleMaterialsIncompleteError);
+    expect(auditLog.appended).toEqual([]);
+    expect(courses.rows.get(course.id)?.modules).toBe(4);
+  });
+
+  it("fills the materials of a course that had none", async () => {
+    const course = await legacy();
+    const updated = await update(course.id, { moduleMaterials: LINKS });
+    expect(updated.moduleMaterials).toEqual(LINKS);
+    expect(auditLog.appended.map((entry) => entry.metadata)).toEqual([{ fields: ["moduleMaterials"] }]);
+  });
+
+  it("drops the last module with its link", async () => {
+    const course = await full();
+    const updated = await update(course.id, { modules: 3, moduleMaterials: LINKS.slice(0, 3) });
+    expect(updated.moduleMaterials).toEqual(LINKS.slice(0, 3));
+    expect(auditLog.appended.map((entry) => entry.metadata)).toEqual([{ fields: ["modules", "moduleMaterials"] }]);
+  });
+
+  it("refuses fewer modules when the links are not resent", async () => {
+    const course = await full();
+    await expect(update(course.id, { modules: 3 })).rejects.toBeInstanceOf(ModuleMaterialsIncompleteError);
+  });
+
+  it("refuses an invalid link on update", async () => {
+    const course = await full();
+    await expect(update(course.id, { moduleMaterials: ["https://evil.com/x", ...LINKS.slice(1)] })).rejects.toBeInstanceOf(
+      ModuleMaterialInvalidError,
+    );
+  });
+
+  it("does not count the same links as a change", async () => {
+    const course = await full();
+    await update(course.id, { moduleMaterials: LINKS.map((link) => ` ${link} `) });
+    expect(auditLog.appended).toEqual([]);
   });
 });
 

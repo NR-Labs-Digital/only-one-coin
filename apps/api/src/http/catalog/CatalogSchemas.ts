@@ -14,6 +14,8 @@ export const CourseListItemSchema = z.object({
   summary: z.string(),
   minAge: z.number().int(),
   modules: z.number().int(),
+  moduleMaterials: z.array(z.string()),
+  missingModuleMaterials: z.boolean(),
   totalHours: z.number().int(),
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),

@@ -226,6 +226,7 @@ export const AUDIT_FIELDS = {
   summary: "summary",
   minAge: "min_age",
   modules: "modules",
+  moduleMaterials: "module_materials",
   totalHours: "total_hours",
   certificateRule: "certificate_rule",
   allowsFreeze: "allows_freeze",
