@@ -85,7 +85,7 @@ beforeEach(async () => {
   teachers = new FakeTeacherRepository();
   course = await courses.create(
     Course.create({
-      name: "Inglés Básico", language: "Inglés", level: "A1", summary: "x", minAge: 13, modules: 4,
+      name: "Inglés Básico", language: "Inglés", level: "A1", summary: "x", minAge: 13, modules: 4, moduleMaterials: Array(4).fill("https://drive.google.com/x"),
       totalHours: 80, certificateRule: "automatic", allowsFreeze: true, allowsTransfer: false,
     }),
   );
@@ -177,7 +177,7 @@ describe("UpdateClassGroupUseCase", () => {
 
   it("changes the course only on a draft", async () => {
     const other = await courses.create(Course.create({
-        name: "Inglés Kids", language: "Inglés", level: "Kids", summary: "x", minAge: 7, modules: 4,
+        name: "Inglés Kids", language: "Inglés", level: "Kids", summary: "x", minAge: 7, modules: 4, moduleMaterials: Array(4).fill("https://drive.google.com/x"),
         totalHours: 80, certificateRule: "automatic", allowsFreeze: true, allowsTransfer: false,
       }));
     const group = await groups.create(ClassGroup.create(draftOf(DATES)));
@@ -279,7 +279,7 @@ describe("Allocating a teacher (OOC-80)", () => {
   it("re-checks the allocated teacher against a new course", async () => {
     const italian = await courses.create(
       Course.create({
-        name: "Italiano Básico", language: "Italiano", level: "A1", summary: "x", minAge: 13, modules: 4,
+        name: "Italiano Básico", language: "Italiano", level: "A1", summary: "x", minAge: 13, modules: 4, moduleMaterials: Array(4).fill("https://drive.google.com/x"),
         totalHours: 80, certificateRule: "automatic", allowsFreeze: true, allowsTransfer: false,
       }),
     );

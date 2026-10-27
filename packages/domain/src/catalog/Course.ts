@@ -5,6 +5,7 @@ import {
   SoftDeletableModel,
   SoftDeletableModelPropsSchema,
 } from "../shared/base/SoftDeletableModel.js";
+import { ModuleMaterialInvalidError, ModuleMaterialsIncompleteError } from "./errors.js";
 import { LANDING_COURSE_KEYS, type LandingCourseKey } from "./landingCourseKeys.js";
 
 /** How the certificate is earned (docs/REGRAS-NEGOCIO.md §6). */
@@ -19,9 +20,41 @@ export type CertificateRule = z.infer<typeof CertificateRuleSchema>;
 export const LandingCourseKeySchema = z.enum(LANDING_COURSE_KEYS);
 
 /**
+ * Where a module's material may live (OOC-94): a Drive folder or file, or a
+ * Docs/Slides/Sheets document. The link ends up as an href on a teacher's
+ * screen, so anything else — another host, plain http, a look-alike — is
+ * refused rather than rendered.
+ */
+export const MODULE_MATERIAL_HOSTS = ["drive.google.com", "docs.google.com"] as const;
+
+function normalizeModuleMaterial(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch (cause) {
+    throw new ModuleMaterialInvalidError({ cause });
+  }
+  if (url.protocol !== "https:" || !(MODULE_MATERIAL_HOSTS as readonly string[]).includes(url.hostname)) {
+    throw new ModuleMaterialInvalidError();
+  }
+  return url.toString();
+}
+
+/** One valid link per module, normalized, in module order — or a refusal. */
+export function normalizeModuleMaterials(modules: number, materials: readonly string[]): string[] {
+  if (materials.length !== modules) throw new ModuleMaterialsIncompleteError();
+  return materials.map(normalizeModuleMaterial);
+}
+
+function sameList(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((item, index) => item === b[index]);
+}
+
+/**
  * What a row may hold. Looser than what may be written: courses that predate
  * OOC-36 carry `level = ''` and `summary = ''` (the columns landed with those
- * defaults), and reading them back must not throw.
+ * defaults), and courses that predate OOC-94 carry no module materials —
+ * reading them back must not throw.
  */
 export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
   name: z.string().trim().min(1),
@@ -30,6 +63,7 @@ export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
   summary: z.string(),
   minAge: z.number().int().positive(),
   modules: z.number().int().positive(),
+  moduleMaterials: z.array(z.string()),
   totalHours: z.number().int().nonnegative(),
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
@@ -39,10 +73,14 @@ export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
 
 export type CourseProps = z.infer<typeof CoursePropsSchema>;
 
-/** What coordination may change day to day (the options sheet). */
+/**
+ * What coordination may change day to day (the options sheet). The module
+ * materials travel with the module count: changing one means checking both.
+ */
 export const CourseOptionsSchema = z.object({
   minAge: z.number().int().positive(),
   modules: z.number().int().positive(),
+  moduleMaterials: z.array(z.string()),
   totalHours: z.number().int().nonnegative(),
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
@@ -72,6 +110,8 @@ export class Course extends SoftDeletableModel {
   public summary: string;
   public minAge: number;
   public modules: number;
+  /** One link per module, in order (OOC-94). Empty on a course that predates it. */
+  public moduleMaterials: string[];
   public totalHours: number;
   public certificateRule: CertificateRule;
   public allowsFreeze: boolean;
@@ -86,6 +126,7 @@ export class Course extends SoftDeletableModel {
     this.summary = props.summary;
     this.minAge = props.minAge;
     this.modules = props.modules;
+    this.moduleMaterials = props.moduleMaterials;
     this.totalHours = props.totalHours;
     this.certificateRule = props.certificateRule;
     this.allowsFreeze = props.allowsFreeze;
@@ -94,21 +135,38 @@ export class Course extends SoftDeletableModel {
   }
 
   static create(dto: CreateCourseDTO): Course {
-    return new Course(CoursePropsSchema.parse({ ...CreateCourseSchema.parse(dto), id: uuid() }));
+    const valid = CreateCourseSchema.parse(dto);
+    const moduleMaterials = normalizeModuleMaterials(valid.modules, valid.moduleMaterials);
+    return new Course(CoursePropsSchema.parse({ ...valid, moduleMaterials, id: uuid() }));
   }
 
   /**
    * Applies a validated patch and answers which fields actually changed — the
    * audit line names those, and an empty answer means there is nothing to
    * write.
+   *
+   * Module links are checked only when the module count or the links actually
+   * change (OOC-94): a course that predates them keeps taking other edits, and
+   * a patch that resends the same count asks for nothing. Checked before any
+   * field is touched, so a refusal leaves the course as it was.
    */
   update(patch: UpdateCourseDTO): (keyof UpdateCourseDTO)[] {
     const valid = UpdateCourseSchema.parse(patch);
+
+    const modulesChanged = valid.modules !== undefined && valid.modules !== this.modules;
+    if (valid.moduleMaterials !== undefined || modulesChanged) {
+      const modules = valid.modules ?? this.modules;
+      const materials = valid.moduleMaterials ?? this.moduleMaterials;
+      const resent = !modulesChanged && sameList(materials.map((link) => link.trim()), this.moduleMaterials);
+      valid.moduleMaterials = resent ? this.moduleMaterials : normalizeModuleMaterials(modules, materials);
+    }
+
     const changed: (keyof UpdateCourseDTO)[] = [];
 
     for (const key of Object.keys(valid) as (keyof UpdateCourseDTO)[]) {
       const next = valid[key];
       if (next === undefined || this[key] === next) continue;
+      if (key === "moduleMaterials" && sameList(this.moduleMaterials, next as string[])) continue;
       (this as Record<string, unknown>)[key] = next;
       changed.push(key);
     }
