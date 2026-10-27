@@ -5,6 +5,7 @@ import {
   ClassGroup,
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
+  ClassroomUrlInvalidError,
   ClassGroupTeacherLanguageError,
   ClassGroupTeacherUnavailableError,
   Course,
@@ -289,5 +290,63 @@ describe("Allocating a teacher (OOC-80)", () => {
     await expect(
       update().run({ actorId: ACTOR, id: group.id, patch: { courseId: italian.id } }),
     ).rejects.toBeInstanceOf(ClassGroupTeacherLanguageError);
+  });
+});
+
+describe("The class group's Classroom link (OOC-98)", () => {
+  const LINK = "https://classroom.google.com/c/abc";
+  const update = () => new UpdateClassGroupUseCase(courses, groups, teachers, auditLog);
+
+  it("stores the link normalized", () => {
+    const group = ClassGroup.create(draftOf({ classroomUrl: "  https://CLASSROOM.google.com/c/abc " }));
+    expect(group.classroomUrl).toBe(LINK);
+  });
+
+  it("treats a blank link as none", () => {
+    expect(ClassGroup.create(draftOf({ classroomUrl: "   " })).classroomUrl).toBeNull();
+    expect(ClassGroup.create(draftOf()).classroomUrl).toBeNull();
+  });
+
+  it.each([
+    "http://classroom.google.com/c/abc",
+    "https://classroom.google.com.evil.io/c/abc",
+    "https://meet.google.com/abc-defg-hij",
+    "javascript:alert(1)",
+    "not a link",
+  ])("refuses %s", (bad) => {
+    expect(() => ClassGroup.create(draftOf({ classroomUrl: bad }))).toThrow(ClassroomUrlInvalidError);
+  });
+
+  it("reports the change, and null clears it", () => {
+    const group = ClassGroup.create(draftOf());
+    expect(group.update({ classroomUrl: LINK })).toEqual(["classroomUrl"]);
+    expect(group.update({ classroomUrl: ` ${LINK} ` })).toEqual([]);
+    expect(group.update({ classroomUrl: null })).toEqual(["classroomUrl"]);
+    expect(group.classroomUrl).toBeNull();
+  });
+
+  it("leaves the link alone when the patch does not carry it", () => {
+    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }));
+    group.update({ code: "ING-0102" });
+    expect(group.classroomUrl).toBe(LINK);
+  });
+
+  it("reads back a stored link it would refuse today", () => {
+    const group = ClassGroup.create(draftOf());
+    const stored = new ClassGroup({ ...group, classroomUrl: "https://example.com/x" });
+    expect(stored.classroomUrl).toBe("https://example.com/x");
+  });
+
+  it("does not carry the link into a duplicated period", () => {
+    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }));
+    expect(ClassGroup.copyInto(group, period.id).classroomUrl).toBeNull();
+  });
+
+  it("audits the field name, never the link", async () => {
+    const group = await groups.create(ClassGroup.create(draftOf()));
+    await update().run({ actorId: ACTOR, id: group.id, patch: { classroomUrl: LINK } });
+    const entry = auditLog.appended.at(-1)!;
+    expect(entry.metadata).toMatchObject({ fields: ["classroomUrl"] });
+    expect(JSON.stringify(entry)).not.toContain("classroom.google.com");
   });
 });

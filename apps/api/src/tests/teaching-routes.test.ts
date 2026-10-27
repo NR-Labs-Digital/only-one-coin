@@ -132,6 +132,7 @@ function group(id: string, teacherId: string): TeachingClassGroup {
     seatsTaken: 12,
     status: "in_progress",
     retired: false,
+    classroomUrl: "https://classroom.google.com/c/ing01",
   };
 }
 
@@ -201,6 +202,15 @@ describe("the id in the URL is not proof of whose class group it is", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: A_GROUP, code: "ING-01", startsOn: "2026-10-01T05:00:00.000Z" });
     expect(response.json()).not.toHaveProperty("teacherId");
+  });
+
+  it("serves the own class group's Classroom link (OOC-98)", async () => {
+    asTeacherA();
+    vi.spyOn(container.repositories.teaching, "findClassGroup").mockResolvedValue(group(A_GROUP, A_TEACHER));
+
+    const response = await inject("GET", `/api/v1/teaching/class-groups/${A_GROUP}`);
+
+    expect(response.json()).toMatchObject({ classroomUrl: "https://classroom.google.com/c/ing01" });
   });
 
   it("serves the own students as one name each", async () => {

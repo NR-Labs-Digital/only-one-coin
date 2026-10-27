@@ -74,6 +74,8 @@ export interface AgendaClassGroup {
   academicPeriodName: string
   status: TeachingClassGroup['status']
   slots: WeeklySlotItem[]
+  /** The class group's Google Classroom (OOC-98); null = not pasted yet. */
+  classroomUrl: string | null
   startDate: string
   endDate: string
 }
@@ -87,6 +89,7 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
     academicPeriodName: group.academicPeriodName,
     status: group.status,
     slots: group.slots,
+    classroomUrl: group.classroomUrl,
     startDate: isoToLimaDate(group.startsOn),
     endDate: isoToLimaDate(group.endsOn),
   }

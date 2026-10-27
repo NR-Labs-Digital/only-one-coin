@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseClassLink } from './class-links'
+import { classroomUrlOf, parseClassLink } from './class-links'
 
 describe('parseClassLink', () => {
   it('accepts a Drive folder as module material', () => {
@@ -27,8 +27,25 @@ describe('parseClassLink', () => {
     expect(parseClassLink('   ', 'drive')).toBe('')
   })
 
-  it('keeps meet and classroom on their own host', () => {
-    expect(parseClassLink('https://docs.google.com/x', 'meet')).toBeNull()
+  it('keeps classroom on its own host', () => {
     expect(parseClassLink('https://docs.google.com/x', 'classroom')).toBeNull()
   })
+})
+
+describe('classroomUrlOf (OOC-98)', () => {
+  it('sends the pasted link normalized', () => {
+    expect(classroomUrlOf('  https://CLASSROOM.google.com/c/abc ')).toBe('https://classroom.google.com/c/abc')
+  })
+
+  it('sends null for an emptied field, so the link is cleared', () => {
+    expect(classroomUrlOf('')).toBeNull()
+    expect(classroomUrlOf('   ')).toBeNull()
+  })
+
+  it.each(['https://meet.google.com/abc-defg-hij', 'http://classroom.google.com/c/abc', 'classroom'])(
+    'calls %s invalid',
+    (raw) => {
+      expect(classroomUrlOf(raw)).toBe('invalid')
+    },
+  )
 })

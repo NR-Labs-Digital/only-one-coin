@@ -656,7 +656,7 @@ sessão nenhuma.
 | `teacher.agenda` | docente | Agenda do docente — semana e mês, no estilo Google Agenda, derivada das turmas dele (dado real desde a OOC-82). **`production: false`**: ligar é decisão do dono |
 | `teacher.grades` | docente | Ficha de notas (nota do exame final, DA, lote, observações, relatório CSV). **`production: false`** até OOC-38/OOC-102 — grava só na tela |
 | `teacher.notices` | docente | Avisos à turma. **`production: false`**, sem ticket — grava só na tela |
-| `teacher.class_links` | docente | Meet, Classroom, material do módulo e Classroom dos alunos. **`production: false`** até OOC-98/OOC-100/OOC-94 — sem dado na API |
+| `teacher.class_links` | docente | Classroom da turma (real, OOC-98) e material do módulo (aparece quando a OOC-100 trouxer o dado). **`production: true`** desde a OOC-98 |
 
 Todas as de cima, menos as `teacher.*` filhas, nasceram com `production: true` porque **já estavam no ar**: o
 registro chegou para gerir o que se expõe, não para aposentar tela sem aviso.

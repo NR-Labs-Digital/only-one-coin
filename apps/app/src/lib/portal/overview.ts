@@ -8,6 +8,7 @@ import type {
   Student,
   WeeklySlot,
 } from './types'
+import { parseClassLink } from '@/lib/backoffice/class-links'
 
 /**
  * `GET /portal/overview` as the API sends it (apps/api,
@@ -49,6 +50,7 @@ interface ApiEnrollment {
     slots: { weekday: ApiWeekday; startTime: string; endTime: string }[]
     startsOn: string | null
     endsOn: string | null
+    classroomUrl: string | null
   }
   academicPeriodName: string
   plan: { name: string; priceId: string; priceCents: number; currency: 'PEN' }
@@ -103,7 +105,10 @@ export function toEnrollment(row: ApiEnrollment): Enrollment {
       ),
       startDate: row.classGroup.startsOn,
       endDate: row.classGroup.endsOn,
-      meetingUrl: null,
+      // Re-checked before it becomes an href: only a Classroom link opens.
+      classroomUrl: row.classGroup.classroomUrl
+        ? parseClassLink(row.classGroup.classroomUrl, 'classroom') || null
+        : null,
     },
     plan: { name: row.plan.name, priceCents: row.plan.priceCents, currency: row.plan.currency },
     academicPeriod: { name: row.academicPeriodName },
@@ -177,7 +182,7 @@ export function nextClassOf(enrollments: Enrollment[], now: Date): NextClassOccu
     classGroupName: enrollment.classGroup.name,
     teacherName: enrollment.classGroup.teacherName,
     startsAt: new Date(best.at).toISOString(),
-    meetingUrl: enrollment.classGroup.meetingUrl,
+    classroomUrl: enrollment.classGroup.classroomUrl,
     classAccessLock: enrollment.classAccessLock,
   }
 }

@@ -39,6 +39,8 @@ const PortalEnrollmentSchema = z.object({
     slots: z.array(WeeklySlotSchema),
     startsOn: z.string().nullable(),
     endsOn: z.string().nullable(),
+    /** The Google Classroom (OOC-98) — null unless the seat is confirmed. */
+    classroomUrl: z.string().nullable(),
   }),
   academicPeriodName: z.string(),
   plan: z.object({ name: z.string(), priceId: z.string().uuid(), priceCents: z.number().int(), currency: z.literal("PEN") }),
@@ -140,6 +142,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
           slots: z.array(WeeklySlotSchema).catch([]).parse(enrollment.classGroup.slots),
           startsOn: toIso(enrollment.classGroup.startsOn),
           endsOn: toIso(enrollment.classGroup.endsOn),
+          classroomUrl: enrollment.classGroup.classroomUrl,
         },
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },

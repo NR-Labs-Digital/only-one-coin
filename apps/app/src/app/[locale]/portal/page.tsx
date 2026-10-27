@@ -109,9 +109,9 @@ export default async function DashboardPage({
                     {t('next_class.locked')}
                   </span>
                 )
-              ) : nextClass.meetingUrl ? (
+              ) : nextClass.classroomUrl ? (
                 <a
-                  href={nextClass.meetingUrl}
+                  href={nextClass.classroomUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-blue-deep shadow-card transition hover:bg-brand-yellow hover:text-ink"

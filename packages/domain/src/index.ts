@@ -439,6 +439,7 @@ export {
   LandingKeyTakenError,
   ModuleMaterialsIncompleteError,
   ModuleMaterialInvalidError,
+  ClassroomUrlInvalidError,
 } from "./catalog/errors.js";
 export {
   AcademicPeriod,
@@ -453,9 +454,11 @@ export {
   ClassGroup,
   ClassGroupPropsSchema,
   ClassGroupStatusSchema,
+  CLASSROOM_HOST,
   CreateClassGroupSchema,
   UpdateClassGroupSchema,
   NEXT_CLASS_GROUP_STATUS,
+  normalizeClassroomUrl,
   WeekdaySchema,
   WeeklySlotSchema,
   type ClassGroupProps,

@@ -225,6 +225,10 @@ export const classGroups = pgTable(
     // anybody is allocated, and every row written before this column has none.
     // `teacher_name` stays until the contract step (CLAUDE.md §7).
     teacherId: uuid("teacher_id").references((): AnyPgColumn => teachers.id, { onDelete: "restrict" }),
+    // The Google Classroom coordination pastes for the class group (OOC-98),
+    // read by its teacher and its confirmed students. Null until somebody
+    // pastes it; the host rule lives in the domain, like module materials.
+    classroomUrl: text("classroom_url"),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module
