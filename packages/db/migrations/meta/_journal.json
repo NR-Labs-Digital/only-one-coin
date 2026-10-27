@@ -267,6 +267,13 @@
       "when": 1793067513958,
       "tag": "0037_course_module_materials",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793117737286,
+      "tag": "0038_class_group_classroom_url",
+      "breakpoints": true
     }
   ]
 }

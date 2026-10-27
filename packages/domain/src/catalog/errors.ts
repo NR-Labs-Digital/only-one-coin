@@ -168,3 +168,13 @@ export class ModuleMaterialInvalidError extends UnableToProcessEntryError {
     });
   }
 }
+
+export class ClassroomUrlInvalidError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.classroom_url_invalid",
+      message: "A class group's Classroom link must be an https link on classroom.google.com.",
+      ...params,
+    });
+  }
+}

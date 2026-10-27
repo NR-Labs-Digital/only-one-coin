@@ -60,6 +60,7 @@ beforeEach(async () => {
       code: "ING-0101",
       teacherId: TEACHER_ID,
       legacyTeacherName: "",
+      classroomUrl: "https://classroom.google.com/c/running",
       slots: SLOTS,
       startsOn: new Date("2026-08-03T05:00:00Z"),
       endsOn: new Date("2026-10-31T05:00:00Z"),
@@ -105,6 +106,7 @@ describe("DuplicateClassGroupsUseCase", () => {
       expect(copy.enrollmentOpensAt).toBeNull();
       expect(copy.enrollmentClosesAt).toBeNull();
       expect(copy.seatsTaken).toBe(0);
+      expect(copy.classroomUrl).toBeNull();
       expect(copy.academicPeriodId).toBe(target.id);
     }
 

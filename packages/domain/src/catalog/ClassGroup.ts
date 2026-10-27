@@ -4,6 +4,7 @@ import { SoftDeletableModel, SoftDeletableModelPropsSchema } from "../shared/bas
 import {
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
+  ClassroomUrlInvalidError,
   InvalidDateRangeError,
   InvalidStatusTransitionError,
 } from "./errors.js";
@@ -34,6 +35,27 @@ export const NEXT_CLASS_GROUP_STATUS: Record<ClassGroupStatus, ClassGroupStatus 
 
 const optionalDate = z.coerce.date().nullable().optional();
 
+/**
+ * Where the class happens (OOC-98): the Google Classroom coordination pastes
+ * for the class group. The link ends up as an href on the teacher's and the
+ * student's screens, so anything but https on this host is refused.
+ */
+export const CLASSROOM_HOST = "classroom.google.com";
+
+/** The link normalized, null when left blank — or a refusal. */
+export function normalizeClassroomUrl(raw: string | null): string | null {
+  const value = raw?.trim() ?? "";
+  if (value === "") return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch (cause) {
+    throw new ClassroomUrlInvalidError({ cause });
+  }
+  if (url.protocol !== "https:" || url.hostname !== CLASSROOM_HOST) throw new ClassroomUrlInvalidError();
+  return url.toString();
+}
+
 export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
@@ -46,6 +68,8 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
    * it only stays as a hint on the class groups still waiting for a link.
    */
   legacyTeacherName: z.string(),
+  /** Null until somebody pastes it. Not re-checked here: a row read back never throws. */
+  classroomUrl: z.string().nullable(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.coerce.date().nullable(),
   endsOn: z.coerce.date().nullable(),
@@ -63,6 +87,7 @@ export const CreateClassGroupSchema = z.object({
   academicPeriodId: z.string().uuid(),
   code: z.string().trim().min(1),
   teacherId: z.string().uuid().nullable().optional(),
+  classroomUrl: z.string().nullable().optional(),
   slots: z.array(WeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: optionalDate,
@@ -84,6 +109,7 @@ export class ClassGroup extends SoftDeletableModel {
   public code: string;
   public teacherId: string | null;
   public legacyTeacherName: string;
+  public classroomUrl: string | null;
   public slots: WeeklySlot[];
   public startsOn: Date | null;
   public endsOn: Date | null;
@@ -102,6 +128,7 @@ export class ClassGroup extends SoftDeletableModel {
     this.code = props.code;
     this.teacherId = props.teacherId;
     this.legacyTeacherName = props.legacyTeacherName;
+    this.classroomUrl = props.classroomUrl;
     this.slots = props.slots;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
@@ -122,6 +149,7 @@ export class ClassGroup extends SoftDeletableModel {
         id: uuid(),
         teacherId: valid.teacherId ?? null,
         legacyTeacherName: "",
+        classroomUrl: normalizeClassroomUrl(valid.classroomUrl ?? null),
         startsOn: valid.startsOn ?? null,
         endsOn: valid.endsOn ?? null,
         enrollmentOpensAt: valid.enrollmentOpensAt ?? null,
@@ -137,8 +165,9 @@ export class ClassGroup extends SoftDeletableModel {
 
   /**
    * Period duplication (OOC-35): same course, schedule, code, teacher and
-   * capacity; no dates, no window, no seats, a draft — and a pointer back.
-   * Nothing that belongs to the old period's students comes along.
+   * capacity; no dates, no window, no seats, no Classroom link, a draft — and
+   * a pointer back. Nothing that belongs to the old period's students comes
+   * along: their Classroom is not the new group's (OOC-98).
    */
   static copyInto(source: ClassGroup, academicPeriodId: string): ClassGroup {
     return new ClassGroup(
@@ -149,6 +178,7 @@ export class ClassGroup extends SoftDeletableModel {
         code: source.code,
         teacherId: source.teacherId,
         legacyTeacherName: source.legacyTeacherName,
+        classroomUrl: null,
         slots: source.slots,
         startsOn: null,
         endsOn: null,
@@ -181,6 +211,14 @@ export class ClassGroup extends SoftDeletableModel {
       // Somebody chose from the roster: the typed name has done its job.
       if (valid.teacherId !== null) this.legacyTeacherName = "";
       changed.push("teacherId");
+    }
+
+    if (valid.classroomUrl !== undefined) {
+      const next = normalizeClassroomUrl(valid.classroomUrl);
+      if (next !== this.classroomUrl) {
+        this.classroomUrl = next;
+        changed.push("classroomUrl");
+      }
     }
 
     for (const key of ["code", "capacity"] as const) {
