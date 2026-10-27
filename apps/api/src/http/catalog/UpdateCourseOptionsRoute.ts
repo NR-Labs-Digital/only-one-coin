@@ -6,8 +6,9 @@ import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
- * Coordination's day-to-day: age, load, certificate rule, procedures. Applies
- * to class groups opened afterwards.
+ * Coordination's day-to-day: age, load, certificate rule, procedures, and the
+ * material link of each module (OOC-94). Applies to class groups opened
+ * afterwards.
  * No rate limit yet (docs/ROADMAP.md Sessão 25).
  */
 export const updateCourseOptionsRoute = RouteBuilder.patch("/catalog/courses/:id/options")
