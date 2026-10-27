@@ -107,6 +107,85 @@ describe("UpdateCourseUseCase", () => {
 });
 
 /**
+ * The language is free text and the catalog groups by its spelling, so
+ * "INGLES" next to "Inglés" opened a second English on the courses screen and
+ * in the checkout. A language already in use is written the way it already is.
+ */
+describe("language spelling", () => {
+  it("opens a course on the spelling already in use", async () => {
+    await courses.create(Course.create(A_COURSE));
+
+    const kids = await new CreateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      course: { ...A_COURSE, name: "INGLES KIDS", language: " INGLES " },
+    });
+
+    expect(kids.language).toBe("Inglés");
+  });
+
+  it("takes the spelling most courses use", async () => {
+    await courses.create(Course.create({ ...A_COURSE, language: "FRANCÉS" }));
+    await courses.create(Course.create({ ...A_COURSE, language: "Francés" }));
+    await courses.create(Course.create({ ...A_COURSE, language: "Francés" }));
+
+    const created = await new CreateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      course: { ...A_COURSE, language: "frances" },
+    });
+
+    expect(created.language).toBe("Francés");
+  });
+
+  it("ignores retired courses", async () => {
+    const retired = Course.create({ ...A_COURSE, language: "INGLES" });
+    retired.softDelete();
+    await courses.create(retired);
+
+    const created = await new CreateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, course: A_COURSE });
+
+    expect(created.language).toBe("Inglés");
+  });
+
+  it("keeps a new language as typed", async () => {
+    await courses.create(Course.create(A_COURSE));
+
+    const created = await new CreateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      course: { ...A_COURSE, language: "Quechua" },
+    });
+
+    expect(created.language).toBe("Quechua");
+  });
+
+  it("moves a course into a language on the spelling already in use", async () => {
+    await courses.create(Course.create(A_COURSE));
+    const italian = await courses.create(Course.create({ ...A_COURSE, language: "Italiano" }));
+
+    const updated = await new UpdateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      id: italian.id,
+      patch: { language: "INGLES" },
+    });
+
+    expect(updated.language).toBe("Inglés");
+  });
+
+  it("lets a course correct the spelling of the language it is in", async () => {
+    const kids = await courses.create(Course.create({ ...A_COURSE, language: "INGLES" }));
+    await courses.create(Course.create({ ...A_COURSE, language: "INGLES" }));
+
+    const updated = await new UpdateCourseUseCase(courses, auditLog).run({
+      actorId: ACTOR,
+      id: kids.id,
+      patch: { language: "Inglés" },
+    });
+
+    expect(updated.language).toBe("Inglés");
+    expect(auditLog.appended.at(-1)?.metadata).toEqual({ fields: ["language"] });
+  });
+});
+
+/**
  * One material link per module (OOC-94): required when a course opens and
  * whenever its modules change. A course written before OOC-94 has none and
  * stays editable — it warns, it does not lock.

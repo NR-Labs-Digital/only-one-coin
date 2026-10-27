@@ -1,10 +1,6 @@
 import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
+import { sameLanguage } from "./courseLanguage.js";
 import { ClassGroupTeacherLanguageError, ClassGroupTeacherUnavailableError } from "./errors.js";
-
-/** Teacher languages and `courses.language` are the same free text (no languages table). */
-function sameLanguage(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase("es") === b.trim().toLocaleLowerCase("es");
-}
 
 /**
  * The check behind allocating a teacher to a class group (OOC-80): someone on

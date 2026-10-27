@@ -51,6 +51,14 @@ export class FakeCourseRepository implements ICourseRepository {
   async findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null> {
     return [...this.rows.values()].find((row) => row.landingKey === key && !row.isDeleted) ?? null;
   }
+
+  async listLanguageSpellings(): Promise<string[]> {
+    const uses = new Map<string, number>();
+    for (const row of this.rows.values()) {
+      if (!row.isDeleted) uses.set(row.language, (uses.get(row.language) ?? 0) + 1);
+    }
+    return [...uses].sort(([a, x], [b, y]) => y - x || a.localeCompare(b)).map(([language]) => language);
+  }
 }
 
 export class FakePlanRepository implements IPlanRepository {

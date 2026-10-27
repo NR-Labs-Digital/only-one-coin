@@ -12,4 +12,6 @@ export interface ICourseRepository {
   update(course: Course): Promise<Course>;
   /** The live course linked to that landing page, if any — retired ones let go of it. */
   findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null>;
+  /** Each spelling live courses use for their language, most used first. */
+  listLanguageSpellings(): Promise<string[]>;
 }

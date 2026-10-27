@@ -1,6 +1,6 @@
 import { Course, LandingKeyTakenError, type CertificateRule, type ICourseRepository, type LandingCourseKey } from "@ooc/domain";
 import { courses } from "@ooc/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 
@@ -74,6 +74,16 @@ export class DrizzleCourseRepository implements ICourseRepository {
       .where(and(eq(courses.landingKey, key), isNull(courses.deletedAt)))
       .limit(1);
     return row ? courseFromRow(row) : null;
+  }
+
+  async listLanguageSpellings(): Promise<string[]> {
+    const rows = await this.db
+      .select({ language: courses.language })
+      .from(courses)
+      .where(isNull(courses.deletedAt))
+      .groupBy(courses.language)
+      .orderBy(desc(count()), asc(courses.language));
+    return rows.map((row) => row.language);
   }
 
   async update(course: Course): Promise<Course> {

@@ -91,7 +91,8 @@ export function NewCourseForm({
           <span className={labelClass}>{t('courses.field_language')}</span>
           {/* A plain input, not a datalist: the datalist arrow showed on some
               browsers and not on others (OOC-106). Language is free text and
-              courses group by its spelling, so the hint names the ones in use. */}
+              courses group by its spelling: the API writes a language already
+              in use the way it is already spelled ("INGLES" → "Inglés"). */}
           <input
             value={language}
             onChange={(event) => setLanguage(event.target.value)}

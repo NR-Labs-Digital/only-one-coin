@@ -245,6 +245,12 @@ describe("Allocating a teacher (OOC-80)", () => {
     expect(group.teacherId).toBe(ana.id);
   });
 
+  it("matches the language whatever its accents", async () => {
+    const ana = await teachers.create(teacherOf({ languages: ["INGLES"] }));
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ teacherId: ana.id }), publish: false });
+    expect(group.teacherId).toBe(ana.id);
+  });
+
   it("allocates on edit, clears the typed name, and audits the field", async () => {
     const ana = await teachers.create(teacherOf());
     const legacy = new ClassGroup({ ...ClassGroup.create(draftOf()), legacyTeacherName: "Ana T." });
