@@ -116,6 +116,7 @@ function groupRow(id: string, code: string, teacherId: string | null, status: st
     code,
     teacherId,
     teacherName: "",
+    classroomUrl: `https://classroom.google.com/c/${code}`,
     startsOn: dated ? new Date(now - 7 * DAY) : null,
     endsOn: dated ? new Date(now + 40 * DAY) : null,
     capacity: 20,
@@ -221,6 +222,18 @@ describe("docente portal scope (OOC-82)", () => {
       // The same answer as an id that does not exist — nothing tells the two apart.
       await expect(get.run({ userId: A_ACCOUNT, classGroupId: UNKNOWN })).rejects.toBeInstanceOf(CatalogClassGroupNotFoundError);
       await expect(get.run({ userId: B_ACCOUNT, classGroupId: B_RUNNING })).resolves.toMatchObject({ id: B_RUNNING });
+    });
+  });
+
+  it("reads the own class group's Classroom link (OOC-98)", async () => {
+    await seeded(async (tx) => {
+      const { get, list } = portal(tx);
+
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({
+        classroomUrl: "https://classroom.google.com/c/OOC82-A1",
+      });
+      const listed = await list.run({ userId: A_ACCOUNT });
+      expect(listed.find((group) => group.id === A_RUNNING)?.classroomUrl).toBe("https://classroom.google.com/c/OOC82-A1");
     });
   });
 

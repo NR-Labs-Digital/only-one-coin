@@ -22,6 +22,8 @@ export interface TeachingClassGroup {
   capacity: number;
   seatsTaken: number;
   status: ClassGroupStatus;
+  /** The Google Classroom coordination pasted (OOC-98); null = nobody yet. */
+  classroomUrl: string | null;
   /** Retired from the catalog (`deleted_at`). */
   retired: boolean;
 }

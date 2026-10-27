@@ -112,6 +112,7 @@ async function seed(): Promise<void> {
     schedule: "Lun 19:00",
     slots: [{ weekday: "mon", startTime: "19:00", endTime: "20:30" }],
     code: "PORTAL-01",
+    classroomUrl: "https://classroom.google.com/c/portal",
     teacherName: "Docente de prueba",
     startsOn: new Date("2026-03-02T00:00:00.000Z"),
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
@@ -207,6 +208,14 @@ describe("StudentPortalQuery.overview", () => {
     expect(byId.get(ON_NEW_FILE)!.payments).toEqual([
       expect.objectContaining({ id: WAITING, status: "pending", settledAt: null, hasReceipt: false }),
     ]);
+  });
+
+  it("hands the Classroom link only to a confirmed seat (OOC-98)", async () => {
+    const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
+
+    // Same class group, same link: the seat decides, never the screen.
+    expect(byId.get(ON_OLD_FILE)!.classGroup.classroomUrl).toBe("https://classroom.google.com/c/portal");
+    expect(byId.get(ON_NEW_FILE)!.classGroup.classroomUrl).toBeNull();
   });
 });
 
