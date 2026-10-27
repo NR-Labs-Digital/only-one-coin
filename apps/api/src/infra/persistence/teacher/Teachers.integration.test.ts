@@ -447,7 +447,7 @@ describe("Class group allocation (OOC-80)", () => {
       const list = new ListClassGroupsQuery(tx);
 
       const group = await repository.create(
-        ClassGroup.create({ courseId: COURSE, academicPeriodId: PERIOD, code: "OOC80-A", slots: [SLOT], capacity: 20, teacherId: ana.id }),
+        ClassGroup.create({ courseId: COURSE, academicPeriodId: PERIOD, slots: [SLOT], capacity: 20, teacherId: ana.id }, "OOC80-A"),
       );
       const [item] = await list.run({ id: group.id });
       expect(item).toEqual(
@@ -457,7 +457,7 @@ describe("Class group allocation (OOC-80)", () => {
       expect((await list.run({ q: "Ana Docente" })).map((row) => row.id)).toContain(group.id);
 
       const { copyable } = await repository.listForCopy(PERIOD);
-      await repository.insertCopies(PERIOD, PERIOD_NEXT, copyable.map((source) => ClassGroup.copyInto(source, PERIOD_NEXT)));
+      await repository.insertCopies(PERIOD, PERIOD_NEXT, copyable.map((source) => ClassGroup.copyInto(source, PERIOD_NEXT, "OOC80-B")));
       const copies = await list.run({ periodId: PERIOD_NEXT });
       expect(copies.map((row) => row.teacherId)).toEqual([ana.id]);
     });

@@ -15,8 +15,10 @@ import {
   InvalidStatusTransitionError,
   Teacher,
   UpdateClassGroupUseCase,
+  classGroupCodeOf,
   type CreateClassGroupDTO,
   type CreateTeacherDTO,
+  type UpdateClassGroupDTO,
 } from "@ooc/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -35,6 +37,7 @@ import { FakeTeacherRepository } from "./fakes/teacher.js";
  */
 
 const ACTOR = "usr_coord";
+const CODE = "A-00001";
 let courses: FakeCourseRepository;
 let periods: FakeAcademicPeriodRepository;
 let groups: FakeClassGroupRepository;
@@ -47,7 +50,6 @@ function draftOf(overrides: Partial<CreateClassGroupDTO> = {}): CreateClassGroup
   return {
     courseId: course.id,
     academicPeriodId: period.id,
-    code: "ING-0101",
     slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
     capacity: 30,
     ...overrides,
@@ -104,6 +106,19 @@ describe("CreateClassGroupUseCase", () => {
     expect(auditLog.appended.map((entry) => entry.action)).toEqual(["catalog.class_group.created"]);
   });
 
+  it("stamps the next code from the sequence — nobody types it", async () => {
+    const first = await create().run({ actorId: ACTOR, classGroup: draftOf(), publish: false });
+    const second = await create().run({ actorId: ACTOR, classGroup: draftOf(), publish: false });
+    expect(first.code).toBe("A-00001");
+    expect(second.code).toBe("A-00002");
+  });
+
+  it("drops a code the client sends", async () => {
+    const typed = { ...draftOf(), code: "ING-0101" } as CreateClassGroupDTO;
+    const group = await create().run({ actorId: ACTOR, classGroup: typed, publish: false });
+    expect(group.code).toBe("A-00001");
+  });
+
   it("publishes straight away when complete", async () => {
     const group = await create().run({ actorId: ACTOR, classGroup: draftOf(DATES), publish: true });
     expect(group.status).toBe("enrolling");
@@ -141,7 +156,7 @@ describe("CreateClassGroupUseCase", () => {
 
 describe("AdvanceClassGroupStatusUseCase", () => {
   it("walks the whole life one step at a time", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf(DATES)));
+    const group = await groups.create(ClassGroup.create(draftOf(DATES), CODE));
     const advance = new AdvanceClassGroupStatusUseCase(groups, auditLog);
 
     for (const to of ["enrolling", "in_progress", "finished", "closed"] as const) {
@@ -153,7 +168,7 @@ describe("AdvanceClassGroupStatusUseCase", () => {
   });
 
   it("refuses skipping a step or going back", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf(DATES)));
+    const group = await groups.create(ClassGroup.create(draftOf(DATES), CODE));
     const advance = new AdvanceClassGroupStatusUseCase(groups, auditLog);
 
     await expect(advance.run({ actorId: ACTOR, id: group.id, to: "in_progress" })).rejects.toBeInstanceOf(
@@ -168,7 +183,7 @@ describe("AdvanceClassGroupStatusUseCase", () => {
 
 describe("UpdateClassGroupUseCase", () => {
   it("refuses a capacity below the seats taken", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf(DATES)));
+    const group = await groups.create(ClassGroup.create(draftOf(DATES), CODE));
     groups.seatsTakenOverride.set(group.id, 12);
 
     await expect(
@@ -181,7 +196,7 @@ describe("UpdateClassGroupUseCase", () => {
         name: "Inglés Kids", language: "Inglés", level: "Kids", summary: "x", minAge: 7, modules: 4, moduleMaterials: Array(4).fill("https://drive.google.com/x"),
         totalHours: 80, certificateRule: "automatic", allowsFreeze: true, allowsTransfer: false,
       }));
-    const group = await groups.create(ClassGroup.create(draftOf(DATES)));
+    const group = await groups.create(ClassGroup.create(draftOf(DATES), CODE));
     const update = new UpdateClassGroupUseCase(courses, groups, teachers, auditLog);
 
     await update.run({ actorId: ACTOR, id: group.id, patch: { courseId: other.id } });
@@ -194,7 +209,7 @@ describe("UpdateClassGroupUseCase", () => {
   });
 
   it("refuses clearing the dates of a published class group", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf(DATES)));
+    const group = await groups.create(ClassGroup.create(draftOf(DATES), CODE));
     await new AdvanceClassGroupStatusUseCase(groups, auditLog).run({ actorId: ACTOR, id: group.id, to: "enrolling" });
 
     await expect(
@@ -253,7 +268,7 @@ describe("Allocating a teacher (OOC-80)", () => {
 
   it("allocates on edit, clears the typed name, and audits the field", async () => {
     const ana = await teachers.create(teacherOf());
-    const legacy = new ClassGroup({ ...ClassGroup.create(draftOf()), legacyTeacherName: "Ana T." });
+    const legacy = new ClassGroup({ ...ClassGroup.create(draftOf(), CODE), legacyTeacherName: "Ana T." });
     await groups.create(legacy);
 
     await update().run({ actorId: ACTOR, id: legacy.id, patch: { teacherId: ana.id } });
@@ -266,7 +281,7 @@ describe("Allocating a teacher (OOC-80)", () => {
 
   it("takes the allocation away with null", async () => {
     const ana = await teachers.create(teacherOf());
-    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id })));
+    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id }), CODE));
 
     await update().run({ actorId: ACTOR, id: group.id, patch: { teacherId: null } });
     expect(groups.rows.get(group.id)?.teacherId).toBeNull();
@@ -274,7 +289,7 @@ describe("Allocating a teacher (OOC-80)", () => {
 
   it("never re-checks an untouched allocation — a teacher who left mid-cycle keeps the class group editable", async () => {
     const ana = await teachers.create(teacherOf());
-    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id })));
+    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id }), CODE));
     const left = (await teachers.findById(ana.id))!;
     left.leaveRoster();
     await teachers.update(left);
@@ -291,7 +306,7 @@ describe("Allocating a teacher (OOC-80)", () => {
       }),
     );
     const ana = await teachers.create(teacherOf());
-    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id })));
+    const group = await groups.create(ClassGroup.create(draftOf({ teacherId: ana.id }), CODE));
 
     await expect(
       update().run({ actorId: ACTOR, id: group.id, patch: { courseId: italian.id } }),
@@ -304,13 +319,13 @@ describe("The class group's Classroom link (OOC-98)", () => {
   const update = () => new UpdateClassGroupUseCase(courses, groups, teachers, auditLog);
 
   it("stores the link normalized", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: "  https://CLASSROOM.google.com/c/abc " }));
+    const group = ClassGroup.create(draftOf({ classroomUrl: "  https://CLASSROOM.google.com/c/abc " }), CODE);
     expect(group.classroomUrl).toBe(LINK);
   });
 
   it("treats a blank link as none", () => {
-    expect(ClassGroup.create(draftOf({ classroomUrl: "   " })).classroomUrl).toBeNull();
-    expect(ClassGroup.create(draftOf()).classroomUrl).toBeNull();
+    expect(ClassGroup.create(draftOf({ classroomUrl: "   " }), CODE).classroomUrl).toBeNull();
+    expect(ClassGroup.create(draftOf(), CODE).classroomUrl).toBeNull();
   });
 
   it.each([
@@ -320,11 +335,11 @@ describe("The class group's Classroom link (OOC-98)", () => {
     "javascript:alert(1)",
     "not a link",
   ])("refuses %s", (bad) => {
-    expect(() => ClassGroup.create(draftOf({ classroomUrl: bad }))).toThrow(ClassroomUrlInvalidError);
+    expect(() => ClassGroup.create(draftOf({ classroomUrl: bad }), CODE)).toThrow(ClassroomUrlInvalidError);
   });
 
   it("reports the change, and null clears it", () => {
-    const group = ClassGroup.create(draftOf());
+    const group = ClassGroup.create(draftOf(), CODE);
     expect(group.update({ classroomUrl: LINK })).toEqual(["classroomUrl"]);
     expect(group.update({ classroomUrl: ` ${LINK} ` })).toEqual([]);
     expect(group.update({ classroomUrl: null })).toEqual(["classroomUrl"]);
@@ -332,27 +347,44 @@ describe("The class group's Classroom link (OOC-98)", () => {
   });
 
   it("leaves the link alone when the patch does not carry it", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }));
-    group.update({ code: "ING-0102" });
+    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }), CODE);
+    group.update({ capacity: 31 });
     expect(group.classroomUrl).toBe(LINK);
   });
 
   it("reads back a stored link it would refuse today", () => {
-    const group = ClassGroup.create(draftOf());
+    const group = ClassGroup.create(draftOf(), CODE);
     const stored = new ClassGroup({ ...group, classroomUrl: "https://example.com/x" });
     expect(stored.classroomUrl).toBe("https://example.com/x");
   });
 
   it("does not carry the link into a duplicated period", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }));
-    expect(ClassGroup.copyInto(group, period.id).classroomUrl).toBeNull();
+    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }), CODE);
+    expect(ClassGroup.copyInto(group, period.id, "A-00002").classroomUrl).toBeNull();
+  });
+
+  it("never rewrites the code", () => {
+    const group = ClassGroup.create(draftOf(), CODE);
+    expect(group.update({ code: "ING-0102" } as UpdateClassGroupDTO)).toEqual([]);
+    expect(group.code).toBe(CODE);
   });
 
   it("audits the field name, never the link", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf()));
+    const group = await groups.create(ClassGroup.create(draftOf(), CODE));
     await update().run({ actorId: ACTOR, id: group.id, patch: { classroomUrl: LINK } });
     const entry = auditLog.appended.at(-1)!;
     expect(entry.metadata).toMatchObject({ fields: ["classroomUrl"] });
     expect(JSON.stringify(entry)).not.toContain("classroom.google.com");
+  });
+});
+
+describe("classGroupCodeOf", () => {
+  it.each([
+    [1, "A-00001"],
+    [42, "A-00042"],
+    [99999, "A-99999"],
+    [123456, "A-123456"],
+  ])("formats %i as %s, never cutting a digit", (n, code) => {
+    expect(classGroupCodeOf(n)).toBe(code);
   });
 });

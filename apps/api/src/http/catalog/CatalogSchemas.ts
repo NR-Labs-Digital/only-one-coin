@@ -110,7 +110,6 @@ export const toDate = (value: string | null | undefined): Date | null | undefine
 export const CreateClassGroupBodySchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
-  code: z.string().trim().min(1),
   /** From the roster (OOC-80); null on edit takes the allocation away. */
   teacherId: z.string().uuid().nullable().optional(),
   /** The Google Classroom (OOC-98); the domain checks the host. Null or blank clears it. */

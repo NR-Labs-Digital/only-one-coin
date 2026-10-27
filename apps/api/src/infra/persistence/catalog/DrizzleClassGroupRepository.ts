@@ -1,6 +1,7 @@
 import {
   CapacityBelowSeatsTakenError,
   ClassGroup,
+  classGroupCodeOf,
   PeriodAlreadyDuplicatedError,
   type ClassGroupStatus,
   type IClassGroupRepository,
@@ -67,6 +68,14 @@ function insertValues(group: ClassGroup, legacySchedule = "") {
 export class DrizzleClassGroupRepository implements IClassGroupRepository {
   constructor(private readonly db: Db) {}
 
+  async nextCodes(count: number): Promise<string[]> {
+    if (count === 0) return [];
+    const rows = await this.db.execute<{ seq: string }>(
+      sql`select nextval('class_group_code_seq')::text as seq from generate_series(1, ${count})`,
+    );
+    return rows.rows.map((row) => Number(row.seq)).sort((a, b) => a - b).map(classGroupCodeOf);
+  }
+
   async create(group: ClassGroup): Promise<ClassGroup> {
     const [row] = await this.db.insert(classGroups).values(insertValues(group)).returning();
     if (!row) throw new Error("Insert into class_groups returned no row");
@@ -88,7 +97,6 @@ export class DrizzleClassGroupRepository implements IClassGroupRepository {
       .update(classGroups)
       .set({
         courseId: group.courseId,
-        code: group.code,
         teacherId: group.teacherId,
         teacherName: group.legacyTeacherName,
         classroomUrl: group.classroomUrl,

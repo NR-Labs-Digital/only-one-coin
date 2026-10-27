@@ -36,6 +36,16 @@ export const NEXT_CLASS_GROUP_STATUS: Record<ClassGroupStatus, ClassGroupStatus 
 const optionalDate = z.coerce.date().nullable().optional();
 
 /**
+ * The code a class group is born with: the sequence number behind `A-`, padded
+ * to five digits and never cut past them. Nobody types or edits it — it is the
+ * class group's stable name on paperwork, the teacher's portal and the grade
+ * report. Course and period sit beside it on every screen, so it carries neither.
+ */
+export function classGroupCodeOf(sequence: number): string {
+  return `A-${String(sequence).padStart(5, "0")}`;
+}
+
+/**
  * Where the class happens (OOC-98): the Google Classroom coordination pastes
  * for the class group. The link ends up as an href on the teacher's and the
  * student's screens, so anything but https on this host is refused.
@@ -85,7 +95,6 @@ export type ClassGroupProps = z.infer<typeof ClassGroupPropsSchema>;
 export const CreateClassGroupSchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
-  code: z.string().trim().min(1),
   teacherId: z.string().uuid().nullable().optional(),
   classroomUrl: z.string().nullable().optional(),
   slots: z.array(WeeklySlotSchema).min(1),
@@ -106,7 +115,7 @@ type Editable = keyof UpdateClassGroupDTO;
 export class ClassGroup extends SoftDeletableModel {
   public courseId: string;
   public readonly academicPeriodId: string;
-  public code: string;
+  public readonly code: string;
   public teacherId: string | null;
   public legacyTeacherName: string;
   public classroomUrl: string | null;
@@ -140,13 +149,17 @@ export class ClassGroup extends SoftDeletableModel {
     this.sourceClassGroupId = props.sourceClassGroupId;
   }
 
-  /** Always born a draft; publishing is a separate, checked step. */
-  static create(dto: CreateClassGroupDTO): ClassGroup {
+  /**
+   * Always born a draft; publishing is a separate, checked step. The code comes
+   * from the repository's sequence (`classGroupCodeOf`), never from the DTO.
+   */
+  static create(dto: CreateClassGroupDTO, code: string): ClassGroup {
     const valid = CreateClassGroupSchema.parse(dto);
     const group = new ClassGroup(
       ClassGroupPropsSchema.parse({
         ...valid,
         id: uuid(),
+        code,
         teacherId: valid.teacherId ?? null,
         legacyTeacherName: "",
         classroomUrl: normalizeClassroomUrl(valid.classroomUrl ?? null),
@@ -164,18 +177,20 @@ export class ClassGroup extends SoftDeletableModel {
   }
 
   /**
-   * Period duplication (OOC-35): same course, schedule, code, teacher and
-   * capacity; no dates, no window, no seats, no Classroom link, a draft — and
-   * a pointer back. Nothing that belongs to the old period's students comes
-   * along: their Classroom is not the new group's (OOC-98).
+   * Period duplication (OOC-35): same course, schedule, teacher and capacity;
+   * no dates, no window, no seats, no Classroom link, a draft — and a pointer
+   * back. Nothing that belongs to the old period's students comes along: their
+   * Classroom is not the new group's (OOC-98). The copy is a new class group,
+   * so it gets a code of its own — the same code in two periods would name two
+   * groups.
    */
-  static copyInto(source: ClassGroup, academicPeriodId: string): ClassGroup {
+  static copyInto(source: ClassGroup, academicPeriodId: string, code: string): ClassGroup {
     return new ClassGroup(
       ClassGroupPropsSchema.parse({
         id: uuid(),
         courseId: source.courseId,
         academicPeriodId,
-        code: source.code,
+        code,
         teacherId: source.teacherId,
         legacyTeacherName: source.legacyTeacherName,
         classroomUrl: null,
@@ -221,12 +236,9 @@ export class ClassGroup extends SoftDeletableModel {
       }
     }
 
-    for (const key of ["code", "capacity"] as const) {
-      const next = valid[key];
-      if (next !== undefined && next !== this[key]) {
-        (this as Record<string, unknown>)[key] = next;
-        changed.push(key);
-      }
+    if (valid.capacity !== undefined && valid.capacity !== this.capacity) {
+      this.capacity = valid.capacity;
+      changed.push("capacity");
     }
 
     if (valid.slots !== undefined && JSON.stringify(valid.slots) !== JSON.stringify(this.slots)) {

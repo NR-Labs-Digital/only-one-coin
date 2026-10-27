@@ -5,6 +5,12 @@ import type { ClassGroup } from "../ClassGroup.js";
  * answers retired rows too — the caller decides.
  */
 export interface IClassGroupRepository {
+  /**
+   * `count` fresh codes (`classGroupCodeOf`), in order, from a sequence that
+   * never hands the same number out twice — not even to two panels saving at
+   * once. A number taken by a save that then fails is skipped, not reused.
+   */
+  nextCodes(count: number): Promise<string[]>;
   create(group: ClassGroup): Promise<ClassGroup>;
   findById(id: string): Promise<ClassGroup | null>;
   /**

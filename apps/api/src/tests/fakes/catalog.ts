@@ -1,6 +1,7 @@
 import {
   CapacityBelowSeatsTakenError,
   PeriodAlreadyDuplicatedError,
+  classGroupCodeOf,
   WaitlistAlreadyJoinedError,
   type AcademicPeriod,
   type AuditLogEntry,
@@ -105,6 +106,11 @@ export class FakeClassGroupRepository implements IClassGroupRepository {
   public readonly rows = new Map<string, ClassGroup>();
   /** Lets a test simulate seats taken by the checkout between read and write. */
   public seatsTakenOverride = new Map<string, number>();
+  private lastCode = 0;
+
+  async nextCodes(count: number): Promise<string[]> {
+    return Array.from({ length: count }, () => classGroupCodeOf(++this.lastCode));
+  }
 
   async create(group: ClassGroup): Promise<ClassGroup> {
     this.rows.set(group.id, group);

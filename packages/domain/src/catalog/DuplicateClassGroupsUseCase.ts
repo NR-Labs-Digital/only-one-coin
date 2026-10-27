@@ -42,7 +42,8 @@ export class DuplicateClassGroupsUseCase extends BaseUseCase<
     if (!target || target.isDeleted) throw new PeriodNotFoundError();
 
     const { copyable, skippedRetired } = await this.classGroups.listForCopy(source.id);
-    const copies = copyable.map((group) => ClassGroup.copyInto(group, target.id));
+    const codes = await this.classGroups.nextCodes(copyable.length);
+    const copies = copyable.map((group, index) => ClassGroup.copyInto(group, target.id, codes[index]!));
 
     await this.classGroups.insertCopies(source.id, target.id, copies);
 

@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  pgSequence,
   pgTable,
   text,
   time,
@@ -197,6 +198,12 @@ export const planPrices = pgTable(
 // (apps/app/src/lib/backoffice/types.ts) — enrolling → in_progress →
 // finished | closed, plus 'draft' (OOC-35) before enrolling: a class group
 // that exists but is not on sale and holds no seat.
+// The number behind every generated class group code (`classGroupCodeOf` in
+// the domain, `A-00042`). A sequence, not max(code)+1: two panels saving at
+// once never draw the same number, and a number burned by a failed save is
+// skipped rather than reused.
+export const classGroupCodeSeq = pgSequence("class_group_code_seq", { startWith: 1 });
+
 export const classGroups = pgTable(
   "class_groups",
   {
@@ -216,7 +223,10 @@ export const classGroups = pgTable(
     slots: jsonb("slots").notNull().default([]),
     // Printed on paperwork, never shown in the public checkout itself
     // (CatalogClassGroup.code doc comment) — carried for the backoffice
-    // side. Default '' only so the column can land aditively.
+    // side. Default '' only so the column can land aditively. Since 0039 the
+    // panel draws it from class_group_code_seq and nobody edits it; legacy
+    // rows keep the code they came with. No unique index: the legacy import
+    // may have written the same course+date fallback twice.
     code: text("code").notNull().default(""),
     // Denormalized teacher name, kept until the contract step (CLAUDE.md §7);
     // `teacher_id` below is the real link.
