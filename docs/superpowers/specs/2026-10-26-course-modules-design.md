@@ -74,9 +74,10 @@ ALTER TABLE courses ADD COLUMN module_materials text[] NOT NULL DEFAULT '{}';
   sem validar host (linha lida nunca lança).
 - `Course.create`: exige `moduleMaterials.length === modules` e todo link
   válido.
-- `Course.update(patch)`: se o patch traz `modules` ou `moduleMaterials`, o
-  estado final precisa ter um link válido por módulo. Patch sem nenhum dos dois
-  não olha os links (curso antigo continua editável). Comparação de mudança da
+- `Course.update(patch)`: se o patch **muda** `modules` ou o conteúdo de
+  `moduleMaterials`, o estado final precisa ter um link válido por módulo.
+  Patch que não muda nenhum dos dois — inclusive um que reenvia `modules`
+  igual — não olha os links (curso antigo continua editável). Comparação de mudança da
   lista é por conteúdo, não por referência — senão todo PATCH contaria
   `moduleMaterials` como alterado.
 - Diminuir de 4 para 3 módulos: a tela manda 3 links; o quarto sai da lista.
