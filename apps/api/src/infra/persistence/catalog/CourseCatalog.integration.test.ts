@@ -187,6 +187,21 @@ describe("course catalog storage", () => {
     });
   });
 
+  it("lists the spellings live courses use for their language, most used first", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const repository = new DrizzleCourseRepository(tx);
+      const entries = new DrizzleCatalogEntryRepository(tx);
+      await repository.create(Course.create({ ...aCourse(), language: "ITALIANO (integration)" }));
+      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
+      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
+      const retired = await repository.create(Course.create({ ...aCourse(), language: "italiano (integration)" }));
+      await entries.retire("course", retired.id, new Date());
+
+      const spellings = (await repository.listLanguageSpellings()).filter((language) => language.endsWith("(integration)"));
+      expect(spellings).toEqual(["Italiano (integration)", "ITALIANO (integration)"]);
+    });
+  });
+
   it("answers null for a course not on file", async () => {
     await inRolledBackTransaction(async (tx) => {
       expect(await new GetCourseQuery(tx).run("018f2b5c-1000-7000-8000-0000000000ff")).toBeNull();

@@ -209,8 +209,9 @@ export function CourseOptionsForm({
               className={fieldClass}
             />
             {requiredNotice('language')}
-            {/* Courses group by the language's spelling — a typo here
-                moves the course into a fold of its own. */}
+            {/* Courses group by the language's spelling. Moving to a language
+                in use takes its spelling (API); retyping this course's own
+                language is kept as typed, which is how a spelling is fixed. */}
             <span className="text-xs text-muted-foreground">
               {t('courses.field_language_hint', {
                 languages: languages.map((item) => item.name).join(', '),
