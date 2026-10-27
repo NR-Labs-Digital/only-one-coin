@@ -368,6 +368,7 @@
         "min_age": "Minimum age",
         "modules": "Modules",
         "module_materials": "Module materials",
+        "classroom_url": "Classroom link",
         "total_hours": "Total hours",
         "certificate_rule": "Certificate rule",
         "allows_freeze": "Allows freezing",
@@ -1251,6 +1252,10 @@
       "teacher_outside_availability": "The schedule falls outside the availability the teacher declared. You can save anyway.",
       "teacher_schedule_clash": "The teacher already has a class group at the same time in this period: {codes}. You can save anyway.",
       "teacher_unassigned": "No teacher",
+      "field_classroom": "Classroom link",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_invalid": "Paste an https://classroom.google.com/… link",
+      "classroom_missing": "No Classroom",
       "filter_unassigned": "Only class groups without a teacher",
       "unassigned_banner": "{count, plural, one {# ongoing class group has no teacher from the roster assigned.} other {# ongoing class groups have no teacher from the roster assigned.}}",
       "unassigned_show": "Show them"
@@ -2102,7 +2107,8 @@
       "class_group_teacher_language": "That teacher does not teach the course language. Pick another one or add the language on their file.",
       "landing_key_taken": "Another course in the catalog is already linked to that website page.",
       "module_materials_incomplete": "Every module needs its material link.",
-      "module_material_invalid": "A link is not from Google Drive or Docs."
+      "module_material_invalid": "A link is not from Google Drive or Docs.",
+      "classroom_url_invalid": "The link is not from Google Classroom."
     },
     "audit_action": {
       "student_registered": "Student registered",

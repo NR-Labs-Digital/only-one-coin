@@ -35,3 +35,15 @@ export function parseClassLink(raw: string, kind: ClassLinkKind): string | null 
   if (url.protocol !== 'https:' || !HOSTS[kind].includes(url.hostname)) return null
   return url.toString()
 }
+
+/**
+ * What the class group form sends for its Classroom field (OOC-98): the link
+ * normalized, `null` when the field is empty — which clears a link already
+ * set — or `'invalid'` while what is typed is not a Classroom link. The API
+ * checks the same host again (`normalizeClassroomUrl` in `@ooc/domain`).
+ */
+export function classroomUrlOf(raw: string): string | null | 'invalid' {
+  const parsed = parseClassLink(raw, 'classroom')
+  if (parsed === null) return 'invalid'
+  return parsed === '' ? null : parsed
+}

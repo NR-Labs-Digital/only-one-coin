@@ -368,6 +368,7 @@
         "min_age": "Idade mínima",
         "modules": "Módulos",
         "module_materials": "Material dos módulos",
+        "classroom_url": "Link do Classroom",
         "total_hours": "Horas totais",
         "certificate_rule": "Regra do certificado",
         "allows_freeze": "Permite trancar",
@@ -1251,6 +1252,10 @@
       "teacher_outside_availability": "O horário está fora da disponibilidade que o docente declarou. Dá para salvar mesmo assim.",
       "teacher_schedule_clash": "O docente já tem turma no mesmo horário neste período: {codes}. Dá para salvar mesmo assim.",
       "teacher_unassigned": "Sem docente",
+      "field_classroom": "Link do Classroom",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_invalid": "Cole um link https://classroom.google.com/…",
+      "classroom_missing": "Sem Classroom",
       "filter_unassigned": "Só turmas sem docente",
       "unassigned_banner": "{count, plural, one {# turma em andamento está sem docente do quadro atribuído.} other {# turmas em andamento estão sem docente do quadro atribuído.}}",
       "unassigned_show": "Ver quais"
@@ -2102,7 +2107,8 @@
       "class_group_teacher_language": "Esse docente não ensina o idioma do curso. Escolha outro ou adicione o idioma na ficha dele.",
       "landing_key_taken": "Outro curso do catálogo já está ligado a essa página do site.",
       "module_materials_incomplete": "Cada módulo precisa do seu link de material.",
-      "module_material_invalid": "Algum link não é do Google Drive ou Docs."
+      "module_material_invalid": "Algum link não é do Google Drive ou Docs.",
+      "classroom_url_invalid": "O link não é do Google Classroom."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",
