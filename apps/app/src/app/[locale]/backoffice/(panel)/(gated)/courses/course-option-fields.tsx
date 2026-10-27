@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { CertificateRule, CourseOptions } from '@/lib/backoffice/types'
-import { moduleMaterialIssues, resizeModuleMaterials } from '@/lib/backoffice/module-materials'
+import {
+  moduleMaterialIssues,
+  resizeModuleMaterials,
+  setModuleMaterial,
+} from '@/lib/backoffice/module-materials'
 import { Toggle } from '@/components/backoffice/controls'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
 
@@ -47,16 +51,10 @@ export function CourseOptionFields({
     onChange({ ...value, [key]: next })
   }
 
-  // The links follow the module count: a module added gets a blank field, a
-  // module dropped takes its link with it (OOC-94).
-  function setModules(modules: number) {
-    onChange({ ...value, modules, moduleMaterials: resizeModuleMaterials(value.moduleMaterials, modules) })
-  }
-
+  // The draft keeps every link typed; the module count only decides how many
+  // fields show and how many are sent (OOC-94) — see setModuleMaterial.
   function setMaterial(index: number, link: string) {
-    const next = resizeModuleMaterials(value.moduleMaterials, value.modules)
-    next[index] = link
-    set('moduleMaterials', next)
+    set('moduleMaterials', setModuleMaterial(value.moduleMaterials, value.modules, index, link))
   }
 
   // A course written before OOC-94 has no links yet: its fields show blank.
@@ -88,7 +86,7 @@ export function CourseOptionFields({
             min={1}
             max={20}
             value={value.modules}
-            onChange={(event) => setModules(Number(event.target.value))}
+            onChange={(event) => set('modules', Number(event.target.value))}
             className={`${fieldClass} tabular-nums`}
           />
         </label>

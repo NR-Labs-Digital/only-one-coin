@@ -10,8 +10,7 @@ import type {
   CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
-import { parseClassLink } from '@/lib/backoffice/class-links'
-import { moduleMaterialIssues } from '@/lib/backoffice/module-materials'
+import { moduleMaterialsPayload, moduleMaterialsReady } from '@/lib/backoffice/module-materials'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { CourseOptionFields, DEFAULT_COURSE_OPTIONS } from './course-option-fields'
@@ -61,10 +60,7 @@ export function NewCourseForm({
   const identityReady = name.trim() !== '' && level.trim() !== '' && language.trim() !== ''
   // Every module carries its material link (OOC-94); the API refuses a course
   // short of one, so the form says which field is missing first.
-  const materialsReady =
-    draftOptions.moduleMaterials.length === draftOptions.modules &&
-    moduleMaterialIssues(draftOptions.moduleMaterials).every((issue) => issue === null)
-  const ready = identityReady && materialsReady
+  const ready = identityReady && moduleMaterialsReady(draftOptions)
 
   async function submit() {
     setSaving(true)
@@ -76,7 +72,7 @@ export function NewCourseForm({
       level: level.trim(),
       landingKey,
       ...options,
-      moduleMaterials: options.moduleMaterials.map((link) => parseClassLink(link, 'drive') ?? link),
+      moduleMaterials: moduleMaterialsPayload(options),
     })
     setSaving(false)
     if (!result.ok) {

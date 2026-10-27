@@ -27,3 +27,49 @@ export function moduleMaterialIssues(list: readonly string[]): (ModuleMaterialIs
     return null
   })
 }
+
+interface ModuleShape {
+  modules: number
+  moduleMaterials: readonly string[]
+}
+
+/**
+ * The form's draft keeps every link typed, even past the module count: the
+ * count is typed key by key ("12" passes through "1", a backspace through
+ * nothing), and cutting the list on each keystroke would drop links already
+ * there. The count is applied when the list is shown, checked or sent.
+ */
+export function setModuleMaterial(list: readonly string[], modules: number, index: number, link: string): string[] {
+  const next = resizeModuleMaterials(list, Math.max(list.length, modules, index + 1))
+  next[index] = link
+  return next
+}
+
+/**
+ * The modules as the screen shows them differ from the course's — compared
+ * the way they render, so a link typed and cleared on a course that had none,
+ * or a count changed and changed back, is no change.
+ */
+export function moduleMaterialsChanged(draft: ModuleShape, course: ModuleShape): boolean {
+  return (
+    draft.modules !== course.modules ||
+    !sameModuleMaterials(
+      resizeModuleMaterials(draft.moduleMaterials, draft.modules),
+      resizeModuleMaterials(course.moduleMaterials, course.modules),
+    )
+  )
+}
+
+/** A whole, positive module count with a valid link in each module. */
+export function moduleMaterialsReady({ modules, moduleMaterials }: ModuleShape): boolean {
+  return (
+    Number.isInteger(modules) &&
+    modules >= 1 &&
+    moduleMaterialIssues(resizeModuleMaterials(moduleMaterials, modules)).every((issue) => issue === null)
+  )
+}
+
+/** The list the API gets: one normalized link per module the count keeps. */
+export function moduleMaterialsPayload({ modules, moduleMaterials }: ModuleShape): string[] {
+  return resizeModuleMaterials(moduleMaterials, modules).map((link) => parseClassLink(link, 'drive') ?? link)
+}

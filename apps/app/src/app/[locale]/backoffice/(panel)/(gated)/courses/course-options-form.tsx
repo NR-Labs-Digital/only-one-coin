@@ -11,8 +11,11 @@ import type {
   CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
-import { parseClassLink } from '@/lib/backoffice/class-links'
-import { moduleMaterialIssues, sameModuleMaterials } from '@/lib/backoffice/module-materials'
+import {
+  moduleMaterialsChanged,
+  moduleMaterialsPayload,
+  moduleMaterialsReady,
+} from '@/lib/backoffice/module-materials'
 import {
   blankedIdentityFields,
   identityOf,
@@ -102,12 +105,8 @@ export function CourseOptionsForm({
 
   // Module links are asked for only when the modules are touched (OOC-94): a
   // course that predates them keeps saving its other options.
-  const modulesTouched =
-    draft.modules !== course.modules || !sameModuleMaterials(draft.moduleMaterials, course.moduleMaterials)
-  const materialsBlocked =
-    modulesTouched &&
-    (draft.moduleMaterials.length !== draft.modules ||
-      moduleMaterialIssues(draft.moduleMaterials).some((issue) => issue !== null))
+  const modulesTouched = moduleMaterialsChanged(draft, course)
+  const materialsBlocked = modulesTouched && !moduleMaterialsReady(draft)
 
   // Save sits at the bottom of a long form; the reason it is off must sit by
   // the field, or the button just reads as broken.
@@ -134,10 +133,7 @@ export function CourseOptionsForm({
       const patch = {
         ...Object.fromEntries(changed.map((key) => [key, options[key]])),
         // The count and its links travel together: the API checks one against the other.
-        ...(modulesTouched && {
-          modules,
-          moduleMaterials: moduleMaterials.map((link) => parseClassLink(link, 'drive') ?? link),
-        }),
+        ...(modulesTouched && { modules, moduleMaterials: moduleMaterialsPayload({ modules, moduleMaterials }) }),
       }
       const result = await catalogWrite(`/courses/${course.id}/options`, 'PATCH', patch)
       if (!result.ok) {
