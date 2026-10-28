@@ -13,7 +13,8 @@
     "./landing-course-keys": "./src/catalog/landingCourseKeys.ts",
     "./legal-identity": "./src/legal/legalIdentity.ts",
     "./password-policy": "./src/identity/StudentPasswordPolicy.ts",
-    "./audit-catalog": "./src/identity/auditCatalog.ts"
+    "./audit-catalog": "./src/identity/auditCatalog.ts",
+    "./email-catalog": "./src/notification/emailCatalog.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

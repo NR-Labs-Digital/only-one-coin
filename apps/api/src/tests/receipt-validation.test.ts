@@ -1,5 +1,7 @@
 import {
   ValidateReceiptUseCase,
+  type EnrollmentEmailContext,
+  type IEnrollmentEmailContextLookup,
   type IReceiptValidationRepository,
   type PlatformSettings,
   type ReceiptValidationEffect,
@@ -39,12 +41,28 @@ class FakeValidationRepository implements IReceiptValidationRepository {
   }
 }
 
+class FakeEmailContextLookup implements IEnrollmentEmailContextLookup {
+  constructor(private readonly context: EnrollmentEmailContext | null) {}
+  async find() {
+    return this.context;
+  }
+}
+
+const ADULT_CONTEXT: EnrollmentEmailContext = {
+  student: { firstName: "Luis", lastName: "Huamán", email: "luis@gmail.com", birthDate: new Date("1998-03-10T00:00:00.000Z") },
+  guardian: null,
+  courseName: "Inglés Básico",
+  classGroupStartsOn: new Date("2026-11-02T00:00:00.000Z"),
+};
+
 const SETTINGS: PlatformSettings = TEST_SETTINGS;
 
 function subject(overrides: Partial<ReceiptValidationSubject> = {}): ReceiptValidationSubject {
   return {
     receiptUploadId: UPLOAD,
     paymentId: PAYMENT,
+    studentId: "018f2b5c-0000-7000-8000-00000000s001",
+    classGroupId: "018f2b5c-0000-7000-8000-00000000g001",
     paymentStatus: "pending",
     expectedCents: 15000,
     declaredOperationNumber: "08312457",
@@ -56,8 +74,12 @@ function subject(overrides: Partial<ReceiptValidationSubject> = {}): ReceiptVali
   };
 }
 
-function useCase(repository: FakeValidationRepository, settings: PlatformSettings = SETTINGS) {
-  return new ValidateReceiptUseCase(repository, new FakePlatformSettings(settings));
+function useCase(
+  repository: FakeValidationRepository,
+  settings: PlatformSettings = SETTINGS,
+  context: EnrollmentEmailContext | null = ADULT_CONTEXT,
+) {
+  return new ValidateReceiptUseCase(repository, new FakePlatformSettings(settings), new FakeEmailContextLookup(context));
 }
 
 describe("ValidateReceiptUseCase", () => {
@@ -67,7 +89,34 @@ describe("ValidateReceiptUseCase", () => {
     const result = await useCase(repository).run({ receiptUploadId: UPLOAD });
 
     expect(result).toEqual({ outcome: { verdict: "approve", reason: "exact" }, effect: "none" });
-    expect(Object.keys(repository.recorded[0]!).sort()).toEqual(["detail", "outcome", "subject"]);
+    expect(Object.keys(repository.recorded[0]!).sort()).toEqual(["detail", "notifications", "outcome", "subject"]);
+    expect(repository.recorded[0]!.notifications).toEqual([]);
+  });
+
+  it("hands over the under-review e-mail with a verdict that is not green (OOC-87)", async () => {
+    const repository = new FakeValidationRepository(subject({ readAmountCents: 4000 }));
+
+    await useCase(repository).run({ receiptUploadId: UPLOAD });
+
+    // An adult's optional guardian is not written to — only a minor's is.
+    expect(repository.recorded[0]!.notifications).toEqual([
+      {
+        templateKey: "payment_under_review",
+        to: "luis@gmail.com",
+        locale: "es-PE",
+        vars: { recipientName: "Luis", studentName: "Luis Huamán", courseName: "Inglés Básico" },
+        dedupeKey: `payment_under_review:${PAYMENT}:student`,
+      },
+    ]);
+  });
+
+  it("still validates when there is nobody on file to write to", async () => {
+    const repository = new FakeValidationRepository(subject({ readAmountCents: 4000 }));
+
+    const result = await useCase(repository, SETTINGS, null).run({ receiptUploadId: UPLOAD });
+
+    expect(result.effect).toBe("routed_to_review");
+    expect(repository.recorded[0]!.notifications).toEqual([]);
   });
 
   it("records what the verdict was decided with", async () => {

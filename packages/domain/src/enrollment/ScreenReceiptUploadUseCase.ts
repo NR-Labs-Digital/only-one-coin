@@ -1,6 +1,13 @@
+import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
+import { paymentUnderReviewEmails } from "../notification/enrollmentEmails.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
+import type { IEnrollmentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
 import { exifSignals, routesToHumanReview, type ReceiptFraudSignal } from "./ReceiptScreening.js";
-import type { IReceiptScreeningRepository, ReceiptLookalike } from "./ReceiptScreeningRepository.js";
+import type {
+  IReceiptScreeningRepository,
+  ReceiptLookalike,
+  ReceiptScreeningSubject,
+} from "./ReceiptScreeningRepository.js";
 
 export interface ScreenReceiptUploadInput {
   receiptUploadId: string;
@@ -24,10 +31,14 @@ export const MAX_LOOKALIKE_SIGNALS = 5;
  * signal (identical file, similar image, EXIF) and records them all; the
  * ones `routesToHumanReview` names send the payment to the human queue.
  * Nothing here rejects a payment: the decision is the reviewer's (decisions
- * of 30/09/2026).
+ * of 30/09/2026). Routing it tells the student — `payment_under_review`
+ * (OOC-87), in es-PE like every enrollment e-mail.
  */
 export class ScreenReceiptUploadUseCase extends BaseUseCase<ScreenReceiptUploadInput, ScreenReceiptUploadOutput> {
-  constructor(private readonly repository: IReceiptScreeningRepository) {
+  constructor(
+    private readonly repository: IReceiptScreeningRepository,
+    private readonly emailContextLookup: IEnrollmentEmailContextLookup,
+  ) {
     super();
   }
 
@@ -40,15 +51,24 @@ export class ScreenReceiptUploadUseCase extends BaseUseCase<ScreenReceiptUploadI
     const lookalikes = await this.repository.findLookalikes(subject);
     const signals = [...lookalikeSignals(lookalikes), ...exifSignals(subject.exif)];
     const routeToReview = signals.some(routesToHumanReview);
+    const notifications = routeToReview ? await this.underReviewEmails(subject) : [];
 
     await this.repository.recordScreening({
       receiptUploadId: subject.receiptUploadId,
       paymentId: subject.paymentId,
       signals,
       routeToReview,
+      notifications,
     });
 
     return { signals, routedToReview: routeToReview };
+  }
+
+  /** What the student never sees is why: the e-mail says a person is
+   * checking the receipt, not that it looked like another one. */
+  private async underReviewEmails(subject: ReceiptScreeningSubject): Promise<EmailNotification[]> {
+    const context = await this.emailContextLookup.find({ studentId: subject.studentId, classGroupId: subject.classGroupId });
+    return context ? paymentUnderReviewEmails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE) : [];
   }
 }
 

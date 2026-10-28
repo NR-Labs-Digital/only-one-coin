@@ -7,9 +7,10 @@ import {
   type ReceiptValidationEffect,
   type ReceiptValidationSubject,
 } from "@ooc/domain";
-import { paymentReceipts, payments, receiptUploads } from "@ooc/db";
+import { enrollments, paymentReceipts, payments, receiptUploads } from "@ooc/db";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 
 /** The `payment_method` entry of `extracted_fields`, read defensively — a
  * value outside the enum counts as not read. */
@@ -36,6 +37,8 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
       .select({
         receiptUploadId: receiptUploads.id,
         paymentId: payments.id,
+        studentId: enrollments.studentId,
+        classGroupId: enrollments.classGroupId,
         paymentStatus: payments.status,
         expectedCents: payments.amountCents,
         declaredOperationNumber: payments.operationNumber,
@@ -46,6 +49,7 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
       })
       .from(receiptUploads)
       .innerJoin(payments, eq(payments.id, receiptUploads.paymentId))
+      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
       // The level-1 row — a failed reading has one too, with null columns,
       // and validates as `amount_unread`.
       .innerJoin(
@@ -68,7 +72,7 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
   }
 
   async record(params: Parameters<IReceiptValidationRepository["record"]>[0]): Promise<ReceiptValidationEffect> {
-    const { subject, outcome, detail } = params;
+    const { subject, outcome, detail, notifications } = params;
 
     return this.db.transaction(async (tx) => {
       const [stamped] = await tx
@@ -106,7 +110,10 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
         .set({ status: "under_review", updatedAt: sql`now()` })
         .where(and(eq(payments.id, subject.paymentId), eq(payments.status, "pending")))
         .returning({ id: payments.id });
-      return routed ? "routed_to_review" : "none";
+      if (!routed) return "none";
+
+      await insertOutboxEmails(tx, notifications);
+      return "routed_to_review";
     });
   }
 }

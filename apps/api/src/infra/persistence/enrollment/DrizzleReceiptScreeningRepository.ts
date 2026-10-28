@@ -2,13 +2,13 @@ import {
   MAX_LOOKALIKE_SIGNALS,
   type IReceiptScreeningRepository,
   type ReceiptExifFacts,
-  type ReceiptFraudSignal,
   type ReceiptLookalike,
   type ReceiptScreeningSubject,
 } from "@ooc/domain";
-import { payments, receiptUploads } from "@ooc/db";
+import { enrollments, payments, receiptUploads } from "@ooc/db";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { SIMILAR_IMAGE_MAX_DISTANCE } from "@/infra/storage/fingerprintReceiptImage.js";
 
 interface LookalikeRow extends Record<string, unknown> {
@@ -23,8 +23,16 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
 
   async findSubject(receiptUploadId: string): Promise<ReceiptScreeningSubject | null> {
     const [row] = await this.db
-      .select({ id: receiptUploads.id, paymentId: receiptUploads.paymentId, exifFacts: receiptUploads.exifFacts })
+      .select({
+        id: receiptUploads.id,
+        paymentId: receiptUploads.paymentId,
+        exifFacts: receiptUploads.exifFacts,
+        studentId: enrollments.studentId,
+        classGroupId: enrollments.classGroupId,
+      })
       .from(receiptUploads)
+      .innerJoin(payments, eq(payments.id, receiptUploads.paymentId))
+      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
       .where(
         and(
           eq(receiptUploads.id, receiptUploadId),
@@ -42,6 +50,8 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
     return {
       receiptUploadId: row.id,
       paymentId: row.paymentId,
+      studentId: row.studentId,
+      classGroupId: row.classGroupId,
       exif: (row.exifFacts as ReceiptExifFacts | null) ?? null,
     };
   }
@@ -100,12 +110,7 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
     }));
   }
 
-  async recordScreening(params: {
-    receiptUploadId: string;
-    paymentId: string;
-    signals: ReceiptFraudSignal[];
-    routeToReview: boolean;
-  }): Promise<void> {
+  async recordScreening(params: Parameters<IReceiptScreeningRepository["recordScreening"]>[0]): Promise<void> {
     await this.db.transaction(async (tx) => {
       const [stamped] = await tx
         .update(receiptUploads)
@@ -118,10 +123,17 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
         return;
       }
 
-      await tx
+      const [routed] = await tx
         .update(payments)
         .set({ status: "under_review", updatedAt: sql`now()` })
-        .where(and(eq(payments.id, params.paymentId), eq(payments.status, "pending")));
+        .where(and(eq(payments.id, params.paymentId), eq(payments.status, "pending")))
+        .returning({ id: payments.id });
+
+      // Only the move tells the student: a payment already in review (or
+      // settled) is not news.
+      if (routed) {
+        await insertOutboxEmails(tx, params.notifications);
+      }
     });
   }
 }

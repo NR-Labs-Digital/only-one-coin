@@ -1,3 +1,4 @@
+import type { EmailNotification } from "../notification/EmailNotification.js";
 import type { ReceiptExifFacts, ReceiptFraudSignal } from "./ReceiptScreening.js";
 
 /** A receipt upload ready to be screened: normalized (so its fingerprint
@@ -5,6 +6,9 @@ import type { ReceiptExifFacts, ReceiptFraudSignal } from "./ReceiptScreening.js
 export interface ReceiptScreeningSubject {
   receiptUploadId: string;
   paymentId: string;
+  /** The enrollment's, for who to write to if the payment goes to review. */
+  studentId: string;
+  classGroupId: string;
   exif: ReceiptExifFacts | null;
 }
 
@@ -34,12 +38,15 @@ export interface IReceiptScreeningRepository {
 
   /** Stamps the screening on the row (once — a second call is a no-op) and,
    * with `routeToReview`, moves the payment `pending → under_review`: the
-   * human queue (apps/api/CLAUDE.md, OCR ladder level 3). A payment already
-   * past `pending` keeps its status. */
+   * human queue (apps/api/CLAUDE.md, OCR ladder level 3) — writing
+   * `notifications` (the `payment_under_review` e-mail) to the outbox in the
+   * same transaction when it does. A payment already past `pending` keeps its
+   * status, and nobody is written to. */
   recordScreening(params: {
     receiptUploadId: string;
     paymentId: string;
     signals: ReceiptFraudSignal[];
     routeToReview: boolean;
+    notifications: EmailNotification[];
   }): Promise<void>;
 }
