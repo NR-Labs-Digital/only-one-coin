@@ -178,3 +178,14 @@ export class ClassroomUrlInvalidError extends UnableToProcessEntryError {
     });
   }
 }
+
+/** A class group teaches one of its course's modules (OOC-100): 1 up to the course's module count. */
+export class ClassGroupModuleOutOfRangeError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_module_out_of_range",
+      message: "The class group's module must be one of its course's modules.",
+      ...params,
+    });
+  }
+}

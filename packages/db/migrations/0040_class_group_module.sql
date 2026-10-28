@@ -1,0 +1,2 @@
+ALTER TABLE "class_groups" ADD COLUMN "module" integer;--> statement-breakpoint
+ALTER TABLE "class_groups" ADD CONSTRAINT "class_groups_module_check" CHECK ("class_groups"."module" is null or "class_groups"."module" > 0);

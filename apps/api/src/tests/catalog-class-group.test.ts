@@ -6,6 +6,7 @@ import {
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
   ClassroomUrlInvalidError,
+  ClassGroupModuleOutOfRangeError,
   ClassGroupTeacherLanguageError,
   ClassGroupTeacherUnavailableError,
   Course,
@@ -16,6 +17,7 @@ import {
   Teacher,
   UpdateClassGroupUseCase,
   classGroupCodeOf,
+  materialOfModule,
   type CreateClassGroupDTO,
   type CreateTeacherDTO,
   type UpdateClassGroupDTO,
@@ -386,5 +388,84 @@ describe("classGroupCodeOf", () => {
     [123456, "A-123456"],
   ])("formats %i as %s, never cutting a digit", (n, code) => {
     expect(classGroupCodeOf(n)).toBe(code);
+  });
+});
+
+describe("The module a class group teaches (OOC-100)", () => {
+  const create = () => new CreateClassGroupUseCase(courses, periods, groups, teachers, auditLog);
+  const update = () => new UpdateClassGroupUseCase(courses, groups, teachers, auditLog);
+
+  it("stores one of the course's modules", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 3 }), publish: false });
+    expect(group.module).toBe(3);
+  });
+
+  it("is born without a module when none is given", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf(), publish: false });
+    expect(group.module).toBeNull();
+  });
+
+  it("refuses a module past the course's count", async () => {
+    await expect(
+      create().run({ actorId: ACTOR, classGroup: draftOf({ module: 5 }), publish: false }),
+    ).rejects.toBeInstanceOf(ClassGroupModuleOutOfRangeError);
+  });
+
+  it.each([0, -1, 1.5])("refuses module %s", async (bad) => {
+    await expect(
+      create().run({ actorId: ACTOR, classGroup: draftOf({ module: bad }), publish: false }),
+    ).rejects.toThrow();
+  });
+
+  it("checks a new module on edit, and audits the field name", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 1 }), publish: false });
+    await expect(update().run({ actorId: ACTOR, id: group.id, patch: { module: 9 } })).rejects.toBeInstanceOf(
+      ClassGroupModuleOutOfRangeError,
+    );
+
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { module: 4 } });
+    expect(saved.module).toBe(4);
+    expect(auditLog.appended.at(-1)!.metadata).toMatchObject({ fields: ["module"] });
+  });
+
+  it("null clears it", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 2 }), publish: false });
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { module: null } });
+    expect(saved.module).toBeNull();
+  });
+
+  it("checks the module against the new course when the course changes", async () => {
+    const short = await courses.create(
+      Course.create({
+        name: "Inglés Express", language: "Inglés", level: "A1", summary: "x", minAge: 13, modules: 2,
+        moduleMaterials: Array(2).fill("https://drive.google.com/x"),
+        totalHours: 40, certificateRule: "automatic", allowsFreeze: true, allowsTransfer: false,
+      }),
+    );
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 3 }), publish: false });
+    await expect(
+      update().run({ actorId: ACTOR, id: group.id, patch: { courseId: short.id } }),
+    ).rejects.toBeInstanceOf(ClassGroupModuleOutOfRangeError);
+  });
+
+  it("does not re-check an untouched module", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 4 }), publish: false });
+    course.update({ modules: 2, moduleMaterials: Array(2).fill("https://drive.google.com/x") });
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { capacity: 25 } });
+    expect(saved.module).toBe(4);
+  });
+});
+
+describe("materialOfModule (OOC-100)", () => {
+  const MATERIALS = ["https://drive.google.com/m1", "https://drive.google.com/m2"];
+
+  it("picks the module's link, 1-based", () => {
+    expect(materialOfModule(MATERIALS, 2)).toBe("https://drive.google.com/m2");
+  });
+
+  it("has nothing to open without a module, without materials or past the list", () => {
+    expect(materialOfModule(MATERIALS, null)).toBeNull();
+    expect(materialOfModule([], 1)).toBeNull();
+    expect(materialOfModule(MATERIALS, 3)).toBeNull();
   });
 });

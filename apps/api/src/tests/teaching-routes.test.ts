@@ -133,6 +133,8 @@ function group(id: string, teacherId: string): TeachingClassGroup {
     status: "in_progress",
     retired: false,
     classroomUrl: "https://classroom.google.com/c/ing01",
+    module: 3,
+    moduleMaterialUrl: "https://drive.google.com/drive/folders/ing-m3",
   };
 }
 
@@ -211,6 +213,18 @@ describe("the id in the URL is not proof of whose class group it is", () => {
     const response = await inject("GET", `/api/v1/teaching/class-groups/${A_GROUP}`);
 
     expect(response.json()).toMatchObject({ classroomUrl: "https://classroom.google.com/c/ing01" });
+  });
+
+  it("serves the own class group's module and its material (OOC-100)", async () => {
+    asTeacherA();
+    vi.spyOn(container.repositories.teaching, "findClassGroup").mockResolvedValue(group(A_GROUP, A_TEACHER));
+
+    const response = await inject("GET", `/api/v1/teaching/class-groups/${A_GROUP}`);
+
+    expect(response.json()).toMatchObject({
+      module: 3,
+      moduleMaterialUrl: "https://drive.google.com/drive/folders/ing-m3",
+    });
   });
 
   it("serves the own students as one name each", async () => {

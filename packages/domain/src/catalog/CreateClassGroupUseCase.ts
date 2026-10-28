@@ -1,6 +1,6 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
-import { ClassGroup, type CreateClassGroupDTO } from "./ClassGroup.js";
+import { assertModuleOfCourse, ClassGroup, type CreateClassGroupDTO } from "./ClassGroup.js";
 import { CourseNotFoundError, PeriodNotFoundError } from "./errors.js";
 import type { IAcademicPeriodRepository } from "./ports/IAcademicPeriodRepository.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
@@ -32,6 +32,8 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
 
     const period = await this.periods.findById(input.classGroup.academicPeriodId);
     if (!period || period.isDeleted) throw new PeriodNotFoundError();
+
+    assertModuleOfCourse(input.classGroup.module ?? null, course.modules);
 
     const teacherId = input.classGroup.teacherId ?? null;
     if (teacherId !== null) await assertAssignableTeacher(this.teachers, teacherId, course.language);

@@ -4,6 +4,7 @@ import { SoftDeletableModel, SoftDeletableModelPropsSchema } from "../shared/bas
 import {
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
+  ClassGroupModuleOutOfRangeError,
   ClassroomUrlInvalidError,
   InvalidDateRangeError,
   InvalidStatusTransitionError,
@@ -66,6 +67,15 @@ export function normalizeClassroomUrl(raw: string | null): string | null {
   return url.toString();
 }
 
+/**
+ * The module a class group teaches is one of its course's (OOC-100). Checked
+ * by the usecases, which hold the course: the class group alone does not know
+ * how many modules there are. Null — no module set — always passes.
+ */
+export function assertModuleOfCourse(module: number | null, courseModules: number): void {
+  if (module !== null && module > courseModules) throw new ClassGroupModuleOutOfRangeError();
+}
+
 export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
@@ -80,6 +90,14 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   legacyTeacherName: z.string(),
   /** Null until somebody pastes it. Not re-checked here: a row read back never throws. */
   classroomUrl: z.string().nullable(),
+  /**
+   * Which of the course's modules this class group teaches, 1-based (OOC-100)
+   * — what picks the module material its teacher opens. Null on every class
+   * group written before the column, and on one nobody set yet. The upper
+   * bound is the course's module count, checked by the usecases that hold the
+   * course; a row read back never throws.
+   */
+  module: z.number().int().positive().nullable(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.coerce.date().nullable(),
   endsOn: z.coerce.date().nullable(),
@@ -97,6 +115,7 @@ export const CreateClassGroupSchema = z.object({
   academicPeriodId: z.string().uuid(),
   teacherId: z.string().uuid().nullable().optional(),
   classroomUrl: z.string().nullable().optional(),
+  module: z.number().int().positive().nullable().optional(),
   slots: z.array(WeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: optionalDate,
@@ -119,6 +138,7 @@ export class ClassGroup extends SoftDeletableModel {
   public teacherId: string | null;
   public legacyTeacherName: string;
   public classroomUrl: string | null;
+  public module: number | null;
   public slots: WeeklySlot[];
   public startsOn: Date | null;
   public endsOn: Date | null;
@@ -138,6 +158,7 @@ export class ClassGroup extends SoftDeletableModel {
     this.teacherId = props.teacherId;
     this.legacyTeacherName = props.legacyTeacherName;
     this.classroomUrl = props.classroomUrl;
+    this.module = props.module;
     this.slots = props.slots;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
@@ -163,6 +184,7 @@ export class ClassGroup extends SoftDeletableModel {
         teacherId: valid.teacherId ?? null,
         legacyTeacherName: "",
         classroomUrl: normalizeClassroomUrl(valid.classroomUrl ?? null),
+        module: valid.module ?? null,
         startsOn: valid.startsOn ?? null,
         endsOn: valid.endsOn ?? null,
         enrollmentOpensAt: valid.enrollmentOpensAt ?? null,
@@ -177,7 +199,7 @@ export class ClassGroup extends SoftDeletableModel {
   }
 
   /**
-   * Period duplication (OOC-35): same course, schedule, teacher and capacity;
+   * Period duplication (OOC-35): same course, module, schedule, teacher and capacity;
    * no dates, no window, no seats, no Classroom link, a draft — and a pointer
    * back. Nothing that belongs to the old period's students comes along: their
    * Classroom is not the new group's (OOC-98). The copy is a new class group,
@@ -194,6 +216,7 @@ export class ClassGroup extends SoftDeletableModel {
         teacherId: source.teacherId,
         legacyTeacherName: source.legacyTeacherName,
         classroomUrl: null,
+        module: source.module,
         slots: source.slots,
         startsOn: null,
         endsOn: null,
@@ -234,6 +257,11 @@ export class ClassGroup extends SoftDeletableModel {
         this.classroomUrl = next;
         changed.push("classroomUrl");
       }
+    }
+
+    if (valid.module !== undefined && valid.module !== this.module) {
+      this.module = valid.module;
+      changed.push("module");
     }
 
     if (valid.capacity !== undefined && valid.capacity !== this.capacity) {

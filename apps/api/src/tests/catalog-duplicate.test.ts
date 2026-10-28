@@ -61,6 +61,7 @@ beforeEach(async () => {
       teacherId: TEACHER_ID,
       legacyTeacherName: "",
       classroomUrl: "https://classroom.google.com/c/running",
+      module: 2,
       slots: SLOTS,
       startsOn: new Date("2026-08-03T05:00:00Z"),
       endsOn: new Date("2026-10-31T05:00:00Z"),
@@ -114,6 +115,9 @@ describe("DuplicateClassGroupsUseCase", () => {
     // Same teacher in the new period (CLAUDE.md §1); nobody stays nobody.
     expect(bySource.get(running.id)?.teacherId).toBe(TEACHER_ID);
     expect(bySource.get(draft.id)?.teacherId).toBeNull();
+    // Same module too (OOC-100): the copy is the same offer, next period.
+    expect(bySource.get(running.id)?.module).toBe(2);
+    expect(bySource.get(draft.id)?.module).toBeNull();
     expect(bySource.size).toBe(2);
   });
 
