@@ -95,6 +95,23 @@ export const academicPeriods = pgTable("academic_periods", {
   ...softDeletable(),
 });
 
+// The languages the catalog is organized by (OOC-128). Before it, a course's
+// language was free text and the catalog grouped by the spelling, so "INGLES"
+// next to "Inglés" opened a second English. `key` is the name compared without
+// case, accents or stray spaces (languageKey in @ooc/domain) — one live
+// language per key. Retired, never deleted: a course that ran under a language
+// keeps pointing at it.
+export const languages = pgTable(
+  "languages",
+  {
+    id: uuidPk(),
+    name: text("name").notNull(),
+    key: text("key").notNull(),
+    ...softDeletable(),
+  },
+  (table) => [uniqueIndex("languages_key_live_uidx").on(table.key).where(sql`${table.deletedAt} is null`)],
+);
+
 // Each language track (Kids, Básico, Intermediário/Avançado...) is its own
 // course, not a variant of plan within a single "Inglês" course — min_age
 // is validated per course (docs/ROADMAP.md Sessão 21) and tracks have
@@ -104,7 +121,11 @@ export const courses = pgTable(
   {
     id: uuidPk(),
     name: text("name").notNull(),
+    // The language's name, kept equal to languages.name by the API while the
+    // screens and queries that read the text move to language_id (OOC-128,
+    // expand/contract §7). Write both or neither.
     language: text("language").notNull(),
+    languageId: uuid("language_id").references(() => languages.id, { onDelete: "restrict" }),
     minAge: integer("min_age").notNull(),
     // Catalog label ("A1", "Kids", "Básico a Avanzado") — data, not an enum
     // (apps/app/src/lib/enrollment/types.ts CatalogCourse.level). Default ''
@@ -463,7 +484,9 @@ export const teacherLanguages = pgTable(
     teacherId: uuid("teacher_id")
       .notNull()
       .references(() => teachers.id, { onDelete: "restrict" }),
+    // Same pairing as courses.language/language_id (OOC-128).
     language: text("language").notNull(),
+    languageId: uuid("language_id").references(() => languages.id, { onDelete: "restrict" }),
     ...timestamps(),
   },
   (table) => [uniqueIndex("teacher_languages_teacher_id_language_uidx").on(table.teacherId, table.language)],

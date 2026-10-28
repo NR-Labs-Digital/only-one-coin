@@ -7,6 +7,7 @@ export interface CourseListItem {
   id: string;
   name: string;
   language: string;
+  languageId: string | null;
   level: string;
   summary: string;
   minAge: number;
@@ -72,6 +73,7 @@ export function toCourseListItem(row: typeof courses.$inferSelect, counts: Cours
     id: row.id,
     name: row.name,
     language: row.language,
+    languageId: row.languageId,
     level: row.level,
     summary: row.summary,
     minAge: row.minAge,

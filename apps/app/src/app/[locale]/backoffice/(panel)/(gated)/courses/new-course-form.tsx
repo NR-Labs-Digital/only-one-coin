@@ -57,7 +57,7 @@ export function NewCourseForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
 
-  const identityReady = name.trim() !== '' && level.trim() !== '' && language.trim() !== ''
+  const identityReady = name.trim() !== '' && level.trim() !== '' && language !== ''
   // Every module carries its material link (OOC-94); the API refuses a course
   // short of one, so the form says which field is missing first.
   const ready = identityReady && moduleMaterialsReady(draftOptions)
@@ -68,7 +68,7 @@ export function NewCourseForm({
     const { active: _active, ...options } = draftOptions
     const result = await catalogWrite('/courses', 'POST', {
       name: name.trim(),
-      language: language.trim(),
+      languageId: language,
       level: level.trim(),
       landingKey,
       ...options,
@@ -89,22 +89,22 @@ export function NewCourseForm({
       <AutoGrid min="15rem" gap="gap-3">
         <label className="flex flex-col gap-1">
           <span className={labelClass}>{t('courses.field_language')}</span>
-          {/* A plain input, not a datalist: the datalist arrow showed on some
-              browsers and not on others (OOC-106). Language is free text and
-              courses group by its spelling: the API writes a language already
-              in use the way it is already spelled ("INGLES" → "Inglés"). */}
-          <input
+          {/* Picked from the list (OOC-128), never typed: free text is how
+              "INGLES" ended up next to "Inglés". A language not on the list
+              is opened first, on the Idiomas tab. */}
+          <select
             value={language}
             onChange={(event) => setLanguage(event.target.value)}
             className={fieldClass}
-          />
-          <span className="text-xs text-muted-foreground">
-            {languages.length > 0
-              ? t('courses.field_language_hint', {
-                  languages: languages.map((item) => item.name).join(', '),
-                })
-              : t('courses.field_language_hint_empty')}
-          </span>
+          >
+            <option value="">{t('courses.field_language_pick')}</option>
+            {languages.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">{t('courses.field_language_hint_list')}</span>
         </label>
 
         <label className="flex flex-col gap-1">

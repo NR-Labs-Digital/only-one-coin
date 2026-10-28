@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listCatalogCourses } from '@/lib/backoffice/catalog'
+import { listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { listTeachers, parseTeacherDirectoryQuery, toLanguage } from '@/lib/backoffice/teachers'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
@@ -47,11 +47,11 @@ export default async function TeachersPage({
   }
 
   const query = parseTeacherDirectoryQuery(await searchParams)
-  const [directory, courses] = await Promise.all([listTeachers(query), listCatalogCourses()])
+  const [directory, languageList] = await Promise.all([listTeachers(query), listCatalogLanguages()])
 
   /* API down or erroring. An honest failure screen, never an empty roster —
      "no teachers" and "could not load" are different facts. */
-  if (!directory || !courses) {
+  if (!directory || !languageList) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('teachers.title')} />
@@ -64,12 +64,10 @@ export default async function TeachersPage({
     )
   }
 
-  /* The languages a teacher may be cleared for are the catalog's, not a list of
-     their own: a new language is a course row, never a code branch
+  /* The languages a teacher may be cleared for are the language list's
+     (OOC-128): a new language is a row there, never a code branch
      (CLAUDE.md §1). */
-  const languages = [...new Set(courses.map((course) => course.language.name))]
-    .sort((a, b) => a.localeCompare(b))
-    .map(toLanguage)
+  const languages = languageList.map((language) => toLanguage(language.name))
 
   return (
     <div className="flex flex-col gap-5">

@@ -2,6 +2,13 @@ import {
   Course,
   CourseNotFoundError,
   CreateCourseUseCase,
+  CreateLanguageUseCase,
+  Language,
+  LanguageExistsError,
+  LanguageInUseError,
+  LanguageNotFoundError,
+  RenameLanguageUseCase,
+  RetireLanguageUseCase,
   LandingKeyTakenError,
   ModuleMaterialInvalidError,
   ModuleMaterialsIncompleteError,
@@ -10,7 +17,7 @@ import {
 } from "@ooc/domain";
 import { ZodError } from "zod";
 import { beforeEach, describe, expect, it } from "vitest";
-import { FakeAuditLogRepository, FakeCourseRepository } from "./fakes/catalog.js";
+import { FakeAuditLogRepository, FakeCourseRepository, FakeLanguageRepository } from "./fakes/catalog.js";
 
 /**
  * Opening and changing a course (OOC-36). Pure domain — fakes, no database.
@@ -42,16 +49,24 @@ const A_COURSE: CreateCourseDTO = {
 };
 
 let courses: FakeCourseRepository;
+let languages: FakeLanguageRepository;
 let auditLog: FakeAuditLogRepository;
+let english: Language;
 
-beforeEach(() => {
+beforeEach(async () => {
   courses = new FakeCourseRepository();
+  languages = new FakeLanguageRepository();
   auditLog = new FakeAuditLogRepository();
+  english = Language.create("Inglés");
+  await languages.create(english);
 });
+
+/** What the create route hands the usecase: the language as an id (OOC-128). */
+const opening = (extra: Partial<CreateCourseDTO> = {}) => ({ ...A_COURSE, ...extra, languageId: english.id });
 
 describe("CreateCourseUseCase", () => {
   it("creates the course and audits it", async () => {
-    const created = await new CreateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, course: A_COURSE });
+    const created = await new CreateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, course: opening() });
 
     expect(created.name).toBe("Inglés Básico");
     expect(created.deletedAt).toBeNull();
@@ -75,7 +90,7 @@ describe("UpdateCourseUseCase", () => {
   it("applies the patch and audits the changed fields only", async () => {
     const course = await courses.create(Course.create(A_COURSE));
 
-    const updated = await new UpdateCourseUseCase(courses, auditLog).run({
+    const updated = await new UpdateCourseUseCase(courses, languages, auditLog).run({
       actorId: ACTOR,
       id: course.id,
       patch: { minAge: 15, modules: 4 },
@@ -94,94 +109,109 @@ describe("UpdateCourseUseCase", () => {
   it("writes nothing when nothing changed", async () => {
     const course = await courses.create(Course.create(A_COURSE));
 
-    await new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: course.id, patch: { modules: 4 } });
+    await new UpdateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, id: course.id, patch: { modules: 4 } });
 
     expect(auditLog.appended).toEqual([]);
   });
 
   it("answers 404 for a course not on file", async () => {
     await expect(
-      new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: "018f2b5c-0000-7000-8000-0000000000ff", patch: { minAge: 15 } }),
+      new UpdateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, id: "018f2b5c-0000-7000-8000-0000000000ff", patch: { minAge: 15 } }),
     ).rejects.toBeInstanceOf(CourseNotFoundError);
   });
 });
 
 /**
- * The language is free text and the catalog groups by its spelling, so
- * "INGLES" next to "Inglés" opened a second English on the courses screen and
- * in the checkout. A language already in use is written the way it already is.
+ * The language is picked from the list (OOC-128): a course carries the
+ * Language's id and, as text, the Language's own name — never what somebody
+ * typed, which is how "INGLES" ended up next to "Inglés".
  */
-describe("language spelling", () => {
-  it("opens a course on the spelling already in use", async () => {
-    await courses.create(Course.create(A_COURSE));
+describe("course language", () => {
+  it("opens a course in the language picked, under its name", async () => {
+    // A caller that still sends the text gets the record's name anyway.
+    const typed = { ...opening(), language: " INGLES " };
+    const created = await new CreateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, course: typed });
 
-    const kids = await new CreateCourseUseCase(courses, auditLog).run({
-      actorId: ACTOR,
-      course: { ...A_COURSE, name: "INGLES KIDS", language: " INGLES " },
-    });
-
-    expect(kids.language).toBe("Inglés");
-  });
-
-  it("takes the spelling most courses use", async () => {
-    await courses.create(Course.create({ ...A_COURSE, language: "FRANCÉS" }));
-    await courses.create(Course.create({ ...A_COURSE, language: "Francés" }));
-    await courses.create(Course.create({ ...A_COURSE, language: "Francés" }));
-
-    const created = await new CreateCourseUseCase(courses, auditLog).run({
-      actorId: ACTOR,
-      course: { ...A_COURSE, language: "frances" },
-    });
-
-    expect(created.language).toBe("Francés");
-  });
-
-  it("ignores retired courses", async () => {
-    const retired = Course.create({ ...A_COURSE, language: "INGLES" });
-    retired.softDelete();
-    await courses.create(retired);
-
-    const created = await new CreateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, course: A_COURSE });
-
+    expect(created.languageId).toBe(english.id);
     expect(created.language).toBe("Inglés");
   });
 
-  it("keeps a new language as typed", async () => {
-    await courses.create(Course.create(A_COURSE));
+  it("refuses a language that is not on the list, or retired", async () => {
+    const retired = Language.create("Klingon");
+    retired.softDelete();
+    await languages.create(retired);
 
-    const created = await new CreateCourseUseCase(courses, auditLog).run({
-      actorId: ACTOR,
-      course: { ...A_COURSE, language: "Quechua" },
-    });
-
-    expect(created.language).toBe("Quechua");
+    for (const languageId of [retired.id, "018f2b5c-0000-7000-8000-0000000000aa"]) {
+      await expect(
+        new CreateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, course: { ...opening(), languageId } }),
+      ).rejects.toBeInstanceOf(LanguageNotFoundError);
+    }
+    expect(courses.rows.size).toBe(0);
   });
 
-  it("moves a course into a language on the spelling already in use", async () => {
-    await courses.create(Course.create(A_COURSE));
-    const italian = await courses.create(Course.create({ ...A_COURSE, language: "Italiano" }));
+  it("moves a course to another language by id", async () => {
+    const french = Language.create("Francés");
+    await languages.create(french);
+    const course = await courses.create(Course.create({ ...A_COURSE, languageId: english.id }));
 
-    const updated = await new UpdateCourseUseCase(courses, auditLog).run({
+    const updated = await new UpdateCourseUseCase(courses, languages, auditLog).run({
       actorId: ACTOR,
-      id: italian.id,
+      id: course.id,
+      patch: { languageId: french.id },
+    });
+
+    expect(updated.languageId).toBe(french.id);
+    expect(updated.language).toBe("Francés");
+    expect(auditLog.appended.at(-1)?.metadata).toEqual({ fields: ["language", "languageId"] });
+  });
+
+  it("ignores a language typed as text", async () => {
+    const course = await courses.create(Course.create({ ...A_COURSE, languageId: english.id }));
+
+    await new UpdateCourseUseCase(courses, languages, auditLog).run({
+      actorId: ACTOR,
+      id: course.id,
       patch: { language: "INGLES" },
     });
 
-    expect(updated.language).toBe("Inglés");
+    expect(courses.rows.get(course.id)?.language).toBe("Inglés");
+    expect(auditLog.appended).toEqual([]);
+  });
+});
+
+describe("language list", () => {
+  it("refuses a second language with the same name in other capitals or accents", async () => {
+    await expect(
+      new CreateLanguageUseCase(languages, auditLog).run({ actorId: ACTOR, name: "INGLES" }),
+    ).rejects.toBeInstanceOf(LanguageExistsError);
   });
 
-  it("lets a course correct the spelling of the language it is in", async () => {
-    const kids = await courses.create(Course.create({ ...A_COURSE, language: "INGLES" }));
-    await courses.create(Course.create({ ...A_COURSE, language: "INGLES" }));
+  it("creates and renames a language, auditing both", async () => {
+    const quechua = await new CreateLanguageUseCase(languages, auditLog).run({ actorId: ACTOR, name: "  quechua  " });
+    const renamed = await new RenameLanguageUseCase(languages, auditLog).run({ actorId: ACTOR, id: quechua.id, name: "Quechua" });
 
-    const updated = await new UpdateCourseUseCase(courses, auditLog).run({
-      actorId: ACTOR,
-      id: kids.id,
-      patch: { language: "Inglés" },
-    });
+    expect(renamed.name).toBe("Quechua");
+    expect(auditLog.appended.map((entry) => entry.action)).toEqual(["catalog.language.created", "catalog.language.renamed"]);
+    expect(auditLog.appended[1]?.metadata).toEqual({ from: "quechua", to: "Quechua" });
+  });
 
-    expect(updated.language).toBe("Inglés");
-    expect(auditLog.appended.at(-1)?.metadata).toEqual({ fields: ["language"] });
+  it("refuses to retire a language live courses are still filed under", async () => {
+    languages.liveCourses.set(english.id, 2);
+
+    await expect(
+      new RetireLanguageUseCase(languages, auditLog).run({ actorId: ACTOR, id: english.id }),
+    ).rejects.toBeInstanceOf(LanguageInUseError);
+    expect(english.isDeleted).toBe(false);
+  });
+
+  it("retires an unused language and says how many teachers let go of it", async () => {
+    languages.released = 3;
+
+    const result = await new RetireLanguageUseCase(languages, auditLog).run({ actorId: ACTOR, id: english.id });
+
+    expect(result).toEqual({ teachersReleased: 3 });
+    expect(english.isDeleted).toBe(true);
+    expect(auditLog.appended.at(-1)).toMatchObject({ action: "catalog.language.retired", metadata: { teachersReleased: 3 } });
   });
 });
 
@@ -218,7 +248,7 @@ describe("module materials", () => {
   const legacy = () => courses.create(new Course({ ...Course.create(A_COURSE), moduleMaterials: [] }));
   const full = () => courses.create(Course.create(A_COURSE));
   const update = (id: string, patch: Parameters<UpdateCourseUseCase["run"]>[0]["patch"]) =>
-    new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id, patch });
+    new UpdateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, id, patch });
 
   it("lets a course without materials change another option", async () => {
     const course = await legacy();
@@ -292,9 +322,9 @@ describe("landing key", () => {
     await courses.create(Course.create({ ...A_COURSE, landingKey: "english" }));
 
     await expect(
-      new CreateCourseUseCase(courses, auditLog).run({
+      new CreateCourseUseCase(courses, languages, auditLog).run({
         actorId: ACTOR,
-        course: { ...A_COURSE, name: "Inglés Básico 2", landingKey: "english" },
+        course: opening({ name: "Inglés Básico 2", landingKey: "english" }),
       }),
     ).rejects.toBeInstanceOf(LandingKeyTakenError);
     expect(auditLog.appended).toEqual([]);
@@ -304,9 +334,9 @@ describe("landing key", () => {
     const retired = await courses.create(Course.create({ ...A_COURSE, landingKey: "english" }));
     retired.softDelete();
 
-    const created = await new CreateCourseUseCase(courses, auditLog).run({
+    const created = await new CreateCourseUseCase(courses, languages, auditLog).run({
       actorId: ACTOR,
-      course: { ...A_COURSE, landingKey: "english" },
+      course: opening({ landingKey: "english" }),
     });
 
     expect(created.landingKey).toBe("english");
@@ -317,13 +347,13 @@ describe("landing key", () => {
     const other = await courses.create(Course.create({ ...A_COURSE, name: "Inglés Kids" }));
 
     await expect(
-      new UpdateCourseUseCase(courses, auditLog).run({ actorId: ACTOR, id: other.id, patch: { landingKey: "english" } }),
+      new UpdateCourseUseCase(courses, languages, auditLog).run({ actorId: ACTOR, id: other.id, patch: { landingKey: "english" } }),
     ).rejects.toBeInstanceOf(LandingKeyTakenError);
   });
 
   it("links, relinks and unlinks a course, auditing the field", async () => {
     const course = await courses.create(Course.create(A_COURSE));
-    const update = new UpdateCourseUseCase(courses, auditLog);
+    const update = new UpdateCourseUseCase(courses, languages, auditLog);
 
     await update.run({ actorId: ACTOR, id: course.id, patch: { landingKey: "english-kids" } });
     // Saving the key the course already holds is not a conflict with itself.

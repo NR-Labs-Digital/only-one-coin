@@ -1,6 +1,6 @@
 import { Course, LandingKeyTakenError, type CertificateRule, type ICourseRepository, type LandingCourseKey } from "@ooc/domain";
 import { courses } from "@ooc/db";
-import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 
@@ -19,6 +19,7 @@ export function courseFromRow(row: CourseRow): Course {
     id: row.id,
     name: row.name,
     language: row.language,
+    languageId: row.languageId,
     level: row.level,
     summary: row.summary,
     minAge: row.minAge,
@@ -45,6 +46,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
         id: course.id,
         name: course.name,
         language: course.language,
+        languageId: course.languageId,
         level: course.level,
         summary: course.summary,
         minAge: course.minAge,
@@ -76,16 +78,6 @@ export class DrizzleCourseRepository implements ICourseRepository {
     return row ? courseFromRow(row) : null;
   }
 
-  async listLanguageSpellings(): Promise<string[]> {
-    const rows = await this.db
-      .select({ language: courses.language })
-      .from(courses)
-      .where(isNull(courses.deletedAt))
-      .groupBy(courses.language)
-      .orderBy(desc(count()), asc(courses.language));
-    return rows.map((row) => row.language);
-  }
-
   async update(course: Course): Promise<Course> {
     // deleted_at is not written here: leaving the catalog is
     // RetireCatalogEntryUseCase's job, and an edit must not undo it.
@@ -94,6 +86,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
       .set({
         name: course.name,
         language: course.language,
+        languageId: course.languageId,
         level: course.level,
         summary: course.summary,
         minAge: course.minAge,

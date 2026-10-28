@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
+import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { DrizzleStaffInviteRepository } from "@/infra/identity/DrizzleStaffInviteRepository.js";
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { ListInvitableTeachersQuery } from "./ListInvitableTeachersQuery.js";
@@ -67,6 +68,7 @@ afterAll(async () => {
 async function rolledBack(fn: (tx: Db) => Promise<void>): Promise<void> {
   try {
     await db.transaction(async (tx: Tx) => {
+      await seedLanguages(tx, ["Italiano (prueba)"]);
       await tx.execute(
         sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
             values (${ADMIN}, 'Admin Vínculo', 'ooc79.admin@test.local', true, 'admin', now(), now()),

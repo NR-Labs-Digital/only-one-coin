@@ -14,6 +14,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
+import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { ClassGroupRosterQuery } from "@/infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
@@ -154,6 +155,7 @@ async function seeded(fn: (tx: Db) => Promise<void>): Promise<void> {
     await db.transaction(async (raw: Tx) => {
       const tx = raw as unknown as Db;
       const now = Date.now();
+      await seedLanguages(tx, ["Lengua de prueba"]);
       await tx.execute(
         sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
             values (${A_ACCOUNT}, 'Ana Docente', 'ooc82.a@test.local', true, 'teacher', now(), now()),

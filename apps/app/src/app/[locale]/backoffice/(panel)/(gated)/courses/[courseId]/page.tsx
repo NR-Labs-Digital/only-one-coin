@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { getCatalogCourse, listCatalogCourses } from '@/lib/backoffice/catalog'
+import { getCatalogCourse, listCatalogCourses, listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canBrowseCatalog,
@@ -51,11 +51,15 @@ export default async function CourseDetailPage({
   const staff = await getStaffSession()
   if (!canBrowseCatalog(staff.role)) notFound()
 
-  const [detail, courses] = await Promise.all([getCatalogCourse(courseId), listCatalogCourses()])
+  const [detail, courses, languageList] = await Promise.all([
+    getCatalogCourse(courseId),
+    listCatalogCourses(),
+    listCatalogLanguages(),
+  ])
   if (!detail) notFound()
   const { course, plans } = detail
   const catalog = courses ?? [course]
-  const languages = [...new Map(catalog.map((row) => [row.language.id, row.language])).values()]
+  const languages = languageList ?? []
   const canConfigure = canConfigureCourse(staff.role)
   const canRetire = canRetireCatalogEntry(staff.role)
   const tabs = TABS.filter((item) => item !== 'settings' || canConfigure || canRetire)

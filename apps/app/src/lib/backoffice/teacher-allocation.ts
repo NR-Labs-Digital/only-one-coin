@@ -2,7 +2,7 @@ import { toMinutes } from './availability'
 import type { TeacherOption, WeeklySlotItem } from './types'
 
 /** Teacher languages and `courses.language` are the same free text — the API compares them the same way. */
-export function languageKey(text: string): string {
+function languageKey(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
 }
 

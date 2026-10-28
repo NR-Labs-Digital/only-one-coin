@@ -5,41 +5,24 @@ import type {
   ClassGroupRoster,
   CourseDetail,
   CourseRow,
+  LanguageItem,
   TeacherOption,
   WaitlistItem,
 } from './types'
-import { languageKey } from './teacher-allocation'
 
-/** The API's course item; `language` is a plain name there (no languages table). */
+/** The API's course item; `language` is the Language's name, `languageId` its record (OOC-128). */
 interface ApiCourse extends Omit<CourseRow, 'language'> {
   language: string
+  languageId: string | null
 }
 
 /**
- * `courses.language` is catalog text ("Inglés"), not a code. Its id is the
- * compared key (no case, accent or stray space), so "INGLES" and "Inglés" can
- * never open two groups on the screen; the name is the spelling most courses
- * of that language use — the API's own rule for writing it.
+ * The course's language as the screens use it: the Language record's id and
+ * name. A course nobody filed yet (no record) carries an empty id — the
+ * course form then asks for one.
  */
-function toCourseRow(course: ApiCourse, spellings?: Map<string, string>): CourseRow {
-  const id = languageKey(course.language)
-  return { ...course, language: { id, name: spellings?.get(id) ?? course.language } }
-}
-
-function catalogSpellings(courses: ApiCourse[]): Map<string, string> {
-  const counts = new Map<string, Map<string, number>>()
-  for (const course of courses) {
-    const key = languageKey(course.language)
-    const byKey = counts.get(key) ?? new Map<string, number>()
-    byKey.set(course.language, (byKey.get(course.language) ?? 0) + (course.active ? 1 : 0))
-    counts.set(key, byKey)
-  }
-  return new Map(
-    [...counts].map(([key, byKey]) => [
-      key,
-      [...byKey].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0],
-    ]),
-  )
+function toCourseRow({ languageId, ...course }: ApiCourse): CourseRow {
+  return { ...course, language: { id: languageId ?? '', name: course.language } }
 }
 
 /**
@@ -51,8 +34,7 @@ export async function listCatalogCourses(): Promise<CourseRow[] | null> {
     const response = await apiFetch('/api/v1/catalog/courses')
     if (!response.ok) return null
     const body = (await response.json()) as { items: ApiCourse[] }
-    const spellings = catalogSpellings(body.items)
-    return body.items.map((course) => toCourseRow(course, spellings))
+    return body.items.map(toCourseRow)
   } catch {
     return null
   }
@@ -64,6 +46,18 @@ export async function getCatalogCourse(id: string): Promise<CourseDetail | null>
     if (!response.ok) return null
     const body = (await response.json()) as { course: ApiCourse; plans: CourseDetail['plans'] }
     return { course: toCourseRow(body.course), plans: body.plans }
+  } catch {
+    return null
+  }
+}
+
+/** The live languages, by name (OOC-128). `null` = the API failed. */
+export async function listCatalogLanguages(): Promise<LanguageItem[] | null> {
+  try {
+    const response = await apiFetch('/api/v1/catalog/languages')
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: LanguageItem[] }
+    return body.items
   } catch {
     return null
   }

@@ -1,10 +1,10 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
-import { listCatalogCourses } from '@/lib/backoffice/catalog'
+import { listCatalogCourses, listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canBrowseCatalog, canCreateCourse } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { SectionTabs } from '@/components/backoffice/section-tabs'
+import { AcademicTabs } from '@/components/backoffice/academic-tabs'
 import { CoursesView } from './courses-view'
 
 /**
@@ -28,17 +28,12 @@ export default async function CoursesPage({
 
   const staff = await getStaffSession()
   if (!canBrowseCatalog(staff.role)) notFound()
-  const rows = await listCatalogCourses()
+  const [rows, languages] = await Promise.all([listCatalogCourses(), listCatalogLanguages()])
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('nav.academic')} />
-      <SectionTabs
-        tabs={[
-          { href: '/backoffice/class-groups', label: t('class_groups.title') },
-          { href: '/backoffice/courses', label: t('courses.title') },
-        ]}
-      />
+      <AcademicTabs />
       {rows === null ? (
         <Card className="p-4">
           <EmptyState
@@ -48,7 +43,7 @@ export default async function CoursesPage({
           />
         </Card>
       ) : (
-        <CoursesView rows={rows} canCreate={canCreateCourse(staff.role)} />
+        <CoursesView rows={rows} languages={languages ?? []} canCreate={canCreateCourse(staff.role)} />
       )}
     </div>
   )

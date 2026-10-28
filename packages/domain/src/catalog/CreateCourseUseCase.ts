@@ -1,13 +1,14 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import { Course, type CreateCourseDTO } from "./Course.js";
-import { catalogSpelling } from "./courseLanguage.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
-import { LandingKeyTakenError } from "./errors.js";
+import { LandingKeyTakenError, LanguageNotFoundError } from "./errors.js";
+import type { ILanguageRepository } from "./ports/ILanguageRepository.js";
 
 export interface CreateCourseInput {
   actorId: string;
-  course: CreateCourseDTO;
+  /** The language comes as a Language id; its name is filled in here (OOC-128). */
+  course: Omit<CreateCourseDTO, "language" | "languageId"> & { languageId: string };
 }
 
 /**
@@ -18,14 +19,17 @@ export interface CreateCourseInput {
 export class CreateCourseUseCase extends BaseUseCase<CreateCourseInput, Course> {
   constructor(
     private readonly courses: ICourseRepository,
+    private readonly languages: ILanguageRepository,
     private readonly auditLog: IAuditLogRepository,
   ) {
     super();
   }
 
   async run(input: CreateCourseInput): Promise<Course> {
-    const course = Course.create(input.course);
-    course.language = catalogSpelling(course.language, await this.courses.listLanguageSpellings());
+    const language = await this.languages.findById(input.course.languageId);
+    if (!language || language.isDeleted) throw new LanguageNotFoundError();
+
+    const course = Course.create({ ...input.course, language: language.name });
     if (course.landingKey && (await this.courses.findLiveByLandingKey(course.landingKey))) {
       throw new LandingKeyTakenError();
     }

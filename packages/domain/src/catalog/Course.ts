@@ -70,6 +70,8 @@ function sameList(a: readonly string[], b: readonly string[]): boolean {
 export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
   name: z.string().trim().min(1),
   language: z.string().trim().min(1),
+  /** The Language record (OOC-128); `language` mirrors its name. Null only on a row nobody filed yet. */
+  languageId: z.string().uuid().nullable().default(null),
   level: z.string(),
   summary: z.string(),
   minAge: z.number().int().positive(),
@@ -117,6 +119,7 @@ export type UpdateCourseDTO = z.infer<typeof UpdateCourseSchema>;
 export class Course extends SoftDeletableModel {
   public name: string;
   public language: string;
+  public languageId: string | null;
   public level: string;
   public summary: string;
   public minAge: number;
@@ -133,6 +136,7 @@ export class Course extends SoftDeletableModel {
     super(props);
     this.name = props.name;
     this.language = props.language;
+    this.languageId = props.languageId;
     this.level = props.level;
     this.summary = props.summary;
     this.minAge = props.minAge;

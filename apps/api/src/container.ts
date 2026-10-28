@@ -53,6 +53,9 @@ import {
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
   GetCatalogEntryStateUseCase,
+  CreateLanguageUseCase,
+  RenameLanguageUseCase,
+  RetireLanguageUseCase,
   SettlePaymentUseCase,
   RequestReceiptRereadUseCase,
   RemoveStaffAccessUseCase,
@@ -176,6 +179,8 @@ import { ListOpenClassGroupsQuery } from "./infra/persistence/catalog/ListOpenCl
 import { GetPublicCatalogQuery } from "./infra/persistence/catalog/GetPublicCatalogQuery.js";
 import { DrizzleCatalogEntryRepository } from "./infra/persistence/catalog/DrizzleCatalogEntryRepository.js";
 import { DrizzleCourseRepository } from "./infra/persistence/catalog/DrizzleCourseRepository.js";
+import { DrizzleLanguageRepository } from "./infra/persistence/catalog/DrizzleLanguageRepository.js";
+import { ListLanguagesQuery } from "./infra/persistence/catalog/ListLanguagesQuery.js";
 import { DrizzlePlanRepository } from "./infra/persistence/catalog/DrizzlePlanRepository.js";
 import { ListCoursesQuery } from "./infra/persistence/catalog/ListCoursesQuery.js";
 import { GetCourseQuery } from "./infra/persistence/catalog/GetCourseQuery.js";
@@ -315,6 +320,9 @@ export interface AppUseCases {
     restore: RestoreCatalogEntryUseCase;
     getState: GetCatalogEntryStateUseCase;
     createCourse: CreateCourseUseCase;
+    createLanguage: CreateLanguageUseCase;
+    renameLanguage: RenameLanguageUseCase;
+    retireLanguage: RetireLanguageUseCase;
     updateCourse: UpdateCourseUseCase;
     createPlan: CreatePlanUseCase;
     renamePlan: RenamePlanUseCase;
@@ -348,6 +356,7 @@ export interface AppQueries {
   listOpenClassGroups: ListOpenClassGroupsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
+  listLanguages: ListLanguagesQuery;
   getCourse: GetCourseQuery;
   listPeriods: ListPeriodsQuery;
   listClassGroups: ListClassGroupsQuery;
@@ -470,6 +479,7 @@ function buildContainer(): AppContainer {
   const featureFlagOverrideRepository = new DrizzleFeatureFlagOverrideRepository(db);
   const catalogEntryRepository = new DrizzleCatalogEntryRepository(db);
   const courseRepository = new DrizzleCourseRepository(db);
+  const languageRepository = new DrizzleLanguageRepository(db);
   const planRepository = new DrizzlePlanRepository(db);
   const academicPeriodRepository = new DrizzleAcademicPeriodRepository(db);
   const classGroupRepository = new DrizzleClassGroupRepository(db);
@@ -588,8 +598,11 @@ function buildContainer(): AppContainer {
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const getCatalogEntryState = new GetCatalogEntryStateUseCase(catalogEntryRepository);
-  const createCourse = new CreateCourseUseCase(courseRepository, auditLogRepository);
-  const updateCourse = new UpdateCourseUseCase(courseRepository, auditLogRepository);
+  const createCourse = new CreateCourseUseCase(courseRepository, languageRepository, auditLogRepository);
+  const updateCourse = new UpdateCourseUseCase(courseRepository, languageRepository, auditLogRepository);
+  const createLanguage = new CreateLanguageUseCase(languageRepository, auditLogRepository);
+  const renameLanguage = new RenameLanguageUseCase(languageRepository, auditLogRepository);
+  const retireLanguage = new RetireLanguageUseCase(languageRepository, auditLogRepository);
   const createPlan = new CreatePlanUseCase(courseRepository, planRepository, auditLogRepository);
   const renamePlan = new RenamePlanUseCase(planRepository, auditLogRepository);
   const schedulePlanPrice = new SchedulePlanPriceUseCase(planRepository, auditLogRepository);
@@ -649,6 +662,7 @@ function buildContainer(): AppContainer {
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
   const getPublicCatalog = new GetPublicCatalogQuery(db);
   const listCourses = new ListCoursesQuery(db);
+  const listLanguages = new ListLanguagesQuery(db);
   const getCourse = new GetCourseQuery(db);
   const listPeriods = new ListPeriodsQuery(db);
   const listClassGroups = new ListClassGroupsQuery(db);
@@ -802,6 +816,9 @@ function buildContainer(): AppContainer {
         restore: restoreCatalogEntry,
         getState: getCatalogEntryState,
         createCourse,
+        createLanguage,
+        renameLanguage,
+        retireLanguage,
         updateCourse,
         createPlan,
         renamePlan,
@@ -834,6 +851,7 @@ function buildContainer(): AppContainer {
       listOpenClassGroups,
       getPublicCatalog,
       listCourses,
+      listLanguages,
       getCourse,
       listPeriods,
       listClassGroups,

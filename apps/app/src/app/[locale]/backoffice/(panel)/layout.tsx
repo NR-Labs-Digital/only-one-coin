@@ -144,7 +144,7 @@ export default async function BackofficePanelLayout({
              it 403 (and the pages answer 404), so the link is not drawn either. */
           key: 'class_groups' as const,
           href: '/backoffice/class-groups',
-          alsoMatches: ['/backoffice/courses'],
+          alsoMatches: ['/backoffice/courses', '/backoffice/languages'],
           label: t('nav.academic'),
           hiddenFromOthers: hidden('backoffice.academic'),
         }] : []),

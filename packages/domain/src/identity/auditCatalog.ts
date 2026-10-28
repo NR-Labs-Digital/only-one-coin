@@ -119,6 +119,9 @@ export const AUDIT_ACTIONS = {
   "catalog.plan.created": { key: "plan_created", entity: "course", subject: "plan" },
   "catalog.plan.renamed": { key: "plan_renamed", entity: "course", subject: "plan" },
   "catalog.plan_price.scheduled": { key: "plan_price_scheduled", entity: "course", subject: "plan" },
+  "catalog.language.created": { key: "language_created", entity: "platform", subject: "none" },
+  "catalog.language.renamed": { key: "language_renamed", entity: "platform", subject: "none" },
+  "catalog.language.retired": { key: "language_retired", entity: "platform", subject: "none" },
 
   "catalog.academic_period.created": { key: "period_created", entity: "academic_period", subject: "target" },
   "catalog.academic_period.updated": { key: "period_updated", entity: "academic_period", subject: "target" },
@@ -222,6 +225,7 @@ export const AUDIT_FIELDS = {
   availability: "availability",
   name: "name",
   language: "language",
+  languageId: "language",
   level: "level",
   summary: "summary",
   minAge: "min_age",

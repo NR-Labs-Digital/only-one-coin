@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { CreateCourseSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -13,11 +14,13 @@ import { IdResponseSchema } from "./CatalogSchemas.js";
 export const createCourseRoute = RouteBuilder.post("/catalog/courses")
   .docs({ tags: ["Catalog"], summary: "Create a course" })
   .roles(...CATALOG_OWNER_ROLES)
-  .body(CreateCourseSchema)
+  // The language is picked from the list by id (OOC-128); its name is the record's.
+  .body(CreateCourseSchema.omit({ language: true }).extend({ languageId: z.string().uuid() }))
   .response(201, IdResponseSchema)
   .response(400, ErrorResponseSchema)
   .response(403, ErrorResponseSchema)
   .response(409, ErrorResponseSchema)
+  .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const course = await container.useCases.catalog.createCourse.run({
       actorId: request.currentUser!.id,

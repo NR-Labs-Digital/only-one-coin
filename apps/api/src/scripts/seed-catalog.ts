@@ -2,6 +2,7 @@ import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/d
 import type { LandingCourseKey } from "@ooc/domain";
 import { eq } from "drizzle-orm";
 import { container } from "@/container.js";
+import { languageFor } from "@/infra/persistence/catalog/DrizzleLanguageRepository.js";
 
 // Real course names, levels, hours and prices — sourced from
 // apps/landing/src/i18n/courses-content.ts and ui.ts's `coursePrices`
@@ -63,11 +64,13 @@ async function main() {
       continue;
     }
 
+    const language = await languageFor(container.db, seedCourse.language);
     const [course] = await container.db
       .insert(courses)
       .values({
         name: seedCourse.name,
-        language: seedCourse.language,
+        language: language.name,
+        languageId: language.id,
         // No age floor in the landing content either — REGRAS-NEGOCIO.md §2's
         // "13 for everything else" (no kids track among these nine).
         minAge: 13,

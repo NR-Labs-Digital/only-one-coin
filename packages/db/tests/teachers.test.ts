@@ -245,6 +245,7 @@ describe("foreign keys", () => {
       "teacher_contracts_teacher_id_teachers_id_fk",
       "teacher_contracts_template_version_id_fk",
       "teacher_contracts_uploaded_by_user_id_fk",
+      "teacher_languages_language_id_languages_id_fk",
       "teacher_languages_teacher_id_teachers_id_fk",
       "teachers_user_id_user_id_fk",
     ]);

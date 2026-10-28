@@ -1,6 +1,9 @@
 import type { CourseRow } from './types'
 
-/** What only whoever may create a course may rewrite (`PATCH /catalog/courses/:id`). */
+/**
+ * What only whoever may create a course may rewrite (`PATCH /catalog/courses/:id`).
+ * `language` is the Language id picked from the list (OOC-128), sent as `languageId`.
+ */
 export type CourseIdentity = { name: string; language: string; level: string; summary: string }
 
 /** The fields the API refuses blank. The summary may go blank — the portal hides "Sobre el curso" then. */
@@ -8,13 +11,13 @@ const REQUIRED = ['name', 'language', 'level'] as const
 export type RequiredIdentityField = (typeof REQUIRED)[number]
 
 type IdentitySource = Pick<CourseRow, 'name' | 'level' | 'summary'> & {
-  language: Pick<CourseRow['language'], 'name'>
+  language: Pick<CourseRow['language'], 'id'>
 }
 
 export function identityOf(course: IdentitySource): CourseIdentity {
   return {
     name: course.name,
-    language: course.language.name,
+    language: course.language.id,
     level: course.level,
     summary: course.summary,
   }

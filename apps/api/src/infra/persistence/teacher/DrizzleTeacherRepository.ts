@@ -1,11 +1,13 @@
-import { classGroups, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
+import { classGroups, languages, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
 import {
+  LanguageNotFoundError,
   Teacher,
   TeacherAlreadyRegisteredError,
   type ITeacherRepository,
   type NationalIdType,
   type TeacherStatus,
   type WeeklySlot,
+  languageKey,
 } from "@ooc/domain";
 import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -184,9 +186,20 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
 
   private async writeLists(tx: Tx, teacher: Teacher): Promise<void> {
     if (teacher.languages.length > 0) {
-      await tx
-        .insert(teacherLanguages)
-        .values(teacher.languages.map((language) => ({ teacherId: teacher.id, language })));
+      // A teacher is cleared for languages from the list (OOC-128): each name
+      // resolves to its live record by key, and the row carries the record's
+      // own spelling. A name with no live language is refused, never invented.
+      const live = await tx
+        .select({ id: languages.id, name: languages.name, key: languages.key })
+        .from(languages)
+        .where(isNull(languages.deletedAt));
+      const byKey = new Map(live.map((language) => [language.key, language]));
+      const rows = teacher.languages.map((name) => {
+        const language = byKey.get(languageKey(name));
+        if (!language) throw new LanguageNotFoundError();
+        return { teacherId: teacher.id, language: language.name, languageId: language.id };
+      });
+      await tx.insert(teacherLanguages).values(rows);
     }
     if (teacher.availability.length > 0) {
       await tx.insert(teacherAvailability).values(

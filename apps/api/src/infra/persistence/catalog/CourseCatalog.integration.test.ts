@@ -1,12 +1,13 @@
 import * as schema from "@ooc/db";
 import { academicPeriods, classGroups, courses } from "@ooc/db";
-import { Course, LandingKeyTakenError, Plan, PlanPrice } from "@ooc/domain";
+import { Course, LandingKeyTakenError, Language, LanguageExistsError, Plan, PlanPrice } from "@ooc/domain";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleCatalogEntryRepository } from "./DrizzleCatalogEntryRepository.js";
 import { DrizzleCourseRepository } from "./DrizzleCourseRepository.js";
+import { DrizzleLanguageRepository } from "./DrizzleLanguageRepository.js";
 import { DrizzlePlanRepository } from "./DrizzlePlanRepository.js";
 import { GetCourseQuery } from "./GetCourseQuery.js";
 import { ListCoursesQuery } from "./ListCoursesQuery.js";
@@ -187,18 +188,25 @@ describe("course catalog storage", () => {
     });
   });
 
-  it("lists the spellings live courses use for their language, most used first", async () => {
+  it("renames a language over the text its courses carry, and refuses a second one with the same key (OOC-128)", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const repository = new DrizzleCourseRepository(tx);
-      const entries = new DrizzleCatalogEntryRepository(tx);
-      await repository.create(Course.create({ ...aCourse(), language: "ITALIANO (integration)" }));
-      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
-      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
-      const retired = await repository.create(Course.create({ ...aCourse(), language: "italiano (integration)" }));
-      await entries.retire("course", retired.id, new Date());
+      const languages = new DrizzleLanguageRepository(tx);
+      const language = Language.create("ITALIANO (integration)");
+      await languages.create(language);
+      const course = await new DrizzleCourseRepository(tx).create(
+        Course.create({ ...aCourse(), language: language.name, languageId: language.id }),
+      );
 
-      const spellings = (await repository.listLanguageSpellings()).filter((language) => language.endsWith("(integration)"));
-      expect(spellings).toEqual(["Italiano (integration)", "ITALIANO (integration)"]);
+      language.rename("Italiano (integration)");
+      await languages.rename(language);
+
+      expect((await new DrizzleCourseRepository(tx).findById(course.id))?.language).toBe("Italiano (integration)");
+      expect(await languages.countLiveCourses(language.id)).toBe(1);
+      await expect(
+        tx.transaction((savepoint) =>
+          new DrizzleLanguageRepository(savepoint as unknown as Db).create(Language.create("italiano  (INTEGRATION)")),
+        ),
+      ).rejects.toBeInstanceOf(LanguageExistsError);
     });
   });
 

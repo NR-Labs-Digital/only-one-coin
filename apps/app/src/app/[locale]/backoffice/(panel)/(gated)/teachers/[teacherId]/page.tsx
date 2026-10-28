@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { listCatalogCourses } from '@/lib/backoffice/catalog'
+import { listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { getTeacher, toLanguage } from '@/lib/backoffice/teachers'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
@@ -33,14 +33,13 @@ export default async function TeacherDetailPage({
   const staff = await getStaffSession()
   if (!canManageTeachers(staff.role)) notFound()
 
-  const [teacher, courses] = await Promise.all([getTeacher(teacherId), listCatalogCourses()])
+  const [teacher, languageList] = await Promise.all([getTeacher(teacherId), listCatalogLanguages()])
   if (!teacher) notFound()
 
-  /* Clearing a teacher for a language means picking from the catalog — a new
-     language is a course row, never a code branch (CLAUDE.md §1). */
-  const catalogue = [...new Set((courses ?? []).map((course) => course.language.name))]
-    .sort((a, b) => a.localeCompare(b))
-    .map(toLanguage)
+  /* Clearing a teacher for a language means picking from the language list
+     (OOC-128) — a new language is a row there, never a code branch
+     (CLAUDE.md §1). The API answers them by name. */
+  const catalogue = (languageList ?? []).map((language) => toLanguage(language.name))
 
   return (
     <div className="flex flex-col gap-5">
