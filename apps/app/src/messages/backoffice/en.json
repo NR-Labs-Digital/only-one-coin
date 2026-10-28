@@ -1209,7 +1209,6 @@
       "field_time": "Time",
       "field_capacity": "Seats",
       "create": "Create class group",
-      "field_code": "Class group code",
       "seats_left": "{count, plural, one {# left} other {# left}}",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",

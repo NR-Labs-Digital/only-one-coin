@@ -1209,7 +1209,6 @@
       "field_time": "Hora",
       "field_capacity": "Vagas",
       "create": "Criar turma",
-      "field_code": "Código da turma",
       "seats_left": "{count, plural, one {resta #} other {restam #}}",
       "expand_all": "Abrir todas",
       "collapse_all": "Fechar todas",

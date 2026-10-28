@@ -455,6 +455,7 @@ export {
   ClassGroupPropsSchema,
   ClassGroupStatusSchema,
   CLASSROOM_HOST,
+  classGroupCodeOf,
   CreateClassGroupSchema,
   UpdateClassGroupSchema,
   NEXT_CLASS_GROUP_STATUS,

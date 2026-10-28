@@ -166,7 +166,7 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         enrollmentClosesAt: null,
         seatsTaken: 0,
         capacity: 25,
-        code: "CGCAT-01",
+        code: expect.stringMatching(/^A-\d{5,}$/),
         teacherName: "Docente de prueba",
         slots: [{ weekday: "mon", startTime: "19:00", endTime: "20:30" }],
         schedule: "Lun 19:00-20:30",
@@ -197,6 +197,20 @@ describe("class group catalog", { timeout: 30_000 }, () => {
     });
   });
 
+  it("draws distinct, rising codes from the sequence", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const groups = new DrizzleClassGroupRepository(tx);
+      const [single] = await groups.nextCodes(1);
+      const batch = await groups.nextCodes(3);
+      const numbers = [single!, ...batch].map((code) => Number(code.slice(2)));
+
+      expect([single, ...batch].every((code) => /^A-\d{5,}$/.test(code!))).toBe(true);
+      expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
+      expect(new Set(numbers).size).toBe(4);
+      expect(await groups.nextCodes(0)).toEqual([]);
+    });
+  });
+
   it("keeps the schedule text in step with the slots on create and edit", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
@@ -205,13 +219,12 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         ClassGroup.create({
           courseId: C1,
           academicPeriodId: PERIOD_A,
-          code: "CGCAT-SCHEDULE",
           slots: [
             { weekday: "mon", startTime: "18:00", endTime: "19:30" },
             { weekday: "wed", startTime: "18:00", endTime: "19:30" },
           ],
           capacity: 20,
-        }),
+        }, "CGCAT-NEW"),
       );
       const [afterCreate] = await tx.select().from(classGroups).where(eq(classGroups.id, created.id));
       expect(afterCreate?.schedule).toBe("Lun/Mié 18:00-19:30");
@@ -231,11 +244,10 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         ClassGroup.create({
           courseId: C1,
           academicPeriodId: PERIOD_A,
-          code: "CGCAT-CLASSROOM",
           classroomUrl: "https://classroom.google.com/c/abc",
           slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
           capacity: 20,
-        }),
+        }, "CGCAT-NEW"),
       );
       expect((await groups.findById(created.id))?.classroomUrl).toBe("https://classroom.google.com/c/abc");
       const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });

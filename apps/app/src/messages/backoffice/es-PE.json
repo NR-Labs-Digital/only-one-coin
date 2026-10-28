@@ -1209,7 +1209,6 @@
       "field_time": "Hora",
       "field_capacity": "Vacantes",
       "create": "Crear aula",
-      "field_code": "Código de aula",
       "seats_left": "{count, plural, one {queda #} other {quedan #}}",
       "expand_all": "Desplegar todo",
       "collapse_all": "Plegar todo",
