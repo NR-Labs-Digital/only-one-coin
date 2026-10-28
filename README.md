@@ -37,11 +37,13 @@ Copie os `.env.example` de `apps/api` e `apps/landing`. Sem o `.env` da landing,
 ```bash
 pnpm seed:students                       # 300 alunos fictícios (--count=N)
 pnpm seed:enrollments                    # matrículas sobre esses alunos
+pnpm seed:load                           # carga: alunos, 3 períodos, turmas, matrículas, pagamentos e comprovantes (--profile=dev|normal|peak)
+pnpm db:reset:load                       # local: banco do zero + catálogo + seed:load — o reset do seed de carga
 pnpm seed:students -- --confirm-host=<host-do-neon>   # qualquer host não local exige nomear o destino
 pnpm seed:students -- --confirm-host=<host> --undo    # aposenta o que o seed criou (deleted_at, nunca DELETE)
 ```
 
-Idempotentes. Build de produção recusa rodar.
+Idempotentes. Build de produção recusa rodar. `seed:enrollments` e `seed:load` não têm volta (pagamento e comprovante não se apagam, `CLAUDE.md` §6): o reset é banco novo — `pnpm db:reset:load` local, branch novo no Neon.
 
 ## Documentos
 

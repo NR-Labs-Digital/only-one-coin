@@ -12,6 +12,7 @@
     "seed:catalog": "tsx --conditions=development --env-file=.env src/scripts/seed-catalog.ts",
     "seed:students": "tsx --conditions=development --env-file=.env src/scripts/seed-students.ts",
     "seed:enrollments": "tsx --conditions=development --env-file=.env src/scripts/seed-enrollments.ts",
+    "seed:load": "tsx --conditions=development --env-file=.env src/scripts/seed-load.ts",
     "seed": "pnpm run seed:admin && pnpm run seed:catalog",
     "import:legacy": "tsx --conditions=development --env-file=.env src/scripts/import-legacy-enrollments.ts",
     "storage:cors": "tsx --conditions=development --env-file=.env src/scripts/apply-bucket-cors.ts",
