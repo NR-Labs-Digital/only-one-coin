@@ -10,18 +10,21 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  * - **The class group's Classroom** — the link coordination pastes with the
  *   teacher in the backoffice (OOC-98); the Meet lives inside it, and the
  *   confirmed students open the same link from their portal. Read-only here.
- * - **Module material** — the Drive link coordination sets once per module.
- *   Which module a class group is teaching has no API yet (OOC-100), so the
- *   door only appears once there is a link to open.
+ * - **Module material** — the Drive link coordination sets once per module
+ *   on the course (OOC-94), picked by the module the class group teaches
+ *   (OOC-100). The door only appears once there is a link to open: no module
+ *   set, or a course without material, shows nothing.
  *
  * External links only, never an integration (CLAUDE.md §2), and each one is
  * checked against the Google host it claims before it becomes an `href`.
  */
 export function ClassResources({
   classroomUrl,
+  module,
   moduleMaterialsUrl,
 }: {
   classroomUrl: string | null
+  module: number | null
   moduleMaterialsUrl: string | null
 }) {
   const t = useTranslations('bo')
@@ -35,7 +38,15 @@ export function ClassResources({
       <div className="flex flex-wrap items-center gap-2">
         <ClassLinks classroomUrl={classroomUrl} />
         {materialsUrl && (
-          <ExternalButton href={materialsUrl} icon="doc" label={t('class_resources.materials')} />
+          <ExternalButton
+            href={materialsUrl}
+            icon="doc"
+            label={
+              module === null
+                ? t('class_resources.materials')
+                : t('class_resources.materials_module', { number: module })
+            }
+          />
         )}
       </div>
     </div>

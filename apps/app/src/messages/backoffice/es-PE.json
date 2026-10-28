@@ -369,6 +369,7 @@
         "modules": "Módulos",
         "module_materials": "Material de los módulos",
         "classroom_url": "Enlace del Classroom",
+        "module": "Módulo",
         "total_hours": "Horas totales",
         "certificate_rule": "Regla del certificado",
         "allows_freeze": "Permite congelar",
@@ -1201,6 +1202,10 @@
       "empty_closed_body": "Las aulas aparecen aquí cuando terminan.",
       "new_title": "Nueva aula",
       "field_course": "Curso",
+      "field_module": "Módulo",
+      "module_none": "Sin módulo definido",
+      "module_option": "Módulo {number}",
+      "module_hint": "Define qué material del curso abre el docente.",
       "field_teacher": "Docente",
       "field_period": "Período de matrícula",
       "field_start": "Inicio de clases",
@@ -2107,7 +2112,8 @@
       "landing_key_taken": "Otro curso del catálogo ya está enlazado a esa página de la web.",
       "module_materials_incomplete": "Cada módulo necesita su enlace de material.",
       "module_material_invalid": "Algún enlace no es de Google Drive o Docs.",
-      "classroom_url_invalid": "El enlace no es de Google Classroom."
+      "classroom_url_invalid": "El enlace no es de Google Classroom.",
+      "class_group_module_out_of_range": "El curso no tiene ese módulo."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2152,6 +2158,7 @@
     },
     "class_resources": {
       "materials": "Materiales",
+      "materials_module": "Material del módulo {number}",
       "title": "Accesos del aula"
     },
     "class_notices": {

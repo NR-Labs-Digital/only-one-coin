@@ -559,6 +559,11 @@ export interface ClassGroupItem {
    * same link the teacher and the confirmed students open. Null = not yet.
    */
   classroomUrl: string | null
+  /**
+   * Which of the course's modules it teaches, 1-based (OOC-100) — what picks
+   * the material its teacher opens. Null = not set yet.
+   */
+  module: number | null
   slots: WeeklySlotItem[]
   /** Null only on a draft. */
   startsOn: string | null
@@ -741,6 +746,7 @@ export type CatalogErrorKey =
   | 'module_materials_incomplete'
   | 'module_material_invalid'
   | 'classroom_url_invalid'
+  | 'class_group_module_out_of_range'
 
 export interface PlanPriceItem {
   id: string

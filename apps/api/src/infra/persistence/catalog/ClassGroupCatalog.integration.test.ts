@@ -259,6 +259,29 @@ describe("class group catalog", { timeout: 30_000 }, () => {
     });
   });
 
+  it("stores, serves and clears the module (OOC-100)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const groups = new DrizzleClassGroupRepository(tx);
+      const created = await groups.create(
+        ClassGroup.create({
+          courseId: C1,
+          academicPeriodId: PERIOD_A,
+          module: 1,
+          slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
+          capacity: 20,
+        }, "CGCAT-MOD"),
+      );
+      expect((await groups.findById(created.id))?.module).toBe(1);
+      const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });
+      expect(listed?.module).toBe(1);
+
+      created.update({ module: null });
+      await groups.update(created);
+      expect((await groups.findById(created.id))?.module).toBeNull();
+    });
+  });
+
   it("leaves a legacy schedule text alone when the class group has no slots", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);

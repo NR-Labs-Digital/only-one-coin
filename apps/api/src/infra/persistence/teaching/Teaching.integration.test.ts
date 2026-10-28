@@ -104,7 +104,14 @@ function portal(tx: Db): Portal {
   };
 }
 
-function groupRow(id: string, code: string, teacherId: string | null, status: string, retired = false) {
+function groupRow(
+  id: string,
+  code: string,
+  teacherId: string | null,
+  status: string,
+  retired = false,
+  module: number | null = null,
+) {
   const now = Date.now();
   const dated = status !== "draft";
   return {
@@ -117,6 +124,7 @@ function groupRow(id: string, code: string, teacherId: string | null, status: st
     teacherId,
     teacherName: "",
     classroomUrl: `https://classroom.google.com/c/${code}`,
+    module,
     startsOn: dated ? new Date(now - 7 * DAY) : null,
     endsOn: dated ? new Date(now + 40 * DAY) : null,
     capacity: 20,
@@ -164,13 +172,20 @@ async function seeded(fn: (tx: Db) => Promise<void>): Promise<void> {
         startsOn: new Date(now - 30 * DAY),
         endsOn: new Date(now + 60 * DAY),
       });
-      await tx.insert(courses).values({ id: COURSE, name: "Curso (teaching integration)", language: "Lengua de prueba", minAge: 12 });
+      await tx.insert(courses).values({
+        id: COURSE,
+        name: "Curso (teaching integration)",
+        language: "Lengua de prueba",
+        minAge: 12,
+        modules: 2,
+        moduleMaterials: ["https://drive.google.com/ooc100-m1", "https://drive.google.com/ooc100-m2"],
+      });
       await tx.insert(plans).values({ id: PLAN, courseId: COURSE, name: "Paquete (teaching integration)" });
       await tx.insert(planPrices).values({ id: PRICE, planId: PLAN, amountCents: 9900, validFrom: new Date(now - DAY) });
       await tx
         .insert(classGroups)
         .values([
-          groupRow(A_RUNNING, "OOC82-A1", ana.id, "in_progress"),
+          groupRow(A_RUNNING, "OOC82-A1", ana.id, "in_progress", false, 2),
           groupRow(A_FINISHED, "OOC82-A2", ana.id, "finished"),
           groupRow(A_CLOSED, "OOC82-A3", ana.id, "closed"),
           groupRow(A_DRAFT, "OOC82-A4", ana.id, "draft"),
@@ -234,6 +249,22 @@ describe("docente portal scope (OOC-82)", () => {
       });
       const listed = await list.run({ userId: A_ACCOUNT });
       expect(listed.find((group) => group.id === A_RUNNING)?.classroomUrl).toBe("https://classroom.google.com/c/OOC82-A1");
+    });
+  });
+
+  it("reads the material of the module the class group teaches (OOC-100)", async () => {
+    await seeded(async (tx) => {
+      const { get } = portal(tx);
+
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({
+        module: 2,
+        moduleMaterialUrl: "https://drive.google.com/ooc100-m2",
+      });
+      // No module set: nothing to open, not the first module's material.
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_FINISHED })).resolves.toMatchObject({
+        module: null,
+        moduleMaterialUrl: null,
+      });
     });
   });
 

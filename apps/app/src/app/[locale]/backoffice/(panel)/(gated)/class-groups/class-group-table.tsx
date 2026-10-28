@@ -68,7 +68,11 @@ export function ClassGroupTableRow({ row }: { row: ClassGroupItem }) {
         <Link href={href} className="font-semibold text-ink transition hover:text-brand-blue">
           {row.courseName}
         </Link>
-        <span className="block text-xs tabular-nums text-muted-foreground">{row.code}</span>
+        <span className="block text-xs tabular-nums text-muted-foreground">
+          {row.module === null
+            ? row.code
+            : `${row.code} · ${t('class_groups.module_option', { number: row.module })}`}
+        </span>
       </td>
       <td className={`${tdClass} text-sm text-muted-foreground`}>
         <TeacherCell row={row} />
