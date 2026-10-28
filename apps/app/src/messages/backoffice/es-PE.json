@@ -1531,7 +1531,18 @@
       "no_price_badge": "Sin precio · fuera de venta",
       "no_price_hint": "Sin un plan con precio vigente, el curso no aparece en el formulario de matrícula, aunque tenga aulas en inscripción.",
       "no_material_badge": "Sin material",
-      "no_material_hint": "Falta el enlace de material de algún módulo. Complétalo en las opciones del curso."
+      "no_material_hint": "Falta el enlace de material de algún módulo. Complétalo en las opciones del curso.",
+      "tab_plans": "Planes",
+      "tab_history": "Historial de precios",
+      "tab_settings": "Configuración",
+      "retire_title": "Sacar del catálogo",
+      "restore_title": "Volver al catálogo",
+      "retire_body": "El curso deja de venderse: desaparece de la matrícula junto con sus planes y aulas. Nada se borra — las matrículas ya hechas siguen igual y puedes volver a activarlo cuando quieras.",
+      "restore_body": "Este curso está fuera del catálogo. Al volver, sus planes y aulas vuelven a la matrícula.",
+      "retire": "Sacar del catálogo",
+      "restore": "Volver al catálogo",
+      "confirm_retire": "¿Sacar este curso del catálogo? Deja de aparecer en la matrícula. Puedes deshacerlo después.",
+      "confirm_restore": "¿Volver a poner este curso en el catálogo?"
     },
     "plans": {
       "title": "Planes y precios",
@@ -1562,7 +1573,9 @@
       "confirm_retire": "El plan deja de ofrecerse en la matrícula. Las matrículas ya hechas mantienen su precio.",
       "confirm_restore": "El plan vuelve a ofrecerse en la matrícula, con su precio vigente.",
       "retired": "{count, plural, =0 {Plan fuera de venta.} one {Plan fuera de venta. # matrícula sigue en curso.} other {Plan fuera de venta. # matrículas siguen en curso.}}",
-      "restored": "Plan de vuelta a la venta"
+      "restored": "Plan de vuelta a la venta",
+      "history_empty_title": "Sin historial todavía",
+      "history_empty_body": "Cuando un plan cambie de precio, los precios anteriores aparecerán aquí."
     },
     "course_options": {
       "applies_forward": "Lo que cambies acá vale para las aulas que se abran después. Las que ya están corriendo mantienen la regla con la que el alumno se matriculó.",

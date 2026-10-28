@@ -288,6 +288,13 @@
       "when": 1793226823548,
       "tag": "0040_class_group_module",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793229527836,
+      "tag": "0041_course_language_spelling",
+      "breakpoints": true
     }
   ]
 }

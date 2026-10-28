@@ -8,6 +8,7 @@ import type {
   TeacherOption,
   WaitlistItem,
 } from './types'
+import { languageKey } from './teacher-allocation'
 
 /** The API's course item; `language` is a plain name there (no languages table). */
 interface ApiCourse extends Omit<CourseRow, 'language'> {
@@ -15,11 +16,30 @@ interface ApiCourse extends Omit<CourseRow, 'language'> {
 }
 
 /**
- * `courses.language` is catalog text ("Inglés"), not a code — so it is its own
- * id. The screen groups by it and the form offers the ones already in use.
+ * `courses.language` is catalog text ("Inglés"), not a code. Its id is the
+ * compared key (no case, accent or stray space), so "INGLES" and "Inglés" can
+ * never open two groups on the screen; the name is the spelling most courses
+ * of that language use — the API's own rule for writing it.
  */
-function toCourseRow(course: ApiCourse): CourseRow {
-  return { ...course, language: { id: course.language, name: course.language } }
+function toCourseRow(course: ApiCourse, spellings?: Map<string, string>): CourseRow {
+  const id = languageKey(course.language)
+  return { ...course, language: { id, name: spellings?.get(id) ?? course.language } }
+}
+
+function catalogSpellings(courses: ApiCourse[]): Map<string, string> {
+  const counts = new Map<string, Map<string, number>>()
+  for (const course of courses) {
+    const key = languageKey(course.language)
+    const byKey = counts.get(key) ?? new Map<string, number>()
+    byKey.set(course.language, (byKey.get(course.language) ?? 0) + (course.active ? 1 : 0))
+    counts.set(key, byKey)
+  }
+  return new Map(
+    [...counts].map(([key, byKey]) => [
+      key,
+      [...byKey].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0],
+    ]),
+  )
 }
 
 /**
@@ -31,7 +51,8 @@ export async function listCatalogCourses(): Promise<CourseRow[] | null> {
     const response = await apiFetch('/api/v1/catalog/courses')
     if (!response.ok) return null
     const body = (await response.json()) as { items: ApiCourse[] }
-    return body.items.map(toCourseRow)
+    const spellings = catalogSpellings(body.items)
+    return body.items.map((course) => toCourseRow(course, spellings))
   } catch {
     return null
   }

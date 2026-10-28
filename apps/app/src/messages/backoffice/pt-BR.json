@@ -1531,7 +1531,18 @@
       "no_price_badge": "Sem preço · fora da venda",
       "no_price_hint": "Sem um plano com preço vigente, o curso não aparece no formulário de matrícula, mesmo com turmas em inscrição.",
       "no_material_badge": "Sem material",
-      "no_material_hint": "Falta o link de material de algum módulo. Complete nas opções do curso."
+      "no_material_hint": "Falta o link de material de algum módulo. Complete nas opções do curso.",
+      "tab_plans": "Planos",
+      "tab_history": "Histórico de preços",
+      "tab_settings": "Configuração",
+      "retire_title": "Tirar do catálogo",
+      "restore_title": "Voltar ao catálogo",
+      "retire_body": "O curso deixa de ser vendido: some da matrícula junto com seus planos e turmas. Nada é apagado — as matrículas já feitas continuam iguais e você pode reativá-lo quando quiser.",
+      "restore_body": "Este curso está fora do catálogo. Ao voltar, seus planos e turmas voltam à matrícula.",
+      "retire": "Tirar do catálogo",
+      "restore": "Voltar ao catálogo",
+      "confirm_retire": "Tirar este curso do catálogo? Ele deixa de aparecer na matrícula. Dá para desfazer depois.",
+      "confirm_restore": "Colocar este curso de volta no catálogo?"
     },
     "plans": {
       "title": "Planos e preços",
@@ -1562,7 +1573,9 @@
       "confirm_retire": "O plano deixa de ser oferecido na matrícula. As matrículas já feitas mantêm o preço delas.",
       "confirm_restore": "O plano volta a ser oferecido na matrícula, com o preço vigente.",
       "retired": "{count, plural, =0 {Plano fora da venda.} one {Plano fora da venda. # matrícula continua em curso.} other {Plano fora da venda. # matrículas continuam em curso.}}",
-      "restored": "Plano de volta à venda"
+      "restored": "Plano de volta à venda",
+      "history_empty_title": "Sem histórico ainda",
+      "history_empty_body": "Quando um plano mudar de preço, os preços anteriores aparecem aqui."
     },
     "course_options": {
       "applies_forward": "O que você mudar aqui vale para as turmas abertas depois. As que já estão em andamento mantêm a regra com que o aluno se matriculou.",

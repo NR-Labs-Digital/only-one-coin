@@ -1531,7 +1531,18 @@
       "no_price_badge": "No price · not on sale",
       "no_price_hint": "With no plan priced from today or earlier, the course does not appear on the enrollment form, even with class groups enrolling.",
       "no_material_badge": "No material",
-      "no_material_hint": "A module has no material link. Fill it in the course options."
+      "no_material_hint": "A module has no material link. Fill it in the course options.",
+      "tab_plans": "Plans",
+      "tab_history": "Price history",
+      "tab_settings": "Settings",
+      "retire_title": "Take off the catalog",
+      "restore_title": "Back to the catalog",
+      "retire_body": "The course stops being sold: it leaves enrollment together with its plans and class groups. Nothing is deleted — enrollments already made stay as they are, and you can bring it back any time.",
+      "restore_body": "This course is off the catalog. Bringing it back puts its plans and class groups back on enrollment.",
+      "retire": "Take off the catalog",
+      "restore": "Back to the catalog",
+      "confirm_retire": "Take this course off the catalog? It stops showing on enrollment. You can undo this later.",
+      "confirm_restore": "Put this course back on the catalog?"
     },
     "plans": {
       "title": "Plans and prices",
@@ -1562,7 +1573,9 @@
       "confirm_retire": "The plan is no longer offered at enrollment. Enrollments already made keep their price.",
       "confirm_restore": "The plan is offered at enrollment again, at its current price.",
       "retired": "{count, plural, =0 {Plan off sale.} one {Plan off sale. # enrollment is still running.} other {Plan off sale. # enrollments are still running.}}",
-      "restored": "Plan back on sale"
+      "restored": "Plan back on sale",
+      "history_empty_title": "No history yet",
+      "history_empty_body": "When a plan changes price, the previous prices show up here."
     },
     "course_options": {
       "applies_forward": "What you change here applies to class groups opened afterwards. Running ones keep the rule the student enrolled under.",
