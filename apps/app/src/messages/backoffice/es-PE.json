@@ -367,6 +367,8 @@
         "summary": "Descripción",
         "min_age": "Edad mínima",
         "modules": "Módulos",
+        "module_materials": "Material de los módulos",
+        "classroom_url": "Enlace del Classroom",
         "total_hours": "Horas totales",
         "certificate_rule": "Regla del certificado",
         "allows_freeze": "Permite congelar",
@@ -1207,7 +1209,6 @@
       "field_time": "Hora",
       "field_capacity": "Vacantes",
       "create": "Crear aula",
-      "field_code": "Código de aula",
       "seats_left": "{count, plural, one {queda #} other {quedan #}}",
       "expand_all": "Desplegar todo",
       "collapse_all": "Plegar todo",
@@ -1250,6 +1251,10 @@
       "teacher_outside_availability": "El horario está fuera de la disponibilidad que declaró el docente. Puedes guardar igual.",
       "teacher_schedule_clash": "El docente ya tiene un aula a la misma hora en este período: {codes}. Puedes guardar igual.",
       "teacher_unassigned": "Sin docente",
+      "field_classroom": "Enlace del Classroom",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_invalid": "Pega un enlace https://classroom.google.com/…",
+      "classroom_missing": "Sin Classroom",
       "filter_unassigned": "Solo aulas sin docente",
       "unassigned_banner": "{count, plural, one {# aula en curso no tiene docente del plantel asignado.} other {# aulas en curso no tienen docente del plantel asignado.}}",
       "unassigned_show": "Ver cuáles"
@@ -1519,7 +1524,9 @@
       "plan_count": "{count, plural, one {# plan} other {# planes}}",
       "add_plan": "Agregar plan",
       "no_price_badge": "Sin precio · fuera de venta",
-      "no_price_hint": "Sin un plan con precio vigente, el curso no aparece en el formulario de matrícula, aunque tenga aulas en inscripción."
+      "no_price_hint": "Sin un plan con precio vigente, el curso no aparece en el formulario de matrícula, aunque tenga aulas en inscripción.",
+      "no_material_badge": "Sin material",
+      "no_material_hint": "Falta el enlace de material de algún módulo. Complétalo en las opciones del curso."
     },
     "plans": {
       "title": "Planes y precios",
@@ -1556,6 +1563,11 @@
       "applies_forward": "Lo que cambies acá vale para las aulas que se abran después. Las que ya están corriendo mantienen la regla con la que el alumno se matriculó.",
       "min_age": "Edad mínima",
       "modules": "Módulos",
+      "module_materials": "Material de los módulos",
+      "module_material": "Material del módulo {n}",
+      "module_materials_hint": "Un enlace de Google Drive o Docs por módulo. El docente lo verá en su aula.",
+      "module_material_missing": "Falta el enlace de este módulo.",
+      "module_material_invalid": "Tiene que ser un enlace de Google Drive o Docs (https).",
       "total_hours": "Horas totales",
       "certificate_rule": "Certificado",
       "procedures": "Procedimientos que ofrece",
@@ -2092,7 +2104,10 @@
       "entry_not_found": "Ese registro ya no existe en el catálogo.",
       "class_group_teacher_unavailable": "Ese docente ya no está en el plantel activo. Elige otro.",
       "class_group_teacher_language": "Ese docente no enseña el idioma del curso. Elige otro o agrega el idioma en su ficha.",
-      "landing_key_taken": "Otro curso del catálogo ya está enlazado a esa página de la web."
+      "landing_key_taken": "Otro curso del catálogo ya está enlazado a esa página de la web.",
+      "module_materials_incomplete": "Cada módulo necesita su enlace de material.",
+      "module_material_invalid": "Algún enlace no es de Google Drive o Docs.",
+      "classroom_url_invalid": "El enlace no es de Google Classroom."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2105,7 +2120,6 @@
       "receipt_viewed": "Comprobante consultado"
     },
     "class_links": {
-      "meet": "Abrir Meet",
       "classroom": "Abrir Classroom"
     },
     "grade_report": {
@@ -2138,15 +2152,6 @@
     },
     "class_resources": {
       "materials": "Materiales",
-      "for_students": "Classroom para los alumnos",
-      "classroom_placeholder": "https://classroom.google.com/…",
-      "publish": "Publicar",
-      "classroom_invalid": "Pega un enlace https://classroom.google.com/…",
-      "students_see": "Los alumnos del aula ven este enlace en su portal.",
-      "students_none": "Todavía no publicaste el Classroom para los alumnos.",
-      "saved_local_only": "Publicado solo en esta pantalla a las {time}: el envío al portal del alumno todavía no está conectado.",
-      "published_short": "Publicado",
-      "not_published_short": "Sin publicar",
       "title": "Accesos del aula"
     },
     "class_notices": {

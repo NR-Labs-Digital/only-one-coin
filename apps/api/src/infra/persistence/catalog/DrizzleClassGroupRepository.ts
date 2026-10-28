@@ -1,6 +1,7 @@
 import {
   CapacityBelowSeatsTakenError,
   ClassGroup,
+  classGroupCodeOf,
   PeriodAlreadyDuplicatedError,
   type ClassGroupStatus,
   type IClassGroupRepository,
@@ -21,6 +22,7 @@ export function classGroupFromRow(row: Row): ClassGroup {
     code: row.code,
     teacherId: row.teacherId,
     legacyTeacherName: row.teacherName,
+    classroomUrl: row.classroomUrl,
     slots: row.slots as WeeklySlot[],
     startsOn: row.startsOn,
     endsOn: row.endsOn,
@@ -51,6 +53,7 @@ function insertValues(group: ClassGroup, legacySchedule = "") {
     code: group.code,
     teacherId: group.teacherId,
     teacherName: group.legacyTeacherName,
+    classroomUrl: group.classroomUrl,
     startsOn: group.startsOn,
     endsOn: group.endsOn,
     enrollmentOpensAt: group.enrollmentOpensAt,
@@ -64,6 +67,14 @@ function insertValues(group: ClassGroup, legacySchedule = "") {
 
 export class DrizzleClassGroupRepository implements IClassGroupRepository {
   constructor(private readonly db: Db) {}
+
+  async nextCodes(count: number): Promise<string[]> {
+    if (count === 0) return [];
+    const rows = await this.db.execute<{ seq: string }>(
+      sql`select nextval('class_group_code_seq')::text as seq from generate_series(1, ${count})`,
+    );
+    return rows.rows.map((row) => Number(row.seq)).sort((a, b) => a - b).map(classGroupCodeOf);
+  }
 
   async create(group: ClassGroup): Promise<ClassGroup> {
     const [row] = await this.db.insert(classGroups).values(insertValues(group)).returning();
@@ -86,9 +97,9 @@ export class DrizzleClassGroupRepository implements IClassGroupRepository {
       .update(classGroups)
       .set({
         courseId: group.courseId,
-        code: group.code,
         teacherId: group.teacherId,
         teacherName: group.legacyTeacherName,
+        classroomUrl: group.classroomUrl,
         slots: group.slots,
         ...(group.slots.length > 0 ? { schedule: scheduleTextFromSlots(group.slots) } : {}),
         startsOn: group.startsOn,

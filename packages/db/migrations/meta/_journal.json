@@ -260,6 +260,27 @@
       "when": 1792815274546,
       "tag": "0036_teacher_contract_period",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793067513958,
+      "tag": "0037_course_module_materials",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793117737286,
+      "tag": "0038_class_group_classroom_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793134886056,
+      "tag": "0039_class_group_code_seq",
+      "breakpoints": true
     }
   ]
 }

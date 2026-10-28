@@ -26,7 +26,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { ClassResources, NO_CLASS_LINKS } from '../class-resources'
+import { ClassResources } from '../class-resources'
 import {
   DA_MARK,
   finalStatus,
@@ -41,9 +41,10 @@ import { ClassNotices } from '../class-notices'
 
 /**
  * Which of the class group's tools are on the air. Each one is a feature flag
- * (`teacher.grades`, `teacher.class_links`, `teacher.notices`), off in
- * production until it has an API: they write only on this screen, and nothing
- * that is "saved only here" may reach a teacher (OOC-82).
+ * (`teacher.grades`, `teacher.class_links`, `teacher.notices`). Grades and
+ * notices stay off in production until they have an API — they write only on
+ * this screen, and nothing "saved only here" may reach a teacher (OOC-82).
+ * The class links read the API since OOC-98.
  */
 export interface WorkspaceTools {
   grades: boolean
@@ -57,10 +58,11 @@ export interface WorkspaceTools {
  * never personal data: no document, no contact, no payment.
  *
  * Behind the flags, the tools from PR #136 keep their screen for us: the
- * grade sheet (final exam grade, DA, batch, observations, the CSV report), the
- * class's links and the notices. Their writes are screen state until their
- * tickets give them a usecase that compares the authenticated `teacher_id`
- * with the class group (OOC-38, OOC-102, OOC-98, OOC-100, OOC-94).
+ * grade sheet (final exam grade, DA, batch, observations, the CSV report) and
+ * the notices. Their writes are screen state until their tickets give them a
+ * usecase that compares the authenticated `teacher_id` with the class group
+ * (OOC-38, OOC-102). The class's links are read-only and real: the Classroom
+ * (OOC-98); the module material waits for OOC-100.
  */
 export function ClassGroupWorkspace({
   group,
@@ -228,7 +230,7 @@ export function ClassGroupWorkspace({
 
         {tools.classLinks && (
           <aside className="border-t border-line bg-sky-soft/60 px-5 py-4 @4xl/page:border-l @4xl/page:border-t-0">
-            <ClassResources group={NO_CLASS_LINKS} />
+            <ClassResources classroomUrl={group.classroomUrl} moduleMaterialsUrl={null} />
           </aside>
         )}
       </section>

@@ -14,6 +14,8 @@ export const CourseListItemSchema = z.object({
   summary: z.string(),
   minAge: z.number().int(),
   modules: z.number().int(),
+  moduleMaterials: z.array(z.string()),
+  missingModuleMaterials: z.boolean(),
   totalHours: z.number().int(),
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
@@ -74,6 +76,7 @@ export const ClassGroupItemSchema = z.object({
   teacherId: z.string().uuid().nullable(),
   teacherName: z.string(),
   legacyTeacherName: z.string(),
+  classroomUrl: z.string().nullable(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.string().datetime().nullable(),
   endsOn: z.string().datetime().nullable(),
@@ -107,9 +110,10 @@ export const toDate = (value: string | null | undefined): Date | null | undefine
 export const CreateClassGroupBodySchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
-  code: z.string().trim().min(1),
   /** From the roster (OOC-80); null on edit takes the allocation away. */
   teacherId: z.string().uuid().nullable().optional(),
+  /** The Google Classroom (OOC-98); the domain checks the host. Null or blank clears it. */
+  classroomUrl: z.string().max(2048).nullable().optional(),
   slots: z.array(ValidWeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: DateTimeOrNull,

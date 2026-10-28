@@ -508,12 +508,11 @@ export interface ClassGroupRow {
    */
   pendingGrades: number
   /**
-   * Where the class happens — every class is online, on Google Meet with the
-   * material on Classroom (`docs/REGRAS-NEGOCIO.md` §8). External links the
-   * coordination pastes when it opens the group, never an integration
+   * Where the class happens — every class is online, and the Meet lives
+   * inside the group's Classroom (`docs/REGRAS-NEGOCIO.md` §8). One external
+   * link coordination pastes with the teacher (OOC-98), never an integration
    * (CLAUDE.md §2). Null while nobody has pasted it yet.
    */
-  meetUrl: string | null
   classroomUrl: string | null
   /**
    * The module this class group is teaching, 1-based — each class group runs
@@ -526,13 +525,6 @@ export interface ClassGroupRow {
    * module in the backoffice, and every class group on that module reads.
    */
   moduleMaterialsUrl: string | null
-  /**
-   * The Classroom link the teacher hands to the students: set by the teacher
-   * on their own class group, shown to the enrolled students in their portal.
-   * Not the same link as `classroomUrl`, which is what coordination gives
-   * the teacher.
-   */
-  studentClassroomUrl: string | null
 }
 
 /** One weekly meeting of a class group, `HH:mm` in America/Lima. */
@@ -562,6 +554,11 @@ export interface ClassGroupItem {
    * links the class group to a real teacher — never shown as the teacher.
    */
   legacyTeacherName: string
+  /**
+   * The Google Classroom coordination pastes with the teacher (OOC-98) — the
+   * same link the teacher and the confirmed students open. Null = not yet.
+   */
+  classroomUrl: string | null
   slots: WeeklySlotItem[]
   /** Null only on a draft. */
   startsOn: string | null
@@ -662,6 +659,14 @@ export interface CourseRow {
   /** Minimum age, per course (`docs/REGRAS-NEGOCIO.md` §2). */
   minAge: number
   modules: number
+  /**
+   * One Drive/Docs link per module, in order (OOC-94) — the material the
+   * teacher opens on a class group of that module. Empty on a course that
+   * predates it.
+   */
+  moduleMaterials: string[]
+  /** Some module has no link — flagged "no material", still on sale. */
+  missingModuleMaterials: boolean
   totalHours: number
   certificateRule: CertificateRule
   /** Administrative procedures the course offers (`docs/REGRAS-NEGOCIO.md` §5). */
@@ -696,6 +701,7 @@ export type CourseOptions = Pick<
   CourseRow,
   | 'minAge'
   | 'modules'
+  | 'moduleMaterials'
   | 'totalHours'
   | 'certificateRule'
   | 'allowsFreeze'
@@ -732,6 +738,9 @@ export type CatalogErrorKey =
   | 'class_group_teacher_unavailable'
   | 'class_group_teacher_language'
   | 'landing_key_taken'
+  | 'module_materials_incomplete'
+  | 'module_material_invalid'
+  | 'classroom_url_invalid'
 
 export interface PlanPriceItem {
   id: string

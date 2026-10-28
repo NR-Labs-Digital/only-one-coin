@@ -2,8 +2,12 @@ import { toMinutes } from './availability'
 import type { TeacherOption, WeeklySlotItem } from './types'
 
 /** Teacher languages and `courses.language` are the same free text — the API compares them the same way. */
+function languageKey(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
+}
+
 function sameLanguage(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase('es') === b.trim().toLocaleLowerCase('es')
+  return languageKey(a) === languageKey(b)
 }
 
 /** Who the class group form offers for a course: the roster, cut to the course's language. */

@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups } from "@ooc/db";
+import { academicPeriods, classGroups, courses } from "@ooc/db";
 import { Course, LandingKeyTakenError, Plan, PlanPrice } from "@ooc/domain";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -56,6 +56,8 @@ async function inRolledBackTransaction(fn: (tx: Db) => Promise<void>): Promise<v
     });
 }
 
+const MATERIALS = [1, 2, 3, 4, 5, 6].map((n) => `https://drive.google.com/drive/folders/italiano-m${n}`);
+
 function aCourse(): Course {
   return Course.create({
     name: "Italiano (integration)",
@@ -64,6 +66,7 @@ function aCourse(): Course {
     summary: "Italiano para principiantes.",
     minAge: 13,
     modules: 6,
+    moduleMaterials: MATERIALS,
     totalHours: 60,
     certificateRule: "exam_required",
     allowsFreeze: false,
@@ -85,6 +88,33 @@ describe("course catalog storage", () => {
         allowsTransfer: true,
         deletedAt: null,
       });
+    });
+  });
+
+  it("stores and reads back one material per module, in order (OOC-94)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const repository = new DrizzleCourseRepository(tx);
+      const created = await repository.create(aCourse());
+
+      expect((await repository.findById(created.id))?.moduleMaterials).toEqual(MATERIALS);
+
+      const listed = (await new ListCoursesQuery(tx).run()).find((item) => item.id === created.id);
+      expect(listed).toMatchObject({ moduleMaterials: MATERIALS, missingModuleMaterials: false });
+    });
+  });
+
+  it("flags a course written before module materials existed", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const [row] = await tx
+        .insert(courses)
+        .values({ name: "Legacy (integration)", language: "Italiano", minAge: 13, modules: 4 })
+        .returning();
+
+      const listed = (await new ListCoursesQuery(tx).run()).find((item) => item.id === row!.id);
+      expect(listed).toMatchObject({ moduleMaterials: [], missingModuleMaterials: true });
+
+      const detail = await new GetCourseQuery(tx).run(row!.id);
+      expect(detail?.course).toMatchObject({ moduleMaterials: [], missingModuleMaterials: true });
     });
   });
 
@@ -154,6 +184,21 @@ describe("course catalog storage", () => {
       await plans.createWithPrice(priced, PlanPrice.schedule({ planId: priced.id, amountCents: 8000 }, anHourAgo));
       expect(await listed()).toMatchObject({ planCount: 2, hasPriceInForce: true });
       expect((await new GetCourseQuery(tx).run(course.id))?.course).toMatchObject({ planCount: 2, hasPriceInForce: true });
+    });
+  });
+
+  it("lists the spellings live courses use for their language, most used first", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const repository = new DrizzleCourseRepository(tx);
+      const entries = new DrizzleCatalogEntryRepository(tx);
+      await repository.create(Course.create({ ...aCourse(), language: "ITALIANO (integration)" }));
+      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
+      await repository.create(Course.create({ ...aCourse(), language: "Italiano (integration)" }));
+      const retired = await repository.create(Course.create({ ...aCourse(), language: "italiano (integration)" }));
+      await entries.retire("course", retired.id, new Date());
+
+      const spellings = (await repository.listLanguageSpellings()).filter((language) => language.endsWith("(integration)"));
+      expect(spellings).toEqual(["Italiano (integration)", "ITALIANO (integration)"]);
     });
   });
 

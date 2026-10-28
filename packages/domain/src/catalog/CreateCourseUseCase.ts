@@ -1,6 +1,7 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import { Course, type CreateCourseDTO } from "./Course.js";
+import { catalogSpelling } from "./courseLanguage.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
 import { LandingKeyTakenError } from "./errors.js";
 
@@ -24,6 +25,7 @@ export class CreateCourseUseCase extends BaseUseCase<CreateCourseInput, Course> 
 
   async run(input: CreateCourseInput): Promise<Course> {
     const course = Course.create(input.course);
+    course.language = catalogSpelling(course.language, await this.courses.listLanguageSpellings());
     if (course.landingKey && (await this.courses.findLiveByLandingKey(course.landingKey))) {
       throw new LandingKeyTakenError();
     }

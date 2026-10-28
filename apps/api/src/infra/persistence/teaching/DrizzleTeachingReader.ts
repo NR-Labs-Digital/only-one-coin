@@ -79,6 +79,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       capacity: row.capacity,
       seatsTaken: row.seatsTaken,
       status: row.status as ClassGroupStatus,
+      classroomUrl: row.classroomUrl,
       retired: row.deletedAt !== null,
     }));
   }

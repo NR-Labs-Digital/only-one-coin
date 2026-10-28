@@ -57,13 +57,22 @@ export default async function CourseDetailPage({
         {!course.active ? (
           <StatusBadge tone="neutral" label={t('courses.inactive')} />
         ) : (
-          !course.hasPriceInForce && (
-            <StatusBadge
-              tone="warning"
-              label={t('courses.no_price_badge')}
-              title={t('courses.no_price_hint')}
-            />
-          )
+          <>
+            {!course.hasPriceInForce && (
+              <StatusBadge
+                tone="warning"
+                label={t('courses.no_price_badge')}
+                title={t('courses.no_price_hint')}
+              />
+            )}
+            {course.missingModuleMaterials && (
+              <StatusBadge
+                tone="warning"
+                label={t('courses.no_material_badge')}
+                title={t('courses.no_material_hint')}
+              />
+            )}
+          </>
         )}
         <p className="basis-full text-sm text-muted-foreground">
           {[course.language.name, course.level].filter(Boolean).join(' · ')}

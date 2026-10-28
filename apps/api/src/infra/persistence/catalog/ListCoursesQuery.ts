@@ -11,6 +11,10 @@ export interface CourseListItem {
   summary: string;
   minAge: number;
   modules: number;
+  /** One material link per module, in order (OOC-94). Empty on a course that predates it. */
+  moduleMaterials: string[];
+  /** The course lacks a link for some module — the backoffice flags it, it still sells. */
+  missingModuleMaterials: boolean;
   totalHours: number;
   certificateRule: "automatic" | "exam_required";
   allowsFreeze: boolean;
@@ -72,6 +76,8 @@ export function toCourseListItem(row: typeof courses.$inferSelect, counts: Cours
     summary: row.summary,
     minAge: row.minAge,
     modules: row.modules,
+    moduleMaterials: row.moduleMaterials,
+    missingModuleMaterials: row.moduleMaterials.length !== row.modules,
     totalHours: row.totalHours,
     certificateRule: row.certificateRule as CourseListItem["certificateRule"],
     allowsFreeze: row.allowsFreeze,

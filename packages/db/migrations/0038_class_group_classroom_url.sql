@@ -1,0 +1,1 @@
+ALTER TABLE "class_groups" ADD COLUMN "classroom_url" text;

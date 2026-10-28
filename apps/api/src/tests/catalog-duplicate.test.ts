@@ -60,6 +60,7 @@ beforeEach(async () => {
       code: "ING-0101",
       teacherId: TEACHER_ID,
       legacyTeacherName: "",
+      classroomUrl: "https://classroom.google.com/c/running",
       slots: SLOTS,
       startsOn: new Date("2026-08-03T05:00:00Z"),
       endsOn: new Date("2026-10-31T05:00:00Z"),
@@ -75,18 +76,16 @@ beforeEach(async () => {
     ClassGroup.create({
       courseId: COURSE_ID,
       academicPeriodId: source.id,
-      code: "ING-0102",
       slots: SLOTS,
       capacity: 30,
-    }),
+    }, "A-00102"),
   );
   const retired = ClassGroup.create({
     courseId: COURSE_ID,
     academicPeriodId: source.id,
-    code: "ING-0103",
     slots: SLOTS,
     capacity: 20,
-  });
+  }, "A-00103");
   retired.softDelete();
   await groups.create(retired);
 });
@@ -105,6 +104,7 @@ describe("DuplicateClassGroupsUseCase", () => {
       expect(copy.enrollmentOpensAt).toBeNull();
       expect(copy.enrollmentClosesAt).toBeNull();
       expect(copy.seatsTaken).toBe(0);
+      expect(copy.classroomUrl).toBeNull();
       expect(copy.academicPeriodId).toBe(target.id);
     }
 
@@ -115,6 +115,16 @@ describe("DuplicateClassGroupsUseCase", () => {
     expect(bySource.get(running.id)?.teacherId).toBe(TEACHER_ID);
     expect(bySource.get(draft.id)?.teacherId).toBeNull();
     expect(bySource.size).toBe(2);
+  });
+
+  it("gives every copy a code of its own, never the source's", async () => {
+    await duplicate().run({ actorId: ACTOR, sourcePeriodId: source.id, targetPeriodId: target.id });
+
+    const codes = [...groups.rows.values()]
+      .filter((group) => group.academicPeriodId === target.id)
+      .map((group) => group.code)
+      .sort();
+    expect(codes).toEqual(["A-00001", "A-00002"]);
   });
 
   it("writes one audit row on the target period", async () => {

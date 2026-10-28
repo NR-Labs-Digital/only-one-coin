@@ -10,6 +10,7 @@ import type {
   CourseRow,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
+import { moduleMaterialsPayload, moduleMaterialsReady } from '@/lib/backoffice/module-materials'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { CourseOptionFields, DEFAULT_COURSE_OPTIONS } from './course-option-fields'
@@ -56,7 +57,10 @@ export function NewCourseForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
 
-  const ready = name.trim() !== '' && level.trim() !== '' && language.trim() !== ''
+  const identityReady = name.trim() !== '' && level.trim() !== '' && language.trim() !== ''
+  // Every module carries its material link (OOC-94); the API refuses a course
+  // short of one, so the form says which field is missing first.
+  const ready = identityReady && moduleMaterialsReady(draftOptions)
 
   async function submit() {
     setSaving(true)
@@ -68,6 +72,7 @@ export function NewCourseForm({
       level: level.trim(),
       landingKey,
       ...options,
+      moduleMaterials: moduleMaterialsPayload(options),
     })
     setSaving(false)
     if (!result.ok) {
@@ -86,7 +91,8 @@ export function NewCourseForm({
           <span className={labelClass}>{t('courses.field_language')}</span>
           {/* A plain input, not a datalist: the datalist arrow showed on some
               browsers and not on others (OOC-106). Language is free text and
-              courses group by its spelling, so the hint names the ones in use. */}
+              courses group by its spelling: the API writes a language already
+              in use the way it is already spelled ("INGLES" → "Inglés"). */}
           <input
             value={language}
             onChange={(event) => setLanguage(event.target.value)}
@@ -128,7 +134,13 @@ export function NewCourseForm({
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t('courses.options_title')}
         </p>
-        <CourseOptionFields value={draftOptions} onChange={setDraftOptions} wide hideActive />
+        <CourseOptionFields
+          value={draftOptions}
+          onChange={setDraftOptions}
+          wide
+          hideActive
+          showMaterialIssues={identityReady}
+        />
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">{t('courses.options_hint')}</p>

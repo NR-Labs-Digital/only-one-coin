@@ -1,7 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { CertificateRule, CourseOptions } from '@/lib/backoffice/types'
+import {
+  moduleMaterialIssues,
+  resizeModuleMaterials,
+  setModuleMaterial,
+} from '@/lib/backoffice/module-materials'
 import { Toggle } from '@/components/backoffice/controls'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
 
@@ -24,6 +30,7 @@ export function CourseOptionFields({
   onChange,
   wide = false,
   hideActive = false,
+  showMaterialIssues = false,
 }: {
   value: CourseOptions
   onChange: (options: CourseOptions) => void
@@ -31,12 +38,28 @@ export function CourseOptionFields({
   wide?: boolean
   /** A new course is born in the catalog — there is nothing to switch off yet. */
   hideActive?: boolean
+  /**
+   * Say "missing" beside every blank module link, not only the ones already
+   * left — set once the links are what stands between the reader and Save.
+   */
+  showMaterialIssues?: boolean
 }) {
   const t = useTranslations('bo')
+  const [leftFields, setLeftFields] = useState<ReadonlySet<number>>(new Set())
 
   function set<K extends keyof CourseOptions>(key: K, next: CourseOptions[K]) {
     onChange({ ...value, [key]: next })
   }
+
+  // The draft keeps every link typed; the module count only decides how many
+  // fields show and how many are sent (OOC-94) — see setModuleMaterial.
+  function setMaterial(index: number, link: string) {
+    set('moduleMaterials', setModuleMaterial(value.moduleMaterials, value.modules, index, link))
+  }
+
+  // A course written before OOC-94 has no links yet: its fields show blank.
+  const materials = resizeModuleMaterials(value.moduleMaterials, value.modules)
+  const issues = moduleMaterialIssues(materials)
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,6 +129,41 @@ export function CourseOptionFields({
         </label>
       </AutoGrid>
 
+      {materials.length > 0 && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className={`mb-1 ${labelClass}`}>{t('course_options.module_materials')}</legend>
+          <AutoGrid min="16rem" gap="gap-3">
+            {materials.map((link, index) => {
+              const issue = issues[index]
+              // A wrong link says so at once; a blank one only once it was
+              // left, or once the links are all that keeps Save off.
+              const shown =
+                issue === 'invalid' || (issue === 'missing' && (showMaterialIssues || leftFields.has(index)))
+                  ? issue
+                  : null
+              return (
+                <label key={index} className="flex flex-col gap-1">
+                  <span className={labelClass}>{t('course_options.module_material', { n: index + 1 })}</span>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={link}
+                    onChange={(event) => setMaterial(index, event.target.value)}
+                    onBlur={() => setLeftFields((left) => new Set(left).add(index))}
+                    aria-invalid={shown !== null}
+                    className={fieldClass}
+                  />
+                  {shown && (
+                    <span className="text-xs text-red-700">{t(`course_options.module_material_${shown}`)}</span>
+                  )}
+                </label>
+              )
+            })}
+          </AutoGrid>
+          <span className="text-xs text-muted-foreground">{t('course_options.module_materials_hint')}</span>
+        </fieldset>
+      )}
+
       <fieldset className="flex flex-col gap-3">
         <legend className={`mb-1 ${labelClass}`}>
           {t('course_options.procedures')}
@@ -147,6 +205,7 @@ export function CourseOptionFields({
 export const DEFAULT_COURSE_OPTIONS: CourseOptions = {
   minAge: 13,
   modules: 4,
+  moduleMaterials: ['', '', '', ''],
   totalHours: 80,
   certificateRule: 'automatic',
   allowsFreeze: true,

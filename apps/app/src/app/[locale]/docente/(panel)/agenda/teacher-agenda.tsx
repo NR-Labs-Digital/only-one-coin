@@ -64,7 +64,7 @@ export function TeacherAgenda({
   today: string
   /** Minutes since midnight in Lima when the page was served. */
   nowMinutes: number
-  /** `teacher.class_links`: the Meet and Classroom doors have no API yet (OOC-98). */
+  /** `teacher.class_links`: the class group's Classroom door (OOC-98). */
   classLinks: boolean
 }) {
   const t = useTranslations('bo')
@@ -194,7 +194,7 @@ export function TeacherAgenda({
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {classLinks && <ClassLinks group={{ meetUrl: null, classroomUrl: null }} />}
+            {classLinks && <ClassLinks classroomUrl={selected.group.classroomUrl} />}
             <Link
               href={`/docente/class-groups/${selected.group.id}`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-blue transition hover:text-brand-blue-deep"

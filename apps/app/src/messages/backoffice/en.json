@@ -367,6 +367,8 @@
         "summary": "Description",
         "min_age": "Minimum age",
         "modules": "Modules",
+        "module_materials": "Module materials",
+        "classroom_url": "Classroom link",
         "total_hours": "Total hours",
         "certificate_rule": "Certificate rule",
         "allows_freeze": "Allows freezing",
@@ -1207,7 +1209,6 @@
       "field_time": "Time",
       "field_capacity": "Seats",
       "create": "Create class group",
-      "field_code": "Class group code",
       "seats_left": "{count, plural, one {# left} other {# left}}",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
@@ -1250,6 +1251,10 @@
       "teacher_outside_availability": "The schedule falls outside the availability the teacher declared. You can save anyway.",
       "teacher_schedule_clash": "The teacher already has a class group at the same time in this period: {codes}. You can save anyway.",
       "teacher_unassigned": "No teacher",
+      "field_classroom": "Classroom link",
+      "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_invalid": "Paste an https://classroom.google.com/… link",
+      "classroom_missing": "No Classroom",
       "filter_unassigned": "Only class groups without a teacher",
       "unassigned_banner": "{count, plural, one {# ongoing class group has no teacher from the roster assigned.} other {# ongoing class groups have no teacher from the roster assigned.}}",
       "unassigned_show": "Show them"
@@ -1519,7 +1524,9 @@
       "plan_count": "{count, plural, one {# plan} other {# plans}}",
       "add_plan": "Add plan",
       "no_price_badge": "No price · not on sale",
-      "no_price_hint": "With no plan priced from today or earlier, the course does not appear on the enrollment form, even with class groups enrolling."
+      "no_price_hint": "With no plan priced from today or earlier, the course does not appear on the enrollment form, even with class groups enrolling.",
+      "no_material_badge": "No material",
+      "no_material_hint": "A module has no material link. Fill it in the course options."
     },
     "plans": {
       "title": "Plans and prices",
@@ -1556,6 +1563,11 @@
       "applies_forward": "What you change here applies to class groups opened afterwards. Running ones keep the rule the student enrolled under.",
       "min_age": "Minimum age",
       "modules": "Modules",
+      "module_materials": "Module materials",
+      "module_material": "Module {n} material",
+      "module_materials_hint": "One Google Drive or Docs link per module. The teacher will see it in their class.",
+      "module_material_missing": "This module needs a link.",
+      "module_material_invalid": "Must be a Google Drive or Docs link (https).",
       "total_hours": "Total hours",
       "certificate_rule": "Certificate",
       "procedures": "Procedures offered",
@@ -2092,7 +2104,10 @@
       "entry_not_found": "That catalog entry no longer exists.",
       "class_group_teacher_unavailable": "That teacher is no longer on the active roster. Pick another one.",
       "class_group_teacher_language": "That teacher does not teach the course language. Pick another one or add the language on their file.",
-      "landing_key_taken": "Another course in the catalog is already linked to that website page."
+      "landing_key_taken": "Another course in the catalog is already linked to that website page.",
+      "module_materials_incomplete": "Every module needs its material link.",
+      "module_material_invalid": "A link is not from Google Drive or Docs.",
+      "classroom_url_invalid": "The link is not from Google Classroom."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2105,7 +2120,6 @@
       "receipt_viewed": "Receipt viewed"
     },
     "class_links": {
-      "meet": "Open Meet",
       "classroom": "Open Classroom"
     },
     "grade_report": {
@@ -2138,15 +2152,6 @@
     },
     "class_resources": {
       "materials": "Materials",
-      "for_students": "Classroom for students",
-      "classroom_placeholder": "https://classroom.google.com/…",
-      "publish": "Publish",
-      "classroom_invalid": "Paste an https://classroom.google.com/… link",
-      "students_see": "The class's students see this link in their portal.",
-      "students_none": "You have not published the Classroom for students yet.",
-      "saved_local_only": "Published on this screen only at {time}: sending it to the student portal is not connected yet.",
-      "published_short": "Published",
-      "not_published_short": "Not published",
       "title": "Class access"
     },
     "class_notices": {

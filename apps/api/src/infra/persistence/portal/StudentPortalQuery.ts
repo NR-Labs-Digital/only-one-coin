@@ -33,6 +33,8 @@ export interface PortalEnrollmentRow {
     slots: unknown;
     startsOn: Date | null;
     endsOn: Date | null;
+    /** Only on a confirmed seat (OOC-98); null otherwise. */
+    classroomUrl: string | null;
   };
   academicPeriodName: string;
   plan: { name: string; priceId: string; priceCents: number };
@@ -89,6 +91,7 @@ export class StudentPortalQuery {
         slots: classGroups.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,
+        classroomUrl: classGroups.classroomUrl,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
         planPriceId: planPrices.id,
@@ -133,6 +136,9 @@ export class StudentPortalQuery {
             slots: row.slots,
             startsOn: row.startsOn,
             endsOn: row.endsOn,
+            // The door to the class opens with the money confirmed (OOC-55):
+            // a reserved or released seat never sees the link (OOC-98).
+            classroomUrl: row.seatStatus === "confirmed" ? row.classroomUrl : null,
           },
           academicPeriodName: row.academicPeriodName,
           plan: { name: row.planName, priceId: row.planPriceId, priceCents: row.planPriceCents },

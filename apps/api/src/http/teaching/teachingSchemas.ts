@@ -19,6 +19,8 @@ export const TeachingClassGroupSchema = z.object({
   capacity: z.number().int(),
   seatsTaken: z.number().int(),
   status: ClassGroupStatusSchema,
+  /** The class group's Google Classroom (OOC-98); null = coordination has not pasted it yet. */
+  classroomUrl: z.string().nullable(),
 });
 
 export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<typeof TeachingClassGroupSchema> {
@@ -34,5 +36,6 @@ export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<
     capacity: group.capacity,
     seatsTaken: group.seatsTaken,
     status: group.status,
+    classroomUrl: group.classroomUrl,
   };
 }

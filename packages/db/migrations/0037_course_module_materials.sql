@@ -1,0 +1,1 @@
+ALTER TABLE "courses" ADD COLUMN "module_materials" text[] DEFAULT '{}'::text[] NOT NULL;

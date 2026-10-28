@@ -1,6 +1,6 @@
 import { Course, LandingKeyTakenError, type CertificateRule, type ICourseRepository, type LandingCourseKey } from "@ooc/domain";
 import { courses } from "@ooc/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 
@@ -23,6 +23,7 @@ export function courseFromRow(row: CourseRow): Course {
     summary: row.summary,
     minAge: row.minAge,
     modules: row.modules,
+    moduleMaterials: row.moduleMaterials,
     totalHours: row.totalHours,
     certificateRule: row.certificateRule as CertificateRule,
     allowsFreeze: row.allowsFreeze,
@@ -48,6 +49,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
         summary: course.summary,
         minAge: course.minAge,
         modules: course.modules,
+        moduleMaterials: course.moduleMaterials,
         totalHours: course.totalHours,
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,
@@ -74,6 +76,16 @@ export class DrizzleCourseRepository implements ICourseRepository {
     return row ? courseFromRow(row) : null;
   }
 
+  async listLanguageSpellings(): Promise<string[]> {
+    const rows = await this.db
+      .select({ language: courses.language })
+      .from(courses)
+      .where(isNull(courses.deletedAt))
+      .groupBy(courses.language)
+      .orderBy(desc(count()), asc(courses.language));
+    return rows.map((row) => row.language);
+  }
+
   async update(course: Course): Promise<Course> {
     // deleted_at is not written here: leaving the catalog is
     // RetireCatalogEntryUseCase's job, and an edit must not undo it.
@@ -86,6 +98,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
         summary: course.summary,
         minAge: course.minAge,
         modules: course.modules,
+        moduleMaterials: course.moduleMaterials,
         totalHours: course.totalHours,
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,

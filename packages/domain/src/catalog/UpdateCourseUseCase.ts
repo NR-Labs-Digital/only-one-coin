@@ -1,6 +1,7 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import type { Course, UpdateCourseDTO } from "./Course.js";
+import { catalogSpelling, sameLanguage } from "./courseLanguage.js";
 import { CourseNotFoundError, LandingKeyTakenError } from "./errors.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
 
@@ -28,7 +29,15 @@ export class UpdateCourseUseCase extends BaseUseCase<UpdateCourseInput, Course> 
     const course = await this.courses.findById(input.id);
     if (!course) throw new CourseNotFoundError();
 
-    const changed = course.update(input.patch);
+    // Moving to another language takes the spelling already in use. Retyping
+    // the language the course is in is left as typed: that is how a wrong
+    // spelling gets corrected, one course at a time.
+    let patch = input.patch;
+    if (patch.language !== undefined && !sameLanguage(patch.language, course.language)) {
+      patch = { ...patch, language: catalogSpelling(patch.language, await this.courses.listLanguageSpellings()) };
+    }
+
+    const changed = course.update(patch);
     if (changed.length === 0) return course;
 
     if (changed.includes("landingKey") && course.landingKey) {

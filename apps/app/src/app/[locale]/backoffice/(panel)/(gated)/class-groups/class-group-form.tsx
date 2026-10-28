@@ -13,6 +13,7 @@ import type {
   Weekday,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
+import { classroomUrlOf } from '@/lib/backoffice/class-links'
 import { allocationWarnings, teachersForLanguage } from '@/lib/backoffice/teacher-allocation'
 import {
   isoToLimaDate,
@@ -146,9 +147,12 @@ export function ClassGroupForm({
   const [newPeriodStartsOn, setNewPeriodStartsOn] = useState('')
   const [newPeriodEndsOn, setNewPeriodEndsOn] = useState('')
   const newPeriod = mode === 'create' && periodId === NEW_PERIOD
-  const [code, setCode] = useState(initial?.code ?? '')
   /** '' = nobody allocated yet. */
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '')
+  /** Pasted with the teacher, never required to allocate one (OOC-98). */
+  const [classroomDraft, setClassroomDraft] = useState(initial?.classroomUrl ?? '')
+  const classroomUrl = classroomUrlOf(classroomDraft)
+  const classroomInvalid = classroomUrl === 'invalid'
   const [weekdays, setWeekdays] = useState<Weekday[]>(loaded.weekdays)
   const [startTime, setStartTime] = useState(loaded.startTime)
   const [endTime, setEndTime] = useState(loaded.endTime)
@@ -180,11 +184,11 @@ export function ClassGroupForm({
     weekdays.length !== loaded.weekdays.length ||
     weekdays.some((day) => !loaded.weekdays.includes(day))
 
-  /* A legacy class group (seeded: no slots, no code) can be edited without
-     retyping what it never had — the code and the days are required on create,
-     and on edit only if the group already had them or the schedule is being
-     rewritten. Whatever is not touched is not sent (`changes()`). */
-  const codeRequired = mode === 'create' || (initial?.code ?? '') !== ''
+  /* A legacy class group (seeded: no slots) can be edited without retyping what
+     it never had — the days are required on create, and on edit only if the
+     group already had them or the schedule is being rewritten. Whatever is not
+     touched is not sent (`changes()`). The code is not here at all: the API
+     draws it from a sequence and nobody edits it. */
   const weekdaysRequired =
     mode === 'create' || scheduleTouched || (initial?.slots.length ?? 0) > 0
 
@@ -194,9 +198,9 @@ export function ClassGroupForm({
       (newPeriod
         ? newPeriodName.trim() !== '' && newPeriodStartsOn !== '' && newPeriodEndsOn !== ''
         : periodId !== '')) &&
-    (!codeRequired || code.trim() !== '') &&
     (!weekdaysRequired || weekdays.length > 0) &&
     !timeInvalid &&
+    !classroomInvalid &&
     capacityValid
   const hasDates = startsOn !== '' && endsOn !== ''
 
@@ -211,8 +215,8 @@ export function ClassGroupForm({
     if (!initial) return {}
     const patch: Record<string, unknown> = {}
     if (courseId !== initial.courseId) patch.courseId = courseId
-    if (code.trim() !== initial.code) patch.code = code.trim()
     if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
+    if (!classroomInvalid && classroomUrl !== (initial.classroomUrl ?? null)) patch.classroomUrl = classroomUrl
     if (scheduleTouched) patch.slots = slots
     if (capacity !== initial.capacity) patch.capacity = capacity
     if (startsOn !== loaded.startsOn) patch.startsOn = dateOrNull(startsOn)
@@ -249,8 +253,8 @@ export function ClassGroupForm({
       {
         courseId,
         academicPeriodId,
-        code: code.trim(),
         teacherId: teacherId || null,
+        classroomUrl: classroomInvalid ? null : classroomUrl,
         slots,
         capacity,
         startsOn: dateOrNull(startsOn),
@@ -443,15 +447,6 @@ export function ClassGroupForm({
         )}
 
         <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('class_groups.field_code')}</span>
-          <input
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            className={fieldClass}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
           <span className={labelClass}>{t('class_groups.field_teacher')}</span>
           <select
             value={teacherId}
@@ -482,6 +477,25 @@ export function ClassGroupForm({
             <span className="text-xs text-muted-foreground">
               {t('class_groups.teacher_legacy_hint', { name: initial.legacyTeacherName })}
             </span>
+          )}
+        </label>
+
+        {/* Right under the teacher: allocating and handing over the class's
+            Classroom are one step for coordination (OOC-98) — optional, so a
+            teacher can still be allocated before the Classroom exists. */}
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>{t('class_groups.field_classroom')}</span>
+          <input
+            type="url"
+            inputMode="url"
+            value={classroomDraft}
+            onChange={(event) => setClassroomDraft(event.target.value)}
+            placeholder={t('class_groups.classroom_placeholder')}
+            aria-invalid={classroomInvalid}
+            className={fieldClass}
+          />
+          {classroomInvalid && (
+            <span className="text-xs text-red-700">{t('class_groups.classroom_invalid')}</span>
           )}
         </label>
 

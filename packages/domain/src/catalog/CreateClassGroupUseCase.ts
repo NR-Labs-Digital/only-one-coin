@@ -36,7 +36,8 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
     const teacherId = input.classGroup.teacherId ?? null;
     if (teacherId !== null) await assertAssignableTeacher(this.teachers, teacherId, course.language);
 
-    const group = ClassGroup.create(input.classGroup);
+    const [code] = await this.classGroups.nextCodes(1);
+    const group = ClassGroup.create(input.classGroup, code!);
     if (input.publish) group.advanceTo("enrolling");
 
     const created = await this.classGroups.create(group);

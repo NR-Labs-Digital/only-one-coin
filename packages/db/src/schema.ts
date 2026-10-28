@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  pgSequence,
   pgTable,
   text,
   time,
@@ -111,6 +112,10 @@ export const courses = pgTable(
     // the public catalog is meant to show should set a real one.
     level: text("level").notNull().default(""),
     modules: integer("modules").notNull().default(1),
+    // One material link per module, in module order (OOC-94). Empty on a course
+    // written before it — that course warns, it does not lock — so no CHECK on
+    // the length: "empty, or exactly `modules` valid links" is the domain's rule.
+    moduleMaterials: text("module_materials").array().notNull().default(sql`'{}'::text[]`),
     totalHours: integer("total_hours").notNull().default(0),
     // What the course is, in the student's words — the portal shows it under
     // "Sobre el curso". Default '' only so the column lands aditively.
@@ -193,6 +198,12 @@ export const planPrices = pgTable(
 // (apps/app/src/lib/backoffice/types.ts) — enrolling → in_progress →
 // finished | closed, plus 'draft' (OOC-35) before enrolling: a class group
 // that exists but is not on sale and holds no seat.
+// The number behind every generated class group code (`classGroupCodeOf` in
+// the domain, `A-00042`). A sequence, not max(code)+1: two panels saving at
+// once never draw the same number, and a number burned by a failed save is
+// skipped rather than reused.
+export const classGroupCodeSeq = pgSequence("class_group_code_seq", { startWith: 1 });
+
 export const classGroups = pgTable(
   "class_groups",
   {
@@ -212,7 +223,10 @@ export const classGroups = pgTable(
     slots: jsonb("slots").notNull().default([]),
     // Printed on paperwork, never shown in the public checkout itself
     // (CatalogClassGroup.code doc comment) — carried for the backoffice
-    // side. Default '' only so the column can land aditively.
+    // side. Default '' only so the column can land aditively. Since 0039 the
+    // panel draws it from class_group_code_seq and nobody edits it; legacy
+    // rows keep the code they came with. No unique index: the legacy import
+    // may have written the same course+date fallback twice.
     code: text("code").notNull().default(""),
     // Denormalized teacher name, kept until the contract step (CLAUDE.md §7);
     // `teacher_id` below is the real link.
@@ -221,6 +235,10 @@ export const classGroups = pgTable(
     // anybody is allocated, and every row written before this column has none.
     // `teacher_name` stays until the contract step (CLAUDE.md §7).
     teacherId: uuid("teacher_id").references((): AnyPgColumn => teachers.id, { onDelete: "restrict" }),
+    // The Google Classroom coordination pastes for the class group (OOC-98),
+    // read by its teacher and its confirmed students. Null until somebody
+    // pastes it; the host rule lives in the domain, like module materials.
+    classroomUrl: text("classroom_url"),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module

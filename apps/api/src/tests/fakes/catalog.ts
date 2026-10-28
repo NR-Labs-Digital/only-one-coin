@@ -1,6 +1,7 @@
 import {
   CapacityBelowSeatsTakenError,
   PeriodAlreadyDuplicatedError,
+  classGroupCodeOf,
   WaitlistAlreadyJoinedError,
   type AcademicPeriod,
   type AuditLogEntry,
@@ -51,6 +52,14 @@ export class FakeCourseRepository implements ICourseRepository {
   async findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null> {
     return [...this.rows.values()].find((row) => row.landingKey === key && !row.isDeleted) ?? null;
   }
+
+  async listLanguageSpellings(): Promise<string[]> {
+    const uses = new Map<string, number>();
+    for (const row of this.rows.values()) {
+      if (!row.isDeleted) uses.set(row.language, (uses.get(row.language) ?? 0) + 1);
+    }
+    return [...uses].sort(([a, x], [b, y]) => y - x || a.localeCompare(b)).map(([language]) => language);
+  }
 }
 
 export class FakePlanRepository implements IPlanRepository {
@@ -97,6 +106,11 @@ export class FakeClassGroupRepository implements IClassGroupRepository {
   public readonly rows = new Map<string, ClassGroup>();
   /** Lets a test simulate seats taken by the checkout between read and write. */
   public seatsTakenOverride = new Map<string, number>();
+  private lastCode = 0;
+
+  async nextCodes(count: number): Promise<string[]> {
+    return Array.from({ length: count }, () => classGroupCodeOf(++this.lastCode));
+  }
 
   async create(group: ClassGroup): Promise<ClassGroup> {
     this.rows.set(group.id, group);

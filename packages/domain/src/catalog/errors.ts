@@ -146,3 +146,35 @@ export class LandingKeyTakenError extends ConflictError {
     });
   }
 }
+
+/** A course carries one material link per module (OOC-94) — not one fewer, not one more. */
+export class ModuleMaterialsIncompleteError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.module_materials_incomplete",
+      message: "Every module needs exactly one material link.",
+      ...params,
+    });
+  }
+}
+
+/** A material link ends up as an href on a teacher's screen: https on Google Drive or Docs, nothing else. */
+export class ModuleMaterialInvalidError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.module_material_invalid",
+      message: "A module material must be an https link on Google Drive or Docs.",
+      ...params,
+    });
+  }
+}
+
+export class ClassroomUrlInvalidError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.classroom_url_invalid",
+      message: "A class group's Classroom link must be an https link on classroom.google.com.",
+      ...params,
+    });
+  }
+}
