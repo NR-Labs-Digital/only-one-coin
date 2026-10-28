@@ -59,7 +59,7 @@ Fora desta semana, de propósito: notas e frequência (37), certificados (45), p
 
 | Frente | Ticket | Destrava | Prazo |
 | --- | --- | --- | --- |
-| E-mail | OOC-87 (um catálogo só de templates entre app e domínio; `payment_under_review` pelo outbox) → OOC-88 (catálogo e detalhe com contagem real do outbox e preview do template do repositório; depende da 87) | Sessão 47; nenhuma tela de e-mail se religa antes da 87 | 01/11 |
+| E-mail | ✅ OOC-87 (um catálogo só de templates entre app e domínio; `payment_under_review` pelo outbox) → OOC-88 (catálogo e detalhe com contagem real do outbox e preview do template do repositório; depende da 87) | Sessão 47; nenhuma tela de e-mail se religa antes da 87 | 01/11 |
 | Enlace da aula | OOC-98 (link do Classroom/Meet na turma, visível no portal do docente e no do aluno) | Sessão 42 (o que falta do painel do aluno) e o flag `teacher.class_links` | 01/11 |
 | Catálogo | OOC-94 (curso com módulos e o material de cada um) | OOC-85 (progressão), OOC-86 (mensual), OOC-100 (materiais) | 01/11 |
 | E-mail (entrega) | OOC-90 (não entregues com as falhas reais do outbox e reenvio auditado; depende da 87) · OOC-91 (webhook do Brevo: entregue, bounce, motivo) | Sessão 46 inteira e os motivos da tela de não entregues | 01/11 |
@@ -171,7 +171,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
 | 46 | **Brevo real e DNS** | Provider de produção, subdomínios `avisos.` e `noticias.` com DKIM, SPF, DMARC `p=none`, webhook de bounce/unsubscribe | E-mail entregando; bounce sincronizando de volta ao banco | 🟡 Provider Brevo real atrás da outbox, domínio raiz autenticado (DKIM + DMARC `p=none`). Faltam os subdomínios `avisos.`/`noticias.` e o webhook (OOC-91) |
-| 47 | **Tela A — fluxos automáticos** | Catálogo dos transacionais, preview do template do repositório, toggle, métricas de 30 dias, botão de prova | Preview mostra o template versionado, não o do painel do Brevo | ⬜ Tela mock. OOC-87, OOC-88, OOC-90 |
+| 47 | **Tela A — fluxos automáticos** | Catálogo dos transacionais, preview do template do repositório, toggle, métricas de 30 dias, botão de prova | Preview mostra o template versionado, não o do painel do Brevo | ⬜ Tela mock, já sobre o catálogo único do domínio (OOC-87 ✅: 9 e-mails disparados, 3 previstos e marcados como ainda não enviados; `payment_under_review` sai pela outbox). Faltam métricas reais e preview do template do repositório (OOC-88) e não entregues reais (OOC-90) |
 | 48 | **Tela B — campanhas** | Assistente de 4 passos, segmentos calculados no Postgres, contagem real, consentimento e opt-out | Segmento nunca fica armazenado no Brevo | ⬜ Tela mock (OOC-42) |
 | 49 | **Aprovação e prova** | Prova para até 5 endereços com prefixo `[PRUEBA]`, trava por hash do conteúdo, dupla aprovação, cooldown de 7 dias, log imutável | Editar o conteúdo após a prova fecha a trava de novo | ⬜ OOC-89 |
 

@@ -24,7 +24,9 @@ escrevê-los e entregá-los.
 ## Regra
 
 Não lê `process.env` — quem faz boot (`apps/api/src/infra/notification/createNotificationProvider.ts`)
-valida a env com zod e passa a configuração. Template novo = chave nova em
-`EmailTemplateVars` + a mesma entrada nos três arquivos de `locales/`; os testes
+valida a env com zod e passa a configuração. Template novo = entrada no
+catálogo (`packages/domain/src/notification/emailCatalog.ts`, com `emitted: true`)
++ chave nova em `EmailTemplateVars` + a mesma entrada nos três arquivos de
+`locales/`; o `tsc` recusa catálogo e vars fora de sincronia, e os testes
 em `apps/api/src/tests/email-templates.test.ts` recusam locale com chave
 faltando ou placeholder sem valor.

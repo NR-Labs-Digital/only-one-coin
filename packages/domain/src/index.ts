@@ -104,8 +104,19 @@ export type {
   EmailNotification,
 } from "./notification/EmailNotification.js";
 export {
+  EMAIL_CATALOG,
+  EMAIL_CATALOG_KEYS,
+  EMAIL_STAGES,
+  EMAIL_AUDIENCES,
+  type EmailCatalogKey,
+  type EmailStage,
+  type EmailAudience,
+  type EmittedEmailKey,
+} from "./notification/emailCatalog.js";
+export {
   enrollmentRecipients,
   enrollmentReceivedEmails,
+  paymentUnderReviewEmails,
   paymentApprovedEmails,
   paymentRejectedEmails,
   type PaymentEmailFacts,

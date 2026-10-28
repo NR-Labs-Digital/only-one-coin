@@ -539,7 +539,7 @@ function buildContainer(): AppContainer {
   const confirmReceiptUpload = new ConfirmReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
   const sendEmailVerification = new SendEmailVerificationCodeUseCase(emailVerificationRepository);
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
-  const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository);
+  const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository, enrollmentEmailContextLookup);
   const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
   const createInvite = new CreateStaffInviteUseCase(
     staffUserLookup,
@@ -646,6 +646,7 @@ function buildContainer(): AppContainer {
   const validateReceipt = new ValidateReceiptUseCase(
     receiptValidationRepository,
     platformSettingsRepository,
+    enrollmentEmailContextLookup,
   );
 
   // Queries (read-only, no domain invariant to protect — see class docs)

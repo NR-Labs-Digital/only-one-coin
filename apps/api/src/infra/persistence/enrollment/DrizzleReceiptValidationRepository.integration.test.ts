@@ -14,7 +14,12 @@ import {
   seatHolds,
   students,
 } from "@ooc/db";
-import { RECEIPT_EXTRACTION_TIER_PRIMARY, type ReceiptValidationDetail, type ReceiptVerdictOutcome } from "@ooc/domain";
+import {
+  RECEIPT_EXTRACTION_TIER_PRIMARY,
+  type EmailNotification,
+  type ReceiptValidationDetail,
+  type ReceiptVerdictOutcome,
+} from "@ooc/domain";
 import { eq, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -26,7 +31,8 @@ import { DrizzleReceiptValidationRepository } from "./DrizzleReceiptValidationRe
 /**
  * The traffic light's SQL (OOC-21): which receipts the relay offers, the
  * once-only verdict stamp, and the one move it may make — a non-green
- * verdict on the latest upload sends a `pending` payment to review. It never
+ * verdict on the latest upload sends a `pending` payment to review, and only
+ * that move writes the `payment_under_review` e-mail (OOC-87). It never
  * approves, rejects or touches the seat (owner, 03/10/2026).
  *
  * Same harness as DrizzleReceiptExtractionRepository.integration.test.ts:
@@ -214,7 +220,21 @@ async function state(tx: Tx, seeded: Seeded) {
   return row!;
 }
 
-/** The traffic light never approves: no e-mail, no audit entry, ever. */
+/** The e-mail the usecase hands over with a non-green verdict. */
+function underReview(seeded: Seeded): EmailNotification[] {
+  return [
+    {
+      templateKey: "payment_under_review",
+      to: "student@gmail.com",
+      locale: "es-PE",
+      vars: { recipientName: "Alumno", studentName: "Alumno Validacion", courseName: "Curso" },
+      dedupeKey: `payment_under_review:${seeded.paymentId}:student`,
+    },
+  ];
+}
+
+/** The traffic light never approves: no audit entry, and no e-mail but the
+ * under-review one. */
 async function sideEffects(tx: Tx, seeded: Seeded) {
   const audits = await tx.select().from(auditLog).where(eq(auditLog.targetId, seeded.paymentId));
   const emails = await tx.select().from(outbox).where(like(outbox.dedupeKey, `%:${seeded.paymentId}:%`));
@@ -232,7 +252,7 @@ describe("listValidatableIds + findSubject", () => {
       const notScreened = await receipt(tx, (await payment(tx)).paymentId, { screened: false });
       const notRead = await receipt(tx, (await payment(tx)).paymentId, { read: "none" });
       const done = await receipt(tx, (await payment(tx)).paymentId);
-      await repository.record({ subject: (await repository.findSubject(done))!, outcome: RED, detail: detail(RED) });
+      await repository.record({ subject: (await repository.findSubject(done))!, outcome: RED, detail: detail(RED), notifications: [] });
 
       const offered = await uploads.listValidatableIds(1000, TIER);
       expect(offered).toEqual(expect.arrayContaining([ready, failedRead]));
@@ -249,6 +269,8 @@ describe("listValidatableIds + findSubject", () => {
         readMethod: null,
       });
       expect(await repository.findSubject(ready)).toMatchObject({
+        classGroupId: GROUP,
+        studentId: expect.any(String),
         paymentStatus: "pending",
         expectedCents: 15000,
         declaredOperationNumber: "08312457",
@@ -281,6 +303,7 @@ describe("record", () => {
         subject: (await repository.findSubject(uploadId))!,
         outcome: GREEN,
         detail: detail(GREEN),
+        notifications: underReview(seeded),
       });
 
       expect(effect).toBe("none");
@@ -302,11 +325,14 @@ describe("record", () => {
         subject: (await repository.findSubject(uploadId))!,
         outcome: RED,
         detail: detail(RED, 4000),
+        notifications: underReview(seeded),
       });
 
       expect(effect).toBe("routed_to_review");
       expect(await state(tx, seeded)).toEqual({ status: "under_review", seatStatus: "reserved" });
-      expect(await sideEffects(tx, seeded)).toEqual({ audits: 0, emails: 0 });
+      expect(await sideEffects(tx, seeded)).toEqual({ audits: 0, emails: 1 });
+      const [email] = await tx.select().from(outbox).where(like(outbox.dedupeKey, `%:${seeded.paymentId}:%`));
+      expect(email).toMatchObject({ templateKey: "payment_under_review", status: "pending" });
       const [group] = await tx.select({ seatsTaken: classGroups.seatsTaken }).from(classGroups).where(eq(classGroups.id, GROUP));
       expect(group!.seatsTaken).toBe(10);
     });
@@ -323,6 +349,7 @@ describe("record", () => {
         subject: (await repository.findSubject(uploadId))!,
         outcome: yellow,
         detail: detail(yellow, 14990),
+        notifications: underReview(seeded),
       });
 
       expect(effect).toBe("routed_to_review");
@@ -342,14 +369,18 @@ describe("record", () => {
         subject: (await repository.findSubject(reviewedUpload))!,
         outcome: RED,
         detail: detail(RED, 4000),
+        notifications: underReview(reviewed),
       });
       const onSettled = await repository.record({
         subject: (await repository.findSubject(settledUpload))!,
         outcome: RED,
         detail: detail(RED, 4000),
+        notifications: underReview(settled),
       });
 
       expect([onReviewed, onSettled]).toEqual(["none", "none"]);
+      expect(await sideEffects(tx, reviewed)).toEqual({ audits: 0, emails: 0 });
+      expect(await sideEffects(tx, settled)).toEqual({ audits: 0, emails: 0 });
       expect(await state(tx, reviewed)).toEqual({ status: "under_review", seatStatus: "reserved" });
       expect(await state(tx, settled)).toEqual({ status: "approved", seatStatus: "confirmed" });
     });
@@ -362,11 +393,12 @@ describe("record", () => {
       const uploadId = await receipt(tx, seeded.paymentId);
       const subject = (await repository.findSubject(uploadId))!;
 
-      await repository.record({ subject, outcome: RED, detail: detail(RED) });
-      const second = await repository.record({ subject, outcome: GREEN, detail: detail(GREEN) });
+      await repository.record({ subject, outcome: RED, detail: detail(RED), notifications: underReview(seeded) });
+      const second = await repository.record({ subject, outcome: GREEN, detail: detail(GREEN), notifications: [] });
 
       expect(second).toBe("already_validated");
       expect(await state(tx, seeded)).toEqual({ status: "under_review", seatStatus: "reserved" });
+      expect(await sideEffects(tx, seeded)).toEqual({ audits: 0, emails: 1 });
       const [upload] = await tx.select().from(receiptUploads).where(eq(receiptUploads.id, uploadId));
       expect(upload!.validationVerdict).toBe("reject_suggested");
     });
@@ -383,10 +415,12 @@ describe("record", () => {
         subject: (await repository.findSubject(older))!,
         outcome: RED,
         detail: detail(RED, 4000),
+        notifications: underReview(seeded),
       });
 
       expect(effect).toBe("none");
       expect(await state(tx, seeded)).toEqual({ status: "pending", seatStatus: "reserved" });
+      expect(await sideEffects(tx, seeded)).toEqual({ audits: 0, emails: 0 });
       const [upload] = await tx.select().from(receiptUploads).where(eq(receiptUploads.id, older));
       expect(upload!.validationVerdict).toBe("reject_suggested");
     });

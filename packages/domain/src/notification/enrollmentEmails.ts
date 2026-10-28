@@ -76,6 +76,21 @@ export interface PaymentEmailFacts {
   classGroupStartsOn: Date;
 }
 
+/** "We are reviewing your payment" — the receipt pipeline sent it to a person
+ * (OOC-87). Keyed by the payment: it reaches review once, whichever level of
+ * the ladder sent it there. */
+export function paymentUnderReviewEmails(facts: PaymentEmailFacts, locale: Locale): EmailNotification[] {
+  const studentName = `${facts.student.firstName} ${facts.student.lastName}`;
+
+  return enrollmentRecipients(facts).map((recipient) => ({
+    templateKey: "payment_under_review",
+    to: recipient.to,
+    locale,
+    vars: { recipientName: recipient.name, studentName, courseName: facts.courseName },
+    dedupeKey: `payment_under_review:${facts.paymentId}:${recipient.kind}`,
+  }));
+}
+
 /** "Your payment was approved" — the enrollment is now real (OOC-55). */
 export function paymentApprovedEmails(facts: PaymentEmailFacts, locale: Locale): EmailNotification[] {
   const studentName = `${facts.student.firstName} ${facts.student.lastName}`;

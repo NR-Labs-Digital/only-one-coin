@@ -1,7 +1,14 @@
+import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
+import { paymentUnderReviewEmails } from "../notification/enrollmentEmails.js";
 import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSettingsRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
+import type { IEnrollmentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
 import { decideReceiptVerdict, type ReceiptVerdictOutcome } from "./ReceiptValidation.js";
-import type { IReceiptValidationRepository, ReceiptValidationEffect } from "./ReceiptValidationRepository.js";
+import type {
+  IReceiptValidationRepository,
+  ReceiptValidationEffect,
+  ReceiptValidationSubject,
+} from "./ReceiptValidationRepository.js";
 
 export interface ValidateReceiptInput {
   receiptUploadId: string;
@@ -21,13 +28,18 @@ export interface ValidateReceiptOutput {
  *
  * It only validates — approvals are never automatic (owner, 03/10/2026).
  * Green leaves the payment `pending` with the verdict on it; yellow and red
- * send it to `under_review`. Whoever approves or rejects is a person in
- * Payments (`SettlePaymentUseCase`).
+ * send it to `under_review`, and the student (with a minor's guardian) hears
+ * about it — `payment_under_review` (OOC-87). Whoever approves or rejects is
+ * a person in Payments (`SettlePaymentUseCase`).
+ *
+ * The e-mail goes out in es-PE: the enrollment does not record the language
+ * its form was filled in.
  */
 export class ValidateReceiptUseCase extends BaseUseCase<ValidateReceiptInput, ValidateReceiptOutput> {
   constructor(
     private readonly repository: IReceiptValidationRepository,
     private readonly settings: IPlatformSettingsRepository,
+    private readonly emailContextLookup: IEnrollmentEmailContextLookup,
   ) {
     super();
   }
@@ -54,12 +66,22 @@ export class ValidateReceiptUseCase extends BaseUseCase<ValidateReceiptInput, Va
       settings,
     });
 
+    // Written only if the repository actually moves the payment: green
+    // leaves it pending, and an older upload or a settled payment stays put.
+    const notifications = outcome.verdict === "approve" ? [] : await this.underReviewEmails(subject);
+
     const effect = await this.repository.record({
       subject,
       outcome,
       detail: { reason: outcome.reason, expectedCents: subject.expectedCents, readCents: subject.readAmountCents, ...settings },
+      notifications,
     });
 
     return { outcome, effect };
+  }
+
+  private async underReviewEmails(subject: ReceiptValidationSubject): Promise<EmailNotification[]> {
+    const context = await this.emailContextLookup.find({ studentId: subject.studentId, classGroupId: subject.classGroupId });
+    return context ? paymentUnderReviewEmails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE) : [];
   }
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EMAIL_CATALOG, EMAIL_CATALOG_KEYS, type EmittedEmailKey } from "./emailCatalog.js";
 
 /**
  * The three locales everything the user reads ships in (CLAUDE.md §4), es-PE
@@ -75,17 +76,17 @@ export interface EmailTemplateVars {
 
 export type EmailTemplateKey = keyof EmailTemplateVars;
 
-export const EMAIL_TEMPLATE_KEYS = [
-  "enrollment_received",
-  "payment_under_review",
-  "payment_approved",
-  "payment_rejected",
-  "portal_credentials",
-  "staff_password_reset",
-  "portal_password_reset",
-  "email_verification_code",
-  "staff_mfa_code",
-] as const satisfies readonly EmailTemplateKey[];
+/** The catalog's entries emitted today (`emailCatalog.ts`) — the templates
+ * `packages/notifications` has to be able to render. */
+export const EMAIL_TEMPLATE_KEYS = EMAIL_CATALOG_KEYS.filter(
+  (key): key is EmailTemplateKey => EMAIL_CATALOG[key].emitted,
+);
+
+/* Fails to compile in either direction: vars for a template the catalog does
+   not mark emitted, or an entry marked emitted with no vars to send it with. */
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Assert<T extends true> = T;
+type _EmittedTemplatesHaveVars = Assert<Same<EmittedEmailKey, EmailTemplateKey>>;
 
 /** One message to one recipient — the shape of one `outbox` row. A union over
  * the template keys, so the vars can never belong to another template. */

@@ -1,3 +1,4 @@
+import type { EmailNotification } from "../notification/EmailNotification.js";
 import type { PaymentMethod, PaymentStatus } from "./Payment.js";
 import type { ReceiptValidationSettings, ReceiptVerdictOutcome, ReceiptVerdictReason } from "./ReceiptValidation.js";
 
@@ -6,6 +7,9 @@ import type { ReceiptValidationSettings, ReceiptVerdictOutcome, ReceiptVerdictRe
 export interface ReceiptValidationSubject {
   receiptUploadId: string;
   paymentId: string;
+  /** The enrollment's, for who to write to if the payment goes to review. */
+  studentId: string;
+  classGroupId: string;
   paymentStatus: PaymentStatus;
   /** `payments.amount_cents` — the price frozen at enrollment, never today's. */
   expectedCents: number;
@@ -50,11 +54,14 @@ export interface IReceiptValidationRepository {
    * One transaction: stamps the verdict once (`validated_at is null`), then
    * — only for the payment's latest upload, only while the payment is still
    * `pending`, and only when the verdict is not green — moves the payment to
-   * `under_review`. It never approves, never rejects, never touches the seat.
+   * `under_review`, writing `notifications` (the `payment_under_review`
+   * e-mail) to the outbox in the same transaction — and only then. It never
+   * approves, never rejects, never touches the seat.
    */
   record(params: {
     subject: ReceiptValidationSubject;
     outcome: ReceiptVerdictOutcome;
     detail: ReceiptValidationDetail;
+    notifications: EmailNotification[];
   }): Promise<ReceiptValidationEffect>;
 }

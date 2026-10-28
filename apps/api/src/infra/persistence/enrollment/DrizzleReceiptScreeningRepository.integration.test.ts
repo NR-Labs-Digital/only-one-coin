@@ -4,6 +4,7 @@ import {
   classGroups,
   courses,
   enrollments,
+  outbox,
   payments,
   planPrices,
   plans,
@@ -11,8 +12,8 @@ import {
   seatHolds,
   students,
 } from "@ooc/db";
-import { OperationNumberAlreadyUsedError, type PaymentMethod } from "@ooc/domain";
-import { eq } from "drizzle-orm";
+import { OperationNumberAlreadyUsedError, type EmailNotification, type PaymentMethod } from "@ooc/domain";
+import { eq, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -141,6 +142,25 @@ async function payment(
     })
     .returning({ id: payments.id });
   return row!.id;
+}
+
+/** The e-mail the usecase hands over when the screening routes to review. */
+function underReview(paymentId: string): EmailNotification[] {
+  return [
+    {
+      templateKey: "payment_under_review",
+      to: "student@gmail.com",
+      locale: "es-PE",
+      vars: { recipientName: "Alumno", studentName: "Alumno Antifraude", courseName: "Curso" },
+      dedupeKey: `payment_under_review:${paymentId}:student`,
+    },
+  ];
+}
+
+/** What reached the outbox about a payment — only a real move writes it. */
+async function emailsAbout(tx: Tx, paymentId: string): Promise<string[]> {
+  const rows = await tx.select({ templateKey: outbox.templateKey }).from(outbox).where(like(outbox.dedupeKey, `%:${paymentId}:%`));
+  return rows.map((row) => row.templateKey);
 }
 
 interface Print {
@@ -311,23 +331,29 @@ describe("DrizzleReceiptScreeningRepository", () => {
       const quietPayment = await payment(tx);
       const quiet = await receipt(tx, print("d2", UNRELATED), quietPayment);
 
+      expect(await repository.findSubject(routed)).toMatchObject({ classGroupId: GROUP, studentId: expect.any(String) });
+
       await repository.recordScreening({
         receiptUploadId: routed,
         paymentId: routedPayment,
         signals: [{ kind: "edited_with_software", software: "GIMP" }],
         routeToReview: true,
+        notifications: underReview(routedPayment),
       });
       await repository.recordScreening({
         receiptUploadId: quiet,
         paymentId: quietPayment,
         signals: [{ kind: "similar_image", receiptUploadId: routed, paymentId: routedPayment, distance: 3 }],
         routeToReview: false,
+        notifications: [],
       });
 
       const statusOf = async (id: string) =>
         (await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, id)))[0]?.status;
       expect(await statusOf(routedPayment)).toBe("under_review");
       expect(await statusOf(quietPayment)).toBe("pending");
+      expect(await emailsAbout(tx, routedPayment)).toEqual(["payment_under_review"]);
+      expect(await emailsAbout(tx, quietPayment)).toEqual([]);
 
       const [stamped] = await tx
         .select({ fraudSignals: receiptUploads.fraudSignals, screenedAt: receiptUploads.screenedAt })
@@ -346,8 +372,10 @@ describe("DrizzleReceiptScreeningRepository", () => {
         paymentId: quietPayment,
         signals: [],
         routeToReview: true,
+        notifications: underReview(quietPayment),
       });
       expect(await statusOf(quietPayment)).toBe("pending");
+      expect(await emailsAbout(tx, quietPayment)).toEqual([]);
     });
   });
 
@@ -362,10 +390,12 @@ describe("DrizzleReceiptScreeningRepository", () => {
         paymentId: approved,
         signals: [{ kind: "edited_with_software", software: "GIMP" }],
         routeToReview: true,
+        notifications: underReview(approved),
       });
 
       const [row] = await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, approved));
       expect(row?.status).toBe("approved");
+      expect(await emailsAbout(tx, approved)).toEqual([]);
     });
   });
 });

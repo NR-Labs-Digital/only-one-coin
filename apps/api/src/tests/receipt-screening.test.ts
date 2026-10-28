@@ -6,6 +6,9 @@ import {
   normalizeOperationNumber,
   payerNameMatches,
   routesToHumanReview,
+  type EmailNotification,
+  type EnrollmentEmailContext,
+  type IEnrollmentEmailContextLookup,
   type IReceiptScreeningRepository,
   type ReceiptFraudSignal,
   type ReceiptLookalike,
@@ -121,6 +124,7 @@ describe("routesToHumanReview", () => {
 
 class FakeScreeningRepository implements IReceiptScreeningRepository {
   recorded: Array<{ signals: ReceiptFraudSignal[]; routeToReview: boolean }> = [];
+  notifications: EmailNotification[][] = [];
 
   constructor(
     private readonly subject: ReceiptScreeningSubject | null,
@@ -135,13 +139,39 @@ class FakeScreeningRepository implements IReceiptScreeningRepository {
     return Promise.resolve(this.lookalikes);
   }
 
-  recordScreening(params: { signals: ReceiptFraudSignal[]; routeToReview: boolean }): Promise<void> {
+  recordScreening(params: Parameters<IReceiptScreeningRepository["recordScreening"]>[0]): Promise<void> {
     this.recorded.push({ signals: params.signals, routeToReview: params.routeToReview });
+    this.notifications.push(params.notifications);
     return Promise.resolve();
   }
 }
 
-const SUBJECT: ReceiptScreeningSubject = { receiptUploadId: "upload-new", paymentId: "payment-new", exif: null };
+class FakeEmailContextLookup implements IEnrollmentEmailContextLookup {
+  constructor(private readonly context: EnrollmentEmailContext | null) {}
+  find(): Promise<EnrollmentEmailContext | null> {
+    return Promise.resolve(this.context);
+  }
+}
+
+const MINOR_CONTEXT: EnrollmentEmailContext = {
+  student: { firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com", birthDate: new Date("2014-05-01T00:00:00.000Z") },
+  guardian: { firstName: "Rosa", email: "rosa@example.com" },
+  courseName: "Inglés Básico",
+  classGroupStartsOn: new Date("2026-11-02T00:00:00.000Z"),
+};
+
+function useCase(repository: FakeScreeningRepository, context: EnrollmentEmailContext | null = MINOR_CONTEXT) {
+  return new ScreenReceiptUploadUseCase(repository, new FakeEmailContextLookup(context));
+}
+
+const SUBJECT: ReceiptScreeningSubject = {
+  receiptUploadId: "upload-new",
+  paymentId: "payment-new",
+  studentId: "student-new",
+  classGroupId: "group-new",
+  exif: null,
+};
+const EDITED = { software: "Snapseed 2.0", capturedAt: null, modifiedAt: null };
 
 function similar(n: number, distance: number): ReceiptLookalike {
   return { receiptUploadId: `upload-${n}`, paymentId: `payment-${n}`, match: { kind: "similar", distance } };
@@ -150,7 +180,7 @@ function similar(n: number, distance: number): ReceiptLookalike {
 describe("ScreenReceiptUploadUseCase", () => {
   it("does nothing when there is nothing to screen yet", async () => {
     const repository = new FakeScreeningRepository(null);
-    const output = await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    const output = await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     expect(output).toEqual({ signals: null, routedToReview: false });
     expect(repository.recorded).toEqual([]);
@@ -158,14 +188,14 @@ describe("ScreenReceiptUploadUseCase", () => {
 
   it("a clean receipt is stamped as screened with no signals and stays where it was", async () => {
     const repository = new FakeScreeningRepository(SUBJECT);
-    await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     expect(repository.recorded).toEqual([{ signals: [], routeToReview: false }]);
   });
 
   it("a merely similar image is recorded for the reviewer but does not route the payment", async () => {
     const repository = new FakeScreeningRepository(SUBJECT, [similar(1, 3)]);
-    await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     expect(repository.recorded).toEqual([
       {
@@ -180,7 +210,7 @@ describe("ScreenReceiptUploadUseCase", () => {
       similar(1, 1),
       { receiptUploadId: "upload-2", paymentId: "payment-2", match: { kind: "identical" } },
     ]);
-    const output = await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    const output = await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     expect(output.routedToReview).toBe(true);
     expect(repository.recorded[0]?.signals[0]).toEqual({
@@ -193,9 +223,9 @@ describe("ScreenReceiptUploadUseCase", () => {
   it("EXIF signals route on their own", async () => {
     const repository = new FakeScreeningRepository({
       ...SUBJECT,
-      exif: { software: "Snapseed 2.0", capturedAt: null, modifiedAt: null },
+      exif: EDITED,
     });
-    const output = await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    const output = await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     expect(output).toEqual({
       signals: [{ kind: "edited_with_software", software: "Snapseed 2.0" }],
@@ -208,11 +238,48 @@ describe("ScreenReceiptUploadUseCase", () => {
       SUBJECT,
       [6, 1, 5, 2, 4, 3, 0].map((distance, n) => similar(n, distance)),
     );
-    await new ScreenReceiptUploadUseCase(repository).run({ receiptUploadId: "upload-new" });
+    await useCase(repository).run({ receiptUploadId: "upload-new" });
 
     const distances = repository.recorded[0]!.signals.map((signal) =>
       signal.kind === "similar_image" ? signal.distance : null,
     );
     expect(distances).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("routing hands over the under-review e-mail, to the student and a minor's guardian (OOC-87)", async () => {
+    const repository = new FakeScreeningRepository({ ...SUBJECT, exif: EDITED });
+    await useCase(repository).run({ receiptUploadId: "upload-new" });
+
+    expect(repository.notifications[0]).toEqual([
+      {
+        templateKey: "payment_under_review",
+        to: "ana@gmail.com",
+        locale: "es-PE",
+        vars: { recipientName: "Ana", studentName: "Ana Quispe", courseName: "Inglés Básico" },
+        dedupeKey: "payment_under_review:payment-new:student",
+      },
+      {
+        templateKey: "payment_under_review",
+        to: "rosa@example.com",
+        locale: "es-PE",
+        vars: { recipientName: "Rosa", studentName: "Ana Quispe", courseName: "Inglés Básico" },
+        dedupeKey: "payment_under_review:payment-new:guardian",
+      },
+    ]);
+  });
+
+  it("a receipt that does not route writes to nobody", async () => {
+    const repository = new FakeScreeningRepository(SUBJECT, [similar(1, 3)]);
+    await useCase(repository).run({ receiptUploadId: "upload-new" });
+
+    expect(repository.notifications).toEqual([[]]);
+  });
+
+  it("still routes when there is nobody on file to write to", async () => {
+    const repository = new FakeScreeningRepository({ ...SUBJECT, exif: EDITED });
+    const output = await useCase(repository, null).run({ receiptUploadId: "upload-new" });
+
+    expect(output.routedToReview).toBe(true);
+    expect(repository.notifications).toEqual([[]]);
   });
 });

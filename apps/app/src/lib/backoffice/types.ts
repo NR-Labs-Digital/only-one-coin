@@ -8,6 +8,7 @@
  * resolved to text through the `bo` i18n namespace.
  */
 
+import type { EmailAudience, EmailCatalogKey, EmailStage } from '@ooc/domain/email-catalog'
 import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type {
   DocumentStatus,
@@ -354,28 +355,13 @@ export type StudentField =
   | 'relationship'
 
 /**
- * Versioned e-mail templates (CLAUDE.md §5, outbox). The union *is* the
- * catalog: every transactional message the platform sends has an entry here,
+ * Versioned e-mail templates (CLAUDE.md §5, outbox). One catalog for the app and
+ * the API (`packages/domain/src/notification/emailCatalog.ts`, OOC-87): every
+ * transactional message the platform sends or plans to send has an entry there,
  * and the template it renders lives in the repository — never drawn only in the
  * provider's panel, so what the e-mail screen previews is what ships.
  */
-export type EmailTemplate =
-  | 'enrollment_submitted'
-  | 'guardian_consent_reminder'
-  | 'payment_under_review'
-  | 'seat_reservation_expiring'
-  | 'payment_approved'
-  | 'payment_rejected'
-  | 'credentials_issued'
-  | 'class_access_ready'
-  | 'enrollment_certificate_issued'
-  | 'certificate_issued'
-  /* Internal — the people who run the courses, not the ones taking them. */
-  | 'teacher_credentials_issued'
-  | 'teacher_class_group_assigned'
-  | 'teacher_contract_expiring'
-  | 'teacher_grades_pending'
-  | 'staff_certificates_ready'
+export type EmailTemplate = EmailCatalogKey
 
 /**
  * What an audit entry points at. Either real data (a course name, an operation
@@ -1249,24 +1235,10 @@ export interface NewEnrollmentInput {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The domain events the automatic e-mails hang off — the spine of the flow.
- * Not a database column: it is what *happens*, in order, and the e-mails are
- * what leaves because of it. Written as events rather than as chapters, because
- * a flow drawn over chapter titles is a list with a line down the side.
+ * The domain events the automatic e-mails hang off, and who each template is
+ * written to — both closed vocabularies of the catalog in `@ooc/domain`.
  */
-export type EmailStage =
-  | 'submitted'
-  | 'payment_pending'
-  | 'payment_settled'
-  | 'access'
-  | 'documents'
-
-/**
- * Who the template is written to — it decides the tone, the address, and
- * whether the message belongs to the student's journey at all. `teacher` and
- * `staff` are internal: nobody outside the institution ever receives them.
- */
-export type EmailAudience = 'student' | 'guardian' | 'teacher' | 'staff'
+export type { EmailAudience, EmailStage }
 
 /**
  * What the provider reported back over a rolling window. Delivery, bounce and
@@ -1292,10 +1264,6 @@ export interface EmailSample {
   studentName: string
   /** Where the preview says it is going — invented, like the name above it. */
   studentEmail: string
-  guardianName: string
-  guardianEmail: string
-  teacherName: string
-  teacherEmail: string
   staffName: string
   staffEmail: string
   courseName: string
@@ -1317,17 +1285,23 @@ export interface EmailFlow {
   template: EmailTemplate
   audience: EmailAudience
   /**
-   * The event it leaves because of — the flow branches off this. Null for the
-   * internal ones: a message to a teacher is not a step of the student's
-   * journey, and putting it on that line would be drawing a path nobody walks.
+   * The event it leaves because of — the flow branches off this. Null for
+   * account security and the staff's own e-mails: none is a step of the
+   * student's journey, and putting it on that line would be drawing a path
+   * nobody walks.
    */
   stage: EmailStage | null
   /**
    * Fires only when the case takes that turn: the receipt that needed a human,
-   * the seat nobody paid for, the student who is a minor. The journey has to
-   * say so, or a branch reads like a step everybody goes through.
+   * the payment rejected. The journey has to say so, or a branch reads like a
+   * step everybody goes through.
    */
   conditional: boolean
+  /**
+   * Whether the platform writes it to the outbox today. False is a template
+   * the rules describe and nothing sends yet — it has no switch to flip.
+   */
+  emitted: boolean
   /** Whether the outbox may send it at all. Off means nobody receives it. */
   enabled: boolean
   /** Version of the template in the repository — bumped, never edited in place. */

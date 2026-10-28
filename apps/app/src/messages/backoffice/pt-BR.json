@@ -857,43 +857,35 @@
       "certificate": "Certificado de conclusão"
     },
     "email_template": {
-      "enrollment_submitted": "Matrícula recebida",
+      "enrollment_received": "Matrícula recebida",
       "payment_under_review": "Comprovante em revisão",
       "payment_approved": "Pagamento aprovado",
       "payment_rejected": "Pagamento rejeitado",
-      "credentials_issued": "Credenciais de acesso",
-      "guardian_consent_reminder": "Lembrete de consentimento",
-      "seat_reservation_expiring": "Vaga a vencer",
+      "portal_credentials": "Credenciais de acesso",
       "class_access_ready": "Acesso à sala virtual",
       "enrollment_certificate_issued": "Constancia de matrícula",
       "certificate_issued": "Certificado de conclusão",
-      "teacher_credentials_issued": "Acesso do docente",
-      "teacher_class_group_assigned": "Turma atribuída",
-      "teacher_contract_expiring": "Contrato a vencer",
-      "teacher_grades_pending": "Notas pendentes",
-      "staff_certificates_ready": "Turma pronta para certificados"
+      "email_verification_code": "Código de verificação do e-mail",
+      "portal_password_reset": "Recuperar senha do portal",
+      "staff_password_reset": "Recuperar senha do painel",
+      "staff_mfa_code": "Código de acesso ao painel"
     },
     "email_trigger": {
-      "enrollment_submitted": "Ao receber os dados da matrícula, depois que o aluno preenche o formulário.",
+      "enrollment_received": "Ao receber os dados da matrícula, depois que o aluno preenche o formulário.",
       "payment_under_review": "Quando o comprovante vai para revisão humana.",
       "payment_approved": "Quando o pagamento é aprovado.",
       "payment_rejected": "Quando a revisão rejeita o comprovante.",
-      "credentials_issued": "Quando o acesso ao portal é criado.",
-      "guardian_consent_reminder": "Quando o aluno é menor e falta o consentimento.",
-      "seat_reservation_expiring": "Um dia antes de a vaga ser liberada.",
+      "portal_credentials": "Quando o acesso ao portal é criado.",
       "class_access_ready": "Três dias antes do início da turma.",
       "enrollment_certificate_issued": "Ao emitir a constancia solicitada.",
       "certificate_issued": "Ao emitir o certificado da turma.",
-      "teacher_credentials_issued": "Quando a conta do docente é criada no painel.",
-      "teacher_class_group_assigned": "Quando uma turma passa a ser dele.",
-      "teacher_contract_expiring": "45 dias antes de o contrato terminar.",
-      "teacher_grades_pending": "No fechamento do ciclo, se faltarem notas dele.",
-      "staff_certificates_ready": "Quando uma turma termina e a lista fica pronta para a coordenação confirmar."
+      "email_verification_code": "Quando o aluno pede o código na etapa dos seus dados, durante a matrícula.",
+      "portal_password_reset": "Quando o aluno pede para recuperar a senha do portal.",
+      "staff_password_reset": "Quando alguém da equipe pede para recuperar a senha do painel.",
+      "staff_mfa_code": "A cada entrada no painel com verificação em duas etapas, e ao ativá-la."
     },
     "email_audience": {
       "student": "Aluno",
-      "guardian": "Apoderado",
-      "teacher": "Docente",
       "staff": "Coordenação"
     },
     "email_stage": {
@@ -904,9 +896,7 @@
       "documents": "Documentos do curso"
     },
     "email_condition": {
-      "guardian_consent_reminder": "se for menor de idade",
       "payment_under_review": "se precisar de revisão humana",
-      "seat_reservation_expiring": "se o pagamento não fechar",
       "payment_rejected": "se for rejeitado",
       "enrollment_certificate_issued": "se ele solicitar"
     },
@@ -922,7 +912,7 @@
       "failed": "Falhou"
     },
     "email_preview": {
-      "enrollment_submitted": {
+      "enrollment_received": {
         "subject": "Recebemos sua matrícula em {course}",
         "p1": "Olá {name}: registramos seu pedido de matrícula em {course} ({classGroup}) e já temos seu comprovante de {amount}.",
         "p2": "Estamos conferindo. Escrevemos de novo assim que terminar; não é preciso enviar nada outra vez.",
@@ -946,23 +936,11 @@
         "p2": "Fale com a gente pelo WhatsApp que resolvemos juntos. Tenha o número da operação à mão.",
         "cta": "Ver o detalhe do meu pagamento"
       },
-      "credentials_issued": {
-        "subject": "Seus dados de acesso ao portal do aluno",
-        "p1": "Olá {name}: você já pode entrar no portal com o e-mail que usou na matrícula. Lá estão seu curso, seu horário e seus documentos.",
-        "p2": "Na primeira vez pediremos uma senha nova. Não compartilhe este e-mail com ninguém.",
-        "cta": "Entrar no portal"
-      },
-      "guardian_consent_reminder": {
-        "subject": "Falta o seu consentimento para a matrícula de {name}",
-        "p1": "Olá {guardian}: {name} se matriculou em {course} e, por ser menor de idade, precisamos do seu consentimento para tratar os dados dele (Ley 29733).",
-        "p2": "É um formulário de um minuto. Sem ele não conseguimos completar a matrícula.",
-        "cta": "Dar meu consentimento"
-      },
-      "seat_reservation_expiring": {
-        "subject": "Sua vaga em {course} vence amanhã",
-        "p1": "Olá {name}: guardamos sua vaga em {classGroup} enquanto o pagamento é confirmado, e o prazo termina amanhã.",
-        "p2": "Se você já pagou, mande o número da operação pelo WhatsApp que revisamos ainda hoje.",
-        "cta": "Ver o estado do meu pagamento"
+      "portal_credentials": {
+        "subject": "Ative seu acesso ao portal do aluno",
+        "p1": "Olá, {name}: sua matrícula foi aprovada e sua conta no portal do aluno já está criada. Você pode entrar com seu e-mail ou com o documento usado na matrícula.",
+        "p2": "Use o botão para criar sua senha. O link vale por sete dias e só pode ser usado uma vez.",
+        "cta": "Criar minha senha"
       },
       "class_access_ready": {
         "subject": "Sua sala virtual de {course} já está pronta",
@@ -982,35 +960,27 @@
         "p2": "Ele também fica guardado no seu portal, com o código de verificação.",
         "cta": "Ver meu certificado"
       },
-      "teacher_credentials_issued": {
-        "subject": "Seu acesso ao painel da Only One Coin",
-        "p1": "Olá {name}: criamos sua conta do painel. Você entra com este mesmo e-mail e lá vê suas turmas, seus alunos e as notas a lançar.",
-        "p2": "Na primeira vez pediremos uma senha nova. Não compartilhe este e-mail com ninguém.",
-        "cta": "Entrar no painel"
+      "email_verification_code": {
+        "subject": "Seu código de verificação",
+        "p1": "Olá, {name}: você está concluindo uma matrícula na Only One Coin. Para confirmar que este e-mail é seu, digite no formulário o código que chega nesta mensagem.",
+        "p2": "O código vence em 10 minutos. Se você não está fazendo uma matrícula, ignore este e-mail."
       },
-      "teacher_class_group_assigned": {
-        "subject": "Você tem uma turma nova: {classGroup}",
-        "p1": "Olá {name}: a turma {classGroup} de {course} passou a ser sua. Começa em {date}.",
-        "p2": "No painel você vê a lista de alunos, o horário e o link da sala virtual.",
-        "cta": "Ver a turma"
+      "portal_password_reset": {
+        "subject": "Redefina sua senha do portal do aluno",
+        "p1": "Olá, {name}: recebemos um pedido para redefinir a senha da sua conta no portal do aluno.",
+        "p2": "O link vale por uma hora e só pode ser usado uma vez. Se você não pediu, ignore este e-mail: sua senha continua a mesma.",
+        "cta": "Criar senha nova"
       },
-      "teacher_contract_expiring": {
-        "subject": "Seu contrato vence em breve",
-        "p1": "Olá {name}: seu contrato com a Asociación termina em {date}. Avisamos com tempo para renovar antes de o próximo ciclo começar.",
-        "p2": "A coordenação fala com você para a assinatura. Se já conversaram, ignore este e-mail.",
-        "cta": "Ver minha ficha"
+      "staff_password_reset": {
+        "subject": "Redefina sua senha do painel",
+        "p1": "Olá, {name}: recebemos um pedido para redefinir a senha da sua conta no painel da Only One Coin.",
+        "p2": "O link vale por uma hora e só pode ser usado uma vez. Se não foi você, ignore este e-mail: sua senha continua a mesma.",
+        "cta": "Criar senha nova"
       },
-      "teacher_grades_pending": {
-        "subject": "Faltam notas a lançar em {classGroup}",
-        "p1": "Olá {name}: o ciclo de {classGroup} fechou e ainda faltam notas suas.",
-        "p2": "Sem elas não conseguimos emitir os certificados desses alunos.",
-        "cta": "Lançar as notas"
-      },
-      "staff_certificates_ready": {
-        "subject": "{classGroup} está pronta para emitir certificados",
-        "p1": "Olá {name}: {classGroup} terminou e a lista de quem cumpre os requisitos já está montada.",
-        "p2": "Nada sai sozinho: quem revisa e confirma é você.",
-        "cta": "Revisar a lista"
+      "staff_mfa_code": {
+        "subject": "Seu código de acesso ao painel",
+        "p1": "Olá, {name}: alguém que conhece a senha da sua conta no painel está entrando ou ativando a verificação em duas etapas. Para continuar, digite o código que chega nesta mensagem.",
+        "p2": "O código vence em 10 minutos e só pode ser usado uma vez. Se não foi você, não o compartilhe com ninguém e troque sua senha."
       }
     },
     "emails": {
@@ -1037,6 +1007,7 @@
       "col_delivered": "Entregues",
       "state_on": "Ativo",
       "state_off": "Pausado",
+      "state_not_emitted": "Ainda não é enviado",
       "empty_title": "Nenhum e-mail corresponde",
       "empty_body": "Tente outro texto ou tire o filtro de pausados.",
       "open": "Ver o modelo",
@@ -1054,6 +1025,7 @@
       "state_label": "A plataforma envia este e-mail",
       "state_hint_on": "Sai sozinho, assim que acontece o que o dispara.",
       "state_hint_off": "Está pausado: ninguém o recebe, nem quem está esperando por ele.",
+      "state_hint_not_emitted": "Nada na plataforma envia este e-mail ainda. O texto já está escrito; o envio chega quando o que o dispara for construído.",
       "toast_enabled": "E-mail ativado",
       "toast_paused": "E-mail pausado",
       "no_send_notice": "Não existe botão de enviar por aluno: cada e-mail sai como consequência do que aconteceu no sistema, e reenviar é uma exceção auditada.",
@@ -1076,8 +1048,8 @@
       "journey_empty": "Nenhum e-mail sai neste ponto ainda.",
       "help": "Como se lê",
       "help_condition": "A etiqueta cinza é a condição: esse e-mail só sai se o caso tomar aquele caminho.",
-      "help_guardian": "Apoderado: quem recebe é ele, não o aluno.",
       "help_paused": "Pausado: esse e-mail está desligado e naquele ponto ninguém recebe nada.",
+      "help_not_emitted": "Ainda não é enviado: o e-mail está previsto, mas nada na plataforma o dispara ainda.",
       "help_open": "Cada quadro abre o e-mail, com o modelo dele.",
       "test_add": "Adicionar e-mail",
       "test_remove": "Remover {value}",

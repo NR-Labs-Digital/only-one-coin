@@ -857,43 +857,35 @@
       "certificate": "Completion certificate"
     },
     "email_template": {
-      "enrollment_submitted": "Enrollment received",
+      "enrollment_received": "Enrollment received",
       "payment_under_review": "Receipt under review",
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
-      "credentials_issued": "Portal credentials",
-      "guardian_consent_reminder": "Consent reminder",
-      "seat_reservation_expiring": "Seat about to expire",
+      "portal_credentials": "Portal credentials",
       "class_access_ready": "Virtual classroom access",
       "enrollment_certificate_issued": "Enrollment certificate",
       "certificate_issued": "Completion certificate",
-      "teacher_credentials_issued": "Teacher access",
-      "teacher_class_group_assigned": "Class group assigned",
-      "teacher_contract_expiring": "Contract about to lapse",
-      "teacher_grades_pending": "Grades still missing",
-      "staff_certificates_ready": "Class group ready for certificates"
+      "email_verification_code": "E-mail verification code",
+      "portal_password_reset": "Portal password reset",
+      "staff_password_reset": "Panel password reset",
+      "staff_mfa_code": "Panel access code"
     },
     "email_trigger": {
-      "enrollment_submitted": "When the enrollment data arrives, after the student fills in the form.",
+      "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
       "payment_under_review": "When the receipt goes to human review.",
       "payment_approved": "When the payment is approved.",
       "payment_rejected": "When the review rejects the receipt.",
-      "credentials_issued": "When the portal account is created.",
-      "guardian_consent_reminder": "When the student is a minor and consent is missing.",
-      "seat_reservation_expiring": "One day before the seat is released.",
+      "portal_credentials": "When the portal account is created.",
       "class_access_ready": "Three days before the class group starts.",
       "enrollment_certificate_issued": "When the requested certificate is issued.",
       "certificate_issued": "When the class group certificates are issued.",
-      "teacher_credentials_issued": "When the teacher’s panel account is created.",
-      "teacher_class_group_assigned": "When a class group becomes theirs.",
-      "teacher_contract_expiring": "45 days before the contract ends.",
-      "teacher_grades_pending": "At the end of the cycle, if grades of theirs are missing.",
-      "staff_certificates_ready": "When a class group ends and the list is ready for coordination to confirm."
+      "email_verification_code": "When the student asks for the code on the details step, while enrolling.",
+      "portal_password_reset": "When the student asks to recover their portal password.",
+      "staff_password_reset": "When a staff member asks to recover their panel password.",
+      "staff_mfa_code": "Every sign-in to the panel with two-step verification, and when turning it on."
     },
     "email_audience": {
       "student": "Student",
-      "guardian": "Guardian",
-      "teacher": "Teacher",
       "staff": "Coordination"
     },
     "email_stage": {
@@ -904,9 +896,7 @@
       "documents": "Course documents"
     },
     "email_condition": {
-      "guardian_consent_reminder": "if the student is a minor",
       "payment_under_review": "if it needs human review",
-      "seat_reservation_expiring": "if the payment does not settle",
       "payment_rejected": "if it is rejected",
       "enrollment_certificate_issued": "if they request it"
     },
@@ -922,7 +912,7 @@
       "failed": "Failed"
     },
     "email_preview": {
-      "enrollment_submitted": {
+      "enrollment_received": {
         "subject": "We received your enrollment in {course}",
         "p1": "Hi {name}: we registered your enrollment request for {course} ({classGroup}) and we already have your {amount} receipt.",
         "p2": "We are checking it now. We will write again as soon as we are done — there is nothing to send twice.",
@@ -946,23 +936,11 @@
         "p2": "Message us on WhatsApp and we will sort it out with you. Keep your operation number at hand.",
         "cta": "See my payment detail"
       },
-      "credentials_issued": {
-        "subject": "Your student portal credentials",
-        "p1": "Hi {name}: you can now sign in to the portal with the e-mail you enrolled with. Your course, your schedule and your documents are there.",
-        "p2": "The first time, we will ask you to set a new password. Do not share this e-mail with anyone.",
-        "cta": "Open the portal"
-      },
-      "guardian_consent_reminder": {
-        "subject": "Your consent is missing for {name}’s enrollment",
-        "p1": "Hi {guardian}: {name} enrolled in {course} and, being a minor, we need your consent to process their data (Ley 29733).",
-        "p2": "It is a one-minute form. Without it we cannot complete the enrollment.",
-        "cta": "Give my consent"
-      },
-      "seat_reservation_expiring": {
-        "subject": "Your seat in {course} expires tomorrow",
-        "p1": "Hi {name}: we are holding your seat in {classGroup} while your payment is confirmed, and the deadline is tomorrow.",
-        "p2": "If you already paid, send us your operation number on WhatsApp and we will review it today.",
-        "cta": "See my payment status"
+      "portal_credentials": {
+        "subject": "Activate your student portal access",
+        "p1": "Hi {name}: your enrollment was approved and your student portal account is ready. You can sign in with your e-mail or with the document you enrolled with.",
+        "p2": "Use the button to create your password. The link is valid for seven days and works only once.",
+        "cta": "Create my password"
       },
       "class_access_ready": {
         "subject": "Your {course} virtual classroom is ready",
@@ -982,35 +960,27 @@
         "p2": "It is also kept in your portal, with its verification code.",
         "cta": "See my certificate"
       },
-      "teacher_credentials_issued": {
-        "subject": "Your access to the Only One Coin panel",
-        "p1": "Hi {name}: we created your panel account. You sign in with this same address, and your class groups, students and pending grades are there.",
-        "p2": "The first time, we will ask you to set a new password. Do not share this e-mail with anyone.",
-        "cta": "Open the panel"
+      "email_verification_code": {
+        "subject": "Your verification code",
+        "p1": "Hi {name}: you are completing an enrollment at Only One Coin. To confirm this address is yours, type the code in this message into the form.",
+        "p2": "The code expires in 10 minutes. If you are not enrolling, ignore this e-mail."
       },
-      "teacher_class_group_assigned": {
-        "subject": "You have a new class group: {classGroup}",
-        "p1": "Hi {name}: the class group {classGroup} of {course} is yours now. It starts on {date}.",
-        "p2": "The panel has the student list, the schedule and the virtual classroom link.",
-        "cta": "See the class group"
+      "portal_password_reset": {
+        "subject": "Reset your student portal password",
+        "p1": "Hi {name}: we received a request to reset the password of your student portal account.",
+        "p2": "The link is valid for one hour and works only once. If you did not ask for this, ignore this e-mail: your password stays the same.",
+        "cta": "Create a new password"
       },
-      "teacher_contract_expiring": {
-        "subject": "Your contract ends soon",
-        "p1": "Hi {name}: your contract with the Asociación ends on {date}. We are telling you early so it can be renewed before the next cycle starts.",
-        "p2": "Coordination will reach out about signing. If you already discussed it, ignore this e-mail.",
-        "cta": "See my file"
+      "staff_password_reset": {
+        "subject": "Reset your panel password",
+        "p1": "Hi {name}: we received a request to reset the password of your Only One Coin panel account.",
+        "p2": "The link is valid for one hour and works only once. If you did not ask for this, ignore this e-mail: your password stays the same.",
+        "cta": "Set a new password"
       },
-      "teacher_grades_pending": {
-        "subject": "Grades are still missing in {classGroup}",
-        "p1": "Hi {name}: the cycle of {classGroup} has closed and grades of yours are still missing.",
-        "p2": "Without them we cannot issue those students’ certificates.",
-        "cta": "Enter the grades"
-      },
-      "staff_certificates_ready": {
-        "subject": "{classGroup} is ready for its certificates",
-        "p1": "Hi {name}: {classGroup} has finished and the list of who meets the requirements is prepared.",
-        "p2": "Nothing is issued on its own: you review it and confirm.",
-        "cta": "Review the list"
+      "staff_mfa_code": {
+        "subject": "Your panel access code",
+        "p1": "Hi {name}: someone who knows the password of your panel account is signing in or turning on two-step verification. To continue, type the code in this message.",
+        "p2": "The code expires in 10 minutes and works only once. If this was not you, do not share it with anyone and change your password."
       }
     },
     "emails": {
@@ -1037,6 +1007,7 @@
       "col_delivered": "Delivered",
       "state_on": "On",
       "state_off": "Paused",
+      "state_not_emitted": "Not sent yet",
       "empty_title": "No e-mail matches",
       "empty_body": "Try other words, or drop the paused filter.",
       "open": "See the template",
@@ -1054,6 +1025,7 @@
       "state_label": "The platform sends this e-mail",
       "state_hint_on": "It goes out on its own, as soon as what triggers it happens.",
       "state_hint_off": "It is paused: nobody receives it, not even the person waiting for it.",
+      "state_hint_not_emitted": "Nothing on the platform sends this e-mail yet. The wording is written; sending arrives once what triggers it is built.",
       "toast_enabled": "E-mail switched on",
       "toast_paused": "E-mail paused",
       "no_send_notice": "There is no per-student send button: every e-mail goes out as a consequence of something that happened in the system, and a resend is an audited exception.",
@@ -1076,8 +1048,8 @@
       "journey_empty": "No e-mail goes out at this point yet.",
       "help": "How to read it",
       "help_condition": "The grey label is the condition: that e-mail only goes out when the case takes that turn.",
-      "help_guardian": "Guardian: they receive it, not the student.",
       "help_paused": "Paused: that e-mail is switched off, and nobody receives anything at that point.",
+      "help_not_emitted": "Not sent yet: the e-mail is planned, but nothing on the platform triggers it yet.",
       "help_open": "Every box opens the e-mail, with its template.",
       "test_add": "Add address",
       "test_remove": "Remove {value}",
