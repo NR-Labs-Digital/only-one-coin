@@ -23,6 +23,7 @@
     "seed:catalog": "pnpm --filter @ooc/api seed:catalog",
     "seed:students": "pnpm --filter @ooc/api seed:students",
     "seed:enrollments": "pnpm --filter @ooc/api seed:enrollments",
+    "seed:load": "pnpm --filter @ooc/api seed:load",
     "build": "pnpm -r build",
     "build:landing": "pnpm --filter @ooc/landing build",
     "build:app": "pnpm --filter @ooc/app build",
@@ -39,6 +40,7 @@
     "db:down": "docker compose down",
     "db:generate": "pnpm --filter @ooc/db db:generate",
     "db:migrate": "pnpm --filter @ooc/db db:migrate",
-    "db:reset": "docker compose down -v && docker compose up -d --wait && pnpm --filter @ooc/db db:migrate"
+    "db:reset": "docker compose down -v && docker compose up -d --wait && pnpm --filter @ooc/db db:migrate",
+    "db:reset:load": "pnpm db:reset && pnpm --filter @ooc/api seed && pnpm --filter @ooc/api seed:load"
   }
 }
