@@ -4,6 +4,7 @@ import { useMemo, useState, type MouseEvent } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { EmailFlow, EmailMetrics } from '@/lib/backoffice/types'
+import { isEmailFlowPaused } from '@/lib/backoffice/email-journey'
 import { formatNumber, formatPercent, type Locale } from '@/lib/format'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
@@ -11,7 +12,6 @@ import {
   Card,
   EmptyState,
   StatCard,
-  StatusBadge,
   TableShell,
   tdClass,
   thClass,
@@ -20,10 +20,11 @@ import {
   rowActionClass,
 } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { EmailFlowState } from './email-flow-state'
 
 /** Nobody outside the institution ever receives these. */
 function isInternal(flow: EmailFlow): boolean {
-  return flow.audience === 'teacher' || flow.audience === 'staff'
+  return flow.audience === 'staff'
 }
 
 type AudienceFilter = 'all' | 'external' | 'internal'
@@ -66,7 +67,7 @@ export function EmailsView({
     return flows.filter((flow) => {
       if (audience === 'external' && isInternal(flow)) return false
       if (audience === 'internal' && !isInternal(flow)) return false
-      if (pausedOnly && flow.enabled) return false
+      if (pausedOnly && !isEmailFlowPaused(flow)) return false
       if (!needle) return true
       /* Search what is on screen: the trigger sentence moved to the journey,
          so matching on it would find rows the reader cannot see the reason for. */
@@ -80,7 +81,7 @@ export function EmailsView({
     })
   }, [flows, query, audience, pausedOnly, t])
 
-  const pausedCount = flows.filter((flow) => !flow.enabled).length
+  const pausedCount = flows.filter(isEmailFlowPaused).length
 
   const activeFilters = (audience === 'all' ? 0 : 1) + (pausedOnly ? 1 : 0)
 
@@ -279,10 +280,7 @@ export function EmailsView({
                       {t(`email_audience.${flow.audience}`)}
                     </td>
                     <td className={tdClass}>
-                      <StatusBadge
-                        tone={flow.enabled ? 'success' : 'warning'}
-                        label={t(flow.enabled ? 'emails.state_on' : 'emails.state_off')}
-                      />
+                      <EmailFlowState emitted={flow.emitted} enabled={flow.enabled} />
                     </td>
                     <td
                       className={`${tdClass} text-right text-sm tabular-nums text-ink`}

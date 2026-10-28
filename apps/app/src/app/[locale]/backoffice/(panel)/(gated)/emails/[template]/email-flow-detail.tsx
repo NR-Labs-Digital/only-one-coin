@@ -21,6 +21,7 @@ import {
 import { Toast, Toggle } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
 import { ProofSend } from '../proof-send'
+import { EmailFlowState } from '../email-flow-state'
 
 /**
  * The e-mail itself. Two columns where the column is wide enough for them: the
@@ -54,35 +55,24 @@ export function EmailFlowDetail({
     setToast(t(next ? 'emails.toast_enabled' : 'emails.toast_paused'))
   }
 
+  /* Who the preview greets and where it says it is going: the person the
+     template is written to. */
+  const to =
+    flow.audience === 'staff'
+      ? { name: flow.sample.staffName, address: flow.sample.staffEmail }
+      : { name: flow.sample.studentName, address: flow.sample.studentEmail }
+
   /**
    * The sample the template renders over. The bag is shared by every string of
-   * the preview — a template that does not name the guardian simply ignores it.
+   * the preview — a template that does not name the course simply ignores it.
    */
   const values = {
-    /* Who `{name}` is depends on who is reading it: the recipient, except on
-       the guardian's templates, where the name in the text is the student and
-       `{guardian}` is the person receiving it. */
-    name:
-      flow.audience === 'teacher'
-        ? flow.sample.teacherName
-        : flow.audience === 'staff'
-          ? flow.sample.staffName
-          : flow.sample.studentName,
-    guardian: flow.sample.guardianName,
+    name: to.name,
     course: flow.sample.courseName,
     classGroup: flow.sample.classGroupName,
     amount: formatMoney(flow.sample.amountCents, 'PEN', locale),
     date: formatDate(flow.sample.date, locale),
   }
-
-  const to =
-    flow.audience === 'guardian'
-      ? { name: flow.sample.guardianName, address: flow.sample.guardianEmail }
-      : flow.audience === 'teacher'
-        ? { name: flow.sample.teacherName, address: flow.sample.teacherEmail }
-        : flow.audience === 'staff'
-          ? { name: flow.sample.staffName, address: flow.sample.staffEmail }
-          : { name: flow.sample.studentName, address: flow.sample.studentEmail }
 
   const recipient = `${to.name} <${to.address}>`
 
@@ -94,10 +84,7 @@ export function EmailFlowDetail({
         title={t(`email_template.${flow.template}`)}
         actions={
           <span className="flex flex-wrap items-center gap-2">
-            <StatusBadge
-              tone={enabled ? 'success' : 'warning'}
-              label={t(enabled ? 'emails.state_on' : 'emails.state_off')}
-            />
+            <EmailFlowState emitted={flow.emitted} enabled={enabled} />
             <StatusBadge
               tone="neutral"
               dot={false}
@@ -141,10 +128,13 @@ export function EmailFlowDetail({
               <p>{t(`email_preview.${flow.template}.p2`, values)}</p>
               {/* The template's call to action, drawn as it lands in the
                   inbox — a real button here would invite a click that sends
-                  nobody anywhere. */}
-              <span className="mt-1 self-start rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white">
-                {t(`email_preview.${flow.template}.cta`, values)}
-              </span>
+                  nobody anywhere. A code e-mail has none: the code is typed,
+                  not clicked. */}
+              {t.has(`email_preview.${flow.template}.cta`) && (
+                <span className="mt-1 self-start rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white">
+                  {t(`email_preview.${flow.template}.cta`, values)}
+                </span>
+              )}
             </div>
           </Card>
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
@@ -158,12 +148,20 @@ export function EmailFlowDetail({
           <section className="flex flex-col gap-3">
             <SectionTitle icon="settings">{t('emails.state_title')}</SectionTitle>
             <Card className="p-4">
-              <Toggle
-                checked={enabled}
-                onChange={toggle}
-                label={t('emails.state_label')}
-                hint={t(enabled ? 'emails.state_hint_on' : 'emails.state_hint_off')}
-              />
+              {/* A template nothing sends yet has no switch: turning it "on"
+                  would promise an e-mail no code writes. */}
+              {flow.emitted ? (
+                <Toggle
+                  checked={enabled}
+                  onChange={toggle}
+                  label={t('emails.state_label')}
+                  hint={t(enabled ? 'emails.state_hint_on' : 'emails.state_hint_off')}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t('emails.state_hint_not_emitted')}
+                </p>
+              )}
             </Card>
           </section>
 

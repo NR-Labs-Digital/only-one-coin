@@ -6,9 +6,10 @@ import { listEmailFlows } from '@/lib/backoffice/mock-data'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageEmail } from '@/lib/backoffice/permissions'
 import { buildEmailJourney } from '@/lib/backoffice/email-journey'
-import { PageHeader, StatusBadge } from '@/components/backoffice/ui'
+import { PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { BoIcon } from '@/components/backoffice/icons'
+import { EmailFlowState } from '../email-flow-state'
 
 /**
  * The flow: what happens, in order, and what leaves because of it.
@@ -55,12 +56,10 @@ export default async function EmailJourneyPage({
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
           {t(`email_template.${flow.template}`)}
         </span>
-        {flow.audience === 'guardian' && (
-          <span className="shrink-0 rounded-full bg-sky px-2 py-0.5 text-[11px] font-semibold text-brand-blue-deep">
-            {t('email_audience.guardian')}
-          </span>
+        {/* Only what breaks the normal case: a step everybody walks needs no badge. */}
+        {(!flow.emitted || !flow.enabled) && (
+          <EmailFlowState emitted={flow.emitted} enabled={flow.enabled} />
         )}
-        {!flow.enabled && <StatusBadge tone="warning" label={t('emails.state_off')} />}
         <BoIcon
           name="chevron-right"
           size={16}
@@ -91,8 +90,8 @@ export default async function EmailJourneyPage({
               <div className="absolute right-0 top-11 z-20 flex w-72 flex-col gap-2 rounded-xl border border-line bg-white p-4 text-xs text-muted-foreground shadow-float">
                 <p className="text-sm font-semibold text-ink">{t('emails.help')}</p>
                 <p>{t('emails.help_condition')}</p>
-                <p>{t('emails.help_guardian')}</p>
                 <p>{t('emails.help_paused')}</p>
+                <p>{t('emails.help_not_emitted')}</p>
                 <p>{t('emails.help_open')}</p>
               </div>
             </details>
