@@ -69,6 +69,12 @@ import { updateCourseRoute } from "@/http/catalog/UpdateCourseRoute.js";
 import { updateCourseOptionsRoute } from "@/http/catalog/UpdateCourseOptionsRoute.js";
 import { createPlanRoute } from "@/http/catalog/CreatePlanRoute.js";
 import { renamePlanRoute } from "@/http/catalog/RenamePlanRoute.js";
+import {
+  createLanguageRoute,
+  listLanguagesRoute,
+  renameLanguageRoute,
+  retireLanguageRoute,
+} from "@/http/catalog/LanguageRoutes.js";
 import { schedulePlanPriceRoute } from "@/http/catalog/SchedulePlanPriceRoute.js";
 import { listPeriodsRoute } from "@/http/catalog/ListPeriodsRoute.js";
 import { createPeriodRoute } from "@/http/catalog/CreatePeriodRoute.js";
@@ -218,6 +224,10 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(updateCourseOptionsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createPlanRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renamePlanRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listLanguagesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(createLanguageRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(renameLanguageRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireLanguageRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(schedulePlanPriceRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPeriodsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createPeriodRoute);

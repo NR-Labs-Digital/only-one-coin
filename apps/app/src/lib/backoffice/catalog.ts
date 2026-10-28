@@ -5,21 +5,24 @@ import type {
   ClassGroupRoster,
   CourseDetail,
   CourseRow,
+  LanguageItem,
   TeacherOption,
   WaitlistItem,
 } from './types'
 
-/** The API's course item; `language` is a plain name there (no languages table). */
+/** The API's course item; `language` is the Language's name, `languageId` its record (OOC-128). */
 interface ApiCourse extends Omit<CourseRow, 'language'> {
   language: string
+  languageId: string | null
 }
 
 /**
- * `courses.language` is catalog text ("Inglés"), not a code — so it is its own
- * id. The screen groups by it and the form offers the ones already in use.
+ * The course's language as the screens use it: the Language record's id and
+ * name. A course nobody filed yet (no record) carries an empty id — the
+ * course form then asks for one.
  */
-function toCourseRow(course: ApiCourse): CourseRow {
-  return { ...course, language: { id: course.language, name: course.language } }
+function toCourseRow({ languageId, ...course }: ApiCourse): CourseRow {
+  return { ...course, language: { id: languageId ?? '', name: course.language } }
 }
 
 /**
@@ -43,6 +46,18 @@ export async function getCatalogCourse(id: string): Promise<CourseDetail | null>
     if (!response.ok) return null
     const body = (await response.json()) as { course: ApiCourse; plans: CourseDetail['plans'] }
     return { course: toCourseRow(body.course), plans: body.plans }
+  } catch {
+    return null
+  }
+}
+
+/** The live languages, by name (OOC-128). `null` = the API failed. */
+export async function listCatalogLanguages(): Promise<LanguageItem[] | null> {
+  try {
+    const response = await apiFetch('/api/v1/catalog/languages')
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: LanguageItem[] }
+    return body.items
   } catch {
     return null
   }

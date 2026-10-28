@@ -35,6 +35,7 @@ const SOFT_DELETABLE = [
   "courses",
   "enrollments",
   "guardians",
+  "languages",
   "plans",
   "students",
   "teachers",

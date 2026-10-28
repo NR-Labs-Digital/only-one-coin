@@ -10,7 +10,7 @@ import type {
   CourseOptions,
   CourseRow,
 } from '@/lib/backoffice/types'
-import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
+import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import {
   moduleMaterialsChanged,
   moduleMaterialsPayload,
@@ -26,10 +26,6 @@ import {
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
 import { Card, SectionTitle } from '@/components/backoffice/ui'
-import {
-  LiveEnrollmentsNotice,
-  useLiveEnrollments,
-} from '@/components/backoffice/retire-confirmation'
 import { CourseOptionFields } from './course-option-fields'
 import { LandingKeyField } from './landing-key-field'
 
@@ -95,9 +91,6 @@ export function CourseOptionsForm({
   const [error, setError] = useState<CatalogErrorKey | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
-  const retiring = course.active && !draft.active
-  const live = useLiveEnrollments('course', course.id, retiring)
-
   // Name, language and level may change but not go blank (the API refuses
   // them too). Only an edit counts: a course that predates OOC-36 has no level,
   // and that must not lock the rest of the form (OOC-126).
@@ -125,7 +118,7 @@ export function CourseOptionsForm({
   async function save() {
     setSaving(true)
     setError(null)
-    const { active, modules, moduleMaterials, ...options } = draft
+    const { active: _active, modules, moduleMaterials, ...options } = draft
     const changed = (Object.keys(options) as (keyof typeof options)[]).filter(
       (key) => options[key] !== course[key],
     )
@@ -143,8 +136,11 @@ export function CourseOptionsForm({
       }
     }
     if (canEditIdentity) {
+      // The identity's language is the Language id; the API takes it as `languageId`.
+      const { language: languageId, ...renamed } = identityPatch(course, identity)
       const patch = {
-        ...identityPatch(course, identity),
+        ...renamed,
+        ...(languageId !== undefined && { languageId }),
         ...(landingKey !== course.landingKey && { landingKey }),
       }
       if (Object.keys(patch).length > 0) {
@@ -155,21 +151,6 @@ export function CourseOptionsForm({
           return
         }
       }
-    }
-    if (active !== course.active) {
-      const result = await setCatalogEntryOnOffer('course', course.id, active ? 'restore' : 'retire')
-      setSaving(false)
-      if (!result.ok) {
-        setError(result.error)
-        return
-      }
-      setToast(
-        active
-          ? t('courses.restored')
-          : t('courses.retired_notice', { count: result.data.liveEnrollments }),
-      )
-      router.refresh()
-      return
     }
     setSaving(false)
     setToast(t('courses.saved'))
@@ -202,21 +183,23 @@ export function CourseOptionsForm({
           </label>
           <label className="flex flex-col gap-1">
             <span className={labelClass}>{t('courses.field_language')}</span>
-            <input
+            {/* Picked from the list (OOC-128), never typed: a typed language
+                is how "INGLES" ended up next to "Inglés". New languages are
+                opened on the Idiomas tab. */}
+            <select
               value={identity.language}
               onChange={(event) => setIdentity({ ...identity, language: event.target.value })}
               aria-invalid={blanked.includes('language')}
               className={fieldClass}
-            />
+            >
+              {identity.language === '' && <option value="">{t('courses.field_language_pick')}</option>}
+              {languages.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
             {requiredNotice('language')}
-            {/* Courses group by the language's spelling. Moving to a language
-                in use takes its spelling (API); retyping this course's own
-                language is kept as typed, which is how a spelling is fixed. */}
-            <span className="text-xs text-muted-foreground">
-              {t('courses.field_language_hint', {
-                languages: languages.map((item) => item.name).join(', '),
-              })}
-            </span>
           </label>
           <label className="flex flex-col gap-1">
             <span className={labelClass}>{t('courses.field_level')}</span>
@@ -242,9 +225,10 @@ export function CourseOptionsForm({
         </section>
       )}
 
-      <CourseOptionFields value={draft} onChange={setDraft} showMaterialIssues={modulesTouched} />
-
-      {retiring && <LiveEnrollmentsNotice state={live} />}
+      {/* No "in the catalog" switch here: taking a course off the catalog is
+          its own card on this tab (CourseRetire), with its own confirmation —
+          a switch at the bottom of a long form, applied by Save, went unseen. */}
+      <CourseOptionFields value={draft} onChange={setDraft} showMaterialIssues={modulesTouched} hideActive />
 
       {canEditIdentity && (
         <LandingKeyField
@@ -258,9 +242,7 @@ export function CourseOptionsForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={
-            saving || blanked.length > 0 || materialsBlocked || (retiring && live.status === 'loading')
-          }
+          disabled={saving || blanked.length > 0 || materialsBlocked}
           onClick={() => void save()}
           className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-blue"
         >

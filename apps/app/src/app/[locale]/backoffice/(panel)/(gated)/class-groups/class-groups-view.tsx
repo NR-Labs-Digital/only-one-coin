@@ -214,7 +214,7 @@ export function ClassGroupsView({
     // read as "nothing happened". Clear the view and open its language.
     setQuery('')
     clearFilters()
-    const courseLanguage = courses.find((course) => course.id === outcome.courseId)?.language.id
+    const courseLanguage = courses.find((course) => course.id === outcome.courseId)?.language.name
     if (courseLanguage) {
       setOpened((current) => (current.includes(courseLanguage) ? current : [...current, courseLanguage]))
     }

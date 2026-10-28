@@ -467,6 +467,14 @@ export interface CourseLanguage {
   name: string
 }
 
+/** A language on the list (OOC-128), with what hangs on it. */
+export interface LanguageItem extends CourseLanguage {
+  /** Live courses filed under it — while any, it cannot be retired. */
+  courseCount: number
+  /** Live teachers cleared for it. */
+  teacherCount: number
+}
+
 export interface ClassGroupRow {
   id: string
   courseName: string
@@ -747,6 +755,9 @@ export type CatalogErrorKey =
   | 'module_material_invalid'
   | 'classroom_url_invalid'
   | 'class_group_module_out_of_range'
+  | 'language_not_found'
+  | 'language_exists'
+  | 'language_in_use'
 
 export interface PlanPriceItem {
   id: string

@@ -189,3 +189,21 @@ export class ClassGroupModuleOutOfRangeError extends UnableToProcessEntryError {
     });
   }
 }
+
+export class LanguageNotFoundError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.language_not_found", message: "No live language with that id or name.", ...params });
+  }
+}
+
+export class LanguageExistsError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.language_exists", message: "A live language already has that name.", ...params });
+  }
+}
+
+export class LanguageInUseError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.language_in_use", message: "Live courses are still filed under this language.", ...params });
+  }
+}

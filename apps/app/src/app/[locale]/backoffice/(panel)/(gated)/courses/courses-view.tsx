@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useTranslations } from 'next-intl'
-import type { CourseRow } from '@/lib/backoffice/types'
+import type { CourseLanguage, CourseRow } from '@/lib/backoffice/types'
 import {
   Card,
   EmptyState,
@@ -33,9 +33,12 @@ import { LANDING_COURSE_KEYS } from '@ooc/domain/landing-course-keys'
  */
 export function CoursesView({
   rows,
+  languages,
   canCreate,
 }: {
   rows: CourseRow[]
+  /** The language list (OOC-128) — what a new course picks from. */
+  languages: CourseLanguage[]
   canCreate: boolean
 }) {
   const t = useTranslations('bo')
@@ -75,12 +78,6 @@ export function CoursesView({
    * checkout still opens, with nothing chosen, so nobody would notice
    * otherwise. Shown to whoever can fix it.
    */
-  /** The languages already in use — the hint under the language field names them. */
-  const languages = useMemo(
-    () => [...new Map(courses.map((row) => [row.language.id, row.language])).values()],
-    [courses],
-  )
-
   const unlinkedPages = useMemo(() => {
     const holders = landingKeyHolders(courses)
     return LANDING_COURSE_KEYS.filter((key) => !holders.has(key))

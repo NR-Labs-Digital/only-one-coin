@@ -1,5 +1,6 @@
 import {
   CapacityBelowSeatsTakenError,
+  LanguageExistsError,
   PeriodAlreadyDuplicatedError,
   classGroupCodeOf,
   WaitlistAlreadyJoinedError,
@@ -11,6 +12,8 @@ import {
   type IAuditLogRepository,
   type IClassGroupRepository,
   type ICourseRepository,
+  type ILanguageRepository,
+  type Language,
   type LandingCourseKey,
   type IPlanRepository,
   type IWaitlistRepository,
@@ -52,13 +55,37 @@ export class FakeCourseRepository implements ICourseRepository {
   async findLiveByLandingKey(key: LandingCourseKey): Promise<Course | null> {
     return [...this.rows.values()].find((row) => row.landingKey === key && !row.isDeleted) ?? null;
   }
+}
 
-  async listLanguageSpellings(): Promise<string[]> {
-    const uses = new Map<string, number>();
-    for (const row of this.rows.values()) {
-      if (!row.isDeleted) uses.set(row.language, (uses.get(row.language) ?? 0) + 1);
+export class FakeLanguageRepository implements ILanguageRepository {
+  public readonly rows = new Map<string, Language>();
+  /** Live courses per language id, set by the test. */
+  public readonly liveCourses = new Map<string, number>();
+  public released = 0;
+
+  async create(language: Language): Promise<void> {
+    if ([...this.rows.values()].some((row) => !row.isDeleted && row.key === language.key)) throw new LanguageExistsError();
+    this.rows.set(language.id, language);
+  }
+
+  async findById(id: string): Promise<Language | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async rename(language: Language): Promise<void> {
+    if ([...this.rows.values()].some((row) => row.id !== language.id && !row.isDeleted && row.key === language.key)) {
+      throw new LanguageExistsError();
     }
-    return [...uses].sort(([a, x], [b, y]) => y - x || a.localeCompare(b)).map(([language]) => language);
+    this.rows.set(language.id, language);
+  }
+
+  async countLiveCourses(id: string): Promise<number> {
+    return this.liveCourses.get(id) ?? 0;
+  }
+
+  async retire(language: Language): Promise<number> {
+    this.rows.set(language.id, language);
+    return this.released;
   }
 }
 

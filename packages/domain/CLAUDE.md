@@ -14,7 +14,7 @@ Detalhe de padrão (`BaseModel`/`BaseUseCase`, `RouteBuilder`, `container.ts`, e
 
 Entidade cuja linha pode ser aposentada estende **`SoftDeletableModel`** (`deletedAt`, `isDeleted`, `softDelete()`); entidade append-only estende **`BaseModel`** e fica sem `softDelete()` — de propósito. A separação não é estilo: a migration `0011` faz o Postgres **recusar** DELETE em `payments`, `payment_receipts`, `consents` e `audit_log`, e um método que o banco responde com exceção não é contrato, é armadilha pra quem implementar a porta depois. Pelo mesmo motivo `IBaseRepository` não tem `delete(id)`, e quem precisa dele usa `ISoftDeletableRepository`.
 
-Hoje estendem `SoftDeletableModel`: `Student`, `Guardian`, `Enrollment`, `Teacher` e as entidades do catálogo (`AcademicPeriod`, `Course`, `Plan`, `ClassGroup`). `Payment` não — `status` já diz que um pagamento não vale. A lista de tabelas correspondente está em `packages/db/CLAUDE.md`.
+Hoje estendem `SoftDeletableModel`: `Student`, `Guardian`, `Enrollment`, `Teacher` e as entidades do catálogo (`AcademicPeriod`, `Course`, `Plan`, `ClassGroup`, `Language`). `Payment` não — `status` já diz que um pagamento não vale. A lista de tabelas correspondente está em `packages/db/CLAUDE.md`.
 
 ## Exceção documentada à regra acima
 

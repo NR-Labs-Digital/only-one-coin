@@ -31,7 +31,9 @@ type Notice =
   | { kind: 'error'; error: CatalogErrorKey }
 
 /**
- * A course's plans and the history of each price (OOC-36). Prices are
+ * A course's plans and the price each one sells at today (OOC-36). Past
+ * prices live on their own tab (CoursePriceHistory): listed here they buried
+ * the price in force under every price the plan ever had. Prices are
  * versioned and never edited (CLAUDE.md §5): the only write here for money is
  * "schedule a new price", and the sheet says so where the reader would look
  * for an edit button.
@@ -131,9 +133,6 @@ function PlanCard({
   const now = Date.now()
   const current = plan.prices.find((price) => price.id === plan.currentPriceId)
   const scheduled = plan.prices.filter((price) => new Date(price.validFrom).getTime() > now)
-  const history = plan.prices.filter(
-    (price) => price.id !== plan.currentPriceId && new Date(price.validFrom).getTime() <= now,
-  )
 
   async function rename() {
     setBusy(true)
@@ -226,24 +225,6 @@ function PlanCard({
             </li>
           ))}
         </ul>
-      )}
-
-      {history.length > 0 && (
-        <div>
-          <p className={labelClass}>{t('plans.history')}</p>
-          <ul className="mt-1 flex flex-col gap-1 text-sm">
-            {history.map((price) => (
-              <li key={price.id} className="flex items-baseline justify-between gap-2">
-                <span className="text-muted-foreground">
-                  {formatDate(price.validFrom, locale)}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  {formatMoney(price.amountCents, 'PEN', locale)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {canManage && (

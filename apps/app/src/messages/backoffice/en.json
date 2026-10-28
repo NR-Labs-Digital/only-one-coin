@@ -343,7 +343,10 @@
         "platform_setting_updated": "Setting changed",
         "feature_flag_changed": "Feature turned on or off",
         "document_template_published": "Document template published",
-        "audit_log_exported": "Audit log exported"
+        "audit_log_exported": "Audit log exported",
+        "language_created": "Language created",
+        "language_renamed": "Language renamed",
+        "language_retired": "Language retired"
       },
       "field": {
         "first_name": "First name",
@@ -1521,8 +1524,6 @@
       "created": "Course created",
       "load_error_title": "We couldn't load the courses",
       "load_error_body": "Try again in a few seconds. If it keeps failing, let support know.",
-      "field_language_hint": "Type it as the existing courses spell it, so they stay grouped: {languages}.",
-      "field_language_hint_empty": "Type the language name (e.g. English).",
       "retired_notice": "{count, plural, =0 {Course taken off the catalog.} one {Course taken off the catalog. # enrollment is still running.} other {Course taken off the catalog. # enrollments are still running.}}",
       "restored": "Course back in the catalog",
       "plans": "Plans and prices",
@@ -1531,7 +1532,20 @@
       "no_price_badge": "No price · not on sale",
       "no_price_hint": "With no plan priced from today or earlier, the course does not appear on the enrollment form, even with class groups enrolling.",
       "no_material_badge": "No material",
-      "no_material_hint": "A module has no material link. Fill it in the course options."
+      "no_material_hint": "A module has no material link. Fill it in the course options.",
+      "tab_plans": "Plans",
+      "tab_history": "Price history",
+      "tab_settings": "Settings",
+      "retire_title": "Take off the catalog",
+      "restore_title": "Back to the catalog",
+      "retire_body": "The course stops being sold: it leaves enrollment together with its plans and class groups. Nothing is deleted — enrollments already made stay as they are, and you can bring it back any time.",
+      "restore_body": "This course is off the catalog. Bringing it back puts its plans and class groups back on enrollment.",
+      "retire": "Take off the catalog",
+      "restore": "Back to the catalog",
+      "confirm_retire": "Take this course off the catalog? It stops showing on enrollment. You can undo this later.",
+      "confirm_restore": "Put this course back on the catalog?",
+      "field_language_pick": "Pick a language",
+      "field_language_hint_list": "Not on the list? Create it on the Languages tab."
     },
     "plans": {
       "title": "Plans and prices",
@@ -1562,7 +1576,9 @@
       "confirm_retire": "The plan is no longer offered at enrollment. Enrollments already made keep their price.",
       "confirm_restore": "The plan is offered at enrollment again, at its current price.",
       "retired": "{count, plural, =0 {Plan off sale.} one {Plan off sale. # enrollment is still running.} other {Plan off sale. # enrollments are still running.}}",
-      "restored": "Plan back on sale"
+      "restored": "Plan back on sale",
+      "history_empty_title": "No history yet",
+      "history_empty_body": "When a plan changes price, the previous prices show up here."
     },
     "course_options": {
       "applies_forward": "What you change here applies to class groups opened afterwards. Running ones keep the rule the student enrolled under.",
@@ -2113,7 +2129,10 @@
       "module_materials_incomplete": "Every module needs its material link.",
       "module_material_invalid": "A link is not from Google Drive or Docs.",
       "classroom_url_invalid": "The link is not from Google Classroom.",
-      "class_group_module_out_of_range": "The course has no such module."
+      "class_group_module_out_of_range": "The course has no such module.",
+      "language_not_found": "That language is no longer on the list. Reload the page and pick another.",
+      "language_exists": "A language with that name already exists.",
+      "language_in_use": "Courses are still in this language. Move them to another language before retiring it."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2326,6 +2345,27 @@
       "live": "{count, plural, one {# enrollment is still running. It is not cancelled: it stays in the enrollment ledger.} other {# enrollments are still running. They are not cancelled: they stay in the enrollment ledger.}}",
       "confirm": "Confirm",
       "cancel": "Cancel"
+    },
+    "languages": {
+      "title": "Languages",
+      "new_label": "New language",
+      "new_placeholder": "Language name, for example Quechua",
+      "create": "Create language",
+      "created": "Language created",
+      "renamed": "Name updated on all its courses and teachers",
+      "retired": "Language retired",
+      "rename": "Rename",
+      "rename_label": "New language name",
+      "retire": "Retire",
+      "save": "Save",
+      "cancel": "Cancel",
+      "counts": "{courses, plural, =0 {No courses} one {# course} other {# courses}} · {teachers, plural, =0 {no teachers} one {# teacher} other {# teachers}}",
+      "retire_blocked": "{count, plural, one {This language has # course.} other {This language has # courses.}} Open each course, change its language under Settings, then come back here to retire it.",
+      "confirm_retire": "Retire this language? It leaves the list.{teachers, plural, =0 {} one { # teacher loses it from their file.} other { # teachers lose it from their file.}}",
+      "empty_title": "No languages yet",
+      "empty_body": "Create the first one to open courses in it.",
+      "load_error_title": "We could not load the languages",
+      "load_error_body": "Try again in a few minutes."
     }
   }
 }

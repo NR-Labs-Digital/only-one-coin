@@ -12,6 +12,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
+import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { DrizzleClassGroupRepository } from "@/infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
@@ -122,6 +123,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     endsOn: new Date("2026-12-31T00:00:00.000Z"),
   });
   await tx.insert(courses).values({ id: COURSE, name: "Curso (teacher integration)", language: "Prueba", minAge: 12 });
+  await seedLanguages(tx, ["Italiano (prueba)", "Inglés (prueba)", "Francés (prueba)"]);
 }
 
 let groupSequence = 0;

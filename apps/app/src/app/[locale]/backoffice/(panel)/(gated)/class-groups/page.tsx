@@ -12,7 +12,7 @@ import {
   canCreateClassGroup,
 } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { SectionTabs } from '@/components/backoffice/section-tabs'
+import { AcademicTabs } from '@/components/backoffice/academic-tabs'
 import { ClassGroupsView } from './class-groups-view'
 import { PeriodBar } from './period-bar'
 
@@ -57,12 +57,7 @@ export default async function ClassGroupsPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('nav.academic')} />
-      <SectionTabs
-        tabs={[
-          { href: '/backoffice/class-groups', label: t('class_groups.title') },
-          { href: '/backoffice/courses', label: t('courses.title') },
-        ]}
-      />
+      <AcademicTabs />
       {items === null || periods === null || courses === null ? (
         <Card className="p-4">
           <EmptyState

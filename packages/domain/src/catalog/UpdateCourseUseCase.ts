@@ -1,8 +1,8 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import type { Course, UpdateCourseDTO } from "./Course.js";
-import { catalogSpelling, sameLanguage } from "./courseLanguage.js";
-import { CourseNotFoundError, LandingKeyTakenError } from "./errors.js";
+import { CourseNotFoundError, LandingKeyTakenError, LanguageNotFoundError } from "./errors.js";
+import type { ILanguageRepository } from "./ports/ILanguageRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
 
 export interface UpdateCourseInput {
@@ -20,6 +20,7 @@ export interface UpdateCourseInput {
 export class UpdateCourseUseCase extends BaseUseCase<UpdateCourseInput, Course> {
   constructor(
     private readonly courses: ICourseRepository,
+    private readonly languages: ILanguageRepository,
     private readonly auditLog: IAuditLogRepository,
   ) {
     super();
@@ -29,12 +30,16 @@ export class UpdateCourseUseCase extends BaseUseCase<UpdateCourseInput, Course> 
     const course = await this.courses.findById(input.id);
     if (!course) throw new CourseNotFoundError();
 
-    // Moving to another language takes the spelling already in use. Retyping
-    // the language the course is in is left as typed: that is how a wrong
-    // spelling gets corrected, one course at a time.
-    let patch = input.patch;
-    if (patch.language !== undefined && !sameLanguage(patch.language, course.language)) {
-      patch = { ...patch, language: catalogSpelling(patch.language, await this.courses.listLanguageSpellings()) };
+    // The language moves only by id (OOC-128); the text is the language's own
+    // name, never what the caller typed.
+    const patch: UpdateCourseDTO = { ...input.patch };
+    delete patch.language;
+    // A course is never unfiled: null is not a language.
+    if (patch.languageId === null) delete patch.languageId;
+    if (patch.languageId !== undefined && patch.languageId !== course.languageId) {
+      const language = await this.languages.findById(patch.languageId);
+      if (!language || language.isDeleted) throw new LanguageNotFoundError();
+      patch.language = language.name;
     }
 
     const changed = course.update(patch);

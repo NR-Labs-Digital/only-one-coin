@@ -10,6 +10,7 @@ export const CourseListItemSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   language: z.string(),
+  languageId: z.string().uuid().nullable(),
   level: z.string(),
   summary: z.string(),
   minAge: z.number().int(),

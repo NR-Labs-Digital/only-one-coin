@@ -343,7 +343,10 @@
         "platform_setting_updated": "Configuración cambiada",
         "feature_flag_changed": "Funcionalidad encendida o apagada",
         "document_template_published": "Modelo de documento publicado",
-        "audit_log_exported": "Auditoría exportada"
+        "audit_log_exported": "Auditoría exportada",
+        "language_created": "Idioma creado",
+        "language_renamed": "Idioma renombrado",
+        "language_retired": "Idioma retirado"
       },
       "field": {
         "first_name": "Nombre",
@@ -1521,8 +1524,6 @@
       "created": "Curso creado",
       "load_error_title": "No pudimos cargar los cursos",
       "load_error_body": "Vuelve a intentar en unos segundos. Si sigue fallando, avisa a soporte.",
-      "field_language_hint": "Escríbelo igual que en los cursos que ya tienes, para que queden juntos: {languages}.",
-      "field_language_hint_empty": "Escribe el nombre del idioma (ej. Inglés).",
       "retired_notice": "{count, plural, =0 {Curso fuera de catálogo.} one {Curso fuera de catálogo. # matrícula sigue en curso.} other {Curso fuera de catálogo. # matrículas siguen en curso.}}",
       "restored": "Curso de vuelta en el catálogo",
       "plans": "Planes y precios",
@@ -1531,7 +1532,20 @@
       "no_price_badge": "Sin precio · fuera de venta",
       "no_price_hint": "Sin un plan con precio vigente, el curso no aparece en el formulario de matrícula, aunque tenga aulas en inscripción.",
       "no_material_badge": "Sin material",
-      "no_material_hint": "Falta el enlace de material de algún módulo. Complétalo en las opciones del curso."
+      "no_material_hint": "Falta el enlace de material de algún módulo. Complétalo en las opciones del curso.",
+      "tab_plans": "Planes",
+      "tab_history": "Historial de precios",
+      "tab_settings": "Configuración",
+      "retire_title": "Sacar del catálogo",
+      "restore_title": "Volver al catálogo",
+      "retire_body": "El curso deja de venderse: desaparece de la matrícula junto con sus planes y aulas. Nada se borra — las matrículas ya hechas siguen igual y puedes volver a activarlo cuando quieras.",
+      "restore_body": "Este curso está fuera del catálogo. Al volver, sus planes y aulas vuelven a la matrícula.",
+      "retire": "Sacar del catálogo",
+      "restore": "Volver al catálogo",
+      "confirm_retire": "¿Sacar este curso del catálogo? Deja de aparecer en la matrícula. Puedes deshacerlo después.",
+      "confirm_restore": "¿Volver a poner este curso en el catálogo?",
+      "field_language_pick": "Elige un idioma",
+      "field_language_hint_list": "¿No está en la lista? Créalo en la pestaña Idiomas."
     },
     "plans": {
       "title": "Planes y precios",
@@ -1562,7 +1576,9 @@
       "confirm_retire": "El plan deja de ofrecerse en la matrícula. Las matrículas ya hechas mantienen su precio.",
       "confirm_restore": "El plan vuelve a ofrecerse en la matrícula, con su precio vigente.",
       "retired": "{count, plural, =0 {Plan fuera de venta.} one {Plan fuera de venta. # matrícula sigue en curso.} other {Plan fuera de venta. # matrículas siguen en curso.}}",
-      "restored": "Plan de vuelta a la venta"
+      "restored": "Plan de vuelta a la venta",
+      "history_empty_title": "Sin historial todavía",
+      "history_empty_body": "Cuando un plan cambie de precio, los precios anteriores aparecerán aquí."
     },
     "course_options": {
       "applies_forward": "Lo que cambies acá vale para las aulas que se abran después. Las que ya están corriendo mantienen la regla con la que el alumno se matriculó.",
@@ -2113,7 +2129,10 @@
       "module_materials_incomplete": "Cada módulo necesita su enlace de material.",
       "module_material_invalid": "Algún enlace no es de Google Drive o Docs.",
       "classroom_url_invalid": "El enlace no es de Google Classroom.",
-      "class_group_module_out_of_range": "El curso no tiene ese módulo."
+      "class_group_module_out_of_range": "El curso no tiene ese módulo.",
+      "language_not_found": "Ese idioma ya no está en la lista. Recarga la página y elige otro.",
+      "language_exists": "Ya existe un idioma con ese nombre.",
+      "language_in_use": "Todavía hay cursos en este idioma. Muévelos a otro idioma antes de retirarlo."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2326,6 +2345,27 @@
       "live": "{count, plural, one {# matrícula sigue en curso. No se cancela: sigue en el libro de matrículas.} other {# matrículas siguen en curso. No se cancelan: siguen en el libro de matrículas.}}",
       "confirm": "Confirmar",
       "cancel": "Cancelar"
+    },
+    "languages": {
+      "title": "Idiomas",
+      "new_label": "Nuevo idioma",
+      "new_placeholder": "Nombre del idioma, por ejemplo Quechua",
+      "create": "Crear idioma",
+      "created": "Idioma creado",
+      "renamed": "Nombre actualizado en todos sus cursos y docentes",
+      "retired": "Idioma retirado",
+      "rename": "Renombrar",
+      "rename_label": "Nuevo nombre del idioma",
+      "retire": "Retirar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "counts": "{courses, plural, =0 {Sin cursos} one {# curso} other {# cursos}} · {teachers, plural, =0 {sin docentes} one {# docente} other {# docentes}}",
+      "retire_blocked": "{count, plural, one {Este idioma tiene # curso.} other {Este idioma tiene # cursos.}} Abre cada curso, en Configuración cambia su idioma, y luego vuelve aquí para retirarlo.",
+      "confirm_retire": "¿Retirar este idioma? Deja de aparecer en la lista.{teachers, plural, =0 {} one { # docente deja de tenerlo en su ficha.} other { # docentes dejan de tenerlo en su ficha.}}",
+      "empty_title": "Todavía no hay idiomas",
+      "empty_body": "Crea el primero para poder abrir cursos en él.",
+      "load_error_title": "No pudimos cargar los idiomas",
+      "load_error_body": "Intenta de nuevo en unos minutos."
     }
   }
 }

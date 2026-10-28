@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { blankedIdentityFields, identityOf, identityPatch } from './course-identity'
 
 /** A course that predates OOC-36: the level column landed blank. */
-const LEGACY = { name: 'Ruso', language: { name: 'Ruso' }, level: '', summary: '' }
+const LEGACY = { name: 'Ruso', language: { id: 'lang-ruso' }, level: '', summary: '' }
 
 describe('identityPatch', () => {
   it('carries nothing when nothing changed, even over a blank level', () => {

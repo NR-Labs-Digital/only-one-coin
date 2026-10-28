@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { UpdateCourseSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -15,11 +16,12 @@ export const updateCourseRoute = RouteBuilder.patch("/catalog/courses/:id")
   .docs({ tags: ["Catalog"], summary: "Edit a course (identity and options)" })
   .roles(...CATALOG_OWNER_ROLES)
   .params(IdParamsSchema)
-  .body(UpdateCourseSchema.refine((patch) => Object.keys(patch).length > 0))
+  .body(UpdateCourseSchema.omit({ language: true }).extend({ languageId: z.string().uuid().optional() }).refine((patch) => Object.keys(patch).length > 0))
   .response(200, IdResponseSchema)
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)
   .response(409, ErrorResponseSchema)
+  .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const course = await container.useCases.catalog.updateCourse.run({
       actorId: request.currentUser!.id,

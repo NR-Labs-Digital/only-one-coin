@@ -1,6 +1,7 @@
 import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/db";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { languageFor } from "@/infra/persistence/catalog/DrizzleLanguageRepository.js";
 import type { LegacyRecord, Modality } from "./assemble.js";
 
 interface CatalogLookups {
@@ -36,9 +37,10 @@ const MODALITY_PLAN_NAME: Record<Modality, string> = {
 async function upsertCourse(db: Db, courseKey: string, courseName: string, language: string): Promise<string> {
   const [existing] = await db.select().from(courses).where(eq(courses.name, courseName));
   if (existing) return existing.id;
+  const filed = await languageFor(db, language);
   const [created] = await db
     .insert(courses)
-    .values({ name: courseName, language, minAge: PLACEHOLDER_MIN_AGE })
+    .values({ name: courseName, language: filed.name, languageId: filed.id, minAge: PLACEHOLDER_MIN_AGE })
     .returning();
   console.log(`  [catalog] course created: ${courseName}`);
   return created!.id;

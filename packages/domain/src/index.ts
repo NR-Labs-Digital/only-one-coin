@@ -441,7 +441,16 @@ export {
   ModuleMaterialInvalidError,
   ClassroomUrlInvalidError,
   ClassGroupModuleOutOfRangeError,
+  LanguageNotFoundError,
+  LanguageExistsError,
+  LanguageInUseError,
 } from "./catalog/errors.js";
+export { languageKey, sameLanguage } from "./catalog/courseLanguage.js";
+export { Language, LanguagePropsSchema, type LanguageProps } from "./catalog/Language.js";
+export type { ILanguageRepository } from "./catalog/ports/ILanguageRepository.js";
+export { CreateLanguageUseCase, type CreateLanguageInput } from "./catalog/CreateLanguageUseCase.js";
+export { RenameLanguageUseCase, type RenameLanguageInput } from "./catalog/RenameLanguageUseCase.js";
+export { RetireLanguageUseCase, type RetireLanguageInput } from "./catalog/RetireLanguageUseCase.js";
 export {
   AcademicPeriod,
   AcademicPeriodPropsSchema,
