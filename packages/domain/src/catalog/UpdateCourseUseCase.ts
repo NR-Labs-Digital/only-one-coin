@@ -34,6 +34,8 @@ export class UpdateCourseUseCase extends BaseUseCase<UpdateCourseInput, Course> 
     // name, never what the caller typed.
     const patch: UpdateCourseDTO = { ...input.patch };
     delete patch.language;
+    // A course is never unfiled: null is not a language.
+    if (patch.languageId === null) delete patch.languageId;
     if (patch.languageId !== undefined && patch.languageId !== course.languageId) {
       const language = await this.languages.findById(patch.languageId);
       if (!language || language.isDeleted) throw new LanguageNotFoundError();
