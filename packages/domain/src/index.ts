@@ -440,6 +440,7 @@ export {
   ModuleMaterialsIncompleteError,
   ModuleMaterialInvalidError,
   ClassroomUrlInvalidError,
+  ClassGroupModuleOutOfRangeError,
 } from "./catalog/errors.js";
 export {
   AcademicPeriod,
@@ -451,6 +452,7 @@ export {
   type UpdateAcademicPeriodDTO,
 } from "./catalog/AcademicPeriod.js";
 export {
+  assertModuleOfCourse,
   ClassGroup,
   ClassGroupPropsSchema,
   ClassGroupStatusSchema,
@@ -504,6 +506,7 @@ export {
   LandingCourseKeySchema,
   MODULE_MATERIAL_HOSTS,
   UpdateCourseSchema,
+  materialOfModule,
   normalizeModuleMaterials,
   type CertificateRule,
   type CourseProps,

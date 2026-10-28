@@ -1,5 +1,12 @@
 import { academicPeriods, classGroups, courses, enrollments } from "@ooc/db";
-import type { ClassGroupStatus, ITeachingReader, TeachingClassGroup, TeachingStudent, WeeklySlot } from "@ooc/domain";
+import {
+  materialOfModule,
+  type ClassGroupStatus,
+  type ITeachingReader,
+  type TeachingClassGroup,
+  type TeachingStudent,
+  type WeeklySlot,
+} from "@ooc/domain";
 import { and, asc, count, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import type { ClassGroupRosterQuery } from "../catalog/ClassGroupRosterQuery.js";
@@ -58,6 +65,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
         row: classGroups,
         courseName: courses.name,
         language: courses.language,
+        moduleMaterials: courses.moduleMaterials,
         periodName: academicPeriods.name,
       })
       .from(classGroups)
@@ -66,7 +74,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       .where(where)
       .orderBy(asc(courses.language), asc(courses.name), asc(classGroups.code), asc(classGroups.id));
 
-    return rows.map(({ row, courseName, language, periodName }) => ({
+    return rows.map(({ row, courseName, language, moduleMaterials, periodName }) => ({
       id: row.id,
       teacherId: row.teacherId,
       code: row.code,
@@ -80,6 +88,8 @@ export class DrizzleTeachingReader implements ITeachingReader {
       seatsTaken: row.seatsTaken,
       status: row.status as ClassGroupStatus,
       classroomUrl: row.classroomUrl,
+      module: row.module,
+      moduleMaterialUrl: materialOfModule(moduleMaterials, row.module),
       retired: row.deletedAt !== null,
     }));
   }

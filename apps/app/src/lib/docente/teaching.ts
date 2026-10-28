@@ -30,6 +30,10 @@ export interface TeachingClassGroup {
   status: ClassGroupStatus
   /** The Google Classroom coordination pasted with the teacher (OOC-98); null = not yet. */
   classroomUrl: string | null
+  /** Which of the course's modules it teaches (OOC-100); null = coordination has not set it. */
+  module: number | null
+  /** That module's material, from the course (OOC-100); null = nothing to open. */
+  moduleMaterialUrl: string | null
 }
 
 /** One student of the class group — the name, never the document or the contact. */

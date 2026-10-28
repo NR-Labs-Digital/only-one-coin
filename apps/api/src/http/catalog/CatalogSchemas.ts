@@ -77,6 +77,7 @@ export const ClassGroupItemSchema = z.object({
   teacherName: z.string(),
   legacyTeacherName: z.string(),
   classroomUrl: z.string().nullable(),
+  module: z.number().int().nullable(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.string().datetime().nullable(),
   endsOn: z.string().datetime().nullable(),
@@ -114,6 +115,8 @@ export const CreateClassGroupBodySchema = z.object({
   teacherId: z.string().uuid().nullable().optional(),
   /** The Google Classroom (OOC-98); the domain checks the host. Null or blank clears it. */
   classroomUrl: z.string().max(2048).nullable().optional(),
+  /** Which of the course's modules it teaches (OOC-100); the domain checks the upper bound. Null clears it. */
+  module: z.number().int().positive().nullable().optional(),
   slots: z.array(ValidWeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: DateTimeOrNull,

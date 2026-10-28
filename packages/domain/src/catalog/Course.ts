@@ -46,6 +46,17 @@ export function normalizeModuleMaterials(modules: number, materials: readonly st
   return materials.map(normalizeModuleMaterial);
 }
 
+/**
+ * The material link of one module (OOC-100): what the teacher of a class
+ * group teaching that module opens. Null when there is none to open — no
+ * module set on the class group, a course from before OOC-94 with no
+ * materials, or a module past a course since cut to fewer.
+ */
+export function materialOfModule(moduleMaterials: readonly string[], module: number | null): string | null {
+  if (module === null || module < 1) return null;
+  return moduleMaterials[module - 1] ?? null;
+}
+
 function sameList(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((item, index) => item === b[index]);
 }

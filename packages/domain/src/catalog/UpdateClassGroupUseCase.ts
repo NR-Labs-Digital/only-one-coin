@@ -1,6 +1,6 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
-import type { ClassGroup, UpdateClassGroupDTO } from "./ClassGroup.js";
+import { assertModuleOfCourse, type ClassGroup, type UpdateClassGroupDTO } from "./ClassGroup.js";
 import { CatalogClassGroupNotFoundError, CourseNotFoundError } from "./errors.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
@@ -34,9 +34,21 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
     const courseChanges = input.patch.courseId !== undefined && input.patch.courseId !== group.courseId;
     const teacherChanges = input.patch.teacherId !== undefined && input.patch.teacherId !== group.teacherId;
 
+    const moduleChanges = input.patch.module !== undefined && input.patch.module !== group.module;
+
     if (courseChanges) {
       const course = await this.courses.findById(input.patch.courseId!);
       if (!course || course.isDeleted) throw new CourseNotFoundError();
+    }
+
+    // A new module, or the same module carried onto another course, must be
+    // one of that course's; an untouched one is never re-checked — a course
+    // cut to fewer modules does not lock its class groups.
+    const moduleNumber = input.patch.module !== undefined ? input.patch.module : group.module;
+    if (moduleNumber !== null && (courseChanges || moduleChanges)) {
+      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
+      if (!course) throw new CourseNotFoundError();
+      assertModuleOfCourse(moduleNumber, course.modules);
     }
 
     // A new allocation, or the same teacher carried onto another course,

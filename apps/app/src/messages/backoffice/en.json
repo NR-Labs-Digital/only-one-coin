@@ -369,6 +369,7 @@
         "modules": "Modules",
         "module_materials": "Module materials",
         "classroom_url": "Classroom link",
+        "module": "Module",
         "total_hours": "Total hours",
         "certificate_rule": "Certificate rule",
         "allows_freeze": "Allows freezing",
@@ -1201,6 +1202,10 @@
       "empty_closed_body": "Class groups show up here once they finish.",
       "new_title": "New class group",
       "field_course": "Course",
+      "field_module": "Module",
+      "module_none": "No module set",
+      "module_option": "Module {number}",
+      "module_hint": "Picks which of the course's materials the teacher opens.",
       "field_teacher": "Teacher",
       "field_period": "Enrollment period",
       "field_start": "Classes start",
@@ -2107,7 +2112,8 @@
       "landing_key_taken": "Another course in the catalog is already linked to that website page.",
       "module_materials_incomplete": "Every module needs its material link.",
       "module_material_invalid": "A link is not from Google Drive or Docs.",
-      "classroom_url_invalid": "The link is not from Google Classroom."
+      "classroom_url_invalid": "The link is not from Google Classroom.",
+      "class_group_module_out_of_range": "The course has no such module."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2152,6 +2158,7 @@
     },
     "class_resources": {
       "materials": "Materials",
+      "materials_module": "Module {number} material",
       "title": "Class access"
     },
     "class_notices": {

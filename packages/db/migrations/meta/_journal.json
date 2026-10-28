@@ -281,6 +281,13 @@
       "when": 1793134886056,
       "tag": "0039_class_group_code_seq",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793226823548,
+      "tag": "0040_class_group_module",
+      "breakpoints": true
     }
   ]
 }

@@ -239,6 +239,12 @@ export const classGroups = pgTable(
     // read by its teacher and its confirmed students. Null until somebody
     // pastes it; the host rule lives in the domain, like module materials.
     classroomUrl: text("classroom_url"),
+    // Which of the course's modules the class group teaches, 1-based
+    // (OOC-100) — what picks the module material its teacher opens. Null on
+    // every row written before the column. The upper bound (the course's
+    // module count) is the domain's: a course cut to fewer modules must not
+    // turn its class groups into rows the database refuses.
+    module: integer("module"),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module
@@ -264,6 +270,7 @@ export const classGroups = pgTable(
   },
   (table) => [
     check("class_groups_capacity_check", sql`${table.capacity} > 0`),
+    check("class_groups_module_check", sql`${table.module} is null or ${table.module} > 0`),
     check(
       "class_groups_seats_taken_check",
       sql`${table.seatsTaken} >= 0 and ${table.seatsTaken} <= ${table.capacity}`,

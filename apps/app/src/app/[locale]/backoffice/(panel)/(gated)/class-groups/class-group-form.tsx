@@ -93,6 +93,11 @@ const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : nu
  * is a Lima date-time; an emptied field is sent as `null`, which the API reads
  * as "clear it". The edit sends only what changed against what was loaded.
  *
+ * The module is one of the course's (OOC-100): it picks the material the
+ * teacher opens. Optional, like the Classroom — a class group without it only
+ * goes without the material button. Changing the course drops a module the
+ * new course does not have.
+ *
  * The teacher comes from the roster (OOC-80): only active teachers who teach
  * the course's language are offered, and the API repeats that check. A
  * schedule outside the teacher's declared week, or on top of another of their
@@ -149,6 +154,9 @@ export function ClassGroupForm({
   const newPeriod = mode === 'create' && periodId === NEW_PERIOD
   /** '' = nobody allocated yet. */
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '')
+  /** '' = no module set yet. */
+  const [moduleText, setModuleText] = useState(initial?.module ? String(initial.module) : '')
+  const moduleNumber = moduleText === '' ? null : Number(moduleText)
   /** Pasted with the teacher, never required to allocate one (OOC-98). */
   const [classroomDraft, setClassroomDraft] = useState(initial?.classroomUrl ?? '')
   const classroomUrl = classroomUrlOf(classroomDraft)
@@ -216,6 +224,7 @@ export function ClassGroupForm({
     const patch: Record<string, unknown> = {}
     if (courseId !== initial.courseId) patch.courseId = courseId
     if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
+    if (moduleNumber !== initial.module) patch.module = moduleNumber
     if (!classroomInvalid && classroomUrl !== (initial.classroomUrl ?? null)) patch.classroomUrl = classroomUrl
     if (scheduleTouched) patch.slots = slots
     if (capacity !== initial.capacity) patch.capacity = capacity
@@ -254,6 +263,7 @@ export function ClassGroupForm({
         courseId,
         academicPeriodId,
         teacherId: teacherId || null,
+        module: moduleNumber,
         classroomUrl: classroomInvalid ? null : classroomUrl,
         slots,
         capacity,
@@ -352,8 +362,16 @@ export function ClassGroupForm({
       })
     : null
 
+  const courseModules = catalog.find((item) => item.id === courseId)?.modules ?? 0
+  /** One option per module of the course — plus a stored one past it, so an edit never hides what is there. */
+  const moduleOptions = Array.from({ length: courseModules }, (_, index) => index + 1)
+  if (moduleNumber !== null && moduleNumber > courseModules) moduleOptions.push(moduleNumber)
+
   function changeCourse(next: string) {
     setCourseId(next)
+    // A module the new course does not have is not carried over.
+    const modules = catalog.find((item) => item.id === next)?.modules ?? 0
+    if (moduleNumber !== null && moduleNumber > modules) setModuleText('')
     // A teacher who does not teach the new course's language is not carried over.
     const language = catalog.find((item) => item.id === next)?.language.name ?? ''
     if (teachers && teacherId && !teachersForLanguage(teachers, language).some((item) => item.id === teacherId)) {
@@ -394,6 +412,23 @@ export function ClassGroupForm({
               </optgroup>
             ))}
           </select>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>{t('class_groups.field_module')}</span>
+          <select
+            value={moduleText}
+            onChange={(event) => setModuleText(event.target.value)}
+            className={`${fieldClass} tabular-nums`}
+          >
+            <option value="">{t('class_groups.module_none')}</option>
+            {moduleOptions.map((number) => (
+              <option key={number} value={String(number)}>
+                {t('class_groups.module_option', { number })}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">{t('class_groups.module_hint')}</span>
         </label>
 
         {mode === 'create' && (

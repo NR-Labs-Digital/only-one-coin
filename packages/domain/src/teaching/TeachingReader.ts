@@ -24,6 +24,13 @@ export interface TeachingClassGroup {
   status: ClassGroupStatus;
   /** The Google Classroom coordination pasted (OOC-98); null = nobody yet. */
   classroomUrl: string | null;
+  /** Which of the course's modules it teaches (OOC-100), 1-based; null = coordination has not set it. */
+  module: number | null;
+  /**
+   * That module's material link, from the course (OOC-94/OOC-100) — null when
+   * there is none to open (`materialOfModule`).
+   */
+  moduleMaterialUrl: string | null;
   /** Retired from the catalog (`deleted_at`). */
   retired: boolean;
 }
