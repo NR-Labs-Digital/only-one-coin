@@ -11,6 +11,7 @@ import { DrizzleLanguageRepository } from "./DrizzleLanguageRepository.js";
 import { DrizzlePlanRepository } from "./DrizzlePlanRepository.js";
 import { GetCourseQuery } from "./GetCourseQuery.js";
 import { ListCoursesQuery } from "./ListCoursesQuery.js";
+import { ListLanguagesQuery } from "./ListLanguagesQuery.js";
 
 /**
  * The OOC-36 acceptance criterion at the storage layer: a course written
@@ -207,6 +208,27 @@ describe("course catalog storage", () => {
           new DrizzleLanguageRepository(savepoint as unknown as Db).create(Language.create("italiano  (INTEGRATION)")),
         ),
       ).rejects.toBeInstanceOf(LanguageExistsError);
+    });
+  });
+
+  it("lists each live language with its own live courses, not every course (OOC-128)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const languages = new DrizzleLanguageRepository(tx);
+      const filed = Language.create("Filed (integration)");
+      const empty = Language.create("Empty (integration)");
+      await languages.create(filed);
+      await languages.create(empty);
+      const courseRepository = new DrizzleCourseRepository(tx);
+      await courseRepository.create(Course.create({ ...aCourse(), language: filed.name, languageId: filed.id }));
+      const retired = await courseRepository.create(Course.create({ ...aCourse(), language: filed.name, languageId: filed.id }));
+      await new DrizzleCatalogEntryRepository(tx).retire("course", retired.id, new Date());
+
+      const rows = (await new ListLanguagesQuery(tx).run()).filter((row) => row.name.endsWith("(integration)"));
+
+      expect(rows).toEqual([
+        { id: empty.id, name: "Empty (integration)", courseCount: 0, teacherCount: 0 },
+        { id: filed.id, name: "Filed (integration)", courseCount: 1, teacherCount: 0 },
+      ]);
     });
   });
 

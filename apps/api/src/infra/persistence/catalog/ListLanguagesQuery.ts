@@ -20,8 +20,11 @@ export class ListLanguagesQuery {
       .select({
         id: languages.id,
         name: languages.name,
-        courseCount: sql<number>`(select count(*) from ${courses} c where c.language_id = ${languages.id} and c.deleted_at is null)`.mapWith(Number),
-        teacherCount: sql<number>`(select count(*) from ${teacherLanguages} tl join ${teachers} t on t.id = tl.teacher_id where tl.language_id = ${languages.id} and t.deleted_at is null)`.mapWith(Number),
+        // "languages"."id" spelled out: a single-table select renders the
+        // column bare, and a bare "id" inside a subquery binds to the
+        // subquery's own table — or is ambiguous over the teachers join.
+        courseCount: sql<number>`(select count(*) from ${courses} c where c.language_id = "languages"."id" and c.deleted_at is null)`.mapWith(Number),
+        teacherCount: sql<number>`(select count(*) from ${teacherLanguages} tl join ${teachers} t on t.id = tl.teacher_id where tl.language_id = "languages"."id" and t.deleted_at is null)`.mapWith(Number),
       })
       .from(languages)
       .where(isNull(languages.deletedAt))
