@@ -232,6 +232,21 @@ describe("course catalog storage", () => {
     });
   });
 
+  it("retires a language: off the list, and a new one may take its name (OOC-128)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const languages = new DrizzleLanguageRepository(tx);
+      const language = Language.create("Retired (integration)");
+      await languages.create(language);
+
+      language.softDelete();
+      expect(await languages.retire(language)).toBe(0);
+
+      expect((await languages.findById(language.id))?.isDeleted).toBe(true);
+      expect((await new ListLanguagesQuery(tx).run()).some((row) => row.id === language.id)).toBe(false);
+      await languages.create(Language.create("retired (INTEGRATION)"));
+    });
+  });
+
   it("answers null for a course not on file", async () => {
     await inRolledBackTransaction(async (tx) => {
       expect(await new GetCourseQuery(tx).run("018f2b5c-1000-7000-8000-0000000000ff")).toBeNull();
