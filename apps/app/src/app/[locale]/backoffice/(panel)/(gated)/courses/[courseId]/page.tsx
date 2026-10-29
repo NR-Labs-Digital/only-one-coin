@@ -115,7 +115,7 @@ export default async function CourseDetailPage({
       </nav>
 
       {tab === 'plans' && (
-        <div id="plans" className="max-w-2xl scroll-mt-20">
+        <div id="plans" className="scroll-mt-20">
           <CoursePlans
             courseId={course.id}
             plans={plans}
@@ -128,7 +128,9 @@ export default async function CourseDetailPage({
       {tab === 'history' && <CoursePriceHistory plans={plans} />}
 
       {tab === 'settings' && tabs.includes('settings') && (
-        <div className="flex max-w-2xl flex-col gap-5">
+        // Options on the wide side, taking the course off the catalog beside
+        // them: a split the column decides, not the window (apps/app/CLAUDE.md).
+        <div className="grid items-start gap-5 @4xl/page:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           {canConfigure && (
             <CourseOptionsForm
               course={course}

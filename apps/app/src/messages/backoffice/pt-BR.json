@@ -2331,13 +2331,16 @@
       "retire": "Retirar",
       "save": "Salvar",
       "cancel": "Cancelar",
-      "counts": "{courses, plural, =0 {Sem cursos} one {# curso} other {# cursos}} · {teachers, plural, =0 {sem docentes} one {# docente} other {# docentes}}",
       "retire_blocked": "{count, plural, one {Este idioma tem # curso.} other {Este idioma tem # cursos.}} Abra cada curso, em Configuração troque o idioma, e depois volte aqui para retirá-lo.",
       "confirm_retire": "Retirar este idioma? Ele deixa de aparecer na lista.{teachers, plural, =0 {} one { # docente deixa de tê-lo na ficha.} other { # docentes deixam de tê-lo na ficha.}}",
       "empty_title": "Ainda não há idiomas",
       "empty_body": "Crie o primeiro para poder abrir cursos nele.",
       "load_error_title": "Não foi possível carregar os idiomas",
-      "load_error_body": "Tente de novo em alguns minutos."
+      "load_error_body": "Tente de novo em alguns minutos.",
+      "col_language": "Idioma",
+      "col_courses": "Cursos",
+      "col_teachers": "Docentes",
+      "col_actions": "Ações"
     }
   }
 }

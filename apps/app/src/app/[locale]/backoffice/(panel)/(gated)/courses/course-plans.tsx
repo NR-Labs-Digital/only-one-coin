@@ -9,6 +9,7 @@ import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Card, SectionTitle } from '@/components/backoffice/ui'
+import { AutoGrid } from '@/components/layout/auto-grid'
 import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 
 const fieldClass =
@@ -96,15 +97,19 @@ export function CoursePlans({
 
       {plans.length === 0 && <p className="text-sm text-muted-foreground">{t('plans.empty')}</p>}
 
-      {plans.map((plan) => (
-        <PlanCard
-          key={plan.id}
-          plan={plan}
-          canManage={canManage}
-          canRetire={canRetire}
-          onChanged={changed}
-        />
-      ))}
+      {plans.length > 0 && (
+        <AutoGrid min="20rem" fill>
+          {plans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              canManage={canManage}
+              canRetire={canRetire}
+              onChanged={changed}
+            />
+          ))}
+        </AutoGrid>
+      )}
 
       {canManage && <NewPlanForm courseId={courseId} onChanged={changed} />}
     </Card>
