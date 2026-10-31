@@ -144,6 +144,21 @@ describe("application role (GRANT layer)", () => {
 
   // The lock has to be surgical: a role that lost more than the four
   // statements above would break the platform instead of protecting it.
+  it("refuses UPDATE on outbox_delivery_events", async () => {
+    expect(
+      await answerTo(`update outbox_delivery_events set kind = 'delivered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on outbox_delivery_events", async () => {
+    expect(await answerTo(deleteFrom("outbox_delivery_events"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // No inbound foreign key, so the trigger — not Postgres' FK rule — refuses.
+  it("blocks TRUNCATE on outbox_delivery_events", async () => {
+    expect(await answerTo("truncate outbox_delivery_events")).toBe(DENIED_BY_TRIGGER);
+  });
+
   it("still appends to audit_log", async () => {
     expect(
       await answerTo(
@@ -186,6 +201,17 @@ describe("application role (GRANT layer)", () => {
 
   it("refuses DELETE on document_template_versions", async () => {
     expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_GRANT);
+  });
+
+  // The provider's account of a message (OOC-91) is a history, not a status.
+  it("refuses UPDATE on outbox_delivery_events", async () => {
+    expect(
+      await answerTo(`update outbox_delivery_events set kind = 'delivered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on outbox_delivery_events", async () => {
+    expect(await answerTo(deleteFrom("outbox_delivery_events"))).toBe(DENIED_BY_GRANT);
   });
 
   it("still rewrites a document template draft", async () => {
