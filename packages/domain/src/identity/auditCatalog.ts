@@ -98,6 +98,9 @@ export const AUDIT_ACTIONS = {
     entity: "student",
     subject: "student_account",
   },
+  // A failed e-mail sent again (OOC-90): the target is the failed outbox row,
+  // the file travels in metadata (null when the subject no longer resolves).
+  "email.resent": { key: "email_resent", entity: "student", subject: "metadata_student" },
 
   "payment.approved": { key: "payment_approved", entity: "payment", subject: "target" },
   "payment.rejected": { key: "payment_rejected", entity: "payment", subject: "target" },
