@@ -911,78 +911,6 @@
       "bounced": "Bounced",
       "failed": "Failed"
     },
-    "email_preview": {
-      "enrollment_received": {
-        "subject": "We received your enrollment in {course}",
-        "p1": "Hi {name}: we registered your enrollment request for {course} ({classGroup}) and we already have your {amount} receipt.",
-        "p2": "We are checking it now. We will write again as soon as we are done — there is nothing to send twice.",
-        "cta": "See my enrollment status"
-      },
-      "payment_under_review": {
-        "subject": "Your receipt is under review",
-        "p1": "Hi {name}: someone on the team is reviewing the receipt you sent for {course}. This is a normal step when the image is hard to read.",
-        "p2": "Your seat in {classGroup} stays reserved in the meantime.",
-        "cta": "See my payment status"
-      },
-      "payment_approved": {
-        "subject": "Your payment was approved: your seat in {course} is confirmed",
-        "p1": "Hi {name}: we approved your {amount} payment and your seat in {classGroup} is confirmed.",
-        "p2": "Classes start on {date}. A few days before, the virtual classroom access reaches this same address.",
-        "cta": "See my enrollment"
-      },
-      "payment_rejected": {
-        "subject": "We could not validate your receipt",
-        "p1": "Hi {name}: we reviewed the receipt you sent for {course} and could not validate it.",
-        "p2": "Message us on WhatsApp and we will sort it out with you. Keep your operation number at hand.",
-        "cta": "See my payment detail"
-      },
-      "portal_credentials": {
-        "subject": "Activate your student portal access",
-        "p1": "Hi {name}: your enrollment was approved and your student portal account is ready. You can sign in with your e-mail or with the document you enrolled with.",
-        "p2": "Use the button to create your password. The link is valid for seven days and works only once.",
-        "cta": "Create my password"
-      },
-      "class_access_ready": {
-        "subject": "Your {course} virtual classroom is ready",
-        "p1": "Hi {name}: your class group {classGroup} starts on {date}. You can sign in with the e-mail you enrolled with.",
-        "p2": "Every class is live and in a group, at your class group’s time. Make sure your inbox has room left.",
-        "cta": "Open the virtual classroom"
-      },
-      "enrollment_certificate_issued": {
-        "subject": "Your enrollment certificate is ready",
-        "p1": "Hi {name}: we issued your enrollment certificate for {course}. It is attached to this e-mail and also waiting in your portal.",
-        "p2": "The document carries a verification code: anyone can check it is genuine on our page.",
-        "cta": "See my certificate"
-      },
-      "certificate_issued": {
-        "subject": "Your {course} certificate is ready",
-        "p1": "Hi {name}: congratulations on finishing {course}. Your completion certificate has been issued and is attached to this e-mail.",
-        "p2": "It is also kept in your portal, with its verification code.",
-        "cta": "See my certificate"
-      },
-      "email_verification_code": {
-        "subject": "Your verification code",
-        "p1": "Hi {name}: you are completing an enrollment at Only One Coin. To confirm this address is yours, type the code in this message into the form.",
-        "p2": "The code expires in 10 minutes. If you are not enrolling, ignore this e-mail."
-      },
-      "portal_password_reset": {
-        "subject": "Reset your student portal password",
-        "p1": "Hi {name}: we received a request to reset the password of your student portal account.",
-        "p2": "The link is valid for one hour and works only once. If you did not ask for this, ignore this e-mail: your password stays the same.",
-        "cta": "Create a new password"
-      },
-      "staff_password_reset": {
-        "subject": "Reset your panel password",
-        "p1": "Hi {name}: we received a request to reset the password of your Only One Coin panel account.",
-        "p2": "The link is valid for one hour and works only once. If you did not ask for this, ignore this e-mail: your password stays the same.",
-        "cta": "Set a new password"
-      },
-      "staff_mfa_code": {
-        "subject": "Your panel access code",
-        "p1": "Hi {name}: someone who knows the password of your panel account is signing in or turning on two-step verification. To continue, type the code in this message.",
-        "p2": "The code expires in 10 minutes and works only once. If this was not you, do not share it with anyone and change your password."
-      }
-    },
     "emails": {
       "title": "Emails",
       "when_label": "When is it sent?",
@@ -991,43 +919,27 @@
       "stat_sent": "Sent",
       "stat_sent_hint": "Last {days} days",
       "stat_delivered": "Delivered",
-      "stat_delivered_hint": "{rate} of everything sent",
-      "stat_bounced": "Bounces",
-      "stat_bounced_hint": "Addresses the receiving server refused",
-      "stat_paused": "Paused",
-      "stat_paused_hint": "{count, plural, =0 {Every e-mail is switched on} one {One e-mail is off: nobody receives it} other {# e-mails are off: nobody receives them}}",
       "search_label": "Search an e-mail",
       "search_placeholder": "Search by e-mail name",
       "filters": "Filters",
-      "filter_paused": "Paused only",
       "col_flow": "E-mail",
       "col_audience": "Recipient",
       "col_state": "State",
       "col_sent": "Sent",
-      "col_delivered": "Delivered",
       "state_on": "On",
-      "state_off": "Paused",
       "state_not_emitted": "Not sent yet",
       "empty_title": "No e-mail matches",
-      "empty_body": "Try other words, or drop the paused filter.",
+      "empty_body": "Try other text or clear the filter.",
       "open": "See the template",
       "back": "Back to e-mails",
       "back_journey": "Back to the cadence",
       "preview_title": "Preview",
-      "preview_note": "This is the versioned template from the repository, rendered with sample data. Each person receives it in their own language.",
-      "preview_subject": "Subject",
+      "preview_note": "This is the versioned template from the repository, with sample data, exactly as the platform sends it. Each person receives it in their own language.",
       "metrics_title": "Last {days} days",
       "metric_sent": "Sent",
       "metric_delivered": "Delivered",
       "metric_bounced": "Bounces",
       "metric_failed": "Failed",
-      "state_title": "Automatic sending",
-      "state_label": "The platform sends this e-mail",
-      "state_hint_on": "It goes out on its own, as soon as what triggers it happens.",
-      "state_hint_off": "It is paused: nobody receives it, not even the person waiting for it.",
-      "state_hint_not_emitted": "Nothing on the platform sends this e-mail yet. The wording is written; sending arrives once what triggers it is built.",
-      "toast_enabled": "E-mail switched on",
-      "toast_paused": "E-mail paused",
       "no_send_notice": "There is no per-student send button: every e-mail goes out as a consequence of something that happened in the system, and a resend is an audited exception.",
       "test_title": "Send a test",
       "test_hint": "Up to {max} addresses. The subject goes out prefixed with {prefix}.",
@@ -1048,7 +960,6 @@
       "journey_empty": "No e-mail goes out at this point yet.",
       "help": "How to read it",
       "help_condition": "The grey label is the condition: that e-mail only goes out when the case takes that turn.",
-      "help_paused": "Paused: that e-mail is switched off, and nobody receives anything at that point.",
       "help_not_emitted": "Not sent yet: the e-mail is planned, but nothing on the platform triggers it yet.",
       "help_open": "Every box opens the e-mail, with its template.",
       "test_add": "Add address",
@@ -1057,7 +968,22 @@
       "test_error_none": "Add at least one address.",
       "filter_all": "All",
       "filter_external": "Students",
-      "filter_internal": "Internal"
+      "filter_internal": "Internal",
+      "stat_failed": "Not delivered",
+      "stat_failed_hint": "Failed in the last {days} days: nobody received them",
+      "stat_blocked": "Blocked",
+      "stat_blocked_hint": "Held back by the allowlist outside production",
+      "metric_unavailable": "Unavailable",
+      "metric_unavailable_hint": "Delivered and bounced are reported by the e-mail provider; they will show here once that connection exists.",
+      "metric_blocked": "Blocked",
+      "col_failed": "Not delivered",
+      "load_error_title": "We could not load the e-mails",
+      "load_error_body": "The read failed. Try again in a few minutes.",
+      "version_label": "Version {version}",
+      "preview_not_emitted": "Nothing in the platform sends this e-mail yet, so it has no template in the repository. Its wording is written when what triggers it is built.",
+      "preview_load_error": "We could not load the preview. Try again in a few minutes.",
+      "preview_locale_label": "Preview language",
+      "preview_frame_title": "E-mail preview in {language}"
     },
     "new_email": {
       "title": "New send",

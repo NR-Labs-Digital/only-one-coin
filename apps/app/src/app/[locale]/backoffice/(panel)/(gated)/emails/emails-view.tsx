@@ -3,9 +3,8 @@
 import { useMemo, useState, type MouseEvent } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
-import type { EmailFlow, EmailMetrics } from '@/lib/backoffice/types'
-import { isEmailFlowPaused } from '@/lib/backoffice/email-journey'
-import { formatNumber, formatPercent, type Locale } from '@/lib/format'
+import type { EmailFlow } from '@/lib/backoffice/types'
+import { formatNumber, type Locale } from '@/lib/format'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import {
@@ -31,27 +30,24 @@ type AudienceFilter = 'all' | 'external' | 'internal'
 
 const AUDIENCE_FILTERS: AudienceFilter[] = ['all', 'external', 'internal']
 
-/** Share of what left that the receiving server accepted. */
-function deliveryRate(flow: EmailFlow): number | null {
-  return flow.metrics.sent === 0 ? null : flow.metrics.delivered / flow.metrics.sent
-}
-
 /**
- * The catalog of automatic e-mails. Search and the paused filter run in the
- * browser because the list is mocked and short — ten rows that grow to maybe
- * twenty, not a ledger, so it is never paged.
+ * The catalog of automatic e-mails, with the outbox counted over the window
+ * (OOC-88). Search and the audience filter run in the browser because the list
+ * is short — twelve rows that grow to maybe twenty, not a ledger, so it is
+ * never paged.
  *
- * The list only ever reads. Switching a flow, and reading the template it
- * renders, happen on the e-mail's own page: turning off the one that carries
- * the portal credentials means nobody gets in, and that is not a decision to
- * hand to a stray click in a list.
+ * The list only ever reads. Reading the template it renders happens on the
+ * e-mail's own page, where the whole message fits.
+ *
+ * Delivered and bounced are the provider's to report, and its webhook does not
+ * exist yet: the figure says "unavailable", never a zero that reads as "none".
  */
 export function EmailsView({
   flows,
-  metrics,
+  windowDays,
 }: {
   flows: EmailFlow[]
-  metrics: EmailMetrics
+  windowDays: number
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -59,7 +55,6 @@ export function EmailsView({
 
   const [query, setQuery] = useState('')
   const [audience, setAudience] = useState<AudienceFilter>('all')
-  const [pausedOnly, setPausedOnly] = useState(false)
   /* Names and triggers are translated, so the search runs over what the reader
      actually sees — searching the template codes would find nothing they typed. */
   const filtered = useMemo(() => {
@@ -67,7 +62,6 @@ export function EmailsView({
     return flows.filter((flow) => {
       if (audience === 'external' && isInternal(flow)) return false
       if (audience === 'internal' && !isInternal(flow)) return false
-      if (pausedOnly && !isEmailFlowPaused(flow)) return false
       if (!needle) return true
       /* Search what is on screen: the trigger sentence moved to the journey,
          so matching on it would find rows the reader cannot see the reason for. */
@@ -79,11 +73,14 @@ export function EmailsView({
         .toLowerCase()
         .includes(needle)
     })
-  }, [flows, query, audience, pausedOnly, t])
+  }, [flows, query, audience, t])
 
-  const pausedCount = flows.filter(isEmailFlowPaused).length
+  const total = (field: 'sent' | 'failed' | 'blocked') =>
+    flows.reduce((sum, flow) => sum + flow.counts[field], 0)
+  const failed = total('failed')
+  const blocked = total('blocked')
 
-  const activeFilters = (audience === 'all' ? 0 : 1) + (pausedOnly ? 1 : 0)
+  const activeFilters = audience === 'all' ? 0 : 1
 
   const audienceCounts: Record<AudienceFilter, number> = {
     all: flows.length,
@@ -112,44 +109,35 @@ export function EmailsView({
         <StatCard
           icon="email"
           label={t('emails.stat_sent')}
-          value={formatNumber(metrics.sent, locale)}
-          hint={t('emails.stat_sent_hint', { days: metrics.windowDays })}
+          value={formatNumber(total('sent'), locale)}
+          hint={t('emails.stat_sent_hint', { days: windowDays })}
         />
         <StatCard
           icon="check"
-          tone="success"
           label={t('emails.stat_delivered')}
-          value={formatNumber(metrics.delivered, locale)}
-          hint={t('emails.stat_delivered_hint', {
-            rate: formatPercent(
-              metrics.sent === 0 ? 0 : metrics.delivered / metrics.sent,
-              locale,
-            ),
-          })}
+          value={t('emails.metric_unavailable')}
+          hint={t('emails.metric_unavailable_hint')}
         />
-        {/* The only number here somebody can act on: it names people, so it
-            opens the list of them. */}
+        {/* The only number here somebody can act on: it names people who
+            never received an e-mail, so it opens the list of them. */}
         <Link
-          href="/backoffice/emails/deliveries?state=bounced"
+          href="/backoffice/emails/deliveries?state=failed"
           className="rounded-xl transition hover:brightness-[0.98]"
         >
           <StatCard
             icon="alert"
-            tone={metrics.bounced > 0 ? 'warning' : 'neutral'}
-            label={t('emails.stat_bounced')}
-            value={formatNumber(metrics.bounced, locale)}
-            hint={t('emails.stat_bounced_hint')}
+            tone={failed > 0 ? 'danger' : 'neutral'}
+            label={t('emails.stat_failed')}
+            value={formatNumber(failed, locale)}
+            hint={t('emails.stat_failed_hint', { days: windowDays })}
           />
         </Link>
-        {/* A paused flow is the one number on this header that is somebody's
-            errand — it counts people who are waiting for an e-mail that is
-            never coming. */}
         <StatCard
-          icon="clock"
-          tone={pausedCount > 0 ? 'warning' : 'neutral'}
-          label={t('emails.stat_paused')}
-          value={formatNumber(pausedCount, locale)}
-          hint={t('emails.stat_paused_hint', { count: pausedCount })}
+          icon="shield"
+          tone="neutral"
+          label={t('emails.stat_blocked')}
+          value={formatNumber(blocked, locale)}
+          hint={t('emails.stat_blocked_hint')}
         />
       </AutoGrid>
 
@@ -205,24 +193,6 @@ export function EmailsView({
                   )
                 })}
 
-                <span aria-hidden="true" className="my-1 h-px bg-line" />
-
-                <button
-                  type="button"
-                  onClick={() => setPausedOnly(!pausedOnly)}
-                  aria-pressed={pausedOnly}
-                  className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                    pausedOnly
-                      ? 'bg-cream font-semibold text-ink'
-                      : 'text-muted-foreground hover:bg-cream hover:text-ink'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {pausedOnly && <BoIcon name="check" size={14} />}
-                    {t('emails.filter_paused')}
-                  </span>
-                  <span className="text-xs text-slate-400">{pausedCount}</span>
-                </button>
             </>
           </FiltersDropdown>
         </Toolbar>
@@ -244,7 +214,7 @@ export function EmailsView({
               t('emails.col_audience'),
               t('emails.col_state'),
               t('emails.col_sent'),
-              t('emails.col_delivered'),
+              t('emails.col_failed'),
               '',
             ]}
           >
@@ -254,7 +224,7 @@ export function EmailsView({
                 <th className={thClass}>{t('emails.col_audience')}</th>
                 <th className={thClass}>{t('emails.col_state')}</th>
                 <th className={`${thClass} text-right`}>{t('emails.col_sent')}</th>
-                <th className={`${thClass} text-right`}>{t('emails.col_delivered')}</th>
+                <th className={`${thClass} text-right`}>{t('emails.col_failed')}</th>
                 <th className={thClass}>
                   <span className="sr-only">{t('common.actions')}</span>
                 </th>
@@ -262,7 +232,6 @@ export function EmailsView({
             </thead>
             <tbody>
               {filtered.map((flow) => {
-                const rate = deliveryRate(flow)
                 return (
                   <tr key={flow.template} {...rowProps(flow.template)}>
                     {/* The name and nothing under it. What each e-mail is
@@ -280,24 +249,19 @@ export function EmailsView({
                       {t(`email_audience.${flow.audience}`)}
                     </td>
                     <td className={tdClass}>
-                      <EmailFlowState emitted={flow.emitted} enabled={flow.enabled} />
+                      <EmailFlowState emitted={flow.emitted} />
                     </td>
                     <td
                       className={`${tdClass} text-right text-sm tabular-nums text-ink`}
                     >
-                      {formatNumber(flow.metrics.sent, locale)}
+                      {formatNumber(flow.counts.sent, locale)}
                     </td>
-                    <td className={`${tdClass} text-right`}>
-                      <span className="flex flex-col leading-tight">
-                        <span className="text-sm tabular-nums text-ink">
-                          {formatNumber(flow.metrics.delivered, locale)}
-                        </span>
-                        {rate !== null && (
-                          <span className="text-xs tabular-nums text-muted-foreground">
-                            {formatPercent(rate, locale)}
-                          </span>
-                        )}
-                      </span>
+                    <td
+                      className={`${tdClass} text-right text-sm tabular-nums ${
+                        flow.counts.failed > 0 ? 'font-semibold text-red-600' : 'text-ink'
+                      }`}
+                    >
+                      {formatNumber(flow.counts.failed, locale)}
                     </td>
                     <td className={`${tdClass} text-right`}>
                       <Link

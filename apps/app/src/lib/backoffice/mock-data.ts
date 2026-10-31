@@ -1,5 +1,3 @@
-import { EMAIL_CATALOG, EMAIL_CATALOG_KEYS } from '@ooc/domain/email-catalog'
-import { isEmailFlowPaused } from './email-journey'
 import type {
   ClassGroupDetail,
   ClassGroupRow,
@@ -8,10 +6,7 @@ import type {
   CourseRow,
   EnrollmentRow,
   EmailDeliveryIssue,
-  EmailFlow,
-  EmailMetrics,
   EmailSegment,
-  EmailTemplate,
   PlanPrice,
   StudentDetail,
 } from './types'
@@ -266,83 +261,6 @@ export function listEnrollments(): EnrollmentRow[] {
 /* -------------------------------------------------------------------------- */
 /* E-mail                                                                      */
 /* -------------------------------------------------------------------------- */
-
-/** The window every figure on the e-mail screen is measured over. */
-const EMAIL_WINDOW_DAYS = 30
-
-/**
- * One sample for every flow. The preview is read by staff to check wording, so
- * it renders over invented people — a real student's name has no business on
- * that screen (CLAUDE.md §8).
- */
-const emailSample = {
-  studentName: 'María Fernanda Quispe Rojas',
-  studentEmail: 'maria.quispe@gmail.com',
-  staffName: 'Lucía Ramírez',
-  staffEmail: 'lucia.ramirez@onlyonecoin.edu.pe',
-  courseName: 'Inglés Básico A1',
-  classGroupName: 'A1 — Lun/Mié 18:00',
-  amountCents: 6990,
-  date: '2026-09-07T23:00:00Z',
-}
-
-/**
- * What the catalog does not say about a flow: the template's version and the
- * provider's switch. Mocked until OOC-88 reads them from the repository.
- */
-const emailFlowState: Record<EmailTemplate, { version: number; updatedAt: string; enabled: boolean }> = {
-  enrollment_received: { version: 4, updatedAt: '2026-08-04T14:20:00Z', enabled: true },
-  payment_under_review: { version: 2, updatedAt: '2026-07-22T16:05:00Z', enabled: true },
-  payment_approved: { version: 5, updatedAt: '2026-08-11T11:40:00Z', enabled: true },
-  payment_rejected: { version: 3, updatedAt: '2026-07-30T09:15:00Z', enabled: true },
-  portal_credentials: { version: 6, updatedAt: '2026-08-14T18:30:00Z', enabled: true },
-  class_access_ready: { version: 1, updatedAt: '2026-08-02T15:45:00Z', enabled: false },
-  enrollment_certificate_issued: { version: 1, updatedAt: '2026-08-09T12:10:00Z', enabled: false },
-  certificate_issued: { version: 1, updatedAt: '2026-08-12T17:25:00Z', enabled: false },
-  email_verification_code: { version: 1, updatedAt: '2026-10-07T12:00:00Z', enabled: true },
-  portal_password_reset: { version: 1, updatedAt: '2026-10-05T12:00:00Z', enabled: true },
-  staff_password_reset: { version: 1, updatedAt: '2026-09-30T12:00:00Z', enabled: true },
-  staff_mfa_code: { version: 1, updatedAt: '2026-10-14T12:00:00Z', enabled: true },
-}
-
-/**
- * The transactional catalog. Every entry is an e-mail that leaves on its own,
- * as the consequence of something the domain did — there is no send button per
- * message (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4). Who it is written to, where
- * it fires and whether anything sends it yet come from the one catalog the API
- * also reads (OOC-87); a template nothing sends yet is never switched on.
- *
- * The counts are the last 30 days as the provider reported them back. They sit
- * next to each other on purpose: a flow whose bounces climb is one whose
- * addresses are wrong, and that only shows against its own volume.
- */
-export function listEmailFlows(): EmailFlow[] {
-  return EMAIL_CATALOG_KEYS.map((template) => ({
-    template,
-    ...EMAIL_CATALOG[template],
-    ...emailFlowState[template],
-    metrics: { sent: 0, delivered: 0, bounced: 0, failed: 0 },
-    sample: emailSample,
-  }))
-}
-
-/** The header figures — the same window, summed over the catalog. */
-export function getEmailMetrics(): EmailMetrics {
-  const flows = listEmailFlows()
-  return {
-    windowDays: EMAIL_WINDOW_DAYS,
-    sent: flows.reduce((total, flow) => total + flow.metrics.sent, 0),
-    delivered: flows.reduce((total, flow) => total + flow.metrics.delivered, 0),
-    bounced: flows.reduce((total, flow) => total + flow.metrics.bounced, 0),
-    failed: flows.reduce((total, flow) => total + flow.metrics.failed, 0),
-    paused: flows.filter(isEmailFlowPaused).length,
-  }
-}
-
-/** One flow, by the template it renders — the id the detail route carries. */
-export function getEmailFlow(template: string): EmailFlow | undefined {
-  return listEmailFlows().find((flow) => flow.template === template)
-}
 
 /**
  * How many people a manual send would reach, resolved against the enrollment
