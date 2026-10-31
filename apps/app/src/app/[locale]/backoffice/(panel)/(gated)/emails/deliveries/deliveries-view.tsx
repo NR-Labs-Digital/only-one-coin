@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import type { EmailDeliveryIssue } from '@/lib/backoffice/types'
-import { deliveryAction } from '@/lib/backoffice/email-delivery'
-import { formatDateTime, type Locale } from '@/lib/format'
+import { resendEmailDelivery } from '@/lib/backoffice/email-delivery-client'
+import { formatDateTime, formatNumber, type Locale } from '@/lib/format'
 import {
   Card,
   EmptyState,
@@ -21,16 +21,37 @@ import { BoIcon } from '@/components/backoffice/icons'
 /**
  * One row per person the institution failed to reach.
  *
- * The row's action is decided by the reason, not offered as a menu: a
- * misspelled domain does not get a resend button, because resending it bounces
- * again — it gets the file, where the address is fixed. A full mailbox or a
- * provider error gets the resend, which is an audited exception and never a
- * routine (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4).
+ * The row's action is decided by the e-mail, not offered as a menu. An
+ * enrollment or payment e-mail gets the resend — an audited exception, never
+ * a routine (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4) — and it goes to the
+ * address on the file today, so fixing a typo first and then resending is the
+ * whole repair. A portal-access e-mail gets the file instead: its one-time
+ * link is gone, and "Send portal access" there issues a fresh one.
  */
-export function DeliveriesView({ rows }: { rows: EmailDeliveryIssue[] }) {
+export function DeliveriesView({
+  rows,
+  total,
+  canResend,
+}: {
+  rows: EmailDeliveryIssue[]
+  total: number
+  canResend: boolean
+}) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
+  const [refreshing, startTransition] = useTransition()
+  const [sending, setSending] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  async function resend(row: EmailDeliveryIssue) {
+    setSending(row.id)
+    const result = await resendEmailDelivery(row.id)
+    setSending(null)
+    setToast(result.ok ? t('deliveries.resend_toast') : t(`deliveries.resend_error.${result.error}`))
+    // Resent or already resent, the row is no longer an errand.
+    if (result.ok || result.error === 'already_resent') startTransition(() => router.refresh())
+  }
 
   if (rows.length === 0) {
     return (
@@ -48,6 +69,14 @@ export function DeliveriesView({ rows }: { rows: EmailDeliveryIssue[] }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {total > rows.length && (
+        <p className="text-xs text-muted-foreground">
+          {t('deliveries.truncated', {
+            shown: formatNumber(rows.length, locale),
+            total: formatNumber(total, locale),
+          })}
+        </p>
+      )}
       <Card>
         <TableShell
           columns={[
@@ -71,21 +100,28 @@ export function DeliveriesView({ rows }: { rows: EmailDeliveryIssue[] }) {
           </thead>
           <tbody>
             {rows.map((row) => {
-              const action = deliveryAction(row.reason)
+              const file = row.studentId ? `/backoffice/students/${row.studentId}` : null
+              const name = row.studentName ?? t('deliveries.no_file')
               return (
                 <tr key={row.id} className="transition hover:bg-sky-soft">
                   <td className={tdClass}>
                     <span className="flex min-w-0 flex-col">
                       {/* Straight to the file: that is where the phone number
                           is, and calling is what actually fixes this. */}
-                      <Link
-                        href={`/backoffice/students/${row.studentId}`}
-                        className="font-semibold text-ink transition hover:text-brand-blue"
-                      >
-                        {row.studentName}
-                      </Link>
+                      {file ? (
+                        <Link
+                          href={file}
+                          className="font-semibold text-ink transition hover:text-brand-blue"
+                        >
+                          {name}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-muted-foreground">{name}</span>
+                      )}
                       <span className="truncate text-xs text-muted-foreground">
-                        {row.address}
+                        {row.recipientKind === 'guardian'
+                          ? t('deliveries.guardian_copy', { address: row.address })
+                          : row.address}
                       </span>
                     </span>
                   </td>
@@ -94,10 +130,7 @@ export function DeliveriesView({ rows }: { rows: EmailDeliveryIssue[] }) {
                   </td>
                   <td className={tdClass}>
                     <span className="flex flex-wrap items-center gap-2">
-                      <StatusBadge
-                        tone={row.state === 'bounced' ? 'warning' : 'danger'}
-                        label={t(`email_delivery_state.${row.state}`)}
-                      />
+                      <StatusBadge tone="danger" label={t('email_delivery_state.failed')} />
                       <span className="text-xs text-muted-foreground">
                         {t(`email_delivery_reason.${row.reason}`)}
                       </span>
@@ -114,21 +147,23 @@ export function DeliveriesView({ rows }: { rows: EmailDeliveryIssue[] }) {
                     </span>
                   </td>
                   <td className={`${tdClass} text-right`}>
-                    {action === 'resend' ? (
+                    {canResend && row.resendable ? (
                       <button
                         type="button"
-                        onClick={() => setToast(t('deliveries.resend_toast'))}
-                        className={rowActionClass}
+                        onClick={() => void resend(row)}
+                        disabled={sending !== null || refreshing}
+                        className={`${rowActionClass} disabled:opacity-60`}
                       >
-                        {t('deliveries.action_resend')}
+                        {sending === row.id
+                          ? t('deliveries.resending')
+                          : t('deliveries.action_resend')}
                       </button>
                     ) : (
-                      <Link
-                        href={`/backoffice/students/${row.studentId}`}
-                        className={rowActionClass}
-                      >
-                        {t('deliveries.action_fix')}
-                      </Link>
+                      file && (
+                        <Link href={file} className={rowActionClass}>
+                          {t('deliveries.action_open')}
+                        </Link>
+                      )
                     )}
                   </td>
                 </tr>

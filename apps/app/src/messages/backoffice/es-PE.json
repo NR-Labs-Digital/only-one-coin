@@ -295,6 +295,7 @@
         "enrollment_created": "Matrícula abierta por el panel",
         "portal_access_created": "Cuenta del portal creada",
         "portal_access_issued": "Acceso al portal enviado",
+        "email_resent": "Correo reenviado",
         "portal_access_email_conflict": "Cuenta del portal no creada: correo ya en uso",
         "portal_password_set": "Contraseña del portal definida",
         "portal_password_reset_requested": "Recuperación de contraseña del portal pedida",
@@ -901,14 +902,11 @@
       "enrollment_certificate_issued": "si la solicita"
     },
     "email_delivery_reason": {
-      "mailbox_full": "Buzón lleno",
-      "address_unknown": "La dirección no existe",
-      "domain_invalid": "El dominio está mal escrito",
-      "blocked_by_server": "El servidor lo bloqueó",
-      "provider_error": "Error del proveedor"
+      "provider_unavailable": "El proveedor no respondió",
+      "provider_refused": "El proveedor lo rechazó",
+      "template_error": "No se pudo armar el correo"
     },
     "email_delivery_state": {
-      "bounced": "Devuelto",
       "failed": "Falló"
     },
     "email_preview": {
@@ -1861,23 +1859,30 @@
       "title": "Correos que no llegaron",
       "tab": "Sin entregar",
       "filter_all": "Todos",
-      "filter_bounced": "Devueltos",
-      "filter_failed": "Fallidos",
       "col_student": "Alumno",
       "col_email": "Correo",
-      "col_address": "Dirección",
       "col_reason": "Motivo",
       "col_when": "Último intento",
       "action_open": "Abrir la ficha",
       "action_resend": "Reenviar",
-      "action_fix": "Corregir la dirección",
-      "resend_toast": "Reenvío encolado",
-      "resend_note": "Reenviar es una excepción auditada: queda registrada con autor y fecha. Una dirección mal escrita no se arregla reenviando — se corrige en la ficha.",
+      "resend_toast": "Reenvío en la cola",
+      "resend_note": "Reenviar es una excepción auditada: queda registrada con autor y fecha, y sale a la dirección que la ficha tiene hoy — si estaba mal escrita, corrígela primero. El acceso al portal no se reenvía desde aquí: se envía de nuevo desde la ficha.",
       "attempts": "{count, plural, one {1 intento} other {# intentos}}",
       "empty_title": "Todo llegó",
-      "empty_body": "Ningún correo quedó sin entregar con este filtro.",
+      "empty_body": "Ningún correo falló en este filtro.",
       "quick_action": "{count, plural, one {Un correo no llegó a su alumno} other {# correos no llegaron a sus alumnos}}",
-      "quick_action_link": "Ver quiénes"
+      "quick_action_link": "Ver quiénes",
+      "resending": "Reenviando…",
+      "resend_error": {
+        "already_resent": "Este correo ya fue reenviado.",
+        "not_resendable": "Este correo lleva un enlace de un solo uso: el acceso se envía de nuevo desde la ficha.",
+        "generic": "No se pudo reenviar. Inténtalo de nuevo."
+      },
+      "guardian_copy": "Copia al apoderado · {address}",
+      "no_file": "Ficha no encontrada",
+      "truncated": "Se muestran los {shown} más recientes de {total}.",
+      "load_error_title": "No se pudieron cargar los correos",
+      "load_error_body": "La lista no respondió. Recarga la página en unos minutos."
     },
     "reports": {
       "title": "Reportes",

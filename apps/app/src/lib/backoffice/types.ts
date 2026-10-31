@@ -1344,36 +1344,49 @@ export interface EmailDraft {
 }
 
 /** Why one delivery did not land. */
+/**
+ * Why a send failed, as far as the outbox knows (`deliveryFailureReason`,
+ * `packages/domain`). A full mailbox, an unknown address or a bounce only
+ * exist once the provider's webhook reports them — until then this says which
+ * side failed the send.
+ */
 export type EmailDeliveryReason =
-  /** The classic: a Gmail with no space left (`docs/REGRAS-NEGOCIO.md` §7). */
-  | 'mailbox_full'
-  | 'address_unknown'
-  | 'domain_invalid'
-  | 'blocked_by_server'
-  /** Never left the outbox: the provider errored and the retries ran out. */
-  | 'provider_error'
-
-/** Refused by the receiving server, or given up on by the outbox. */
-export type EmailDeliveryState = 'bounced' | 'failed'
+  /** The provider never answered, or answered 5xx/429, and the retries ran out. */
+  | 'provider_unavailable'
+  /** The provider turned the message down (4xx). */
+  | 'provider_refused'
+  /** The platform could not write the e-mail. */
+  | 'template_error'
 
 /**
- * One e-mail that did not reach one person. It is a person, not a statistic:
- * the student is on the other end waiting for credentials that never arrived,
+ * One e-mail that did not reach one person (OOC-90, `GET /emails/deliveries`).
+ * It is a person, not a statistic: the student is on the other end waiting,
  * so the row carries who they are and opens their file — which is where the
  * phone number to call them on lives.
  */
 export interface EmailDeliveryIssue {
+  /** The failed outbox row. */
   id: string
   template: EmailTemplate
-  studentId: string
-  studentName: string
-  /** The address that failed — the one on the student's file. */
+  /** Null when the row's subject no longer leads to a file. */
+  studentId: string | null
+  studentName: string | null
+  /** The guardian gets a copy of a minor's enrollment e-mails. */
+  recipientKind: 'student' | 'guardian'
+  /** The address the failed send was written to. */
   address: string
-  state: EmailDeliveryState
   reason: EmailDeliveryReason
   /** Last attempt, ISO 8601 UTC. */
   at: string
   attempts: number
+  /** False for an e-mail whose one-time link is gone (portal access). */
+  resendable: boolean
+}
+
+export interface EmailDeliveryIssues {
+  items: EmailDeliveryIssue[]
+  /** Every failed row, past the 200 the list carries. */
+  total: number
 }
 
 /* -------------------------------------------------------------------------- */

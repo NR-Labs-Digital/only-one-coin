@@ -295,6 +295,7 @@
         "enrollment_created": "Matrícula aberta pelo painel",
         "portal_access_created": "Conta do portal criada",
         "portal_access_issued": "Acesso ao portal enviado",
+        "email_resent": "E-mail reenviado",
         "portal_access_email_conflict": "Conta do portal não criada: e-mail já em uso",
         "portal_password_set": "Senha do portal definida",
         "portal_password_reset_requested": "Recuperação de senha do portal pedida",
@@ -901,14 +902,11 @@
       "enrollment_certificate_issued": "se ele solicitar"
     },
     "email_delivery_reason": {
-      "mailbox_full": "Caixa cheia",
-      "address_unknown": "O endereço não existe",
-      "domain_invalid": "O domínio está escrito errado",
-      "blocked_by_server": "O servidor bloqueou",
-      "provider_error": "Erro do provedor"
+      "provider_unavailable": "O provedor não respondeu",
+      "provider_refused": "O provedor recusou",
+      "template_error": "Não foi possível montar o e-mail"
     },
     "email_delivery_state": {
-      "bounced": "Devolvido",
       "failed": "Falhou"
     },
     "email_preview": {
@@ -1861,23 +1859,30 @@
       "title": "E-mails que não chegaram",
       "tab": "Não entregues",
       "filter_all": "Todos",
-      "filter_bounced": "Devolvidos",
-      "filter_failed": "Falharam",
       "col_student": "Aluno",
       "col_email": "E-mail",
-      "col_address": "Endereço",
       "col_reason": "Motivo",
       "col_when": "Última tentativa",
       "action_open": "Abrir a ficha",
       "action_resend": "Reenviar",
-      "action_fix": "Corrigir o endereço",
       "resend_toast": "Reenvio na fila",
-      "resend_note": "Reenviar é uma exceção auditada: fica registrada com autor e data. Endereço escrito errado não se resolve reenviando — se corrige na ficha.",
+      "resend_note": "Reenviar é uma exceção auditada: fica registrada com autor e data, e sai para o endereço que a ficha tem hoje — se estava escrito errado, corrija primeiro. O acesso ao portal não é reenviado daqui: é enviado de novo pela ficha.",
       "attempts": "{count, plural, one {1 tentativa} other {# tentativas}}",
       "empty_title": "Chegou tudo",
-      "empty_body": "Nenhum e-mail ficou sem entregar com este filtro.",
+      "empty_body": "Nenhum e-mail falhou neste filtro.",
       "quick_action": "{count, plural, one {Um e-mail não chegou ao aluno} other {# e-mails não chegaram aos alunos}}",
-      "quick_action_link": "Ver quem"
+      "quick_action_link": "Ver quem",
+      "resending": "Reenviando…",
+      "resend_error": {
+        "already_resent": "Este e-mail já foi reenviado.",
+        "not_resendable": "Este e-mail leva um link de uso único: o acesso é enviado de novo pela ficha.",
+        "generic": "Não foi possível reenviar. Tente de novo."
+      },
+      "guardian_copy": "Cópia ao responsável · {address}",
+      "no_file": "Ficha não encontrada",
+      "truncated": "Mostrando os {shown} mais recentes de {total}.",
+      "load_error_title": "Não foi possível carregar os e-mails",
+      "load_error_body": "A lista não respondeu. Recarregue a página em alguns minutos."
     },
     "reports": {
       "title": "Relatórios",
