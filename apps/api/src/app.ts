@@ -103,6 +103,8 @@ import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesR
 import { exportAuditLogRoute } from "@/http/audit/ExportAuditLogRoute.js";
 import { listAuditActorsRoute } from "@/http/audit/ListAuditActorsRoute.js";
 import { listAuditLogRoute } from "@/http/audit/ListAuditLogRoute.js";
+import { listEmailDeliveriesRoute } from "@/http/notification/ListEmailDeliveriesRoute.js";
+import { resendEmailDeliveryRoute } from "@/http/notification/ResendEmailDeliveryRoute.js";
 import { createStaffInviteRoute } from "@/http/identity/CreateStaffInviteRoute.js";
 import { renewStaffInviteRoute } from "@/http/identity/RenewStaffInviteRoute.js";
 import { cancelStaffInviteRoute } from "@/http/identity/CancelStaffInviteRoute.js";
@@ -256,6 +258,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listAuditLogRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listAuditActorsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(exportAuditLogRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listEmailDeliveriesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(resendEmailDeliveryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renewStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(cancelStaffInviteRoute);

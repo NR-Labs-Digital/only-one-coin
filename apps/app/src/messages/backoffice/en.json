@@ -295,6 +295,7 @@
         "enrollment_created": "Enrollment opened from the panel",
         "portal_access_created": "Portal account created",
         "portal_access_issued": "Portal access sent",
+        "email_resent": "E-mail resent",
         "portal_access_email_conflict": "Portal account not created: e-mail already in use",
         "portal_password_set": "Portal password set",
         "portal_password_reset_requested": "Portal password recovery requested",
@@ -901,14 +902,11 @@
       "enrollment_certificate_issued": "if they request it"
     },
     "email_delivery_reason": {
-      "mailbox_full": "Mailbox full",
-      "address_unknown": "The address does not exist",
-      "domain_invalid": "The domain is misspelled",
-      "blocked_by_server": "The server blocked it",
-      "provider_error": "Provider error"
+      "provider_unavailable": "The provider did not answer",
+      "provider_refused": "The provider refused it",
+      "template_error": "The e-mail could not be written"
     },
     "email_delivery_state": {
-      "bounced": "Bounced",
       "failed": "Failed"
     },
     "email_preview": {
@@ -1861,23 +1859,30 @@
       "title": "E-mails that did not land",
       "tab": "Undelivered",
       "filter_all": "All",
-      "filter_bounced": "Bounced",
-      "filter_failed": "Failed",
       "col_student": "Student",
       "col_email": "E-mail",
-      "col_address": "Address",
       "col_reason": "Reason",
       "col_when": "Last attempt",
       "action_open": "Open the file",
       "action_resend": "Resend",
-      "action_fix": "Fix the address",
       "resend_toast": "Resend queued",
-      "resend_note": "A resend is an audited exception: it is recorded with who did it and when. A misspelled address is not fixed by resending — it is fixed on the file.",
+      "resend_note": "Resending is an audited exception: it is recorded with author and date, and goes to the address the file has today — if it was misspelled, fix it first. Portal access is not resent from here: send it again from the file.",
       "attempts": "{count, plural, one {1 attempt} other {# attempts}}",
       "empty_title": "Everything landed",
-      "empty_body": "No e-mail was left undelivered under this filter.",
+      "empty_body": "No e-mail failed under this filter.",
       "quick_action": "{count, plural, one {One e-mail never reached its student} other {# e-mails never reached their students}}",
-      "quick_action_link": "See who"
+      "quick_action_link": "See who",
+      "resending": "Resending…",
+      "resend_error": {
+        "already_resent": "This e-mail was already resent.",
+        "not_resendable": "This e-mail carries a one-time link: send the access again from the file.",
+        "generic": "Could not resend. Try again."
+      },
+      "guardian_copy": "Copy to guardian · {address}",
+      "no_file": "File not found",
+      "truncated": "Showing the {shown} most recent of {total}.",
+      "load_error_title": "Could not load the e-mails",
+      "load_error_body": "The list did not respond. Reload the page in a few minutes."
     },
     "reports": {
       "title": "Reports",

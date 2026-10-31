@@ -1,27 +1,18 @@
-import type { EmailDeliveryIssue, EmailDeliveryReason } from './types'
+import { apiFetch } from './api-client'
+import type { EmailDeliveryIssues, EmailTemplate } from './types'
 
 /**
- * What to do about a delivery that did not land.
- *
- * A wrong address is not a retry: resending it bounces again, and what has to
- * change is the file. A full mailbox or a provider error is exactly what a
- * resend is for — and the resend is an audited exception, never a routine
- * button (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4).
+ * The e-mails about a student that failed and nobody resent yet (OOC-90),
+ * newest first, optionally one template's. `null` means the API failed — the
+ * screen says so instead of claiming everything arrived.
  */
-export function deliveryAction(
-  reason: EmailDeliveryReason,
-): 'resend' | 'fix_address' {
-  return reason === 'address_unknown' || reason === 'domain_invalid'
-    ? 'fix_address'
-    : 'resend'
-}
-
-/** Split by state, for the header and the quick action that leads here. */
-export function countDeliveryIssues(issues: EmailDeliveryIssue[]): {
-  bounced: number
-  failed: number
-  total: number
-} {
-  const bounced = issues.filter((item) => item.state === 'bounced').length
-  return { bounced, failed: issues.length - bounced, total: issues.length }
+export async function getEmailDeliveryIssues(template?: EmailTemplate): Promise<EmailDeliveryIssues | null> {
+  const search = template ? `?${new URLSearchParams({ template }).toString()}` : ''
+  try {
+    const response = await apiFetch(`/api/v1/emails/deliveries${search}`)
+    if (!response.ok) return null
+    return response.json()
+  } catch {
+    return null
+  }
 }

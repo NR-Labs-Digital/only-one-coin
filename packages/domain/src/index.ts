@@ -114,6 +114,26 @@ export {
   type EmittedEmailKey,
 } from "./notification/emailCatalog.js";
 export {
+  STUDENT_DELIVERY_SUBJECTS,
+  STUDENT_DELIVERY_TEMPLATES,
+  DELIVERY_FAILURE_REASONS,
+  isStudentDeliveryTemplate,
+  isResendableTemplate,
+  deliveryFailureReason,
+  parseDeliveryDedupeKey,
+  resendDedupeKey,
+  type DeliverySubject,
+  type StudentDeliveryTemplate,
+  type DeliveryFailureReason,
+  type DeliveryRecipientKind,
+} from "./notification/emailDelivery.js";
+export {
+  ResendFailedEmailUseCase,
+  type FailedDelivery,
+  type IEmailDeliveryRepository,
+  type ResendFailedEmailInput,
+} from "./notification/ResendFailedEmailUseCase.js";
+export {
   enrollmentRecipients,
   enrollmentReceivedEmails,
   paymentUnderReviewEmails,
