@@ -2331,13 +2331,16 @@
       "retire": "Retire",
       "save": "Save",
       "cancel": "Cancel",
-      "counts": "{courses, plural, =0 {No courses} one {# course} other {# courses}} · {teachers, plural, =0 {no teachers} one {# teacher} other {# teachers}}",
       "retire_blocked": "{count, plural, one {This language has # course.} other {This language has # courses.}} Open each course, change its language under Settings, then come back here to retire it.",
       "confirm_retire": "Retire this language? It leaves the list.{teachers, plural, =0 {} one { # teacher loses it from their file.} other { # teachers lose it from their file.}}",
       "empty_title": "No languages yet",
       "empty_body": "Create the first one to open courses in it.",
       "load_error_title": "We could not load the languages",
-      "load_error_body": "Try again in a few minutes."
+      "load_error_body": "Try again in a few minutes.",
+      "col_language": "Language",
+      "col_courses": "Courses",
+      "col_teachers": "Teachers",
+      "col_actions": "Actions"
     }
   }
 }
