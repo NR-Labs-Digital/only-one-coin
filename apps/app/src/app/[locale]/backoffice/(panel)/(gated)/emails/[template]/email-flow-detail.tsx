@@ -2,14 +2,8 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { EmailFlow } from '@/lib/backoffice/types'
-import {
-  formatDate,
-  formatMoney,
-  formatNumber,
-  formatPercent,
-  type Locale,
-} from '@/lib/format'
+import type { EmailFlow, EmailLocale, EmailPreview } from '@/lib/backoffice/types'
+import { formatNumber, type Locale } from '@/lib/format'
 import { Link } from '@/i18n/navigation'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import {
@@ -18,65 +12,49 @@ import {
   SectionTitle,
   StatusBadge,
 } from '@/components/backoffice/ui'
-import { Toast, Toggle } from '@/components/backoffice/controls'
+import { Toast } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
 import { ProofSend } from '../proof-send'
 import { EmailFlowState } from '../email-flow-state'
 
+/** The panel's route code for each e-mail locale — what the language names are keyed by. */
+const ROUTE_LOCALE: Record<EmailLocale, Locale> = { 'es-PE': 'es', 'pt-BR': 'pt', en: 'en' }
+
 /**
  * The e-mail itself. Two columns where the column is wide enough for them: the
- * message on the left at the width it is read at, and everything you can *do*
- * to it on the right — switch, figures, proof.
+ * message on the left at the width it is read at, and the figures and the proof
+ * on the right.
  *
  * The split is a container query, not a viewport breakpoint: this page sits
  * inside the panel's column, and the same window gives it ~1000px with the
  * sidebar open and ~1170px with it collapsed (CLAUDE.md §7).
  *
- * The preview renders the versioned template from the repository over invented
- * sample data (CLAUDE.md §5, §8) — never a real student, and never the copy
- * somebody drew in the provider's panel. It renders in the panel's language
- * here; the person receiving it gets their own.
+ * The preview is the versioned template from the repository, rendered by the
+ * API with the worker's own `renderEmail` over invented sample data (OOC-88) —
+ * never a real student, never a copy written for this screen. All three
+ * languages come at once, so the reader compares them with a tab instead of
+ * switching the panel's language; it opens on the panel's own.
  */
 export function EmailFlowDetail({
   flow,
   windowDays,
+  previews,
 }: {
   flow: EmailFlow
   windowDays: number
+  /** The three renders, es-PE first; null when nothing sends it yet or the read failed. */
+  previews: EmailPreview[] | null
 }) {
   const t = useTranslations('bo')
+  const tRoot = useTranslations()
   const locale = useLocale() as Locale
 
-  const [enabled, setEnabled] = useState(flow.enabled)
+  const [shown, setShown] = useState<EmailLocale>(
+    previews?.find((preview) => ROUTE_LOCALE[preview.locale] === locale)?.locale ?? 'es-PE',
+  )
   const [toast, setToast] = useState<string | null>(null)
 
-  function toggle(next: boolean) {
-    setEnabled(next)
-    setToast(t(next ? 'emails.toast_enabled' : 'emails.toast_paused'))
-  }
-
-  /* Who the preview greets and where it says it is going: the person the
-     template is written to. */
-  const to =
-    flow.audience === 'staff'
-      ? { name: flow.sample.staffName, address: flow.sample.staffEmail }
-      : { name: flow.sample.studentName, address: flow.sample.studentEmail }
-
-  /**
-   * The sample the template renders over. The bag is shared by every string of
-   * the preview — a template that does not name the course simply ignores it.
-   */
-  const values = {
-    name: to.name,
-    course: flow.sample.courseName,
-    classGroup: flow.sample.classGroupName,
-    amount: formatMoney(flow.sample.amountCents, 'PEN', locale),
-    date: formatDate(flow.sample.date, locale),
-  }
-
-  const recipient = `${to.name} <${to.address}>`
-
-  const rate = flow.metrics.sent === 0 ? null : flow.metrics.delivered / flow.metrics.sent
+  const preview = previews?.find((item) => item.locale === shown) ?? null
 
   return (
     <div className="flex flex-col gap-5">
@@ -84,7 +62,7 @@ export function EmailFlowDetail({
         title={t(`email_template.${flow.template}`)}
         actions={
           <span className="flex flex-wrap items-center gap-2">
-            <EmailFlowState emitted={flow.emitted} enabled={enabled} />
+            <EmailFlowState emitted={flow.emitted} />
             <StatusBadge
               tone="neutral"
               dot={false}
@@ -109,62 +87,94 @@ export function EmailFlowDetail({
       <div className="grid gap-5 @4xl/page:grid-cols-3">
         {/* The message */}
         <section className="flex flex-col gap-3 @4xl/page:col-span-2">
-          <SectionTitle icon="doc">{t('emails.preview_title')}</SectionTitle>
-          <Card className="overflow-hidden">
-            <div className="flex flex-col gap-2 border-b border-line bg-sky-soft px-5 py-4">
-              <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
-                <span className="font-medium uppercase tracking-wide">
-                  {t('emails.preview_to')}
-                </span>
-                {/* Sample recipient — the address is invented with the person. */}
-                <span className="text-ink">{recipient}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle icon="doc">{t('emails.preview_title')}</SectionTitle>
+            {flow.version && (
+              /* Derived from the words in all three languages: the same
+                 value means the same e-mail somebody already reviewed. */
+              <StatusBadge
+                tone="neutral"
+                dot={false}
+                label={t('emails.version_label', { version: flow.version })}
+              />
+            )}
+          </div>
+
+          {!flow.emitted ? (
+            <Card className="p-5">
+              <p className="text-sm text-muted-foreground">
+                {t('emails.preview_not_emitted')}
               </p>
-              <p className="text-base font-semibold text-ink">
-                {t(`email_preview.${flow.template}.subject`, values)}
+            </Card>
+          ) : !previews || !preview ? (
+            <Card className="p-5">
+              <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                <BoIcon name="alert" size={16} className="mt-0.5 shrink-0" />
+                {t('emails.preview_load_error')}
               </p>
-            </div>
-            <div className="flex flex-col gap-4 px-5 py-6 text-sm leading-relaxed text-ink sm:px-7">
-              <p>{t(`email_preview.${flow.template}.p1`, values)}</p>
-              <p>{t(`email_preview.${flow.template}.p2`, values)}</p>
-              {/* The template's call to action, drawn as it lands in the
-                  inbox — a real button here would invite a click that sends
-                  nobody anywhere. A code e-mail has none: the code is typed,
-                  not clicked. */}
-              {t.has(`email_preview.${flow.template}.cta`) && (
-                <span className="mt-1 self-start rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white">
-                  {t(`email_preview.${flow.template}.cta`, values)}
-                </span>
-              )}
-            </div>
-          </Card>
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-            {t('emails.preview_note')}
-          </p>
+            </Card>
+          ) : (
+            <>
+              <div
+                role="tablist"
+                aria-label={t('emails.preview_locale_label')}
+                className="flex flex-wrap gap-1.5"
+              >
+                {previews.map((item) => {
+                  const on = item.locale === shown
+                  return (
+                    <button
+                      key={item.locale}
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => setShown(item.locale)}
+                      className={`min-h-tap rounded-lg border px-3 text-sm font-semibold transition ${
+                        on
+                          ? 'border-brand-blue bg-brand-blue text-white'
+                          : 'border-line bg-white text-muted-foreground hover:border-brand-yellow hover:bg-cream hover:text-ink'
+                      }`}
+                    >
+                      {tRoot(`language.${ROUTE_LOCALE[item.locale]}`)}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <Card className="overflow-hidden">
+                <div className="flex flex-col gap-2 border-b border-line bg-sky-soft px-5 py-4">
+                  <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
+                    <span className="font-medium uppercase tracking-wide">
+                      {t('emails.preview_to')}
+                    </span>
+                    {/* Sample recipient — invented with the person. */}
+                    <span className="break-all text-ink">{preview.to}</span>
+                  </p>
+                  <p className="text-base font-semibold text-ink">{preview.subject}</p>
+                </div>
+                {/* The HTML the student's mail client receives, drawn as is.
+                    Sandboxed with nothing allowed back in: the button is a
+                    link, and a preview has nowhere to send anybody. */}
+                <iframe
+                  key={preview.locale}
+                  title={t('emails.preview_frame_title', {
+                    language: tRoot(`language.${ROUTE_LOCALE[preview.locale]}`),
+                  })}
+                  sandbox=""
+                  srcDoc={preview.html}
+                  className="h-[34rem] w-full bg-white"
+                />
+              </Card>
+              <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+                {t('emails.preview_note')}
+              </p>
+            </>
+          )}
         </section>
 
-        {/* What you can do to it */}
+        {/* The figures, and the proof */}
         <div className="flex flex-col gap-6">
-          <section className="flex flex-col gap-3">
-            <SectionTitle icon="settings">{t('emails.state_title')}</SectionTitle>
-            <Card className="p-4">
-              {/* A template nothing sends yet has no switch: turning it "on"
-                  would promise an e-mail no code writes. */}
-              {flow.emitted ? (
-                <Toggle
-                  checked={enabled}
-                  onChange={toggle}
-                  label={t('emails.state_label')}
-                  hint={t(enabled ? 'emails.state_hint_on' : 'emails.state_hint_off')}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t('emails.state_hint_not_emitted')}
-                </p>
-              )}
-            </Card>
-          </section>
-
           <section className="flex flex-col gap-3">
             <SectionTitle icon="trend-up">
               {t('emails.metrics_title', { days: windowDays })}
@@ -172,28 +182,36 @@ export function EmailFlowDetail({
             <AutoGrid min="8rem" gap="gap-2" as="dl">
               <Metric
                 label={t('emails.metric_sent')}
-                value={formatNumber(flow.metrics.sent, locale)}
+                value={formatNumber(flow.counts.sent, locale)}
               />
+              {/* The provider's to report back; its webhook does not exist
+                  yet. Said out loud rather than drawn as a zero. */}
               <Metric
                 label={t('emails.metric_delivered')}
-                value={formatNumber(flow.metrics.delivered, locale)}
-                hint={rate === null ? undefined : formatPercent(rate, locale)}
+                value={t('emails.metric_unavailable')}
+                muted
               />
-              {/* Both of these are people, not figures — they open the list
-                  of who never received this e-mail. */}
               <Metric
                 label={t('emails.metric_bounced')}
-                value={formatNumber(flow.metrics.bounced, locale)}
-                tone={flow.metrics.bounced > 0 ? 'warning' : undefined}
-                href={`/backoffice/emails/deliveries?state=bounced&template=${flow.template}`}
+                value={t('emails.metric_unavailable')}
+                muted
               />
+              {/* A failure is a person who never received this e-mail — it
+                  opens the list of them. */}
               <Metric
                 label={t('emails.metric_failed')}
-                value={formatNumber(flow.metrics.failed, locale)}
-                tone={flow.metrics.failed > 0 ? 'danger' : undefined}
+                value={formatNumber(flow.counts.failed, locale)}
+                tone={flow.counts.failed > 0 ? 'danger' : undefined}
                 href={`/backoffice/emails/deliveries?state=failed&template=${flow.template}`}
               />
+              <Metric
+                label={t('emails.metric_blocked')}
+                value={formatNumber(flow.counts.blocked, locale)}
+              />
             </AutoGrid>
+            <p className="text-xs text-muted-foreground">
+              {t('emails.metric_unavailable_hint')}
+            </p>
           </section>
 
           <section className="flex flex-col gap-3">
@@ -224,29 +242,29 @@ export function EmailFlowDetail({
 function Metric({
   label,
   value,
-  hint,
   tone,
+  muted,
   href,
 }: {
   label: string
   value: string
-  hint?: string
-  tone?: 'warning' | 'danger'
+  tone?: 'danger'
+  /** A figure that does not exist yet: drawn as a word, not a number. */
+  muted?: boolean
   href?: string
 }) {
   const valueTone =
-    tone === 'danger' ? 'text-red-600' : tone === 'warning' ? 'text-amber-700' : 'text-ink'
+    tone === 'danger' ? 'text-red-600' : muted ? 'text-muted-foreground' : 'text-ink'
 
   const inner = (
     <>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className={`mt-0.5 text-lg font-semibold tabular-nums ${valueTone}`}>
+      <dd
+        className={`mt-0.5 font-semibold tabular-nums ${muted ? 'text-sm' : 'text-lg'} ${valueTone}`}
+      >
         {value}
-        {hint && (
-          <span className="ml-1.5 text-xs font-medium text-muted-foreground">{hint}</span>
-        )}
       </dd>
     </>
   )

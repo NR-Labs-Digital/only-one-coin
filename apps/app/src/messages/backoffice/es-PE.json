@@ -911,78 +911,6 @@
       "bounced": "Devuelto",
       "failed": "Falló"
     },
-    "email_preview": {
-      "enrollment_received": {
-        "subject": "Recibimos tu matrícula en {course}",
-        "p1": "Hola {name}: registramos tu solicitud de matrícula en {course} ({classGroup}) y ya tenemos tu comprobante de {amount}.",
-        "p2": "Lo estamos revisando. Te escribimos de nuevo apenas termine; no necesitas enviar nada otra vez.",
-        "cta": "Ver el estado de mi matrícula"
-      },
-      "payment_under_review": {
-        "subject": "Tu comprobante está en revisión",
-        "p1": "Hola {name}: una persona del equipo está revisando el comprobante que enviaste por {course}. Es un paso normal cuando la imagen no se lee con claridad.",
-        "p2": "Tu vacante en {classGroup} queda reservada mientras tanto.",
-        "cta": "Ver el estado de mi pago"
-      },
-      "payment_approved": {
-        "subject": "Tu pago fue aprobado: ya tienes tu vacante en {course}",
-        "p1": "Hola {name}: aprobamos tu pago de {amount} y tu vacante en {classGroup} quedó confirmada.",
-        "p2": "Las clases empiezan el {date}. Días antes te llega el acceso al aula virtual, al mismo correo.",
-        "cta": "Ver mi matrícula"
-      },
-      "payment_rejected": {
-        "subject": "No pudimos validar tu comprobante",
-        "p1": "Hola {name}: revisamos el comprobante que enviaste por {course} y no pudimos validarlo.",
-        "p2": "Escríbenos por WhatsApp y lo resolvemos contigo. Guarda tu número de operación a la mano.",
-        "cta": "Ver el detalle de mi pago"
-      },
-      "portal_credentials": {
-        "subject": "Activa tu acceso al portal del alumno",
-        "p1": "Hola {name}: tu matrícula fue aprobada y tu cuenta en el portal del alumno ya está creada. Puedes ingresar con tu correo o con el documento que usaste en la matrícula.",
-        "p2": "Usa el botón para crear tu contraseña. El enlace vale por siete días y solo se puede usar una vez.",
-        "cta": "Crear mi contraseña"
-      },
-      "class_access_ready": {
-        "subject": "Tu aula virtual de {course} ya está lista",
-        "p1": "Hola {name}: tu aula {classGroup} empieza el {date}. Ya puedes entrar con el correo con el que te matriculaste.",
-        "p2": "Todas las clases son en vivo y en grupo, en el horario de tu aula. Revisa que tu correo tenga espacio disponible.",
-        "cta": "Entrar al aula virtual"
-      },
-      "enrollment_certificate_issued": {
-        "subject": "Tu constancia de matrícula está lista",
-        "p1": "Hola {name}: emitimos tu constancia de matrícula de {course}. Va adjunta a este correo y también queda en tu portal.",
-        "p2": "El documento lleva un código de verificación: cualquiera puede comprobar que es auténtico en nuestra página.",
-        "cta": "Ver mi constancia"
-      },
-      "certificate_issued": {
-        "subject": "Tu certificado de {course} está listo",
-        "p1": "Hola {name}: felicitaciones por terminar {course}. Tu certificado de finalización ya está emitido y va adjunto a este correo.",
-        "p2": "También queda guardado en tu portal, con su código de verificación.",
-        "cta": "Ver mi certificado"
-      },
-      "email_verification_code": {
-        "subject": "Tu código de verificación",
-        "p1": "Hola {name}: estás completando una matrícula en Only One Coin. Para confirmar que este correo es tuyo, escribe en el formulario el código que llega en este mensaje.",
-        "p2": "El código vence en 10 minutos. Si no estás haciendo una matrícula, ignora este correo."
-      },
-      "portal_password_reset": {
-        "subject": "Restablece tu contraseña del portal del alumno",
-        "p1": "Hola {name}: recibimos un pedido para restablecer la contraseña de tu cuenta en el portal del alumno.",
-        "p2": "El enlace vale por una hora y solo se puede usar una vez. Si no lo pediste, ignora este correo: tu contraseña sigue siendo la misma.",
-        "cta": "Crear contraseña nueva"
-      },
-      "staff_password_reset": {
-        "subject": "Restablece tu contraseña del panel",
-        "p1": "Hola {name}: recibimos un pedido para restablecer la contraseña de tu cuenta del panel de Only One Coin.",
-        "p2": "El enlace vale por una hora y solo se puede usar una vez. Si no lo pediste, ignora este correo: tu contraseña sigue siendo la misma.",
-        "cta": "Crear contraseña nueva"
-      },
-      "staff_mfa_code": {
-        "subject": "Tu código de acceso al panel",
-        "p1": "Hola {name}: alguien que conoce la contraseña de tu cuenta del panel está entrando o activando la verificación en dos pasos. Para continuar, escribe el código que llega en este mensaje.",
-        "p2": "El código vence en 10 minutos y solo se puede usar una vez. Si no fuiste tú, no lo compartas con nadie y cambia tu contraseña."
-      }
-    },
     "emails": {
       "title": "Correos",
       "when_label": "¿Cuándo se envía?",
@@ -991,43 +919,27 @@
       "stat_sent": "Enviados",
       "stat_sent_hint": "Últimos {days} días",
       "stat_delivered": "Entregados",
-      "stat_delivered_hint": "{rate} de los enviados",
-      "stat_bounced": "Rebotes",
-      "stat_bounced_hint": "Direcciones que el servidor rechazó",
-      "stat_paused": "Pausados",
-      "stat_paused_hint": "{count, plural, =0 {Todos los flujos están activos} one {Un correo apagado: nadie lo recibe} other {# correos apagados: nadie los recibe}}",
       "search_label": "Buscar un correo",
       "search_placeholder": "Buscar por nombre del correo",
       "filters": "Filtros",
-      "filter_paused": "Solo pausados",
       "col_flow": "Correo",
       "col_audience": "Destinatario",
       "col_state": "Estado",
       "col_sent": "Enviados",
-      "col_delivered": "Entregados",
       "state_on": "Activo",
-      "state_off": "Pausado",
       "state_not_emitted": "Aún no se envía",
       "empty_title": "Ningún correo coincide",
-      "empty_body": "Prueba con otro texto o quita el filtro de pausados.",
+      "empty_body": "Prueba con otro texto o quita el filtro.",
       "open": "Ver la plantilla",
       "back": "Volver a correos",
       "back_journey": "Volver a la cadencia",
       "preview_title": "Vista previa",
-      "preview_note": "Es la plantilla versionada del repositorio, con datos de ejemplo. Cada persona la recibe en su idioma.",
-      "preview_subject": "Asunto",
+      "preview_note": "Es la plantilla versionada del repositorio, con datos de ejemplo, tal como sale de la plataforma. Cada persona la recibe en su idioma.",
       "metrics_title": "Últimos {days} días",
       "metric_sent": "Enviados",
       "metric_delivered": "Entregados",
       "metric_bounced": "Rebotes",
       "metric_failed": "Fallidos",
-      "state_title": "Envío automático",
-      "state_label": "La plataforma envía este correo",
-      "state_hint_on": "Sale solo, apenas ocurre lo que lo dispara.",
-      "state_hint_off": "Está pausado: nadie lo recibe, ni siquiera quien lo está esperando.",
-      "state_hint_not_emitted": "Nada en la plataforma envía este correo todavía. El texto ya está escrito; el envío llega cuando se construya lo que lo dispara.",
-      "toast_enabled": "Correo activado",
-      "toast_paused": "Correo pausado",
       "no_send_notice": "No hay un botón de enviar por alumno: cada correo sale como consecuencia de lo que ocurrió en el sistema, y un reenvío es una excepción auditada.",
       "test_title": "Enviar una prueba",
       "test_hint": "Hasta {max} direcciones. El asunto sale con el prefijo {prefix}.",
@@ -1048,7 +960,6 @@
       "journey_empty": "Todavía no sale ningún correo en este punto.",
       "help": "Cómo se lee",
       "help_condition": "La etiqueta gris es la condición: ese correo solo sale si el caso toma ese camino.",
-      "help_paused": "Pausado: ese correo está apagado y en ese punto nadie recibe nada.",
       "help_not_emitted": "Aún no se envía: el correo está previsto, pero nada en la plataforma lo dispara todavía.",
       "help_open": "Cada recuadro abre el correo, con su plantilla.",
       "test_add": "Añadir correo",
@@ -1057,7 +968,22 @@
       "test_error_none": "Añade al menos una dirección.",
       "filter_all": "Todos",
       "filter_external": "Alumnos",
-      "filter_internal": "Interno"
+      "filter_internal": "Interno",
+      "stat_failed": "No entregados",
+      "stat_failed_hint": "Fallaron en los últimos {days} días: nadie los recibió",
+      "stat_blocked": "Bloqueados",
+      "stat_blocked_hint": "Retenidos por la lista permitida fuera de producción",
+      "metric_unavailable": "No disponible",
+      "metric_unavailable_hint": "Entregados y rebotes los informa el proveedor de correo; se mostrarán cuando esa conexión exista.",
+      "metric_blocked": "Bloqueados",
+      "col_failed": "No entregados",
+      "load_error_title": "No pudimos cargar los correos",
+      "load_error_body": "La lectura falló. Vuelve a intentarlo en unos minutos.",
+      "version_label": "Versión {version}",
+      "preview_not_emitted": "Nada en la plataforma envía este correo todavía, así que aún no tiene plantilla en el repositorio. Su texto se escribe cuando se construya lo que lo dispara.",
+      "preview_load_error": "No pudimos cargar la vista previa. Vuelve a intentarlo en unos minutos.",
+      "preview_locale_label": "Idioma de la vista previa",
+      "preview_frame_title": "Vista previa del correo en {language}"
     },
     "new_email": {
       "title": "Nuevo envío",
