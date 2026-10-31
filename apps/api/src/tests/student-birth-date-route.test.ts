@@ -22,6 +22,7 @@ const STUDENT: StudentDetailRow = {
   nationalIdType: "DNI",
   nationalId: "70123456",
   email: "rosa.quispe@gmail.com",
+  emailInvalidAt: null,
   phone: "987654321",
   birthDate: new Date("1996-04-12T00:00:00.000Z"),
   country: "PE",

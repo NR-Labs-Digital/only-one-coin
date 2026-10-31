@@ -21,6 +21,8 @@ export interface StudentDetailRow {
   nationalIdType: string;
   nationalId: string;
   email: string;
+  /** Set by the Brevo webhook on a hard bounce to `email`; null otherwise. */
+  emailInvalidAt: Date | null;
   phone: string;
   birthDate: Date;
   country: string;
@@ -55,6 +57,7 @@ export class GetStudentQuery {
         nationalIdType: students.nationalIdType,
         nationalId: students.nationalId,
         email: students.email,
+        emailInvalidAt: students.emailInvalidAt,
         phone: students.phone,
         birthDate: students.birthDate,
         country: students.country,
@@ -143,6 +146,7 @@ export class GetStudentQuery {
       nationalIdType: student.nationalIdType,
       nationalId: student.nationalId,
       email: student.email,
+      emailInvalidAt: student.emailInvalidAt,
       phone: student.phone,
       birthDate: student.birthDate,
       country: student.country,

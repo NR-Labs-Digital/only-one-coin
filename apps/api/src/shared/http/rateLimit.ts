@@ -49,6 +49,11 @@ export const RATE_LIMITS = {
   /** The audit log as a file (OOC-122), per account — same reasoning as the student export. */
   auditExport: { name: "audit-export", by: "user", limit: 10, windowSeconds: 60 * MINUTE },
 
+  /** Brevo's webhook (OOC-91). Every call comes from a handful of Brevo
+   * addresses and one burst can be a whole campaign's worth of events, so
+   * the ceiling is high; the bearer token, not the count, is the gate. */
+  brevoWebhook: { name: "brevo-webhook:ip", by: "ip", limit: 3000, windowSeconds: 5 * MINUTE },
+
   /** Better Auth's catch-all: sign-in, sign-out, session refresh. */
   auth: { name: "auth:ip", by: "ip", limit: 60, windowSeconds: 5 * MINUTE },
   /** Liveness probes and the root banner. */

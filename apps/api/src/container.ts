@@ -199,6 +199,10 @@ import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPassw
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
+import {
+  DrizzleEmailDeliveryRepository,
+  type IEmailDeliveryRecorder,
+} from "./infra/persistence/notification/DrizzleEmailDeliveryRepository.js";
 import { DrizzleOutboxRepository, type IOutboxStore } from "./infra/persistence/notification/DrizzleOutboxRepository.js";
 import { createNotificationProvider } from "./infra/notification/createNotificationProvider.js";
 import type { NotificationProvider } from "@ooc/notifications";
@@ -380,10 +384,12 @@ export interface AppIdentity {
   staffSecondFactor: IStaffSecondFactor;
 }
 
-/** What the e-mail workers need — the outbox and the (guarded) provider. */
+/** What the e-mail workers need — the outbox and the (guarded) provider — and
+ * where the provider's webhook reports back (OOC-91). */
 export interface AppNotifications {
   outbox: IOutboxStore;
   provider: NotificationProvider;
+  delivery: IEmailDeliveryRecorder;
 }
 
 /** What the receipt normalize worker needs — the raw bucket GET/PUT/DELETE
@@ -702,6 +708,7 @@ function buildContainer(): AppContainer {
     notifications: {
       outbox: outboxRepository,
       provider: notificationProvider,
+      delivery: new DrizzleEmailDeliveryRepository(db),
     },
     storage: {
       objectStore: receiptObjectStore,

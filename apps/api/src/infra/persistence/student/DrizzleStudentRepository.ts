@@ -93,6 +93,8 @@ export class DrizzleStudentRepository implements IStudentRepository {
         nationalIdType: student.nationalIdType,
         nationalId: student.nationalId,
         email: student.email,
+        // The flag is about the address that bounced, not about the person.
+        emailInvalidAt: sql`case when lower(${students.email}) = lower(${student.email}) then ${students.emailInvalidAt} else null end`,
         phone: student.phone,
         birthDate: student.birthDate,
         country: student.country,

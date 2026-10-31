@@ -49,6 +49,9 @@ const GetStudentResponseSchema = z.object({
   nationalIdType: z.enum(["DNI", "CE", "passport"]),
   nationalId: z.string(),
   email: z.string(),
+  // When the provider reported a hard bounce to `email` (OOC-91): the address
+  // is dead, and what has to change is the file. Null while nothing bounced.
+  emailInvalidAt: z.string().nullable(),
   phone: z.string(),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   country: z.string(),
@@ -113,6 +116,7 @@ export const getStudentRoute = RouteBuilder.get("/students/:studentId")
       // file prints it as written — read as an instant in America/Lima it
       // lands on the day before (OOC-109).
       birthDate: student.birthDate.toISOString().slice(0, 10),
+      emailInvalidAt: student.emailInvalidAt?.toISOString() ?? null,
       createdAt: student.createdAt.toISOString(),
       lastActivityAt: student.lastActivityAt.toISOString(),
       guardian: student.guardian
