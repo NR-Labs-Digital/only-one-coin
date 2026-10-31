@@ -34,7 +34,7 @@ import { startSendEmailWorker } from "./workers/send-email.worker.js";
 
 const {
   config,
-  config: { PORT, HOST, REDIS_URL, NODE_ENV, BREVO_API_KEY },
+  config: { PORT, HOST, REDIS_URL, NODE_ENV, BREVO_API_KEY, BREVO_WEBHOOK_TOKEN },
   logger,
   edge,
   notifications,
@@ -159,6 +159,9 @@ logger.info(
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
+}
+if (NODE_ENV === "production" && BREVO_API_KEY && !BREVO_WEBHOOK_TOKEN) {
+  logger.warn("BREVO_WEBHOOK_TOKEN is not set: the Brevo webhook refuses every call, so bounces never reach the database");
 }
 if (NODE_ENV === "production" && !config.API_PROXY_SECRET) {
   logger.warn(

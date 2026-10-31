@@ -114,6 +114,16 @@ export {
   type EmittedEmailKey,
 } from "./notification/emailCatalog.js";
 export {
+  EMAIL_DELIVERY_KINDS,
+  EMAIL_DELIVERY_REASONS,
+  deliveryStatusOf,
+  deliveryStatusRank,
+  type EmailDeliveryKind,
+  type EmailDeliveryReason,
+  type EmailDeliveryStatus,
+  type EmailDeliveryEvent,
+} from "./notification/emailDelivery.js";
+export {
   enrollmentRecipients,
   enrollmentReceivedEmails,
   paymentUnderReviewEmails,

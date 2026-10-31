@@ -352,6 +352,10 @@ export const students = pgTable(
     region: text("region"),
     city: text("city").notNull(),
     userId: text("user_id"),
+    // Set by the Brevo webhook on a hard bounce to the address above (OOC-91):
+    // the address is dead, not the student. Cleared when the address changes —
+    // the flag is about THIS e-mail, never about the person.
+    emailInvalidAt: timestamp("email_invalid_at", { withTimezone: true }),
     ...softDeletable(),
     // Soft delete only — no DELETE grant on students (CLAUDE.md §6).
   },
@@ -1276,10 +1280,26 @@ export const outbox = pgTable(
     providerMessageId: text("provider_message_id"),
     lastError: text("last_error"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    // What the provider reported AFTER accepting the message (OOC-91) — a
+    // different question from `status`, which is whether we handed it over.
+    // The latest word, with `outbox_delivery_events` holding the history; null
+    // until the webhook says anything (and forever, without a webhook).
+    deliveryStatus: text("delivery_status"),
+    deliveryStatusAt: timestamp("delivery_status_at", { withTimezone: true }),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex("outbox_dedupe_key_uidx").on(table.dedupeKey),
+    check(
+      "outbox_delivery_status_check",
+      sql`${table.deliveryStatus} is null or ${table.deliveryStatus} in ('delivered', 'soft_bounced', 'hard_bounced', 'blocked', 'unsubscribed')`,
+    ),
+    // The webhook finds its row by the id the send call returned. Brevo's send
+    // API and its webhook spell the same id with and without the angle
+    // brackets, so the lookup compares without them.
+    index("outbox_provider_message_id_idx")
+      .on(sql`trim(both '<>' from ${table.providerMessageId})`)
+      .where(sql`${table.providerMessageId} is not null`),
     check("outbox_channel_check", sql`${table.channel} in ('email')`),
     check("outbox_locale_check", sql`${table.locale} in ('es-PE', 'pt-BR', 'en')`),
     // pending → sent | blocked | failed. `blocked` is the allowlist guard
@@ -1291,6 +1311,46 @@ export const outbox = pgTable(
     index("outbox_pending_created_at_idx")
       .on(table.createdAt)
       .where(sql`${table.status} = 'pending'`),
+  ],
+);
+
+// What the e-mail provider reported about a message after taking it (OOC-91):
+// one row per webhook event, append-only — a soft bounce followed by a
+// delivery is a story, and `outbox.delivery_status` only keeps its last line.
+//
+// `dedupe_key` is `<message id>:<event>:<provider timestamp>`: Brevo retries a
+// webhook it did not see answered, and replaying the same event is a no-op.
+//
+// `reason` is a closed code classified from the provider's free text, never the
+// text itself — it can echo the address back (CLAUDE.md §6, "PII em log"), the
+// same rule as `outbox.last_error`.
+export const outboxDeliveryEvents = pgTable(
+  "outbox_delivery_events",
+  {
+    id: uuidPk(),
+    outboxId: uuid("outbox_id")
+      .notNull()
+      .references(() => outbox.id, { onDelete: "restrict" }),
+    kind: text("kind").notNull(),
+    reason: text("reason"),
+    dedupeKey: text("dedupe_key").notNull(),
+    // When the provider says it happened — not when the webhook arrived.
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("outbox_delivery_events_dedupe_key_uidx").on(table.dedupeKey),
+    check(
+      "outbox_delivery_events_kind_check",
+      sql`${table.kind} in ('delivered', 'soft_bounce', 'hard_bounce', 'blocked', 'unsubscribed')`,
+    ),
+    check(
+      "outbox_delivery_events_reason_check",
+      sql`${table.reason} is null or ${table.reason} in ('mailbox_full', 'address_unknown', 'domain_invalid', 'blocked_by_server', 'other')`,
+    ),
+    // The 30-day metrics count by kind over a window.
+    index("outbox_delivery_events_kind_occurred_at_idx").on(table.kind, table.occurredAt),
+    index("outbox_delivery_events_outbox_id_idx").on(table.outboxId),
   ],
 );
 
