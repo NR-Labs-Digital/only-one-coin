@@ -91,6 +91,7 @@ export const AUDIT_ACTIONS = {
   "enrollment.created": { key: "enrollment_created", entity: "student", subject: "metadata_student" },
   "portal_access.created": { key: "portal_access_created", entity: "student", subject: "target" },
   "portal_access.issued": { key: "portal_access_issued", entity: "student", subject: "target" },
+  "student.email_marked_invalid": { key: "student_email_marked_invalid", entity: "student", subject: "target" },
   "portal_access.email_conflict": { key: "portal_access_email_conflict", entity: "student", subject: "target" },
   "portal.password_set": { key: "portal_password_set", entity: "student", subject: "student_account" },
   "portal.password_reset_requested": {
