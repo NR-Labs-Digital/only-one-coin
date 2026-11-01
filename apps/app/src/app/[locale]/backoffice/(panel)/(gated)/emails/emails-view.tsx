@@ -121,7 +121,7 @@ export function EmailsView({
         {/* The only number here somebody can act on: it names people who
             never received an e-mail, so it opens the list of them. */}
         <Link
-          href="/backoffice/emails/deliveries?state=failed"
+          href="/backoffice/emails/deliveries"
           className="rounded-xl transition hover:brightness-[0.98]"
         >
           <StatCard

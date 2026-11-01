@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { listEmailFlows } from '@/lib/backoffice/emails'
 import { getStaffSession } from '@/lib/backoffice/session'
+import { getEmailDeliveryIssues } from '@/lib/backoffice/email-delivery'
 import { canManageEmail } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
@@ -47,11 +48,10 @@ export default async function EmailsPage({
     )
   }
 
-  const catalog = await listEmailFlows()
-  /* What never reached a person over the window: the outbox rows that failed
-     (OOC-88). A bounce would count here too, once the provider reports it. */
-  const undelivered =
-    catalog?.flows.reduce((total, flow) => total + flow.counts.failed, 0) ?? 0
+  const [catalog, issues] = await Promise.all([listEmailFlows(), getEmailDeliveryIssues()])
+  // The banner counts the same failed sends the deliveries screen lists
+  // (OOC-90); a failed read just hides it — that screen says "could not load".
+  const undelivered = issues?.total ?? 0
 
   return (
     <div className="flex flex-col gap-5">

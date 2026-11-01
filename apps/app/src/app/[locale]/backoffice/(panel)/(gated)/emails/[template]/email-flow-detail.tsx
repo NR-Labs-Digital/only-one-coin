@@ -202,7 +202,7 @@ export function EmailFlowDetail({
                 label={t('emails.metric_failed')}
                 value={formatNumber(flow.counts.failed, locale)}
                 tone={flow.counts.failed > 0 ? 'danger' : undefined}
-                href={`/backoffice/emails/deliveries?state=failed&template=${flow.template}`}
+                href={`/backoffice/emails/deliveries?template=${flow.template}`}
               />
               <Metric
                 label={t('emails.metric_blocked')}

@@ -23,6 +23,7 @@ import {
   UpdateClassGroupUseCase,
   AdvanceClassGroupStatusUseCase,
   IssuePortalAccessUseCase,
+  ResendFailedEmailUseCase,
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
   CreateManualEnrollmentUseCase,
@@ -196,6 +197,8 @@ import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
 import { EmailFlowCountsQuery } from "./infra/persistence/notification/EmailFlowCountsQuery.js";
+import { EmailDeliveryQuery } from "./infra/persistence/notification/EmailDeliveryQuery.js";
+import { DrizzleEmailResendRepository } from "./infra/persistence/notification/DrizzleEmailResendRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
@@ -316,6 +319,9 @@ export interface AppUseCases {
     completeAccess: CompletePortalAccessUseCase;
     issueAccess: IssuePortalAccessUseCase;
   };
+  emails: {
+    resendDelivery: ResendFailedEmailUseCase;
+  };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
     updateSettings: UpdatePlatformSettingsUseCase;
@@ -371,6 +377,7 @@ export interface AppQueries {
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   auditLog: AuditLogQuery;
   emailFlowCounts: EmailFlowCountsQuery;
+  emailDeliveries: EmailDeliveryQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
 }
 
@@ -688,6 +695,7 @@ function buildContainer(): AppContainer {
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
   const auditLogQuery = new AuditLogQuery(db);
   const emailFlowCounts = new EmailFlowCountsQuery(db);
+  const emailDeliveryQuery = new EmailDeliveryQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
 
   return {
@@ -818,6 +826,9 @@ function buildContainer(): AppContainer {
         disableOwnMfa,
       },
       portal,
+      emails: {
+        resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(db)),
+      },
       platform: {
         setFeatureFlag,
         updateSettings,
@@ -872,6 +883,7 @@ function buildContainer(): AppContainer {
       listStaffRoleChanges,
       auditLog: auditLogQuery,
       emailFlowCounts,
+      emailDeliveries: emailDeliveryQuery,
       getPasswordChangedAt,
     },
   };

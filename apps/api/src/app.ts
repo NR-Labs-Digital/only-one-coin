@@ -107,6 +107,8 @@ import { getEmailFlowRoute } from "@/http/email/GetEmailFlowRoute.js";
 import { previewEmailFlowRoute } from "@/http/email/PreviewEmailFlowRoute.js";
 import { listAuditActorsRoute } from "@/http/audit/ListAuditActorsRoute.js";
 import { listAuditLogRoute } from "@/http/audit/ListAuditLogRoute.js";
+import { listEmailDeliveriesRoute } from "@/http/notification/ListEmailDeliveriesRoute.js";
+import { resendEmailDeliveryRoute } from "@/http/notification/ResendEmailDeliveryRoute.js";
 import { createStaffInviteRoute } from "@/http/identity/CreateStaffInviteRoute.js";
 import { renewStaffInviteRoute } from "@/http/identity/RenewStaffInviteRoute.js";
 import { cancelStaffInviteRoute } from "@/http/identity/CancelStaffInviteRoute.js";
@@ -264,6 +266,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listEmailFlowsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getEmailFlowRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(previewEmailFlowRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listEmailDeliveriesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(resendEmailDeliveryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renewStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(cancelStaffInviteRoute);
