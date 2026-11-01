@@ -4,6 +4,7 @@ import {
   listCatalogClassGroups,
   listCatalogCourses,
   listCatalogPeriods,
+  listPendingTeacherClassGroups,
   listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
@@ -13,8 +14,8 @@ import {
 } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { AcademicTabs } from '@/components/backoffice/academic-tabs'
+import type { AcademicPeriodItem } from '@/lib/backoffice/types'
 import { ClassGroupsView } from './class-groups-view'
-import { PeriodBar } from './period-bar'
 
 /**
  * Class group directory, one sales period at a time. The period comes from the
@@ -40,14 +41,16 @@ export default async function ClassGroupsPage({
 
   if (!canBrowseCatalog(staff.role)) notFound()
 
-  const [periods, courses] = await Promise.all([listCatalogPeriods(), listCatalogCourses()])
+  const [periods, courses, pending] = await Promise.all([
+    listCatalogPeriods(),
+    listCatalogCourses(),
+    listPendingTeacherClassGroups(),
+  ])
   // An id that is not a period (stale link, typo) falls back like no id at all,
   // instead of asking the API for a period that does not exist.
   const selectedPeriodId =
     (period && periods?.some((item) => item.id === period) ? period : null) ??
-    periods?.find((item) => item.active)?.id ??
-    periods?.[0]?.id ??
-    null
+    (periods ? defaultPeriodId(periods, new Date().toISOString()) : null)
   const items =
     periods && courses ? await listCatalogClassGroups(selectedPeriodId ?? undefined) : null
   const canManage = canCreateClassGroup(staff.role)
@@ -67,18 +70,35 @@ export default async function ClassGroupsPage({
           />
         </Card>
       ) : (
-        <>
-          <PeriodBar periods={periods} selectedId={selectedPeriodId} canManage={canManage} />
-          <ClassGroupsView
+        <ClassGroupsView
             items={items}
             courses={courses}
             periods={periods}
             teachers={teachers}
             selectedPeriodId={selectedPeriodId}
             canManage={canManage}
+            pendingCount={pending?.length ?? null}
           />
-        </>
       )}
     </div>
   )
+}
+
+/**
+ * The period the screen opens on without `?period=`: the one selling today,
+ * else the next to open, else the latest that ended — retired ones last.
+ * It used to be the newest period not retired, so a campaign opened ahead of
+ * time (the duplicated 2027-I, all drafts) took over the screen and the
+ * class groups selling right now looked gone.
+ */
+function defaultPeriodId(periods: AcademicPeriodItem[], now: string): string | null {
+  const live = periods.filter((item) => item.active)
+  const current = live.find((item) => item.startsOn <= now && now <= item.endsOn)
+  const upcoming = live
+    .filter((item) => item.startsOn > now)
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn))[0]
+  const latestEnded = live
+    .filter((item) => item.endsOn < now)
+    .sort((a, b) => b.endsOn.localeCompare(a.endsOn))[0]
+  return (current ?? upcoming ?? latestEnded ?? periods[0])?.id ?? null
 }
