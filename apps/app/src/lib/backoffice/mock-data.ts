@@ -7,7 +7,6 @@ import type {
   CourseLanguage,
   CourseRow,
   EnrollmentRow,
-  EmailDeliveryIssue,
   EmailFlow,
   EmailMetrics,
   EmailSegment,
@@ -368,89 +367,3 @@ export function countEmailRecipients(segment: EmailSegment): number {
   return new Set(rows.map((row) => row.studentId)).size
 }
 
-/**
- * The deliveries that did not land, newest first. Not a report: it is a list of
- * people the institution failed to reach — the student whose credentials
- * bounced cannot get into the portal, and nobody finds that out from a counter.
- */
-export function listEmailDeliveryIssues(): EmailDeliveryIssue[] {
-  return [
-    {
-      id: 'del_01',
-      template: 'portal_credentials',
-      studentId: 'stu_0002',
-      studentName: 'Jhon Alexander Mamani Ccama',
-      address: 'jhon.mamani@outlook.com',
-      state: 'bounced',
-      reason: 'mailbox_full',
-      at: '2026-08-23T14:20:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_02',
-      template: 'payment_approved',
-      studentId: 'stu_0006',
-      studentName: 'Diego Huamán Ccopa',
-      address: 'diego.huaman@gmial.com',
-      state: 'bounced',
-      reason: 'domain_invalid',
-      at: '2026-08-23T02:41:00Z',
-      attempts: 1,
-    },
-    {
-      id: 'del_03',
-      template: 'enrollment_received',
-      studentId: 'stu_0007',
-      studentName: 'Valentina Núñez Ibarra',
-      address: 'valentina.nunez@gmail.com',
-      state: 'failed',
-      reason: 'provider_error',
-      at: '2026-08-22T19:05:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_04',
-      template: 'portal_credentials',
-      studentId: 'stu_0004',
-      studentName: 'Sebastián Ríos Paredes',
-      address: 'sebastian.ríos@gmail.com',
-      state: 'bounced',
-      reason: 'address_unknown',
-      at: '2026-08-22T16:30:00Z',
-      attempts: 2,
-    },
-    {
-      id: 'del_05',
-      template: 'payment_rejected',
-      studentId: 'stu_0003',
-      studentName: 'Camila Torres Vílchez',
-      address: 'camila.torres@gmail.com',
-      state: 'bounced',
-      reason: 'mailbox_full',
-      at: '2026-08-21T22:14:00Z',
-      attempts: 3,
-    },
-    {
-      id: 'del_06',
-      template: 'payment_under_review',
-      studentId: 'stu_0008',
-      studentName: 'Renzo Palacios Vega',
-      address: 'renzo.palacios@gmail.com',
-      state: 'bounced',
-      reason: 'blocked_by_server',
-      at: '2026-08-21T11:02:00Z',
-      attempts: 2,
-    },
-    {
-      id: 'del_07',
-      template: 'payment_approved',
-      studentId: 'stu_0005',
-      studentName: 'Ana Lucía Chávez Soto',
-      address: 'analucia.chavez@gmail.com',
-      state: 'failed',
-      reason: 'provider_error',
-      at: '2026-08-20T09:48:00Z',
-      attempts: 3,
-    },
-  ]
-}

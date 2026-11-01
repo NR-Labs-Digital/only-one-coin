@@ -302,6 +302,15 @@ export function canManageEmail(role: StaffRole): boolean {
 }
 
 /**
+ * Who resends an e-mail that failed (OOC-90): the e-mail section's cargos
+ * minus the analyst, who observes and never edits (CLAUDE.md §8). The API
+ * enforces the same list (`EMAIL_DELIVERY_RESEND_ROLES`).
+ */
+export function canResendEmail(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor'
+}
+
+/**
  * Who opens the platform settings. Management only: that screen holds the grade
  * that decides who is certified and the tolerance the platform approves a
  * receipt with when nobody is looking.

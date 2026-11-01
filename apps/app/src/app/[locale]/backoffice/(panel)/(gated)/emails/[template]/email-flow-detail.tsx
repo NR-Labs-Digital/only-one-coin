@@ -185,7 +185,7 @@ export function EmailFlowDetail({
                 label={t('emails.metric_bounced')}
                 value={formatNumber(flow.metrics.bounced, locale)}
                 tone={flow.metrics.bounced > 0 ? 'warning' : undefined}
-                href={`/backoffice/emails/deliveries?state=bounced&template=${flow.template}`}
+                href={`/backoffice/emails/deliveries?template=${flow.template}`}
               />
               <Metric
                 label={t('emails.metric_failed')}
