@@ -88,6 +88,22 @@ export async function listCatalogClassGroups(periodId?: string): Promise<ClassGr
   }
 }
 
+/**
+ * The class groups whose seats closed with no teacher yet, every period
+ * (OOC-97). What "closed" means is the API's to say — the screen only lists.
+ * Null when the read failed.
+ */
+export async function listPendingTeacherClassGroups(): Promise<ClassGroupItem[] | null> {
+  try {
+    const response = await apiFetch('/api/v1/catalog/class-groups?pendingTeacher=true')
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: ClassGroupItem[] }
+    return body.items
+  } catch {
+    return null
+  }
+}
+
 /** The roster as the class group form needs it (OOC-80); null when the read failed. */
 export async function listTeacherOptions(): Promise<TeacherOption[] | null> {
   try {

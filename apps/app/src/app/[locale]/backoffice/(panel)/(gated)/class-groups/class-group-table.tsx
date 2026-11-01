@@ -50,7 +50,17 @@ export function ClassGroupTable({ children }: { children: ReactNode }) {
  * working — the row handler only covers the mouse, and steps aside when the
  * click already landed on the link.
  */
-export function ClassGroupTableRow({ row }: { row: ClassGroupItem }) {
+export function ClassGroupTableRow({
+  row,
+  closedBecause,
+}: {
+  row: ClassGroupItem
+  /**
+   * Why its seats are closed, on the pending list (OOC-97). An in-progress
+   * class group already says so in its status badge, so only these two show.
+   */
+  closedBecause?: 'full' | 'window_closed'
+}) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -115,6 +125,9 @@ export function ClassGroupTableRow({ row }: { row: ClassGroupItem }) {
             tone={classGroupTone[row.status]}
             label={t(`class_group_status.${row.status}`)}
           />
+          {closedBecause && (
+            <StatusBadge tone="neutral" label={t(`class_groups.pending_reason_${closedBecause}`)} />
+          )}
           {!row.active && <StatusBadge tone="neutral" label={t('class_groups.retired')} />}
           {!row.courseActive && (
             <StatusBadge tone="warning" label={t('class_groups.course_off_catalog')} />
