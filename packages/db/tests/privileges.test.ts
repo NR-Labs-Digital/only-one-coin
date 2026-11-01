@@ -188,6 +188,17 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_GRANT);
   });
 
+  // The provider's account of a message (OOC-91) is a history, not a status.
+  it("refuses UPDATE on outbox_delivery_events", async () => {
+    expect(
+      await answerTo(`update outbox_delivery_events set kind = 'delivered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on outbox_delivery_events", async () => {
+    expect(await answerTo(deleteFrom("outbox_delivery_events"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("still rewrites a document template draft", async () => {
     expect(
       await answerTo(`update document_template_drafts set body = body where id = '${NO_SUCH_ID}'`),
@@ -261,6 +272,21 @@ describe("table owner (TRIGGER layer)", () => {
   // still refuses, which is the layer this suite is proving.
   it("blocks TRUNCATE on document_template_versions, even with CASCADE", async () => {
     expect(await answerTo("truncate document_template_versions cascade")).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses UPDATE on outbox_delivery_events", async () => {
+    expect(
+      await answerTo(`update outbox_delivery_events set kind = 'delivered' where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on outbox_delivery_events", async () => {
+    expect(await answerTo(deleteFrom("outbox_delivery_events"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // No inbound foreign key, so the trigger — not Postgres' FK rule — refuses.
+  it("blocks TRUNCATE on outbox_delivery_events", async () => {
+    expect(await answerTo("truncate outbox_delivery_events")).toBe(DENIED_BY_TRIGGER);
   });
 
   it("still appends to audit_log", async () => {
