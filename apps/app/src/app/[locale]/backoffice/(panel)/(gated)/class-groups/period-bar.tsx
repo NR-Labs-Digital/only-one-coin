@@ -7,11 +7,24 @@ import type { AcademicPeriodItem, CatalogErrorKey } from '@/lib/backoffice/types
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDateRange, type Locale } from '@/lib/format'
-import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
 import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -24,14 +37,19 @@ const primaryButtonClass =
 const secondaryButtonClass =
   'inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink'
 
-const dangerButtonClass =
-  'inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-red-700 transition hover:border-red-200 hover:bg-red-50'
+const menuItemClass = 'min-h-tap gap-2 px-3 text-sm'
 
 type Mode = 'idle' | 'new' | 'copy' | 'edit' | 'retire' | 'restore'
 
 /**
  * Which sales period the class group list shows, and the two ways a period is
  * born: from scratch, or carrying the previous one's class groups as drafts.
+ *
+ * It sits in the list's toolbar, first, as the filter it is — it used to be a
+ * card of its own between the tabs and the toolbar, with the management
+ * buttons beside the select, and read as a form rather than as the thing that
+ * narrows the list. Managing periods is occasional, so it folds into a menu
+ * and its forms open in a dialog.
  *
  * The period lives in the URL (`?period=`), not in state: a link to "the
  * class groups of 2027-I" has to open on 2027-I, and the server reads only
@@ -132,11 +150,12 @@ export function PeriodBar({
         { sourcePeriodId: copyFrom },
       )
       // The period exists; go to it anyway — empty, it offers "copy class
-      // groups into this period" — and keep the reason the copy failed on
-      // screen.
+      // groups into this period" in the menu — and say why the copy failed.
+      // The dialog closes with it, so the reason travels in the notice.
       if (!copied.ok) {
+        setSaving(false)
         close()
-        fail(copied.error)
+        setToast(t('periods.copy_failed', { reason: t(`catalog_errors.${copied.error}`) }))
         go(created.data.id)
         router.refresh()
         return
@@ -212,6 +231,14 @@ export function PeriodBar({
     router.refresh()
   }
 
+  const dialogTitle: Record<Exclude<Mode, 'idle'>, string> = {
+    new: t('periods.new'),
+    edit: t('periods.edit'),
+    copy: t('periods.copy_into_existing'),
+    retire: t('periods.retire'),
+    restore: t('periods.restore'),
+  }
+
   /** Name and the two dates — the same fields to open a period and to correct one. */
   const periodFields = (
     <>
@@ -246,75 +273,99 @@ export function PeriodBar({
   )
 
   return (
-    <Card className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-end gap-3">
-        {periods.length === 0 ? (
-          <p className="flex min-h-tap flex-1 items-center text-sm text-muted-foreground">
-            {t('periods.empty')}
-          </p>
-        ) : (
-          <label className="flex min-w-60 max-w-md flex-1 flex-col gap-1">
-            <span className={labelClass}>{t('periods.label')}</span>
-            <select
-              value={selectedId ?? ''}
-              onChange={(event) => {
-                // An open edit or confirmation belongs to the period it was
-                // opened on, not the one picked next.
-                close()
-                go(event.target.value)
-              }}
-              className={`${fieldClass} min-h-tap`}
-            >
-              {periods.map((period) => (
-                <option key={period.id} value={period.id}>
-                  {periodLabel(period)}
-                </option>
-              ))}
-            </select>
-            {/* The period is a sales campaign, not when classes start — the
-                two read alike and got mixed up (OOC-93). */}
-            <span className="text-xs text-muted-foreground">{t('periods.hint')}</span>
-          </label>
-        )}
+    <>
+      {periods.length === 0 ? (
+        <span className="text-sm text-muted-foreground">{t('periods.empty')}</span>
+      ) : (
+        /* The period is a sales campaign, not when classes start — the two
+           read alike and got mixed up (OOC-93); the hint rides as a tooltip
+           so the toolbar stays one line. */
+        <label className="relative flex min-w-72 max-w-lg flex-1" title={t('periods.hint')}>
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t('periods.short_label')}
+          </span>
+          <select
+            value={selectedId ?? ''}
+            onChange={(event) => {
+              close()
+              go(event.target.value)
+            }}
+            aria-label={t('periods.label')}
+            className={`${fieldClass} min-h-tap w-full truncate pl-20 font-semibold`}
+          >
+            {periods.map((period) => (
+              <option key={period.id} value={period.id}>
+                {periodLabel(period)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
-        {canManage && mode === 'idle' && (
-          <div className="flex flex-wrap gap-2">
-            {/* A retired period only offers to come back, like a retired class group. */}
-            {selected && selected.active && (
-              <button type="button" onClick={() => open('edit')} className={secondaryButtonClass}>
-                <BoIcon name="edit" size={16} />
-                {t('periods.edit')}
-              </button>
-            )}
-            {selected && selected.active && (
-              <button type="button" onClick={() => open('retire')} className={dangerButtonClass}>
-                <BoIcon name="close" size={16} />
-                {t('periods.retire')}
-              </button>
-            )}
-            {selected && !selected.active && (
-              <button type="button" onClick={() => open('restore')} className={secondaryButtonClass}>
-                <BoIcon name="check" size={16} />
-                {t('periods.restore')}
-              </button>
-            )}
-            {canCopyInto && (
-              <button type="button" onClick={() => open('copy')} className={secondaryButtonClass}>
-                <BoIcon name="doc" size={16} />
-                {t('periods.copy_into_existing')}
-              </button>
-            )}
-            <button type="button" onClick={() => open('new')} className={secondaryButtonClass}>
+      {canManage && (
+        <DropdownMenu>
+          <DropdownMenuTrigger className={`${secondaryButtonClass} data-[state=open]:text-ink`}>
+            <BoIcon name="settings" size={16} />
+            {t('periods.manage')}
+            <BoIcon name="chevron-down" size={14} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64 p-1.5">
+            <DropdownMenuItem className={menuItemClass} onSelect={() => open('new')}>
               <BoIcon name="plus" size={16} />
               {t('periods.new')}
-            </button>
-          </div>
-        )}
-      </div>
+            </DropdownMenuItem>
+            {canCopyInto && (
+              <DropdownMenuItem className={menuItemClass} onSelect={() => open('copy')}>
+                <BoIcon name="doc" size={16} />
+                {t('periods.copy_into_existing')}
+              </DropdownMenuItem>
+            )}
+            {selected && selected.active && (
+              <DropdownMenuItem className={menuItemClass} onSelect={() => open('edit')}>
+                <BoIcon name="edit" size={16} />
+                {t('periods.edit')}
+              </DropdownMenuItem>
+            )}
+            {selected && (
+              <>
+                <DropdownMenuSeparator />
+                {/* A retired period only offers to come back, like a retired class group. */}
+                {selected.active ? (
+                  <DropdownMenuItem
+                    className={`${menuItemClass} text-red-700 focus:text-red-700`}
+                    onSelect={() => open('retire')}
+                  >
+                    <BoIcon name="close" size={16} />
+                    {t('periods.retire')}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem className={menuItemClass} onSelect={() => open('restore')}>
+                    <BoIcon name="check" size={16} />
+                    {t('periods.restore')}
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
+      <Dialog
+        open={mode !== 'idle'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen && !saving) close()
+        }}
+      >
+        <DialogContent closeLabel={t('periods.cancel')} className="bg-white">
+          {mode !== 'idle' && (
+            <DialogHeader className="border-b border-line p-5 pr-14">
+              <DialogTitle className="text-base font-semibold text-ink">{dialogTitle[mode]}</DialogTitle>
+              {selected && mode !== 'new' && <DialogDescription>{selected.name}</DialogDescription>}
+            </DialogHeader>
+          )}
+          <div className="flex flex-col gap-4 p-5">
       {mode === 'new' && (
-        <div className="border-t border-line pt-4">
-          <p className="mb-3 text-sm font-semibold text-ink">{t('periods.new')}</p>
+        <div>
           <AutoGrid min="13rem" gap="gap-3">
             {periodFields}
             <label className="flex flex-col gap-1">
@@ -353,8 +404,7 @@ export function PeriodBar({
       )}
 
       {mode === 'edit' && selected && (
-        <div className="border-t border-line pt-4">
-          <p className="mb-3 text-sm font-semibold text-ink">{t('periods.edit')}</p>
+        <div>
           <AutoGrid min="13rem" gap="gap-3">
             {periodFields}
           </AutoGrid>
@@ -398,8 +448,7 @@ export function PeriodBar({
       )}
 
       {mode === 'copy' && selected && (
-        <div className="border-t border-line pt-4">
-          <p className="mb-3 text-sm font-semibold text-ink">{t('periods.copy_into_existing')}</p>
+        <div>
           <label className="flex max-w-md flex-col gap-1">
             <span className={labelClass}>{t('periods.copy_from')}</span>
             <select
@@ -438,8 +487,11 @@ export function PeriodBar({
           {t(`catalog_errors.${error}`)}
         </p>
       )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
-    </Card>
+    </>
   )
 }

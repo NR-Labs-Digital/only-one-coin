@@ -13,6 +13,8 @@ const ListClassGroupsQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   /** Only the class groups still waiting for a teacher from the roster (OOC-80). */
   unassigned: z.enum(["true"]).optional(),
+  /** Only the class groups whose seats closed with no teacher yet, across periods (OOC-97). */
+  pendingTeacher: z.enum(["true"]).optional(),
 });
 
 // No rate limit yet (docs/ROADMAP.md Sessão 25).
@@ -21,15 +23,19 @@ export const listClassGroupsRoute = RouteBuilder.get("/catalog/class-groups")
     tags: ["Catalog"],
     summary: "List class groups for the backoffice",
     description:
-      "Retired class groups included and flagged. Without a periodId and without a search term the answer is capped at the 500 most recent.",
+      "Retired class groups included and flagged. Without a periodId, a search term or pendingTeacher the answer is capped at the 500 most recent.",
   })
   .roles(...CATALOG_READ_ROLES)
   .query(ListClassGroupsQuerySchema)
   .response(200, z.object({ items: z.array(ClassGroupItemSchema) }))
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { unassigned, ...filter } = request.query;
-    reply
-      .status(200)
-      .send({ items: await container.queries.listClassGroups.run({ ...filter, unassigned: unassigned === "true" }) });
+    const { unassigned, pendingTeacher, ...filter } = request.query;
+    reply.status(200).send({
+      items: await container.queries.listClassGroups.run({
+        ...filter,
+        unassigned: unassigned === "true",
+        pendingTeacher: pendingTeacher === "true",
+      }),
+    });
   });

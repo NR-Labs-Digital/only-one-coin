@@ -9,6 +9,7 @@ import {
   plans,
   seatHolds,
   students,
+  teachers,
   waitlistEntries,
 } from "@ooc/db";
 import {
@@ -372,6 +373,71 @@ describe("class group catalog", { timeout: 30_000 }, () => {
       expect(await new ListClassGroupsQuery(tx).run({ periodId: PERIOD_A, status: "enrolling" })).toHaveLength(2);
       expect(await new ListClassGroupsQuery(tx).run({ periodId: PERIOD_A, courseId: C2 })).toHaveLength(1);
       expect(await new ListClassGroupsQuery(tx).run({ periodId: PERIOD_B })).toEqual([]);
+    });
+  });
+
+  it("lists the class groups whose seats closed with no teacher, across periods, until one is assigned (OOC-97)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const now = Date.now();
+      const base = {
+        academicPeriodId: PERIOD_B,
+        courseId: C1,
+        schedule: "",
+        slots: [],
+        code: "CGCAT-PENDING",
+        capacity: 10,
+        startsOn: new Date(now + 70 * DAY),
+        endsOn: new Date(now + 120 * DAY),
+        enrollmentClosesAt: new Date(now + 5 * DAY),
+      };
+      const id = (n: number) => `018f2b5c-5b00-7000-8000-0000000000${20 + n}`;
+      await tx.insert(classGroups).values([
+        // pending: in progress, window still open
+        { ...base, id: id(0), status: "in_progress", seatsTaken: 3 },
+        // pending: full, window still open
+        { ...base, id: id(1), status: "enrolling", seatsTaken: 10 },
+        // pending: window closed
+        { ...base, id: id(2), status: "enrolling", seatsTaken: 2, enrollmentClosesAt: new Date(now - DAY) },
+        // not pending: still on sale
+        { ...base, id: id(3), status: "enrolling", seatsTaken: 4 },
+        // not pending: no window and seats left — never closes on its own
+        { ...base, id: id(4), status: "enrolling", seatsTaken: 4, enrollmentClosesAt: null },
+        // not pending: closed, but nobody bought a seat
+        { ...base, id: id(5), status: "enrolling", seatsTaken: 0, enrollmentClosesAt: new Date(now - DAY) },
+        // not pending: a draft, a finished one and a retired one
+        { ...base, id: id(6), status: "draft", seatsTaken: 0 },
+        { ...base, id: id(7), status: "finished", seatsTaken: 3 },
+        { ...base, id: id(8), status: "in_progress", seatsTaken: 3, deletedAt: new Date(now - DAY) },
+      ]);
+      const ours = new Set([T1, T2, T3, ...Array.from({ length: 9 }, (_, n) => id(n))]);
+      const pending = async () =>
+        (await new ListClassGroupsQuery(tx).run({ pendingTeacher: true }))
+          .map((item) => item.id)
+          .filter((item) => ours.has(item))
+          .sort();
+
+      // T1 (period A, in progress, a seat taken) joins the three of period B.
+      expect(await pending()).toEqual([T1, id(0), id(1), id(2)].sort());
+
+      const [teacher] = await tx
+        .insert(teachers)
+        .values({
+          firstName: "Docente",
+          lastName: "Asignado",
+          nationalIdType: "DNI",
+          nationalId: "CGCATPENDING1",
+          email: "cg.catalog.pending@example.com",
+          phone: "+51900000001",
+          nationality: "PE",
+          country: "PE",
+          city: "Lima",
+          addressLine: "Av. de prueba 1",
+        })
+        .returning({ id: teachers.id });
+      await tx.update(classGroups).set({ teacherId: teacher!.id }).where(eq(classGroups.id, id(0)));
+
+      expect(await pending()).toEqual([T1, id(1), id(2)].sort());
     });
   });
 

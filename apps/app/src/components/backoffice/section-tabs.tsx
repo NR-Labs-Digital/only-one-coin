@@ -12,6 +12,8 @@ export interface SectionTab {
    * match would otherwise leave two tabs lit at once.
    */
   exact?: boolean
+  /** A number beside the label — what is waiting behind the tab. */
+  count?: number
 }
 
 /**
@@ -39,6 +41,9 @@ export function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
             className={tabClass(active)}
           >
             {tab.label}
+            {tab.count !== undefined && (
+              <span className={active ? 'text-brand-blue/60' : 'text-slate-400'}>{tab.count}</span>
+            )}
           </Link>
         )
       })}

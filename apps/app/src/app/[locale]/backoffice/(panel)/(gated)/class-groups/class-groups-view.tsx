@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type {
   AcademicPeriodItem,
   ClassGroupItem,
@@ -23,6 +24,7 @@ import { Toast } from '@/components/backoffice/controls'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ClassGroupForm, type ClassGroupFormOutcome } from './class-group-form'
 import { CLASS_GROUP_COLUMNS, ClassGroupTable, ClassGroupTableRow } from './class-group-table'
+import { PeriodBar } from './period-bar'
 
 type Sort = 'newest' | 'oldest'
 
@@ -33,8 +35,14 @@ const NO_DATES = 'none'
 
 const STATUSES: ClassGroupStatus[] = ['draft', 'enrolling', 'in_progress', 'finished', 'closed']
 
-/** Still being sold or taught — the day-to-day half of the screen. */
-const ACTIVE: ReadonlySet<ClassGroupStatus> = new Set(['draft', 'enrolling', 'in_progress'])
+/**
+ * Current: being sold or taught — the day-to-day half of the screen. The same
+ * two statuses "vigente" means in Matrículas and Alumnos (OOC-113), so the
+ * word never covers two different sets. A draft is not on offer yet: it gets
+ * its own fold, and a finished or closed class group goes below.
+ */
+const CURRENT: ReadonlySet<ClassGroupStatus> = new Set(['enrolling', 'in_progress'])
+const ENDED: ReadonlySet<ClassGroupStatus> = new Set(['finished', 'closed'])
 
 /**
  * Closed groups only grow — a year of class groups would push the active list
@@ -68,6 +76,7 @@ export function ClassGroupsView({
   teachers,
   selectedPeriodId,
   canManage,
+  pendingCount,
 }: {
   items: ClassGroupItem[]
   courses: CourseRow[]
@@ -76,6 +85,12 @@ export function ClassGroupsView({
   teachers: TeacherOption[] | null
   selectedPeriodId: string | null
   canManage: boolean
+  /**
+   * Class groups waiting for a teacher, every period (OOC-97) — the same
+   * number as the Pending tab, so the two screens never disagree. Null when
+   * the read failed.
+   */
+  pendingCount: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -97,8 +112,27 @@ export function ClassGroupsView({
    */
   const [opened, setOpened] = useState<string[]>([])
   const [closedPage, setClosedPage] = useState(0)
+  const [draftsOpen, setDraftsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+
+  /**
+   * Switching period resets the filters. They are picked from what the last
+   * period holds — a start month, a language — and kept across the switch
+   * they hid every row while the select, with no matching option any more,
+   * showed "All". Adjusted during render, not in an effect, so the stale
+   * filter never paints.
+   */
+  const [filtersPeriodId, setFiltersPeriodId] = useState(selectedPeriodId)
+  if (filtersPeriodId !== selectedPeriodId) {
+    setFiltersPeriodId(selectedPeriodId)
+    setQuery('')
+    setLanguage(ALL)
+    setStart(ALL)
+    setStatus(ALL)
+    setUnassigned(false)
+    setClosedPage(0)
+  }
 
   const activeCourses = courses.filter((course) => course.active)
 
@@ -120,8 +154,6 @@ export function ClassGroupsView({
     (start !== ALL ? 1 : 0) +
     (status !== ALL ? 1 : 0) +
     (unassigned ? 1 : 0)
-  /** Still being sold or taught with nobody allocated — what coordination has to resolve. */
-  const unassignedCount = items.filter((row) => row.active && ACTIVE.has(row.status) && !row.teacherId).length
   const narrowed = query.trim() !== '' || activeFilters > 0
 
   const filtered = useMemo(() => {
@@ -158,7 +190,7 @@ export function ClassGroupsView({
   const activeByLanguage = useMemo(() => {
     const map = new Map<string, { id: string; groups: ClassGroupItem[] }>()
     for (const row of sorted) {
-      if (!ACTIVE.has(row.status)) continue
+      if (!CURRENT.has(row.status)) continue
       const entry = map.get(row.language) ?? { id: row.language, groups: [] }
       entry.groups.push(row)
       map.set(row.language, entry)
@@ -174,7 +206,8 @@ export function ClassGroupsView({
       .sort((a, b) => a.id.localeCompare(b.id))
   }, [sorted])
 
-  const closed = useMemo(() => sorted.filter((row) => !ACTIVE.has(row.status)), [sorted])
+  const drafts = useMemo(() => sorted.filter((row) => row.status === 'draft'), [sorted])
+  const closed = useMemo(() => sorted.filter((row) => ENDED.has(row.status)), [sorted])
   const activeCount = activeByLanguage.reduce((sum, entry) => sum + entry.groups.length, 0)
 
   /**
@@ -215,6 +248,7 @@ export function ClassGroupsView({
     setQuery('')
     clearFilters()
     const courseLanguage = courses.find((course) => course.id === outcome.courseId)?.language.name
+    if (outcome.status === 'draft') setDraftsOpen(true)
     if (courseLanguage) {
       setOpened((current) => (current.includes(courseLanguage) ? current : [...current, courseLanguage]))
     }
@@ -229,6 +263,23 @@ export function ClassGroupsView({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Two rows with two jobs: the period decides what the screen holds,
+          next to what you can do with it; search and filters narrow within. */}
+      <Toolbar>
+        <PeriodBar periods={periods} selectedId={selectedPeriodId} canManage={canManage} />
+
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="ml-auto inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+          >
+            <BoIcon name="plus" size={16} />
+            {t('class_groups.new_class_group')}
+          </button>
+        )}
+      </Toolbar>
+
       <Toolbar>
         <label className={toolbarSearchClass}>
           <span className="sr-only">{t('class_groups.search_label')}</span>
@@ -335,17 +386,6 @@ export function ClassGroupsView({
           <BoIcon name="sort" size={16} />
           {t(sort === 'newest' ? 'class_groups.sort_newest' : 'class_groups.sort_oldest')}
         </button>
-
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep lg:ml-auto"
-          >
-            <BoIcon name="plus" size={16} />
-            {t('class_groups.new_class_group')}
-          </button>
-        )}
       </Toolbar>
 
       {creating &&
@@ -378,23 +418,24 @@ export function ClassGroupsView({
           />
         ))}
 
-      {unassignedCount > 0 && !unassigned && (
+      {/* The teacher queue lives in its own tab, every period; this only
+          points there, with the same number (OOC-97). */}
+      {pendingCount !== null && pendingCount > 0 && (
         <Card className="flex flex-wrap items-center gap-3 p-4">
           <p className="flex flex-1 items-start gap-2 text-sm text-ink">
             <BoIcon name="alert" size={16} className="mt-0.5 shrink-0 text-amber-700" />
-            {t('class_groups.unassigned_banner', { count: unassignedCount })}
+            {t('class_groups.pending_banner', { count: pendingCount })}
           </p>
-          <button
-            type="button"
-            onClick={() => setUnassigned(true)}
+          <Link
+            href="/backoffice/pending-class-groups"
             className="inline-flex min-h-tap items-center rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
           >
-            {t('class_groups.unassigned_show')}
-          </button>
+            {t('class_groups.pending_show')}
+          </Link>
         </Card>
       )}
 
-      {/* Drafts, enrolling and running, folded by language */}
+      {/* Enrolling and running, folded by language */}
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3">
           <h2 className="text-base font-semibold text-ink">{t('class_groups.active_title')}</h2>
@@ -470,6 +511,32 @@ export function ClassGroupsView({
           </Card>
         )}
       </section>
+
+      {/* Drafts: not on offer yet, so out of the current list. Hidden when
+          there are none — an empty fold is one more thing to read. */}
+      {drafts.length > 0 && (
+        <Card as="section">
+          <details open={draftsOpen} onToggle={(event) => setDraftsOpen(event.currentTarget.open)}>
+            <summary className="flex min-h-tap cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
+              <BoIcon name="chevron-down" size={16} className="text-muted-foreground" />
+              <span className="text-sm font-semibold text-ink">{t('class_groups.drafts_title')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('class_groups.group_count', { count: drafts.length })}
+              </span>
+              <span className="basis-full text-xs text-muted-foreground sm:basis-auto">
+                {t('class_groups.drafts_hint')}
+              </span>
+            </summary>
+            <ClassGroupTable>
+              <tbody>
+                {drafts.map((row) => (
+                  <ClassGroupTableRow key={row.id} row={row} />
+                ))}
+              </tbody>
+            </ClassGroupTable>
+          </details>
+        </Card>
+      )}
 
       {/* Finished + closed */}
       <section className="flex flex-col gap-3">

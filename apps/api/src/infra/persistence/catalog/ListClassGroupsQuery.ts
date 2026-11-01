@@ -3,6 +3,7 @@ import type { ClassGroupStatus, WeeklySlot } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { linkedTeacherName } from "./classGroupTeacherName.js";
+import { pendingTeacherClassGroup } from "./pendingTeacherClassGroup.js";
 
 export interface ClassGroupItem {
   id: string;
@@ -53,6 +54,8 @@ export interface ClassGroupFilter {
   teacherId?: string;
   /** Only the class groups nobody is allocated to yet (OOC-80). */
   unassigned?: boolean;
+  /** Only the class groups whose seats closed with no teacher yet, every period (OOC-97). */
+  pendingTeacher?: boolean;
 }
 
 /** Without a period or a search the list would be every class group ever opened. */
@@ -79,6 +82,7 @@ export class ListClassGroupsQuery {
       filter.teacherId ? eq(classGroups.teacherId, filter.teacherId) : undefined,
       filter.status ? eq(classGroups.status, filter.status) : undefined,
       filter.unassigned ? isNull(classGroups.teacherId) : undefined,
+      filter.pendingTeacher ? pendingTeacherClassGroup() : undefined,
       term
         ? or(
             ilike(classGroups.code, `%${escapeLike(term)}%`),
@@ -88,7 +92,9 @@ export class ListClassGroupsQuery {
           )
         : undefined,
     ];
-    const unscoped = !filter.id && !filter.periodId && !filter.teacherId && !term;
+    // The pending list is a to-do list across every period: capping it would
+    // hide exactly the oldest class groups, the ones most overdue.
+    const unscoped = !filter.id && !filter.periodId && !filter.teacherId && !filter.pendingTeacher && !term;
 
     const waitlistCount = sql<number>`(
       select count(*) from ${waitlistEntries}
