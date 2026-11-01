@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import type { EmailFlow } from '@/lib/backoffice/types'
-import { listEmailFlows } from '@/lib/backoffice/mock-data'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageEmail } from '@/lib/backoffice/permissions'
-import { buildEmailJourney } from '@/lib/backoffice/email-journey'
+import {
+  buildEmailJourney,
+  catalogJourneyFlows,
+  type EmailJourneyFlow,
+} from '@/lib/backoffice/email-journey'
 import { PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { BoIcon } from '@/components/backoffice/icons'
@@ -40,10 +42,10 @@ export default async function EmailJourneyPage({
   const staff = await getStaffSession()
   if (!canManageEmail(staff.role)) notFound()
 
-  const journey = buildEmailJourney(listEmailFlows())
+  const journey = buildEmailJourney(catalogJourneyFlows())
 
   /** Whole card is the target: the reader is aiming at a box, not at a word. */
-  function node(flow: EmailFlow) {
+  function node(flow: EmailJourneyFlow) {
     return (
       <Link
         key={flow.template}
@@ -57,9 +59,7 @@ export default async function EmailJourneyPage({
           {t(`email_template.${flow.template}`)}
         </span>
         {/* Only what breaks the normal case: a step everybody walks needs no badge. */}
-        {(!flow.emitted || !flow.enabled) && (
-          <EmailFlowState emitted={flow.emitted} enabled={flow.enabled} />
-        )}
+        {!flow.emitted && <EmailFlowState emitted={false} />}
         <BoIcon
           name="chevron-right"
           size={16}
@@ -90,7 +90,6 @@ export default async function EmailJourneyPage({
               <div className="absolute right-0 top-11 z-20 flex w-72 flex-col gap-2 rounded-xl border border-line bg-white p-4 text-xs text-muted-foreground shadow-float">
                 <p className="text-sm font-semibold text-ink">{t('emails.help')}</p>
                 <p>{t('emails.help_condition')}</p>
-                <p>{t('emails.help_paused')}</p>
                 <p>{t('emails.help_not_emitted')}</p>
                 <p>{t('emails.help_open')}</p>
               </div>

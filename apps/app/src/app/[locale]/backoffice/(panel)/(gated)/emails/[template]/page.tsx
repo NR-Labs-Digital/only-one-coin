@@ -1,15 +1,17 @@
 import { notFound } from 'next/navigation'
+import { EMAIL_CATALOG } from '@ooc/domain/email-catalog'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { getEmailFlow, getEmailMetrics } from '@/lib/backoffice/mock-data'
+import { getEmailFlow, getEmailPreviews, isEmailTemplate } from '@/lib/backoffice/emails'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canManageEmail } from '@/lib/backoffice/permissions'
+import { EmptyState } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { EmailFlowDetail } from './email-flow-detail'
 
 /**
- * One automatic e-mail, on a page of its own: what it says, whether it goes
- * out, and how the window went.
+ * One automatic e-mail, on a page of its own: what it says, in each of its
+ * three languages, and how the window went.
  *
  * A page rather than a panel over the list, because this is where the template
  * is *read* — the whole message, at the width of a message — and because the
@@ -17,9 +19,9 @@ import { EmailFlowDetail } from './email-flow-detail'
  * link, not "open the e-mail screen and click the fourth row".
  *
  * The catalog is a closed union, so an id that names nothing answers
- * `notFound`. The role gate does the same rather than drawing an empty page:
- * the enforcing check is the role declared on the route in `apps/api`
- * (CLAUDE.md §8).
+ * `notFound` before anything is asked of the API. The role gate does the same
+ * rather than drawing an empty page: the enforcing check is the role declared
+ * on the route in `apps/api` (CLAUDE.md §8).
  */
 export default async function EmailFlowPage({
   params,
@@ -36,9 +38,15 @@ export default async function EmailFlowPage({
 
   const staff = await getStaffSession()
   if (!canManageEmail(staff.role)) notFound()
+  if (!isEmailTemplate(template)) notFound()
 
-  const flow = getEmailFlow(template)
-  if (!flow) notFound()
+  /* A template nothing sends yet has no words in the repository to render, so
+     its preview is never asked for — the shared catalog says which, so both
+     reads leave at once. */
+  const [detail, previews] = await Promise.all([
+    getEmailFlow(template),
+    EMAIL_CATALOG[template].emitted ? getEmailPreviews(template) : Promise.resolve(null),
+  ])
 
   /* Back goes where the reader actually was. Anything other than the flow —
      including a link somebody pasted — lands on the list, which is the
@@ -55,10 +63,21 @@ export default async function EmailFlowPage({
         {t(fromJourney ? 'emails.back_journey' : 'emails.back')}
       </Link>
 
-
-      {/* The header lives in the client half: the switch is up there with the
-          state it changes, and that state is what the header reads. */}
-      <EmailFlowDetail flow={flow} windowDays={getEmailMetrics().windowDays} />
+      {detail ? (
+        /* The header lives in the client half, with the language tabs that
+           change what the preview shows. */
+        <EmailFlowDetail
+          flow={detail.flow}
+          windowDays={detail.windowDays}
+          previews={previews}
+        />
+      ) : (
+        <EmptyState
+          icon="alert"
+          title={t('emails.load_error_title')}
+          body={t('emails.load_error_body')}
+        />
+      )}
     </div>
   )
 }

@@ -196,6 +196,7 @@ import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeach
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
+import { EmailFlowCountsQuery } from "./infra/persistence/notification/EmailFlowCountsQuery.js";
 import { EmailDeliveryQuery } from "./infra/persistence/notification/EmailDeliveryQuery.js";
 import { DrizzleEmailResendRepository } from "./infra/persistence/notification/DrizzleEmailResendRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
@@ -375,6 +376,7 @@ export interface AppQueries {
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   auditLog: AuditLogQuery;
+  emailFlowCounts: EmailFlowCountsQuery;
   emailDeliveries: EmailDeliveryQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
 }
@@ -692,6 +694,7 @@ function buildContainer(): AppContainer {
   const listStaff = new ListStaffQuery(db);
   const listStaffRoleChanges = new ListStaffRoleChangesQuery(db);
   const auditLogQuery = new AuditLogQuery(db);
+  const emailFlowCounts = new EmailFlowCountsQuery(db);
   const emailDeliveryQuery = new EmailDeliveryQuery(db);
   const getPasswordChangedAt = new GetPasswordChangedAtQuery(db);
 
@@ -879,6 +882,7 @@ function buildContainer(): AppContainer {
       listStaff,
       listStaffRoleChanges,
       auditLog: auditLogQuery,
+      emailFlowCounts,
       emailDeliveries: emailDeliveryQuery,
       getPasswordChangedAt,
     },

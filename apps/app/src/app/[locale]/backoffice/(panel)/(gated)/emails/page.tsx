@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { getEmailMetrics, listEmailFlows } from '@/lib/backoffice/mock-data'
+import { listEmailFlows } from '@/lib/backoffice/emails'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getEmailDeliveryIssues } from '@/lib/backoffice/email-delivery'
 import { canManageEmail } from '@/lib/backoffice/permissions'
@@ -48,9 +48,10 @@ export default async function EmailsPage({
     )
   }
 
-  // The failed sends are real (OOC-90); a failed read just hides the banner —
-  // the deliveries screen is where "could not load" is said.
-  const undelivered = (await getEmailDeliveryIssues())?.total ?? 0
+  const [catalog, issues] = await Promise.all([listEmailFlows(), getEmailDeliveryIssues()])
+  // The banner counts the same failed sends the deliveries screen lists
+  // (OOC-90); a failed read just hides it — that screen says "could not load".
+  const undelivered = issues?.total ?? 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -90,7 +91,16 @@ export default async function EmailsPage({
           </span>
         </Link>
       )}
-      <EmailsView flows={listEmailFlows()} metrics={getEmailMetrics()} />
+      {catalog ? (
+        <EmailsView flows={catalog.flows} windowDays={catalog.windowDays} />
+      ) : (
+        /* A failed read says so — a table of zeros would read as a quiet month. */
+        <EmptyState
+          icon="alert"
+          title={t('emails.load_error_title')}
+          body={t('emails.load_error_body')}
+        />
+      )}
     </div>
   )
 }

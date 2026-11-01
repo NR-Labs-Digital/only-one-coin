@@ -1241,45 +1241,28 @@ export interface NewEnrollmentInput {
 export type { EmailAudience, EmailStage }
 
 /**
- * What the provider reported back over a rolling window. Delivery, bounce and
- * failure only: opens would mean a tracking pixel on every message, and that is
- * a consent question (Ley 29733), not a metric to add on the way past.
+ * What the outbox knows about a template's messages over the window
+ * (`GET /emails/flows`, OOC-88). Only what the platform itself writes: whether
+ * the receiving server accepted a sent message, or bounced it, is the
+ * provider's to report back, and until its webhook exists there is no such
+ * figure — the screen says "unavailable", never zero. Opens are not counted
+ * at all: that would mean a tracking pixel on every message, a consent
+ * question (Ley 29733), not a metric to add on the way past.
  */
-export interface EmailFlowMetrics {
+export interface EmailFlowCounts {
   sent: number
-  delivered: number
-  /** Address rejected by the receiving server — it syncs back to the student. */
-  bounced: number
-  /** Never left the outbox: the provider errored and the retries ran out. */
+  /** The provider refused it or the retries ran out: nobody received it. */
   failed: number
-}
-
-/**
- * The values the preview renders with. Invented on purpose: the preview exists
- * so somebody can check the wording, and rendering it over a real student would
- * put their name and their course on a screen that has no reason to hold either
- * (CLAUDE.md §8).
- */
-export interface EmailSample {
-  studentName: string
-  /** Where the preview says it is going — invented, like the name above it. */
-  studentEmail: string
-  staffName: string
-  staffEmail: string
-  courseName: string
-  classGroupName: string
-  /** Integer cents, formatted at render time (CLAUDE.md §5). */
-  amountCents: number
-  /** ISO 8601 UTC, rendered in America/Lima. */
-  date: string
+  /** The staging allowlist refused the recipient — zero in production. */
+  blocked: number
 }
 
 /**
  * One automatic e-mail, as the catalog lists it. Nothing here is a send button:
  * a transactional message is the consequence of something that happened in the
  * domain — a payment approved, a document issued — and the outbox carries it
- * (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4). The screen only says whether the
- * platform is allowed to send it, and what it looks like when it does.
+ * (`docs/DOCUMENTOS-E-CERTIFICADOS.md` §4). Who it is written to, where it
+ * fires and whether anything sends it come from the one catalog (OOC-87).
  */
 export interface EmailFlow {
   template: EmailTemplate
@@ -1287,41 +1270,43 @@ export interface EmailFlow {
   /**
    * The event it leaves because of — the flow branches off this. Null for
    * account security and the staff's own e-mails: none is a step of the
-   * student's journey, and putting it on that line would be drawing a path
-   * nobody walks.
+   * student's journey.
    */
   stage: EmailStage | null
-  /**
-   * Fires only when the case takes that turn: the receipt that needed a human,
-   * the payment rejected. The journey has to say so, or a branch reads like a
-   * step everybody goes through.
-   */
+  /** Fires only when the case takes that turn: a branch, not a step everybody walks. */
   conditional: boolean
-  /**
-   * Whether the platform writes it to the outbox today. False is a template
-   * the rules describe and nothing sends yet — it has no switch to flip.
-   */
+  /** Whether the platform writes it to the outbox today. False has no template to show yet. */
   emitted: boolean
-  /** Whether the outbox may send it at all. Off means nobody receives it. */
-  enabled: boolean
-  /** Version of the template in the repository — bumped, never edited in place. */
-  version: number
-  /** When that version landed. */
-  updatedAt: string
-  /** Rolling window, `EmailMetrics.windowDays` long. */
-  metrics: EmailFlowMetrics
-  sample: EmailSample
+  /**
+   * Fingerprint of the template's words in the repository, all three locales —
+   * the same words, the same value. Null when nothing sends it yet.
+   */
+  version: string | null
+  /** Over the catalog's window (`EmailFlowCatalog.windowDays`). */
+  counts: EmailFlowCounts
 }
 
-/** The section header — the same window, summed over every flow. */
-export interface EmailMetrics {
+export interface EmailFlowCatalog {
   windowDays: number
-  sent: number
-  delivered: number
-  bounced: number
-  failed: number
-  /** Flows currently switched off — nobody is receiving those. */
-  paused: number
+  flows: EmailFlow[]
+}
+
+/** The locales an e-mail is written in — the API's names, not the route codes. */
+export type EmailLocale = 'es-PE' | 'pt-BR' | 'en'
+
+/**
+ * The repository template rendered by the worker's own `renderEmail`, over
+ * invented sample data (`GET /emails/flows/:key/preview`) — never a real
+ * student, never a copy written for the screen.
+ */
+export interface EmailPreview {
+  locale: EmailLocale
+  version: string
+  /** The sample recipient — invented, like the names in the message. */
+  to: string
+  subject: string
+  html: string
+  text: string
 }
 
 /**
