@@ -100,6 +100,11 @@ export const ConfigSchema = z
     // production, so a deploy never goes down over a missing e-mail secret
     // (index.ts warns at boot instead).
     BREVO_API_KEY: z.string().min(1).optional(),
+    // The secret Brevo sends with every webhook call (OOC-91). Brevo does not
+    // sign the body, so this static bearer token is the whole proof of origin.
+    // Optional like the key — a deploy never goes down over it — but without
+    // it the webhook route refuses everything (503): closed, never open.
+    BREVO_WEBHOOK_TOKEN: z.string().min(32).optional(),
     // A sender Brevo has verified for this account.
     EMAIL_SENDER_ADDRESS: z.string().email().optional(),
     EMAIL_SENDER_NAME: z.string().min(1).default("Only One Coin"),

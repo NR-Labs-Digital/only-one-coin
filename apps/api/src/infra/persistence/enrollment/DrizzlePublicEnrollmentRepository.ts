@@ -191,6 +191,8 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
             .update(students)
             .set({
               email: params.student.email,
+              // The flag is about the address that bounced: a new one starts clean.
+              emailInvalidAt: sql`case when lower(${students.email}) = lower(${params.student.email}) then ${students.emailInvalidAt} else null end`,
               phone: params.student.phone,
               country: params.student.country,
               region: params.student.region,

@@ -10,7 +10,7 @@ import { DrizzleAuditLogRepository } from "@/infra/identity/DrizzleAuditLogRepos
 import { DrizzleEnrollmentEmailContextLookup } from "@/infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
 import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
 import { DrizzlePlanPriceLookup } from "@/infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
-import { DrizzleEmailDeliveryRepository } from "./DrizzleEmailDeliveryRepository.js";
+import { DrizzleEmailResendRepository } from "./DrizzleEmailResendRepository.js";
 import { EmailDeliveryQuery } from "./EmailDeliveryQuery.js";
 
 /**
@@ -208,7 +208,7 @@ describe("resending a failed e-mail", () => {
       // The address was fixed on the file after the e-mail failed.
       await tx.update(students).set({ email: NEW_ADDRESS }).where(eq(students.id, STUDENT));
 
-      const { outboxId } = await new ResendFailedEmailUseCase(new DrizzleEmailDeliveryRepository(tx)).run({
+      const { outboxId } = await new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(tx)).run({
         actorId: "staff-integration",
         outboxId: enrollmentRow,
       });
@@ -243,7 +243,7 @@ describe("resending a failed e-mail", () => {
     await inRolledBackTransaction(async (tx) => {
       const { paymentRow } = await seed(tx);
 
-      const { outboxId } = await new ResendFailedEmailUseCase(new DrizzleEmailDeliveryRepository(tx)).run({
+      const { outboxId } = await new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(tx)).run({
         actorId: "staff-integration",
         outboxId: paymentRow,
       });
@@ -256,7 +256,7 @@ describe("resending a failed e-mail", () => {
   it("refuses a second resend of the same row and writes nothing more", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { enrollmentRow } = await seed(tx);
-      const resend = new ResendFailedEmailUseCase(new DrizzleEmailDeliveryRepository(tx));
+      const resend = new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(tx));
 
       await resend.run({ actorId: "staff-integration", outboxId: enrollmentRow });
       await expect(resend.run({ actorId: "staff-integration", outboxId: enrollmentRow })).rejects.toMatchObject({

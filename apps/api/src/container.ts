@@ -197,11 +197,15 @@ import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
 import { EmailDeliveryQuery } from "./infra/persistence/notification/EmailDeliveryQuery.js";
-import { DrizzleEmailDeliveryRepository } from "./infra/persistence/notification/DrizzleEmailDeliveryRepository.js";
+import { DrizzleEmailResendRepository } from "./infra/persistence/notification/DrizzleEmailResendRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
+import {
+  DrizzleEmailDeliveryRepository,
+  type IEmailDeliveryRecorder,
+} from "./infra/persistence/notification/DrizzleEmailDeliveryRepository.js";
 import { DrizzleOutboxRepository, type IOutboxStore } from "./infra/persistence/notification/DrizzleOutboxRepository.js";
 import { createNotificationProvider } from "./infra/notification/createNotificationProvider.js";
 import type { NotificationProvider } from "@ooc/notifications";
@@ -387,10 +391,12 @@ export interface AppIdentity {
   staffSecondFactor: IStaffSecondFactor;
 }
 
-/** What the e-mail workers need — the outbox and the (guarded) provider. */
+/** What the e-mail workers need — the outbox and the (guarded) provider — and
+ * where the provider's webhook reports back (OOC-91). */
 export interface AppNotifications {
   outbox: IOutboxStore;
   provider: NotificationProvider;
+  delivery: IEmailDeliveryRecorder;
 }
 
 /** What the receipt normalize worker needs — the raw bucket GET/PUT/DELETE
@@ -710,6 +716,7 @@ function buildContainer(): AppContainer {
     notifications: {
       outbox: outboxRepository,
       provider: notificationProvider,
+      delivery: new DrizzleEmailDeliveryRepository(db),
     },
     storage: {
       objectStore: receiptObjectStore,
@@ -817,7 +824,7 @@ function buildContainer(): AppContainer {
       },
       portal,
       emails: {
-        resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailDeliveryRepository(db)),
+        resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(db)),
       },
       platform: {
         setFeatureFlag,

@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { PlanDetail } from '@/lib/backoffice/types'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
 import { Card, EmptyState, SectionTitle } from '@/components/backoffice/ui'
+import { AutoGrid } from '@/components/layout/auto-grid'
 
 /**
  * Every price each plan has had, newest first, on a tab of its own. Prices are
@@ -34,7 +35,7 @@ export function CoursePriceHistory({ plans }: { plans: PlanDetail[] }) {
   }
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
+    <AutoGrid min="20rem" fill>
       {withPast.map(({ plan, prices }) => (
         <Card as="section" key={plan.id} className="flex flex-col gap-3 p-5">
           <SectionTitle icon="payments">{plan.name}</SectionTitle>
@@ -62,6 +63,6 @@ export function CoursePriceHistory({ plans }: { plans: PlanDetail[] }) {
           </ul>
         </Card>
       ))}
-    </div>
+    </AutoGrid>
   )
 }

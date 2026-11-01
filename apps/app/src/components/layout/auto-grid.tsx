@@ -27,6 +27,7 @@ export function AutoGrid({
   className,
   children,
   as: Tag = 'div',
+  fill = false,
 }: {
   /** Narrowest a column may get before the grid drops one. */
   min?: string
@@ -36,11 +37,17 @@ export function AutoGrid({
   className?: string
   children: ReactNode
   as?: 'div' | 'section' | 'dl' | 'ul'
+  /**
+   * Keeps empty tracks instead of stretching the items into them (`auto-fill`).
+   * For a short list of cards — one plan should stay a card, not a banner the
+   * width of the screen.
+   */
+  fill?: boolean
 }) {
   return (
     <Tag
       className={cn('grid', gap, className)}
-      style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}, 100%), 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${fill ? 'auto-fill' : 'auto-fit'}, minmax(min(${min}, 100%), 1fr))` }}
     >
       {children}
     </Tag>
