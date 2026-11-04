@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RECEIPT_FRAUD_SIGNAL_KINDS, RECEIPT_VERDICTS, RECEIPT_VERDICT_REASONS } from "@ooc/domain";
+import { RECEIPT_FRAUD_SIGNAL_KINDS, RECEIPT_VERDICTS, RECEIPT_VERDICT_REASONS, ProcedureKindSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
@@ -42,6 +42,7 @@ const ReadingSchema = z.discriminatedUnion("state", [
 const ItemSchema = z.object({
   id: z.string().uuid(),
   enrollmentId: z.string().uuid(),
+  procedureKind: ProcedureKindSchema.nullable(),
   studentId: z.string().uuid(),
   studentName: z.string(),
   courseName: z.string(),

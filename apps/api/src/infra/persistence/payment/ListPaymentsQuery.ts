@@ -1,7 +1,8 @@
-import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, students } from "@ooc/db";
-import type { PaymentMethod } from "@ooc/domain";
+import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, procedureRequests, students } from "@ooc/db";
+import type { PaymentMethod, ProcedureKind } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { paymentEnrollmentId } from "./paymentOrigin.js";
 
 /**
  * The payment ledger — every payment the institution has received, read for
@@ -49,7 +50,11 @@ export interface PaymentListFilters {
 
 export interface PaymentListRow {
   id: string;
+  /** The enrollment the payment is for, or the one its procedure refers to. */
   enrollmentId: string;
+  /** What the payment is for: null is the enrollment itself, a kind is that
+   * paid procedure (OOC-83). */
+  procedureKind: ProcedureKind | null;
   studentId: string;
   studentName: string;
   courseName: string;
@@ -59,8 +64,9 @@ export interface PaymentListRow {
   operationNumber: string | null;
   /** What the student says they paid. */
   amountCents: number;
-  /** The plan price the enrollment was sold at — the value the payment is
-   * checked against (no discounts, ever: CLAUDE.md §1). */
+  /** The plan price the enrollment was sold at, or the price the procedure
+   * froze when it was requested — the value the payment is checked against (no
+   * discounts, ever: CLAUDE.md §1). */
   expectedAmountCents: number;
   currency: "PEN";
   submittedAt: Date;
@@ -140,7 +146,8 @@ export class ListPaymentsQuery {
     const rowsPromise = this.db
       .select({
         id: payments.id,
-        enrollmentId: payments.enrollmentId,
+        enrollmentId: enrollments.id,
+        procedureKind: procedureRequests.kind,
         status: payments.status,
         method: payments.method,
         methodDetail: payments.methodDetail,
@@ -151,7 +158,7 @@ export class ListPaymentsQuery {
         firstName: students.firstName,
         lastName: students.lastName,
         courseName: courses.name,
-        expectedAmountCents: planPrices.amountCents,
+        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
         decidedAt: payments.decidedAt,
         // "user" is Better Auth's table, not modelled in the Drizzle schema —
         // raw SQL, as in DrizzleStaffUserLookup. A payment decided outside the
@@ -159,7 +166,8 @@ export class ListPaymentsQuery {
         decidedByName: sql<string | null>`(select "name" from "user" where "id" = ${payments.decidedBy})`,
       })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -178,7 +186,8 @@ export class ListPaymentsQuery {
     const totalPromise = this.db
       .select({ value: sql<number>`count(*)`.mapWith(Number) })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -191,7 +200,8 @@ export class ListPaymentsQuery {
         closed: sql<number>`count(*) filter (where ${inArray(payments.status, CLOSED_STATUSES)})`.mapWith(Number),
       })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -208,6 +218,7 @@ export class ListPaymentsQuery {
       (row): PaymentListRow => ({
         id: row.id,
         enrollmentId: row.enrollmentId,
+        procedureKind: row.procedureKind as ProcedureKind | null,
         studentId: row.studentId,
         studentName: `${row.firstName} ${row.lastName}`,
         courseName: row.courseName,
@@ -288,7 +299,8 @@ export class ListPaymentsQuery {
         rejected: sql<number>`count(*) filter (where ${payments.status} = 'rejected')`.mapWith(Number),
       })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .where(and(isNull(enrollments.deletedAt), eq(classGroups.academicPeriodId, period.id)));
 

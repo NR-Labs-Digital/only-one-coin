@@ -5,8 +5,9 @@ import {
   type ReceiptLookalike,
   type ReceiptScreeningSubject,
 } from "@ooc/domain";
-import { enrollments, payments, receiptUploads } from "@ooc/db";
+import { enrollments, payments, procedureRequests, receiptUploads } from "@ooc/db";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { SIMILAR_IMAGE_MAX_DISTANCE } from "@/infra/storage/fingerprintReceiptImage.js";
@@ -29,10 +30,12 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
         exifFacts: receiptUploads.exifFacts,
         studentId: enrollments.studentId,
         classGroupId: enrollments.classGroupId,
+        procedureRequestId: payments.procedureRequestId,
       })
       .from(receiptUploads)
       .innerJoin(payments, eq(payments.id, receiptUploads.paymentId))
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .where(
         and(
           eq(receiptUploads.id, receiptUploadId),
@@ -52,6 +55,7 @@ export class DrizzleReceiptScreeningRepository implements IReceiptScreeningRepos
       paymentId: row.paymentId,
       studentId: row.studentId,
       classGroupId: row.classGroupId,
+      isProcedure: row.procedureRequestId !== null,
       exif: (row.exifFacts as ReceiptExifFacts | null) ?? null,
     };
   }

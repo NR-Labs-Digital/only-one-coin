@@ -14,7 +14,12 @@ import {
   CompleteStaffInviteUseCase,
   CompleteStaffPasswordResetUseCase,
   ConfirmEmailVerificationUseCase,
+  ConfirmProcedureReceiptUploadUseCase,
   ConfirmReceiptUploadUseCase,
+  OpenProcedureRequestUseCase,
+  RequestProcedureReceiptUploadUseCase,
+  SetProcedurePriceUseCase,
+  SubmitProcedurePaymentUseCase,
   CreateCourseUseCase,
   CreateAcademicPeriodUseCase,
   UpdateAcademicPeriodUseCase,
@@ -90,6 +95,7 @@ import {
   type IPublicEnrollmentRepository,
   type IReceiptExtractionRepository,
   type IReceiptRereadRepository,
+  type IProcedureRepository,
   type IReceiptUploadRepository,
   type IEmailVerificationRepository,
   type ISeatHoldRepository,
@@ -165,6 +171,7 @@ import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
+import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
   DrizzleReceiptRereadRepository,
@@ -232,6 +239,7 @@ export interface AppRepositories {
    * `AppNotifications.outbox` is `IOutboxStore` rather than a domain port —
    * this is infra a worker consumes directly, not a usecase's dependency. */
   receiptUpload: IReceiptUploadRepository & IReceiptNormalizationStore;
+  procedure: IProcedureRepository;
   /** Only the `receipt-extract` worker uses it (OOC-20). The extractor itself
    * is not in this container on purpose: routes load the container, and the
    * submit route must never import the AI module (apps/api/CLAUDE.md) —
@@ -285,6 +293,13 @@ export interface AppUseCases {
     /** Run by the `receipt-validate` worker, never a route (OOC-21). Pure
      * comparison — no AI module, so it may live in the container. */
     validateReceipt: ValidateReceiptUseCase;
+  };
+  procedure: {
+    openRequest: OpenProcedureRequestUseCase;
+    requestReceiptUpload: RequestProcedureReceiptUploadUseCase;
+    confirmReceiptUpload: ConfirmProcedureReceiptUploadUseCase;
+    submitPayment: SubmitProcedurePaymentUseCase;
+    setPrice: SetProcedurePriceUseCase;
   };
   payment: {
     settlePayment: SettlePaymentUseCase;
@@ -552,6 +567,19 @@ function buildContainer(): AppContainer {
     config.RECEIPT_MAX_UPLOAD_BYTES,
   );
   const confirmReceiptUpload = new ConfirmReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
+  const procedureRepository = new DrizzleProcedureRepository(db);
+  const procedureUseCases = {
+    openRequest: new OpenProcedureRequestUseCase(procedureRepository),
+    requestReceiptUpload: new RequestProcedureReceiptUploadUseCase(
+      procedureRepository,
+      receiptUploadRepository,
+      receiptStorage,
+      config.RECEIPT_MAX_UPLOAD_BYTES,
+    ),
+    confirmReceiptUpload: new ConfirmProcedureReceiptUploadUseCase(procedureRepository, receiptUploadRepository, receiptStorage),
+    submitPayment: new SubmitProcedurePaymentUseCase(procedureRepository),
+    setPrice: new SetProcedurePriceUseCase(procedureRepository),
+  };
   const sendEmailVerification = new SendEmailVerificationCodeUseCase(emailVerificationRepository);
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
   const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository, enrollmentEmailContextLookup);
@@ -752,6 +780,7 @@ function buildContainer(): AppContainer {
       seatHold: seatHoldRepository,
       emailVerification: emailVerificationRepository,
       receiptUpload: receiptUploadRepository,
+      procedure: procedureRepository,
       receiptExtraction: receiptExtractionRepository,
       receiptReread: receiptRereadRepository,
       planPriceLookup,
@@ -798,6 +827,7 @@ function buildContainer(): AppContainer {
         screenReceiptUpload,
         validateReceipt,
       },
+      procedure: procedureUseCases,
       payment: {
         settlePayment,
         requestReceiptReread: new RequestReceiptRereadUseCase(receiptRereadRepository),

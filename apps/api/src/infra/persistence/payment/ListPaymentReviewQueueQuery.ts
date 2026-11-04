@@ -6,6 +6,7 @@ import {
   payments,
   planPrices,
   plans,
+  procedureRequests,
   receiptRereads,
   receiptUploads,
   students,
@@ -17,6 +18,7 @@ import {
   isReceiptVerdict,
   isReceiptVerdictReason,
   type PaymentMethod,
+  type ProcedureKind,
   type ReceiptExtractionFailureReason,
   type ReceiptFraudSignalKind,
   type IPlatformSettingsRepository,
@@ -25,6 +27,7 @@ import {
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { OPEN_STATUSES, PAYMENTS_PAGE_SIZE, paymentSearchCondition } from "./ListPaymentsQuery.js";
+import { paymentEnrollmentId } from "./paymentOrigin.js";
 
 /**
  * The review queue of the Payments screen (OOC-55): every payment nobody has
@@ -83,7 +86,12 @@ export type ReviewReceiptReading =
 
 export interface PaymentReviewItem {
   id: string;
+  /** The enrollment the payment is for, or the one its procedure refers to. */
   enrollmentId: string;
+  /** What the payment is for: null is the enrollment itself, a kind is that
+   * paid procedure (OOC-83). The reviewer has to know: rejecting one gives a
+   * seat back, rejecting the other does not. */
+  procedureKind: ProcedureKind | null;
   studentId: string;
   studentName: string;
   courseName: string;
@@ -324,7 +332,8 @@ export class ListPaymentReviewQueueQuery {
     const rowsPromise = this.db
       .select({
         id: payments.id,
-        enrollmentId: payments.enrollmentId,
+        enrollmentId: enrollments.id,
+        procedureKind: procedureRequests.kind,
         status: payments.status,
         method: payments.method,
         methodDetail: payments.methodDetail,
@@ -337,7 +346,7 @@ export class ListPaymentReviewQueueQuery {
         classGroupCode: classGroups.code,
         classGroupSchedule: classGroups.schedule,
         planName: plans.name,
-        expectedAmountCents: planPrices.amountCents,
+        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
         uploadStatus: latestUpload.status,
         fraudSignals: latestUpload.fraudSignals,
         validationVerdict: latestUpload.validationVerdict,
@@ -357,7 +366,8 @@ export class ListPaymentReviewQueueQuery {
         rereadRequestedAt: pendingReread.requestedAt,
       })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -384,7 +394,8 @@ export class ListPaymentReviewQueueQuery {
     const totalPromise = this.db
       .select({ value: sql<number>`count(*)`.mapWith(Number) })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -415,6 +426,7 @@ export class ListPaymentReviewQueueQuery {
       return {
         id: row.id,
         enrollmentId: row.enrollmentId,
+        procedureKind: row.procedureKind as ProcedureKind | null,
         studentId: row.studentId,
         studentName: `${row.firstName} ${row.lastName}`,
         courseName: row.courseName,

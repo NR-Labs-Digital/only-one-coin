@@ -372,7 +372,7 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
         }),
         payment: new Payment({
           id: paymentRow.id,
-          enrollmentId: paymentRow.enrollmentId,
+          enrollmentId: enrollmentRow.id,
           idempotencyKey: paymentRow.idempotencyKey,
           status: paymentRow.status as PaymentStatus,
           method: paymentRow.method as PaymentMethod,
@@ -389,6 +389,9 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
   private async loadResult(tx: Tx, paymentId: string): Promise<SubmitPublicEnrollmentResult> {
     const [paymentRow] = await tx.select().from(payments).where(eq(payments.id, paymentId));
     if (!paymentRow) throw new Error("Payment vanished inside its own transaction");
+    // A key already spent on a procedure's payment (OOC-83): keys are minted by
+    // the client, so only a forged one lands here, and it gets nothing back.
+    if (!paymentRow.enrollmentId) throw new Error("Idempotency key belongs to a payment with no enrollment");
 
     const [enrollmentRow] = await tx.select().from(enrollments).where(eq(enrollments.id, paymentRow.enrollmentId));
     if (!enrollmentRow) throw new Error("Enrollment vanished inside its own transaction");
@@ -435,7 +438,7 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
       }),
       payment: new Payment({
         id: paymentRow.id,
-        enrollmentId: paymentRow.enrollmentId,
+        enrollmentId: enrollmentRow.id,
         idempotencyKey: paymentRow.idempotencyKey,
         status: paymentRow.status as PaymentStatus,
         method: paymentRow.method as PaymentMethod,

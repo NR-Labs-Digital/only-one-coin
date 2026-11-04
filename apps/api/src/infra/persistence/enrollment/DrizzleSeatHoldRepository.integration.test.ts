@@ -234,7 +234,6 @@ describe("DrizzlePlatformSettingsRepository", () => {
       [
         "certificateDeadlineBusinessDays",
         "checkoutHoldMinutes",
-        "constanciaFeeCents",
         "contractAlertDays",
         "ocrLowConfidencePercent",
         "passingGrade",
@@ -277,7 +276,6 @@ describe("DrizzlePlatformSettingsRepository", () => {
     ["ocrLowConfidencePercent", 96],
     ["passingGrade", 21],
     ["certificateDeadlineBusinessDays", 0],
-    ["constanciaFeeCents", 0],
     ["contractAlertDays", 181],
   ] as const)("is refused by the database: %s = %s", async (key, value) => {
     await rolledBack(async (tx) => {

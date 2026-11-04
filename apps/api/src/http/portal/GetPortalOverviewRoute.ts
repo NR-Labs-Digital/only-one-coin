@@ -1,9 +1,10 @@
-import { ForbiddenError } from "@ooc/domain";
+import { ForbiddenError, ProcedureKindSchema, type ProcedureRequestStatus } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
+import type { PortalPaymentRow } from "@/infra/persistence/portal/StudentPortalQuery.js";
 
 const NationalIdTypeSchema = z.enum(["DNI", "CE", "passport"]);
 
@@ -73,9 +74,57 @@ const PortalOverviewSchema = z.object({
       .nullable(),
   }),
   enrollments: z.array(PortalEnrollmentSchema),
+  procedures: z.array(
+    z.object({
+      kind: ProcedureKindSchema,
+      priceCents: z.number().int(),
+      currency: z.literal("PEN"),
+      eligible: z.array(z.object({ enrollmentId: z.string().uuid(), courseName: z.string() })),
+    }),
+  ),
+  requests: z.array(
+    z.object({
+      id: z.string().uuid(),
+      kind: ProcedureKindSchema,
+      status: z.enum(["under_review", "in_progress", "completed", "rejected"]),
+      courseName: z.string(),
+      createdAt: z.string(),
+      priceCents: z.number().int(),
+      currency: z.literal("PEN"),
+      payment: PortalPaymentSchema,
+    }),
+  ),
 });
 
+/** The request as the student reads it: while the money waits, `pending` and
+ * `under_review` are one state, the same as on the Payments screen. */
+function requestStageOf(status: ProcedureRequestStatus): "under_review" | "in_progress" | "completed" | "rejected" {
+  switch (status) {
+    case "requested":
+      return "under_review";
+    case "paid":
+      return "in_progress";
+    case "fulfilled":
+      return "completed";
+    case "rejected":
+      return "rejected";
+  }
+}
+
 const toIso = (value: Date | null) => value?.toISOString() ?? null;
+
+const toPortalPayment = (payment: PortalPaymentRow) => ({
+  id: payment.id,
+  amountCents: payment.amountCents,
+  currency: "PEN" as const,
+  method: payment.method as z.infer<typeof PortalPaymentSchema>["method"],
+  methodDetail: payment.methodDetail,
+  status: payment.status as z.infer<typeof PortalPaymentSchema>["status"],
+  operationNumber: payment.operationNumber,
+  submittedAt: payment.submittedAt.toISOString(),
+  settledAt: toIso(payment.settledAt),
+  hasReceipt: payment.hasReceipt,
+});
 
 /**
  * Everything the student portal shows about the signed-in student (OOC-32) —
@@ -87,7 +136,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
   .docs({
     tags: ["Portal"],
     summary: "The signed-in student's portal data",
-    description: "Backs every screen of the student portal: file, guardian, enrollments and payments.",
+    description: "Backs every screen of the student portal: file, guardian, enrollments, payments and paid procedures.",
   })
   .roles("student")
   .response(200, PortalOverviewSchema)
@@ -146,18 +195,18 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
         },
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },
-        payments: enrollment.payments.map((payment) => ({
-          id: payment.id,
-          amountCents: payment.amountCents,
-          currency: "PEN" as const,
-          method: payment.method as z.infer<typeof PortalPaymentSchema>["method"],
-          methodDetail: payment.methodDetail,
-          status: payment.status as z.infer<typeof PortalPaymentSchema>["status"],
-          operationNumber: payment.operationNumber,
-          submittedAt: payment.submittedAt.toISOString(),
-          settledAt: toIso(payment.settledAt),
-          hasReceipt: payment.hasReceipt,
-        })),
+        payments: enrollment.payments.map(toPortalPayment),
+      })),
+      procedures: overview.procedures.map((procedure) => ({ ...procedure, currency: "PEN" as const })),
+      requests: overview.requests.map((item) => ({
+        id: item.id,
+        kind: item.kind,
+        status: requestStageOf(item.status),
+        courseName: item.courseName,
+        createdAt: item.createdAt.toISOString(),
+        priceCents: item.amountCents,
+        currency: "PEN" as const,
+        payment: toPortalPayment(item.payment),
       })),
     });
   });

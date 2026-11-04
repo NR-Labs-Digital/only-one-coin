@@ -10,9 +10,10 @@
 //   pnpm --filter @ooc/api ocr:show                 # the 5 latest readings
 //   pnpm --filter @ooc/api ocr:show -- --limit 20
 //   pnpm --filter @ooc/api ocr:show -- <id>         # a payment id or a receipt upload id
-import { enrollments, paymentReceipts, payments, planPrices } from "@ooc/db";
+import { enrollments, paymentReceipts, payments, planPrices, procedureRequests } from "@ooc/db";
+import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 import type { ReceiptExtractedField } from "@ooc/domain";
-import { desc, eq, isNotNull, or, type SQL } from "drizzle-orm";
+import { desc, eq, isNotNull, or, type SQL, sql } from "drizzle-orm";
 import { container } from "@/container.js";
 
 const USAGE = "usage: pnpm --filter @ooc/api ocr:show -- [<payment-or-upload-id>] [--limit N]";
@@ -77,11 +78,12 @@ async function main(): Promise<void> {
       declaredMethodDetail: payments.methodDetail,
       declaredOperation: payments.operationNumber,
       paymentStatus: payments.status,
-      expectedCents: planPrices.amountCents,
+      expectedCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
     })
     .from(paymentReceipts)
     .innerJoin(payments, eq(payments.id, paymentReceipts.paymentId))
-    .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+    .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+    .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
     .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
     .where(filter ?? isNotNull(paymentReceipts.receiptUploadId))
     .orderBy(desc(paymentReceipts.createdAt))

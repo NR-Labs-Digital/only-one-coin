@@ -7,10 +7,11 @@ import {
   type ReceiptValidationEffect,
   type ReceiptValidationSubject,
 } from "@ooc/domain";
-import { enrollments, paymentReceipts, payments, receiptUploads } from "@ooc/db";
+import { enrollments, paymentReceipts, payments, procedureRequests, receiptUploads } from "@ooc/db";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
+import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 
 /** The `payment_method` entry of `extracted_fields`, read defensively — a
  * value outside the enum counts as not read. */
@@ -39,6 +40,7 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
         paymentId: payments.id,
         studentId: enrollments.studentId,
         classGroupId: enrollments.classGroupId,
+        procedureRequestId: payments.procedureRequestId,
         paymentStatus: payments.status,
         expectedCents: payments.amountCents,
         declaredOperationNumber: payments.operationNumber,
@@ -49,7 +51,8 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
       })
       .from(receiptUploads)
       .innerJoin(payments, eq(payments.id, receiptUploads.paymentId))
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       // The level-1 row — a failed reading has one too, with null columns,
       // and validates as `amount_unread`.
       .innerJoin(
@@ -62,9 +65,10 @@ export class DrizzleReceiptValidationRepository implements IReceiptValidationRep
       .limit(1);
 
     if (!row) return null;
-    const { extractedFields, ...rest } = row;
+    const { extractedFields, procedureRequestId, ...rest } = row;
     return {
       ...rest,
+      isProcedure: procedureRequestId !== null,
       paymentStatus: row.paymentStatus as PaymentStatus,
       declaredMethod: row.declaredMethod as PaymentMethod,
       readMethod: readPaymentMethod(extractedFields),

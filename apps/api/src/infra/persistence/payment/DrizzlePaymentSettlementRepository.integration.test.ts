@@ -165,7 +165,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const found = await repository.findForSettlement(paymentId);
 
-      expect(found).toMatchObject({ paymentId, enrollmentId, classGroupId: GROUP, status: "pending", seatStatus: "reserved" });
+      expect(found).toMatchObject({
+        paymentId,
+        classGroupId: GROUP,
+        status: "pending",
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+      });
     });
   });
 
@@ -176,8 +181,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        enrollmentId,
-        classGroupId: GROUP,
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
         to: "approved",
         decision: approval,
         notifications: [
@@ -215,8 +219,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        enrollmentId,
-        classGroupId: GROUP,
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
         to: "rejected",
         decision: rejection,
         notifications: [],
@@ -239,7 +242,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
     await rolledBack(async (tx) => {
       const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
       const { paymentId, enrollmentId } = await openPayment(tx);
-      const params = { paymentId, enrollmentId, classGroupId: GROUP, notifications: [], portalAccess: null };
+      const params = {
+        paymentId,
+        origin: { kind: "enrollment" as const, enrollmentId, classGroupId: GROUP, seatStatus: "reserved" as const },
+        notifications: [],
+        portalAccess: null,
+      };
 
       await repository.settle({ ...params, to: "rejected", decision: rejection, audit: audit(paymentId, "payment.rejected") });
       await expect(
@@ -259,8 +267,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
       await expect(
         repository.settle({
           paymentId,
-          enrollmentId,
-          classGroupId: GROUP,
+          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
           to: "approved",
           decision: approval,
           notifications: [],
@@ -285,8 +292,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        enrollmentId,
-        classGroupId: GROUP,
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
         to: "rejected",
         decision: rejection,
         notifications: [],
@@ -307,8 +313,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        enrollmentId,
-        classGroupId: GROUP,
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
         to: "approved",
         decision: approval,
         notifications: [],
@@ -356,8 +361,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
         const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
         const settling = repository.settle({
           paymentId,
-          enrollmentId,
-          classGroupId: GROUP,
+          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
           to: "approved",
           decision: approval,
           notifications: [],

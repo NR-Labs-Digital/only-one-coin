@@ -26,6 +26,9 @@ const SAMPLE_VARS: EmailTemplateVars = {
     startsOn: "2026-10-05T05:00:00.000Z",
   },
   payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  procedure_payment_under_review: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  procedure_payment_approved: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  procedure_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   portal_credentials: {
     recipientName: "Rosa",
     loginEmail: "rosa.quispe@gmail.com",
