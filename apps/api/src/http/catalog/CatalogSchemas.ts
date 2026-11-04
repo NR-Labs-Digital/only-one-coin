@@ -79,6 +79,7 @@ export const ClassGroupItemSchema = z.object({
   legacyTeacherName: z.string(),
   classroomUrl: z.string().nullable(),
   module: z.number().int().nullable(),
+  fullCourse: z.boolean(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.string().datetime().nullable(),
   endsOn: z.string().datetime().nullable(),
@@ -118,6 +119,8 @@ export const CreateClassGroupBodySchema = z.object({
   classroomUrl: z.string().max(2048).nullable().optional(),
   /** Which of the course's modules it teaches (OOC-100); the domain checks the upper bound. Null clears it. */
   module: z.number().int().positive().nullable().optional(),
+  /** Teaches every module of the course (OOC-130); wins over `module`. */
+  fullCourse: z.boolean().optional(),
   slots: z.array(ValidWeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: DateTimeOrNull,

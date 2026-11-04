@@ -234,6 +234,7 @@ export function ClassGroupWorkspace({
               classroomUrl={group.classroomUrl}
               module={group.module}
               moduleMaterialsUrl={group.moduleMaterialUrl}
+              courseMaterialUrls={group.courseMaterialUrls}
             />
           </aside>
         )}

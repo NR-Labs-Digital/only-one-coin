@@ -558,6 +558,8 @@ export interface ClassGroupItem {
    * the material its teacher opens. Null = not set yet.
    */
   module: number | null
+  /** Teaches every module of the course (OOC-130); `module` is null then. */
+  fullCourse: boolean
   slots: WeeklySlotItem[]
   /** Null only on a draft. */
   startsOn: string | null

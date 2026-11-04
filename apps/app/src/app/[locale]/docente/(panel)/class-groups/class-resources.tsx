@@ -13,7 +13,8 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  * - **Module material** — the Drive link coordination sets once per module
  *   on the course (OOC-94), picked by the module the class group teaches
  *   (OOC-100). The door only appears once there is a link to open: no module
- *   set, or a course without material, shows nothing.
+ *   set, or a course without material, shows nothing. A class group that
+ *   teaches the full course (OOC-130) gets one door per module instead.
  *
  * External links only, never an integration (CLAUDE.md §2), and each one is
  * checked against the Google host it claims before it becomes an `href`.
@@ -22,10 +23,12 @@ export function ClassResources({
   classroomUrl,
   module,
   moduleMaterialsUrl,
+  courseMaterialUrls,
 }: {
   classroomUrl: string | null
   module: number | null
   moduleMaterialsUrl: string | null
+  courseMaterialUrls: string[]
 }) {
   const t = useTranslations('bo')
   const materialsUrl = moduleMaterialsUrl ? parseClassLink(moduleMaterialsUrl, 'drive') || null : null
@@ -48,6 +51,17 @@ export function ClassResources({
             }
           />
         )}
+        {courseMaterialUrls.map((url, index) => {
+          const href = parseClassLink(url, 'drive')
+          return href ? (
+            <ExternalButton
+              key={index}
+              href={href}
+              icon="doc"
+              label={t('class_resources.materials_module', { number: index + 1 })}
+            />
+          ) : null
+        })}
       </div>
     </div>
   )

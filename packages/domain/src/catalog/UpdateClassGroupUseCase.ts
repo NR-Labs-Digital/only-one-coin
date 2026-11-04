@@ -44,7 +44,11 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
     // A new module, or the same module carried onto another course, must be
     // one of that course's; an untouched one is never re-checked — a course
     // cut to fewer modules does not lock its class groups.
-    const moduleNumber = input.patch.module !== undefined ? input.patch.module : group.module;
+    const moduleNumber = input.patch.fullCourse
+      ? null
+      : input.patch.module !== undefined
+        ? input.patch.module
+        : group.module;
     if (moduleNumber !== null && (courseChanges || moduleChanges)) {
       const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
       if (!course) throw new CourseNotFoundError();

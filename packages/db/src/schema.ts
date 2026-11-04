@@ -266,6 +266,10 @@ export const classGroups = pgTable(
     // module count) is the domain's: a course cut to fewer modules must not
     // turn its class groups into rows the database refuses.
     module: integer("module"),
+    // Runs every module of the course instead of one (OOC-130). Separate from
+    // `module` because null there means "nobody set it yet", and a class group
+    // that teaches the whole course has been set.
+    fullCourse: boolean("full_course").notNull().default(false),
     // Null only while the class group is a draft (OOC-35): a duplicated class group starts without dates on purpose.
     startsOn: timestamp("starts_on", { withTimezone: true }),
     // A class group can end before its academic_period does (a 4-module
@@ -292,6 +296,7 @@ export const classGroups = pgTable(
   (table) => [
     check("class_groups_capacity_check", sql`${table.capacity} > 0`),
     check("class_groups_module_check", sql`${table.module} is null or ${table.module} > 0`),
+    check("class_groups_full_course_check", sql`not ${table.fullCourse} or ${table.module} is null`),
     check(
       "class_groups_seats_taken_check",
       sql`${table.seatsTaken} >= 0 and ${table.seatsTaken} <= ${table.capacity}`,

@@ -33,7 +33,7 @@ export class CreateClassGroupUseCase extends BaseUseCase<CreateClassGroupInput, 
     const period = await this.periods.findById(input.classGroup.academicPeriodId);
     if (!period || period.isDeleted) throw new PeriodNotFoundError();
 
-    assertModuleOfCourse(input.classGroup.module ?? null, course.modules);
+    assertModuleOfCourse(input.classGroup.fullCourse ? null : (input.classGroup.module ?? null), course.modules);
 
     const teacherId = input.classGroup.teacherId ?? null;
     if (teacherId !== null) await assertAssignableTeacher(this.teachers, teacherId, course.language);

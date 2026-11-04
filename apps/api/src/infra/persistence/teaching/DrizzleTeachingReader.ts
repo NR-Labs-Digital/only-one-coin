@@ -90,6 +90,8 @@ export class DrizzleTeachingReader implements ITeachingReader {
       classroomUrl: row.classroomUrl,
       module: row.module,
       moduleMaterialUrl: materialOfModule(moduleMaterials, row.module),
+      fullCourse: row.fullCourse,
+      courseMaterialUrls: row.fullCourse ? moduleMaterials : [],
       retired: row.deletedAt !== null,
     }));
   }

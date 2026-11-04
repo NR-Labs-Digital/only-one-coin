@@ -1,0 +1,2 @@
+ALTER TABLE "class_groups" ADD COLUMN "full_course" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "class_groups" ADD CONSTRAINT "class_groups_full_course_check" CHECK (not "class_groups"."full_course" or "class_groups"."module" is null);

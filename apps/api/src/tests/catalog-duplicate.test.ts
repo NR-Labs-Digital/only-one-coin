@@ -62,6 +62,7 @@ beforeEach(async () => {
       legacyTeacherName: "",
       classroomUrl: "https://classroom.google.com/c/running",
       module: 2,
+      fullCourse: false,
       slots: SLOTS,
       startsOn: new Date("2026-08-03T05:00:00Z"),
       endsOn: new Date("2026-10-31T05:00:00Z"),

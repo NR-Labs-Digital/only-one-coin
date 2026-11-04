@@ -135,6 +135,8 @@ function group(id: string, teacherId: string): TeachingClassGroup {
     classroomUrl: "https://classroom.google.com/c/ing01",
     module: 3,
     moduleMaterialUrl: "https://drive.google.com/drive/folders/ing-m3",
+    fullCourse: false,
+    courseMaterialUrls: [],
   };
 }
 
@@ -224,6 +226,8 @@ describe("the id in the URL is not proof of whose class group it is", () => {
     expect(response.json()).toMatchObject({
       module: 3,
       moduleMaterialUrl: "https://drive.google.com/drive/folders/ing-m3",
+      fullCourse: false,
+      courseMaterialUrls: [],
     });
   });
 

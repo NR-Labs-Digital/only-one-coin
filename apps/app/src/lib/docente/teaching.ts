@@ -34,6 +34,10 @@ export interface TeachingClassGroup {
   module: number | null
   /** That module's material, from the course (OOC-100); null = nothing to open. */
   moduleMaterialUrl: string | null
+  /** Teaches every module of the course (OOC-130); `module` is null then. */
+  fullCourse: boolean
+  /** Every module's material, in order, on a full-course class group; empty on any other. */
+  courseMaterialUrls: string[]
 }
 
 /** One student of the class group — the name, never the document or the contact. */

@@ -25,6 +25,10 @@ export const TeachingClassGroupSchema = z.object({
   module: z.number().int().nullable(),
   /** That module's material, from the course (OOC-100); null = nothing to open. */
   moduleMaterialUrl: z.string().nullable(),
+  /** Teaches every module of the course (OOC-130); `module` is null then. */
+  fullCourse: z.boolean(),
+  /** Every module's material, in order, on a full-course class group; empty on any other. */
+  courseMaterialUrls: z.array(z.string()),
 });
 
 export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<typeof TeachingClassGroupSchema> {
@@ -43,5 +47,7 @@ export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<
     classroomUrl: group.classroomUrl,
     module: group.module,
     moduleMaterialUrl: group.moduleMaterialUrl,
+    fullCourse: group.fullCourse,
+    courseMaterialUrls: group.courseMaterialUrls,
   };
 }
