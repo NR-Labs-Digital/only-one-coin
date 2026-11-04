@@ -98,6 +98,8 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
    * course; a row read back never throws.
    */
   module: z.number().int().positive().nullable(),
+  /** Teaches every module of the course (OOC-130); `module` stays null then. */
+  fullCourse: z.boolean(),
   slots: z.array(WeeklySlotSchema),
   startsOn: z.coerce.date().nullable(),
   endsOn: z.coerce.date().nullable(),
@@ -116,6 +118,8 @@ export const CreateClassGroupSchema = z.object({
   teacherId: z.string().uuid().nullable().optional(),
   classroomUrl: z.string().nullable().optional(),
   module: z.number().int().positive().nullable().optional(),
+  /** Wins over `module`: the whole course is not one of its modules. */
+  fullCourse: z.boolean().optional(),
   slots: z.array(WeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: optionalDate,
@@ -139,6 +143,7 @@ export class ClassGroup extends SoftDeletableModel {
   public legacyTeacherName: string;
   public classroomUrl: string | null;
   public module: number | null;
+  public fullCourse: boolean;
   public slots: WeeklySlot[];
   public startsOn: Date | null;
   public endsOn: Date | null;
@@ -159,6 +164,7 @@ export class ClassGroup extends SoftDeletableModel {
     this.legacyTeacherName = props.legacyTeacherName;
     this.classroomUrl = props.classroomUrl;
     this.module = props.module;
+    this.fullCourse = props.fullCourse;
     this.slots = props.slots;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
@@ -184,7 +190,8 @@ export class ClassGroup extends SoftDeletableModel {
         teacherId: valid.teacherId ?? null,
         legacyTeacherName: "",
         classroomUrl: normalizeClassroomUrl(valid.classroomUrl ?? null),
-        module: valid.module ?? null,
+        module: valid.fullCourse ? null : (valid.module ?? null),
+        fullCourse: valid.fullCourse ?? false,
         startsOn: valid.startsOn ?? null,
         endsOn: valid.endsOn ?? null,
         enrollmentOpensAt: valid.enrollmentOpensAt ?? null,
@@ -217,6 +224,7 @@ export class ClassGroup extends SoftDeletableModel {
         legacyTeacherName: source.legacyTeacherName,
         classroomUrl: null,
         module: source.module,
+        fullCourse: source.fullCourse,
         slots: source.slots,
         startsOn: null,
         endsOn: null,
@@ -259,8 +267,15 @@ export class ClassGroup extends SoftDeletableModel {
       }
     }
 
-    if (valid.module !== undefined && valid.module !== this.module) {
-      this.module = valid.module;
+    // One or the other: picking a module ends "full course", and the reverse.
+    const fullCourse = valid.fullCourse ?? (valid.module ? false : this.fullCourse);
+    const module = fullCourse ? null : valid.module !== undefined ? valid.module : this.module;
+    if (fullCourse !== this.fullCourse) {
+      this.fullCourse = fullCourse;
+      changed.push("fullCourse");
+    }
+    if (module !== this.module) {
+      this.module = module;
       changed.push("module");
     }
 

@@ -245,6 +245,7 @@ export const AUDIT_FIELDS = {
   teacherId: "teacher",
   classroomUrl: "classroom_url",
   module: "module",
+  fullCourse: "full_course",
   slots: "schedule",
   capacity: "capacity",
   startsOn: "starts_on",

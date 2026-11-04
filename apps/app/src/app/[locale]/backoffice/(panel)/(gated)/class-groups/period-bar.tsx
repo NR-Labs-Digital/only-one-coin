@@ -9,6 +9,7 @@ import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDateRange, type Locale } from '@/lib/format'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import {
@@ -278,28 +279,31 @@ export function PeriodBar({
         <span className="text-sm text-muted-foreground">{t('periods.empty')}</span>
       ) : (
         /* The period is a sales campaign, not when classes start — the two
-           read alike and got mixed up (OOC-93); the hint rides as a tooltip
-           so the toolbar stays one line. */
-        <label className="relative flex min-w-72 max-w-lg flex-1" title={t('periods.hint')}>
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t('periods.short_label')}
-          </span>
-          <select
-            value={selectedId ?? ''}
-            onChange={(event) => {
-              close()
-              go(event.target.value)
-            }}
-            aria-label={t('periods.label')}
-            className={`${fieldClass} min-h-tap w-full truncate pl-20 font-semibold`}
-          >
-            {periods.map((period) => (
-              <option key={period.id} value={period.id}>
-                {periodLabel(period)}
-              </option>
-            ))}
-          </select>
-        </label>
+           read alike and got mixed up (OOC-93); the hint rides behind a (?)
+           so the toolbar stays one line (OOC-133). */
+        <div className="flex min-w-72 max-w-lg flex-1 items-center gap-2">
+          <label className="relative flex min-w-0 flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('periods.short_label')}
+            </span>
+            <select
+              value={selectedId ?? ''}
+              onChange={(event) => {
+                close()
+                go(event.target.value)
+              }}
+              aria-label={t('periods.label')}
+              className={`${fieldClass} min-h-tap w-full truncate pl-20 font-semibold`}
+            >
+              {periods.map((period) => (
+                <option key={period.id} value={period.id}>
+                  {periodLabel(period)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <HelpHint what={t('periods.hint')} how={t(canManage ? 'help.period_how_manage' : 'help.period_how_read')} />
+        </div>
       )}
 
       {canManage && (

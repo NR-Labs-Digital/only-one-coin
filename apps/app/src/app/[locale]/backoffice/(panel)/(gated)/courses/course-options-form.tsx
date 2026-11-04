@@ -25,14 +25,13 @@ import {
 } from '@/lib/backoffice/course-identity'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpField, HelpHint } from '@/components/backoffice/help-hint'
 import { Card, SectionTitle } from '@/components/backoffice/ui'
 import { CourseOptionFields } from './course-option-fields'
 import { LandingKeyField } from './landing-key-field'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
-
-const labelClass = 'text-xs font-medium uppercase tracking-wide text-muted-foreground'
 
 function optionsOf(course: CourseRow): CourseOptions {
   return {
@@ -159,69 +158,91 @@ export function CourseOptionsForm({
 
   return (
     <Card as="section" className="flex flex-col gap-4 p-5">
-      <SectionTitle icon="settings">{t('courses.options_title')}</SectionTitle>
-
-      <p className="flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">
-        <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-        {t('course_options.applies_forward')}
-      </p>
+      <SectionTitle icon="settings">
+        {t('courses.options_title')}
+        <HelpHint what={t('course_options.applies_forward')} how={t('help.options_how')} />
+      </SectionTitle>
 
       {canEditIdentity && (
         <section className="flex flex-col gap-3 border-b border-line pb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t('course_options.identity_title')}
           </p>
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>{t('courses.field_name')}</span>
-            <input
-              value={identity.name}
-              onChange={(event) => setIdentity({ ...identity, name: event.target.value })}
-              aria-invalid={blanked.includes('name')}
-              className={fieldClass}
-            />
-            {requiredNotice('name')}
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>{t('courses.field_language')}</span>
-            {/* Picked from the list (OOC-128), never typed: a typed language
-                is how "INGLES" ended up next to "Inglés". New languages are
-                opened on the Idiomas tab. */}
-            <select
-              value={identity.language}
-              onChange={(event) => setIdentity({ ...identity, language: event.target.value })}
-              aria-invalid={blanked.includes('language')}
-              className={fieldClass}
-            >
-              {identity.language === '' && <option value="">{t('courses.field_language_pick')}</option>}
-              {languages.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            {requiredNotice('language')}
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>{t('courses.field_level')}</span>
-            <input
-              value={identity.level}
-              onChange={(event) => setIdentity({ ...identity, level: event.target.value })}
-              aria-invalid={blanked.includes('level')}
-              className={fieldClass}
-            />
-            {requiredNotice('level')}
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>{t('course_options.summary')}</span>
-            <textarea
-              value={identity.summary}
-              rows={3}
-              onChange={(event) => setIdentity({ ...identity, summary: event.target.value })}
-              className={fieldClass}
-            />
-            <span className="text-xs text-muted-foreground">{t('course_options.summary_hint')}</span>
-          </label>
-          <p className="text-xs text-muted-foreground">{t('course_options.identity_hint')}</p>
+          <HelpField
+            label={t('courses.field_name')}
+            what={t('help.course_name_what')}
+            how={t('course_options.identity_hint')}
+          >
+            {(id) => (
+              <>
+                <input
+                  id={id}
+                  value={identity.name}
+                  onChange={(event) => setIdentity({ ...identity, name: event.target.value })}
+                  aria-invalid={blanked.includes('name')}
+                  className={fieldClass}
+                />
+                {requiredNotice('name')}
+              </>
+            )}
+          </HelpField>
+          <HelpField
+            label={t('courses.field_language')}
+            what={t('help.course_language_what')}
+            how={t('courses.field_language_hint_list')}
+          >
+            {(id) => (
+              <>
+                {/* Picked from the list (OOC-128), never typed: a typed language
+                    is how "INGLES" ended up next to "Inglés". New languages are
+                    opened on the Idiomas tab. */}
+                <select
+                  id={id}
+                  value={identity.language}
+                  onChange={(event) => setIdentity({ ...identity, language: event.target.value })}
+                  aria-invalid={blanked.includes('language')}
+                  className={fieldClass}
+                >
+                  {identity.language === '' && <option value="">{t('courses.field_language_pick')}</option>}
+                  {languages.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                {requiredNotice('language')}
+              </>
+            )}
+          </HelpField>
+          <HelpField
+            label={t('courses.field_level')}
+            what={t('help.course_level_what')}
+            how={t('course_options.identity_hint')}
+          >
+            {(id) => (
+              <>
+                <input
+                  id={id}
+                  value={identity.level}
+                  onChange={(event) => setIdentity({ ...identity, level: event.target.value })}
+                  aria-invalid={blanked.includes('level')}
+                  className={fieldClass}
+                />
+                {requiredNotice('level')}
+              </>
+            )}
+          </HelpField>
+          <HelpField label={t('course_options.summary')} what={t('course_options.summary_hint')}>
+            {(id) => (
+              <textarea
+                id={id}
+                value={identity.summary}
+                rows={3}
+                onChange={(event) => setIdentity({ ...identity, summary: event.target.value })}
+                className={fieldClass}
+              />
+            )}
+          </HelpField>
         </section>
       )}
 

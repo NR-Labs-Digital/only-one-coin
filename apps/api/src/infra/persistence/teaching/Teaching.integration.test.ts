@@ -270,6 +270,29 @@ describe("docente portal scope (OOC-82)", () => {
     });
   });
 
+  it("reads every module's material on a full-course class group, and the database keeps it module-less (OOC-130)", async () => {
+    await seeded(async (tx) => {
+      const { get } = portal(tx);
+
+      await tx.update(classGroups).set({ fullCourse: true, module: null }).where(sql`${classGroups.id} = ${A_FINISHED}`);
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_FINISHED })).resolves.toMatchObject({
+        module: null,
+        fullCourse: true,
+        moduleMaterialUrl: null,
+        courseMaterialUrls: ["https://drive.google.com/ooc100-m1", "https://drive.google.com/ooc100-m2"],
+      });
+      // Any other class group gets its one module's door, not the whole list.
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({
+        fullCourse: false,
+        courseMaterialUrls: [],
+      });
+
+      await expect(
+        tx.update(classGroups).set({ fullCourse: true, module: 2 }).where(sql`${classGroups.id} = ${A_RUNNING}`),
+      ).rejects.toThrow();
+    });
+  });
+
   it("answers not-found when teacher A asks for teacher B's students, without reading them", async () => {
     await seeded(async (tx) => {
       const { students: roster } = portal(tx);

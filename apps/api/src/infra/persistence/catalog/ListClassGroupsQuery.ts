@@ -28,6 +28,7 @@ export interface ClassGroupItem {
   classroomUrl: string | null;
   /** Which of the course's modules it teaches (OOC-100), 1-based; null = not set. */
   module: number | null;
+  fullCourse: boolean;
   slots: WeeklySlot[];
   /** ISO 8601, UTC — rendered in America/Lima by the screen. */
   startsOn: string | null;
@@ -140,6 +141,7 @@ export class ListClassGroupsQuery {
       legacyTeacherName: row.teacherName,
       classroomUrl: row.classroomUrl,
       module: row.module,
+      fullCourse: row.fullCourse,
       slots: row.slots as WeeklySlot[],
       startsOn: row.startsOn?.toISOString() ?? null,
       endsOn: row.endsOn?.toISOString() ?? null,

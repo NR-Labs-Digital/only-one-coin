@@ -79,9 +79,11 @@ export function ClassGroupTableRow({
           {row.courseName}
         </Link>
         <span className="block text-xs tabular-nums text-muted-foreground">
-          {row.module === null
-            ? row.code
-            : `${row.code} · ${t('class_groups.module_option', { number: row.module })}`}
+          {row.fullCourse
+            ? `${row.code} · ${t('class_groups.module_full_course')}`
+            : row.module === null
+              ? row.code
+              : `${row.code} · ${t('class_groups.module_option', { number: row.module })}`}
         </span>
       </td>
       <td className={`${tdClass} text-sm text-muted-foreground`}>

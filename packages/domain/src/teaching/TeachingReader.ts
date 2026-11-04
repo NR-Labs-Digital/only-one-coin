@@ -31,6 +31,10 @@ export interface TeachingClassGroup {
    * there is none to open (`materialOfModule`).
    */
   moduleMaterialUrl: string | null;
+  /** Teaches every module of the course (OOC-130); `module` is null then. */
+  fullCourse: boolean;
+  /** Every module's link, in order, on a full-course class group; empty on any other. */
+  courseMaterialUrls: string[];
   /** Retired from the catalog (`deleted_at`). */
   retired: boolean;
 }

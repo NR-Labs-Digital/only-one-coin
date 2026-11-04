@@ -37,6 +37,7 @@ function groupOf(overrides: Partial<ClassGroupProps> = {}): ClassGroup {
     legacyTeacherName: "",
     classroomUrl: null,
     module: null,
+    fullCourse: false,
     slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
     startsOn: new Date("2026-11-02T05:00:00Z"),
     endsOn: new Date("2027-01-30T05:00:00Z"),

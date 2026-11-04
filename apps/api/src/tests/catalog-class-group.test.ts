@@ -434,6 +434,51 @@ describe("The module a class group teaches (OOC-100)", () => {
     expect(saved.module).toBeNull();
   });
 
+  it("stores a full-course class group with no single module (OOC-130)", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
+    expect(group.fullCourse).toBe(true);
+    expect(group.module).toBeNull();
+  });
+
+  it("lets the full course win over a module sent with it, without range-checking that module", async () => {
+    const group = await create().run({
+      actorId: ACTOR,
+      classGroup: draftOf({ fullCourse: true, module: 9 }),
+      publish: false,
+    });
+    expect(group.fullCourse).toBe(true);
+    expect(group.module).toBeNull();
+  });
+
+  it("is born without the full course when not asked for", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 2 }), publish: false });
+    expect(group.fullCourse).toBe(false);
+  });
+
+  it("turning the full course on drops the module, and audits both field names", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 2 }), publish: false });
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { fullCourse: true, module: null } });
+    expect(saved.fullCourse).toBe(true);
+    expect(saved.module).toBeNull();
+    expect(auditLog.appended.at(-1)!.metadata).toMatchObject({ fields: ["fullCourse", "module"] });
+  });
+
+  it("picking a module ends the full course, and that module is still range-checked", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
+    await expect(update().run({ actorId: ACTOR, id: group.id, patch: { module: 9 } })).rejects.toBeInstanceOf(
+      ClassGroupModuleOutOfRangeError,
+    );
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { module: 3 } });
+    expect(saved.fullCourse).toBe(false);
+    expect(saved.module).toBe(3);
+  });
+
+  it("clearing the module of a full-course class group leaves the full course alone", async () => {
+    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
+    const saved = await update().run({ actorId: ACTOR, id: group.id, patch: { module: null } });
+    expect(saved.fullCourse).toBe(true);
+  });
+
   it("checks the module against the new course when the course changes", async () => {
     const short = await courses.create(
       Course.create({
