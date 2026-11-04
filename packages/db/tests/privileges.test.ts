@@ -59,6 +59,7 @@ const DELETE_LOCKED = [
   "payments",
   "payment_receipts",
   "receipt_rereads",
+  "procedure_requests",
   "consents",
   "audit_log",
   "teachers",
@@ -136,6 +137,17 @@ describe("application role (GRANT layer)", () => {
 
   it("refuses DELETE on plan_prices", async () => {
     expect(await answerTo(deleteFrom("plan_prices"))).toBe(DENIED_BY_GRANT);
+  });
+
+  // The same rule for what a paid procedure costs (OOC-83).
+  it("refuses UPDATE on procedure_prices", async () => {
+    expect(
+      await answerTo(`update procedure_prices set amount_cents = amount_cents where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on procedure_prices", async () => {
+    expect(await answerTo(deleteFrom("procedure_prices"))).toBe(DENIED_BY_GRANT);
   });
 
   it("refuses TRUNCATE on audit_log", async () => {
@@ -231,6 +243,16 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on plan_prices", async () => {
     expect(await answerTo(deleteFrom("plan_prices"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses UPDATE on procedure_prices", async () => {
+    expect(
+      await answerTo(`update procedure_prices set amount_cents = amount_cents where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on procedure_prices", async () => {
+    expect(await answerTo(deleteFrom("procedure_prices"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

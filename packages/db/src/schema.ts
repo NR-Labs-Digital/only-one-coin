@@ -763,12 +763,82 @@ export const emailVerifications = pgTable(
   ],
 );
 
-// payments is agnostic of origin (CLAUDE.md §5) — scoped to enrollments only
-// for now, since that is what both target forms (new-student-form.tsx,
-// new-enrollment-form.tsx) need. Paid procedures (constancia and the rest of
-// docs/REGRAS-NEGOCIO.md §5) share the same ladder per CLAUDE.md §1 but
-// aren't in docs/ROADMAP.md Sessão 6's bullet list — deferred, not modeled
-// here, rather than guessing their shape.
+// What a paid procedure costs (docs/REGRAS-NEGOCIO.md §5), versioned exactly
+// like plan_prices: append-only, and the price in force is the row with the
+// greatest valid_from <= now(). Replaces platform_settings.constancia_fee_cents
+// (OOC-83), which stays until the contract step and nothing reads any more.
+export const procedurePrices = pgTable(
+  "procedure_prices",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    validFrom: timestamp("valid_from", { withTimezone: true }).notNull().defaultNow(),
+    // Better Auth's "user" is not modelled here; FK written by hand in 0045.
+    // Null only for the row the migration carried over from the settings.
+    createdBy: text("created_by"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("procedure_prices_kind_check", sql`${table.kind} in ('enrollment_certificate')`),
+    check("procedure_prices_amount_cents_check", sql`${table.amountCents} > 0`),
+    index("procedure_prices_kind_valid_from_idx").on(table.kind, table.validFrom),
+  ],
+);
+
+// A student asking for a paid procedure (OOC-83, CLAUDE.md §1: "solicitação
+// com pagamento associado"). Born before its payment, because the receipt
+// upload needs a server-minted id to hang off, the way the checkout's hangs off
+// the seat hold. `amount_cents` freezes the price at the moment of asking, as
+// an enrollment freezes its plan_price_id; `procedure_price_id` says which
+// version it came from.
+//
+// requested → paid (payment approved) → fulfilled (the procedure's own flow,
+// OOC-33 for the constancia); requested → rejected (payment rejected). A
+// rejected request is final: trying again is a new request.
+export const procedureRequests = pgTable(
+  "procedure_requests",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "restrict" }),
+    // The enrollment the procedure is about. Required while the only kind is
+    // the constancia; a procedure with no enrollment behind it (the placement
+    // exam) would loosen it with its own migration.
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    procedurePriceId: uuid("procedure_price_id")
+      .notNull()
+      .references(() => procedurePrices.id, { onDelete: "restrict" }),
+    amountCents: integer("amount_cents").notNull(),
+    status: text("status").notNull().default("requested"),
+    ...timestamps(),
+  },
+  (table) => [
+    check("procedure_requests_kind_check", sql`${table.kind} in ('enrollment_certificate')`),
+    check("procedure_requests_amount_cents_check", sql`${table.amountCents} > 0`),
+    check(
+      "procedure_requests_status_check",
+      sql`${table.status} in ('requested', 'paid', 'fulfilled', 'rejected')`,
+    ),
+    // One live request per procedure and enrollment: a second tap reuses the
+    // first, and a constancia already paid for is not bought twice.
+    uniqueIndex("procedure_requests_live_uidx")
+      .on(table.enrollmentId, table.kind)
+      .where(sql`${table.status} in ('requested', 'paid')`),
+    index("procedure_requests_student_id_idx").on(table.studentId),
+  ],
+);
+
+// payments is agnostic of origin (apps/api/CLAUDE.md, Pagamento): it pays for
+// exactly one enrollment or one procedure request (OOC-83,
+// payments_origin_check). Every read that follows `enrollment_id` with an inner
+// join leaves procedure payments out, which is right for whatever is about the
+// seat (the enrollment ledger, the roster) and wrong for whatever is about the
+// money (Payments, the receipt pipeline): those go through the request.
 //
 // idempotency_key is unique and required on every row (CLAUDE.md §5, "duplo
 // POST de celular ruim é certeza") — this is the Sessão 6 "pronto quando"
@@ -778,9 +848,8 @@ export const payments = pgTable(
   "payments",
   {
     id: uuidPk(),
-    enrollmentId: uuid("enrollment_id")
-      .notNull()
-      .references(() => enrollments.id, { onDelete: "restrict" }),
+    enrollmentId: uuid("enrollment_id").references(() => enrollments.id, { onDelete: "restrict" }),
+    procedureRequestId: uuid("procedure_request_id").references(() => procedureRequests.id, { onDelete: "restrict" }),
     idempotencyKey: text("idempotency_key").notNull(),
     status: text("status").notNull().default("pending"),
     method: text("method").notNull(),
@@ -806,6 +875,12 @@ export const payments = pgTable(
   },
   (table) => [
     uniqueIndex("payments_idempotency_key_uidx").on(table.idempotencyKey),
+    check("payments_origin_check", sql`num_nonnulls("enrollment_id", "procedure_request_id") = 1`),
+    // One payment per request: a rejected payment ends its request, so paying
+    // again is a new request and never a second payment on this one.
+    uniqueIndex("payments_procedure_request_id_uidx")
+      .on(table.procedureRequestId)
+      .where(sql`${table.procedureRequestId} is not null`),
     // Decided ⇔ dated: a settled payment always says when.
     check(
       "payments_decided_at_check",
@@ -928,9 +1003,11 @@ export const receiptUploads = pgTable(
   "receipt_uploads",
   {
     id: uuidPk(),
-    seatHoldId: uuid("seat_hold_id")
-      .notNull()
-      .references(() => seatHolds.id, { onDelete: "restrict" }),
+    // Whose receipt this is before there is a payment: the checkout's hold, or
+    // the procedure request of a signed-in student (OOC-83) — exactly one,
+    // receipt_uploads_owner_check.
+    seatHoldId: uuid("seat_hold_id").references(() => seatHolds.id, { onDelete: "restrict" }),
+    procedureRequestId: uuid("procedure_request_id").references(() => procedureRequests.id, { onDelete: "restrict" }),
     paymentId: uuid("payment_id").references(() => payments.id, { onDelete: "restrict" }),
     objectKey: text("object_key").notNull(),
     status: text("status").notNull().default("pending"),
@@ -966,6 +1043,10 @@ export const receiptUploads = pgTable(
   },
   (table) => [
     uniqueIndex("receipt_uploads_object_key_uidx").on(table.objectKey),
+    check("receipt_uploads_owner_check", sql`num_nonnulls("seat_hold_id", "procedure_request_id") = 1`),
+    index("receipt_uploads_procedure_request_id_idx")
+      .on(table.procedureRequestId)
+      .where(sql`${table.procedureRequestId} is not null`),
     check(
       "receipt_uploads_status_check",
       sql`${table.status} in ('pending', 'uploaded', 'processed', 'rejected')`,
@@ -1397,8 +1478,8 @@ export const platformSettings = pgTable(
     // OOC-41: academic rules, on the 0–20 scale and in business days.
     passingGrade: integer("passing_grade").notNull().default(14),
     certificateDeadlineBusinessDays: integer("certificate_deadline_business_days").notNull().default(25),
-    // OOC-41: today's price of the constancia. A request will freeze the
-    // value it was asked at — changing this never reprices one already made.
+    // Retired by OOC-83: the price lives in procedure_prices, versioned, and
+    // nothing reads this. Goes in the contract step (CLAUDE.md §7).
     constanciaFeeCents: integer("constancia_fee_cents").notNull().default(2500),
     // OOC-41: how early a teacher's contract starts warning. 45 is
     // provisional (CLAUDE.md §1).
