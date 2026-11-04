@@ -6,12 +6,10 @@ import {
   type LandingCourseKey,
 } from '@ooc/domain/landing-course-keys'
 import type { CourseRow } from '@/lib/backoffice/types'
+import { HelpField } from '@/components/backoffice/help-hint'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
-
-const labelClass =
-  'text-xs font-medium uppercase tracking-wide text-muted-foreground'
 
 /** Live courses already answering to a key — one per key (OOC-117). */
 export function landingKeyHolders(courses: CourseRow[]): Map<LandingCourseKey, CourseRow> {
@@ -45,27 +43,28 @@ export function LandingKeyField({
   const holders = landingKeyHolders(courses)
 
   return (
-    <label className="flex flex-col gap-1">
-      <span className={labelClass}>{t('landing_key.label')}</span>
-      <select
-        value={value ?? ''}
-        onChange={(event) => onChange((event.target.value || null) as LandingCourseKey | null)}
-        className={fieldClass}
-      >
-        <option value="">{t('landing_key.none')}</option>
-        {LANDING_COURSE_KEYS.map((key) => {
-          const holder = holders.get(key)
-          const taken = holder !== undefined && holder.id !== selfId
-          return (
-            <option key={key} value={key} disabled={taken}>
-              {taken
-                ? t('landing_key.taken_by', { page: t(`landing_key.pages.${key}`), course: holder.name })
-                : t(`landing_key.pages.${key}`)}
-            </option>
-          )
-        })}
-      </select>
-      <span className="text-xs text-muted-foreground">{t('landing_key.hint')}</span>
-    </label>
+    <HelpField label={t('landing_key.label')} what={t('landing_key.hint')} how={t('help.landing_key_how')}>
+      {(id) => (
+          <select
+            id={id}
+            value={value ?? ''}
+            onChange={(event) => onChange((event.target.value || null) as LandingCourseKey | null)}
+            className={fieldClass}
+          >
+            <option value="">{t('landing_key.none')}</option>
+            {LANDING_COURSE_KEYS.map((key) => {
+              const holder = holders.get(key)
+              const taken = holder !== undefined && holder.id !== selfId
+              return (
+                <option key={key} value={key} disabled={taken}>
+                  {taken
+                    ? t('landing_key.taken_by', { page: t(`landing_key.pages.${key}`), course: holder.name })
+                    : t(`landing_key.pages.${key}`)}
+                </option>
+              )
+            })}
+          </select>
+      )}
+    </HelpField>
   )
 }

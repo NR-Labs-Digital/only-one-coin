@@ -9,6 +9,7 @@ import {
   setModuleMaterial,
 } from '@/lib/backoffice/module-materials'
 import { Toggle } from '@/components/backoffice/controls'
+import { HelpField, HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
 
 const CERTIFICATE_RULES: CertificateRule[] = ['automatic', 'exam_required']
@@ -67,71 +68,94 @@ export function CourseOptionFields({
           narrow at every viewport width, so it packs the fields closer rather
           than waiting for a screen size that never arrives there. */}
       <AutoGrid min={wide ? '14rem' : '11rem'} gap="gap-3">
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('course_options.min_age')}</span>
-          <input
-            type="number"
-            min={0}
-            max={99}
-            value={value.minAge}
-            onChange={(event) => set('minAge', Number(event.target.value))}
-            className={`${fieldClass} tabular-nums`}
-          />
-        </label>
+        <HelpField
+          label={t('course_options.min_age')}
+          what={t('help.min_age_what')}
+          how={t('help.min_age_how')}
+        >
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              min={0}
+              max={99}
+              value={value.minAge}
+              onChange={(event) => set('minAge', Number(event.target.value))}
+              className={`${fieldClass} tabular-nums`}
+            />
+          )}
+        </HelpField>
 
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('course_options.modules')}</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={value.modules}
-            onChange={(event) => set('modules', Number(event.target.value))}
-            className={`${fieldClass} tabular-nums`}
-          />
-        </label>
+        <HelpField
+          label={t('course_options.modules')}
+          what={t('help.modules_what')}
+          how={t('help.modules_how')}
+        >
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              min={1}
+              max={20}
+              value={value.modules}
+              onChange={(event) => set('modules', Number(event.target.value))}
+              className={`${fieldClass} tabular-nums`}
+            />
+          )}
+        </HelpField>
 
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('course_options.total_hours')}</span>
-          <input
-            type="number"
-            min={1}
-            max={999}
-            value={value.totalHours}
-            onChange={(event) => set('totalHours', Number(event.target.value))}
-            className={`${fieldClass} tabular-nums`}
-          />
-        </label>
+        <HelpField
+          label={t('course_options.total_hours')}
+          what={t('help.total_hours_what')}
+          how={t('help.total_hours_how')}
+        >
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              min={1}
+              max={999}
+              value={value.totalHours}
+              onChange={(event) => set('totalHours', Number(event.target.value))}
+              className={`${fieldClass} tabular-nums`}
+            />
+          )}
+        </HelpField>
 
         {/* Full width: the rule names do not fit half a row, and a truncated
-            one reads as a different rule. The hint carries the meaning the
+            one reads as a different rule. The (?) carries the meaning the
             short label drops. */}
-        <label
-          className={`flex flex-col gap-1 ${fullRowClass}`}
+        <HelpField
+          label={t('course_options.certificate_rule')}
+          what={t(`certificate_rule_hint.${value.certificateRule}`)}
+          how={t('help.certificate_how')}
+          className={fullRowClass}
         >
-          <span className={labelClass}>{t('course_options.certificate_rule')}</span>
-          <select
-            value={value.certificateRule}
-            onChange={(event) =>
-              set('certificateRule', event.target.value as CertificateRule)
-            }
-            className={fieldClass}
-          >
-            {CERTIFICATE_RULES.map((rule) => (
-              <option key={rule} value={rule}>
-                {t(`certificate_rule.${rule}`)}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-muted-foreground">
-            {t(`certificate_rule_hint.${value.certificateRule}`)}
-          </span>
-        </label>
+          {(id) => (
+            <select
+              id={id}
+              value={value.certificateRule}
+              onChange={(event) =>
+                set('certificateRule', event.target.value as CertificateRule)
+              }
+              className={fieldClass}
+            >
+              {CERTIFICATE_RULES.map((rule) => (
+                <option key={rule} value={rule}>
+                  {t(`certificate_rule.${rule}`)}
+                </option>
+              ))}
+            </select>
+          )}
+        </HelpField>
       </AutoGrid>
 
       {materials.length > 0 && (
         <fieldset className="flex flex-col gap-2">
-          <legend className={`mb-1 ${labelClass}`}>{t('course_options.module_materials')}</legend>
+          <legend className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
+            {t('course_options.module_materials')}
+            <HelpHint what={t('course_options.module_materials_hint')} how={t('help.materials_how')} />
+          </legend>
           <AutoGrid min="16rem" gap="gap-3">
             {materials.map((link, index) => {
               const issue = issues[index]
@@ -160,13 +184,13 @@ export function CourseOptionFields({
               )
             })}
           </AutoGrid>
-          <span className="text-xs text-muted-foreground">{t('course_options.module_materials_hint')}</span>
         </fieldset>
       )}
 
       <fieldset className="flex flex-col gap-3">
-        <legend className={`mb-1 ${labelClass}`}>
+        <legend className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
           {t('course_options.procedures')}
+          <HelpHint what={t('help.procedures_what')} how={t('help.procedures_how')} />
         </legend>
         {(
           /* eslint-disable i18next/no-literal-string --

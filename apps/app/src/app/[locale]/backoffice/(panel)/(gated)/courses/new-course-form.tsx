@@ -15,13 +15,11 @@ import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { CourseOptionFields, DEFAULT_COURSE_OPTIONS } from './course-option-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { HelpField } from '@/components/backoffice/help-hint'
 import { LandingKeyField } from './landing-key-field'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
-
-const labelClass =
-  'text-xs font-medium uppercase tracking-wide text-muted-foreground'
 
 /**
  * Opening a course: identity first — name, language, level — then the same
@@ -87,45 +85,54 @@ export function NewCourseForm({
       <p className="mb-4 text-sm font-semibold text-ink">{t('courses.new_title')}</p>
 
       <AutoGrid min="15rem" gap="gap-3">
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('courses.field_language')}</span>
-          {/* Picked from the list (OOC-128), never typed: free text is how
-              "INGLES" ended up next to "Inglés". A language not on the list
-              is opened first, on the Idiomas tab. */}
-          <select
-            value={language}
-            onChange={(event) => setLanguage(event.target.value)}
-            className={fieldClass}
-          >
-            <option value="">{t('courses.field_language_pick')}</option>
-            {languages.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-muted-foreground">{t('courses.field_language_hint_list')}</span>
-        </label>
+        <HelpField
+          label={t('courses.field_language')}
+          what={t('help.course_language_what')}
+          how={t('courses.field_language_hint_list')}
+        >
+          {(id) => (
+            /* Picked from the list (OOC-128), never typed: free text is how
+               "INGLES" ended up next to "Inglés". A language not on the list
+               is opened first, on the Idiomas tab. */
+            <select
+              id={id}
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+              className={fieldClass}
+            >
+              <option value="">{t('courses.field_language_pick')}</option>
+              {languages.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </HelpField>
 
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('courses.field_name')}</span>
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder={t('courses.name_placeholder')}
-            className={fieldClass}
-          />
-        </label>
+        <HelpField label={t('courses.field_name')} what={t('help.course_name_what')}>
+          {(id) => (
+            <input
+              id={id}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t('courses.name_placeholder')}
+              className={fieldClass}
+            />
+          )}
+        </HelpField>
 
-        <label className="flex flex-col gap-1">
-          <span className={labelClass}>{t('courses.field_level')}</span>
-          <input
-            value={level}
-            onChange={(event) => setLevel(event.target.value)}
-            placeholder={t('courses.level_placeholder')}
-            className={fieldClass}
-          />
-        </label>
+        <HelpField label={t('courses.field_level')} what={t('help.course_level_what')}>
+          {(id) => (
+            <input
+              id={id}
+              value={level}
+              onChange={(event) => setLevel(event.target.value)}
+              placeholder={t('courses.level_placeholder')}
+              className={fieldClass}
+            />
+          )}
+        </HelpField>
 
         <LandingKeyField value={landingKey} onChange={setLandingKey} courses={courses} />
       </AutoGrid>

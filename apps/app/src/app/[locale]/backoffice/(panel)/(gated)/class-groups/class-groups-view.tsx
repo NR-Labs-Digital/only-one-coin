@@ -253,7 +253,14 @@ export function ClassGroupsView({
       setOpened((current) => (current.includes(courseLanguage) ? current : [...current, courseLanguage]))
     }
     setToast(
-      t(outcome.status === 'draft' ? 'class_groups.created_draft' : 'class_groups.created_open'),
+      outcome.count > 1
+        ? t(
+            outcome.status === 'draft'
+              ? 'class_groups.created_many_draft'
+              : 'class_groups.created_many_open',
+            { count: outcome.count },
+          )
+        : t(outcome.status === 'draft' ? 'class_groups.created_draft' : 'class_groups.created_open'),
     )
     if (outcome.academicPeriodId !== selectedPeriodId) {
       router.push(`${pathname}?period=${encodeURIComponent(outcome.academicPeriodId)}`)
