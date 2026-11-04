@@ -303,11 +303,14 @@ export function PaymentsView({
                         </Link>
                       </td>
 
-                      {/* What was paid for. Every payment today belongs to an
-                          enrollment, so it is the course. */}
+                      {/* What was paid for: the enrollment, or a procedure about
+                          it (OOC-83). */}
                       <td className={tdClass}>
                         <span className="block max-w-[15rem] truncate text-sm text-ink">
                           {row.courseName}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
                         </span>
                       </td>
 

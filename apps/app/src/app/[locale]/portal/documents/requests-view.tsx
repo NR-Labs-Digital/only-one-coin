@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import type { RequestStatus, RequestType } from '@/lib/portal/types'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
@@ -8,7 +9,8 @@ import { stackLabels } from '@/lib/table-stack'
 import { Card, EmptyState, SectionTitle, StatusBadge } from '@/components/portal/ui'
 import { requestTone } from '@/components/portal/status-tone'
 import { Icon, type IconName } from '@/components/portal/icons'
-import { ReceiptUploadForm } from '@/components/portal/receipt-upload'
+import { ReceiptUploadForm, type ReceiptSubmission } from '@/components/portal/receipt-upload'
+import { submitProcedureRequest, type ProcedureSubmitFailure } from '@/lib/portal/procedure-request'
 
 /**
  * Trámites — every paid procedure the student can start from the portal
@@ -17,9 +19,9 @@ import { ReceiptUploadForm } from '@/components/portal/receipt-upload'
  * human queue — that only becomes a document / takes effect once the payment
  * is approved.
  *
- * Not wired yet: paid requests have no backend (OOC-83), so the page passes
- * an empty catalog and this renders only the empty states. Submitting still
- * appends locally — unreachable until the catalog is real.
+ * Real since OOC-83, for what the API lists: today the constancia. Prices,
+ * eligibility and the student's requests are the server's, and after a submit
+ * the page reads them again rather than guessing the new state here.
  */
 
 export interface EligibleEnrollment {
@@ -62,7 +64,13 @@ export function RequestsView({
   const t = useTranslations('portal')
   const locale = useLocale() as Locale
 
-  const [requests, setRequests] = useState<RequestView[]>(initialRequests)
+  const router = useRouter()
+  const requests = initialRequests
+  const [sending, setSending] = useState(false)
+  const [failure, setFailure] = useState<ProcedureSubmitFailure | null>(null)
+  /* One key per attempt with the same data; a new key only after an answer that
+     says nothing was paid, so a double tap on a bad connection pays once. */
+  const attemptKey = useRef<string | null>(null)
   const [openType, setOpenType] = useState<RequestType | null>(null)
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null)
   const [justSubmitted, setJustSubmitted] = useState(false)
@@ -76,25 +84,35 @@ export function RequestsView({
     setOpenType(type)
     setEnrollmentId(null)
     setJustSubmitted(false)
+    setFailure(null)
   }
 
-  function submit() {
-    if (!open || !chosen) return
-    setRequests((prev) => [
-      {
-        id: `req_local_${Date.now()}`,
-        type: open.type,
-        status: 'under_review',
-        courseName: chosen.courseName,
-        createdAt: new Date().toISOString(),
-        priceCents: open.priceCents,
-        currency: open.currency,
-        resultUrl: null,
-      },
-      ...prev,
-    ])
+  async function submit(submission: ReceiptSubmission) {
+    if (!open || !chosen || sending) return
+    setSending(true)
+    setFailure(null)
+    attemptKey.current ??= crypto.randomUUID()
+    const outcome = await submitProcedureRequest({
+      kind: open.type,
+      enrollmentId: chosen.enrollmentId,
+      file: submission.file,
+      method: submission.method,
+      operationNumber: submission.operationNumber,
+      idempotencyKey: attemptKey.current,
+    })
+    setSending(false)
+    if (!outcome.ok) {
+      setFailure(outcome.reason)
+      if (outcome.reason !== 'generic') attemptKey.current = null
+      // Somebody already sent it — a retry of a submit that did go through, or
+      // another tab. The list on screen is what is out of date.
+      if (outcome.reason === 'already_open') router.refresh()
+      return
+    }
+    attemptKey.current = null
     setOpenType(null)
     setJustSubmitted(true)
+    router.refresh()
   }
 
   return (
@@ -106,9 +124,8 @@ export function RequestsView({
           <SectionTitle>{t('requests.catalog_title')}</SectionTitle>
         </div>
         {procedures.length === 0 ? (
-          /* No price table and no paid request has a backend yet (OOC-83):
-             the catalog says how to ask meanwhile instead of offering a form
-             that goes nowhere. */
+          /* No procedure has a price in force: the catalog says how to ask
+             meanwhile instead of offering a form that goes nowhere. */
           <Card className="p-6">
             <p className="text-sm text-muted-foreground">{t('requests.catalog_empty')}</p>
           </Card>
@@ -207,7 +224,10 @@ export function RequestsView({
                               amountCents={open.priceCents}
                               currency={open.currency}
                               submitLabel={t('requests.submit')}
-                              onSubmit={submit}
+                              onSubmit={(submission) => void submit(submission)}
+                              askOperationNumber
+                              busy={sending}
+                              error={failure ? t(`requests.error.${failure}`) : null}
                             />
                           </div>
                         )}

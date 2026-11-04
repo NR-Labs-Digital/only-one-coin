@@ -3,6 +3,8 @@ import type {
   NextClassOccurrence,
   Payment,
   PaymentMethod,
+  ProcedureCatalogItem,
+  StudentRequest,
   PaymentStatus,
   SeatStatus,
   Student,
@@ -57,9 +59,41 @@ interface ApiEnrollment {
   payments: ApiPayment[]
 }
 
+interface ApiProcedureRequest {
+  id: string
+  kind: StudentRequest['type']
+  status: StudentRequest['status']
+  courseName: string
+  createdAt: string
+  priceCents: number
+  currency: 'PEN'
+  payment: ApiPayment
+}
+
 export interface OverviewResponse {
   student: Student
   enrollments: ApiEnrollment[]
+  procedures: { kind: ProcedureCatalogItem['type']; priceCents: number; currency: 'PEN'; eligible: ProcedureCatalogItem['eligible'] }[]
+  requests: ApiProcedureRequest[]
+}
+
+export function toProcedure(row: OverviewResponse['procedures'][number]): ProcedureCatalogItem {
+  return { type: row.kind, priceCents: row.priceCents, currency: row.currency, eligible: row.eligible }
+}
+
+/** `resultUrl` stays null until the constancia exists as a document (OOC-33). */
+export function toRequest(row: ApiProcedureRequest): StudentRequest {
+  return {
+    id: row.id,
+    type: row.kind,
+    status: row.status,
+    courseName: row.courseName,
+    priceCents: row.priceCents,
+    currency: row.currency,
+    createdAt: row.createdAt,
+    payment: toPayment(row.payment),
+    resultUrl: null,
+  }
 }
 
 /** The API's weekday code → the portal's `weekday_short.<n>` index (0 = Sunday). */

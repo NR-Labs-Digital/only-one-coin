@@ -377,6 +377,10 @@ export function ReceiptReviewDialog({
                   tone={receiptStateTone[payment.receipt]}
                   label={t(`receipt_state.${payment.receipt}`)}
                 />
+                <StatusBadge
+                  tone={payment.procedureKind ? 'info' : 'neutral'}
+                  label={t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)}
+                />
                 <span className="ml-auto flex items-center gap-1">
                   <CaseStepButton
                     icon="chevron-left"
@@ -403,6 +407,12 @@ export function ReceiptReviewDialog({
                 </span>
               </div>
             </DialogHeader>
+
+            {payment.procedureKind && (
+              <p className="border-b border-line bg-sky-soft px-5 py-3 text-sm text-ink">
+                {t('receipt_review.procedure_note')}
+              </p>
+            )}
 
             {legend && (
               <div className="border-b border-line bg-sky-soft px-5 py-4">

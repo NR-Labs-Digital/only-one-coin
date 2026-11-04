@@ -2,7 +2,7 @@ import { cache } from 'react'
 import { getLocale } from 'next-intl/server'
 import { redirect } from '@/i18n/navigation'
 import { apiFetch } from '@/lib/backoffice/api-client'
-import { nextClassOf, toEnrollment, type OverviewResponse } from './overview'
+import { nextClassOf, toEnrollment, toProcedure, toRequest, type OverviewResponse } from './overview'
 import type { PortalSession } from './types'
 
 export interface StudentIdentity {
@@ -36,8 +36,8 @@ export const getStudentSession = cache(async (): Promise<StudentIdentity> => {
  * guard as `getStudentSession`: any non-OK answer is back to the login.
  *
  * What has no backend yet arrives empty, never as sample data: documents
- * (OOC-33), paid requests and their price table (OOC-83), notices and
- * continuation offers. The screens already have an empty state for each.
+ * (OOC-33), notices and continuation offers. The screens already have an empty
+ * state for each.
  */
 export const getPortalView = cache(async (): Promise<PortalSession> => {
   const response = await apiFetch('/api/v1/portal/overview')
@@ -49,8 +49,8 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
     student: overview.student,
     enrollments,
     documents: [],
-    requests: [],
-    procedures: [],
+    requests: overview.requests.map(toRequest),
+    procedures: overview.procedures.map(toProcedure),
     offers: [],
     notifications: [],
     nextClass: nextClassOf(enrollments, new Date()),

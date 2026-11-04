@@ -34,3 +34,21 @@ export async function saveSettings(changes: Partial<PlatformSettings>): Promise<
     return null
   }
 }
+
+/**
+ * A new price for the constancia (`POST /procedure-prices`, OOC-83): a new
+ * version, in force from now, and requests already opened keep what they froze.
+ * Returns whether it went through.
+ */
+export async function saveConstanciaPrice(amountCents: number): Promise<boolean> {
+  try {
+    const response = await fetch('/api/v1/procedure-prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'enrollment_certificate', amountCents }),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}

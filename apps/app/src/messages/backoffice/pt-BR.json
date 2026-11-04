@@ -348,7 +348,10 @@
         "audit_log_exported": "Auditoria exportada",
         "language_created": "Idioma criado",
         "language_renamed": "Idioma renomeado",
-        "language_retired": "Idioma retirado"
+        "language_retired": "Idioma retirado",
+        "procedure_request_opened": "Trâmite solicitado",
+        "procedure_payment_submitted": "Comprovante de trâmite enviado",
+        "procedure_price_created": "Preço de trâmite alterado"
       },
       "field": {
         "first_name": "Nome",
@@ -664,7 +667,7 @@
       "subtitle": "Enviado em {date} · {course}",
       "image_title": "Comprovante",
       "image_note": "Guardamos a versão processada, nunca o arquivo original.",
-      "check_expected": "Preço congelado do plano",
+      "check_expected": "Preço congelado",
       "check_difference": "Diferença de {amount}",
       "approve": "Aprovar pagamento",
       "reject": "Recusar",
@@ -726,7 +729,8 @@
       "reread_pending": "Nova leitura pedida. Aparece aqui em alguns segundos.",
       "reread_not_rereadable": "Este pagamento não tem um comprovante processado para ler de novo.",
       "reread_error": "Não foi possível pedir a nova leitura. Tente de novo; se continuar, avise a equipe técnica.",
-      "reread_note": "A IA lê a mesma imagem outra vez. Não muda o status do pagamento: a decisão continua sendo sua."
+      "reread_note": "A IA lê a mesma imagem outra vez. Não muda o status do pagamento: a decisão continua sendo sua.",
+      "procedure_note": "Este pagamento é de um trâmite: decidi-lo não muda a vaga do aluno."
     },
     "rejection_reason": {
       "amount_mismatch": "O valor não corresponde",
@@ -871,7 +875,10 @@
       "email_verification_code": "Código de verificação do e-mail",
       "portal_password_reset": "Recuperar senha do portal",
       "staff_password_reset": "Recuperar senha do painel",
-      "staff_mfa_code": "Código de acesso ao painel"
+      "staff_mfa_code": "Código de acesso ao painel",
+      "procedure_payment_under_review": "Pagamento de trâmite em revisão",
+      "procedure_payment_approved": "Pagamento de trâmite aprovado",
+      "procedure_payment_rejected": "Pagamento de trâmite rejeitado"
     },
     "email_trigger": {
       "enrollment_received": "Ao receber os dados da matrícula, depois que o aluno preenche o formulário.",
@@ -885,7 +892,10 @@
       "email_verification_code": "Quando o aluno pede o código na etapa dos seus dados, durante a matrícula.",
       "portal_password_reset": "Quando o aluno pede para recuperar a senha do portal.",
       "staff_password_reset": "Quando alguém da equipe pede para recuperar a senha do painel.",
-      "staff_mfa_code": "A cada entrada no painel com verificação em duas etapas, e ao ativá-la."
+      "staff_mfa_code": "A cada entrada no painel com verificação em duas etapas, e ao ativá-la.",
+      "procedure_payment_under_review": "Quando o comprovante de um trâmite passa para revisão manual.",
+      "procedure_payment_approved": "Quando o pagamento de um trâmite é aprovado.",
+      "procedure_payment_rejected": "Quando a revisão rejeita o comprovante de um trâmite."
     },
     "email_audience": {
       "student": "Aluno",
@@ -901,7 +911,10 @@
     "email_condition": {
       "payment_under_review": "se precisar de revisão humana",
       "payment_rejected": "se for rejeitado",
-      "enrollment_certificate_issued": "se ele solicitar"
+      "enrollment_certificate_issued": "se ele solicitar",
+      "procedure_payment_under_review": "se for um trâmite e for para revisão",
+      "procedure_payment_approved": "se for um trâmite",
+      "procedure_payment_rejected": "se for um trâmite e for rejeitado"
     },
     "email_delivery_reason": {
       "provider_unavailable": "O provedor não respondeu",
@@ -1974,7 +1987,8 @@
       "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar, avise a equipe técnica.",
       "rules_load_error_title": "Não foi possível carregar as regras acadêmicas",
       "rules_load_error_body": "Sem a nota mínima e o prazo do certificado esta tela não consegue decidir quem foi aprovado. Recarregue a página; se continuar, avise a equipe técnica.",
-      "documents_title": "Documentos"
+      "documents_title": "Documentos",
+      "constancia_fee_saved_toast": "Preço salvo. Vale para as novas solicitações."
     },
     "features": {
       "title": "Funcionalidades",
@@ -2099,7 +2113,10 @@
       "enrollment_created": "Matrícula aberta pelo painel",
       "payment_approved": "Pagamento aprovado",
       "payment_rejected": "Pagamento rejeitado",
-      "receipt_viewed": "Comprovante consultado"
+      "receipt_viewed": "Comprovante consultado",
+      "procedure_request_opened": "Trâmite solicitado",
+      "procedure_payment_submitted": "Comprovante de trâmite enviado",
+      "procedure_price_created": "Preço de trâmite alterado"
     },
     "class_links": {
       "classroom": "Abrir Classroom"
@@ -2358,6 +2375,10 @@
       "course_name_what": "O nome com que o aluno vê o curso.",
       "course_language_what": "O idioma do curso. Agrupa o curso no formulário de matrícula e decide quais docentes podem ser atribuídos às turmas dele.",
       "course_level_what": "O nível do curso, por exemplo B2 ou Básico. Aparece junto do nome."
+    },
+    "payment_origin": {
+      "enrollment": "Matrícula",
+      "enrollment_certificate": "Constancia de matrícula"
     }
   }
 }

@@ -20,8 +20,6 @@ export interface PlatformSettings {
   passingGrade: number
   /** Business days to issue the free certificate after a class group ends. */
   certificateDeadlineBusinessDays: number
-  /** Today's fee for the constancia de matrícula, in cents — a paid procedure. */
-  constanciaFeeCents: number
   /** How early a teacher's contract starts showing as expiring. */
   contractAlertDays: number
 }
@@ -36,6 +34,22 @@ export async function getPlatformSettings(): Promise<PlatformSettings | null> {
     const response = await apiFetch('/api/v1/settings')
     if (!response.ok) return null
     return (await response.json()) as PlatformSettings
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The constancia's price in force (OOC-83) — a versioned price since then, read
+ * from `GET /procedure-prices` and no longer one of the settings. Null when the
+ * read fails or no price is set: the screen says so, never a number of its own.
+ */
+export async function getConstanciaFeeCents(): Promise<number | null> {
+  try {
+    const response = await apiFetch('/api/v1/procedure-prices')
+    if (!response.ok) return null
+    const { items } = (await response.json()) as { items: { kind: string; amountCents: number }[] }
+    return items.find((item) => item.kind === 'enrollment_certificate')?.amountCents ?? null
   } catch {
     return null
   }

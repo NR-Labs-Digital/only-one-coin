@@ -348,7 +348,10 @@
         "audit_log_exported": "Audit log exported",
         "language_created": "Language created",
         "language_renamed": "Language renamed",
-        "language_retired": "Language retired"
+        "language_retired": "Language retired",
+        "procedure_request_opened": "Procedure requested",
+        "procedure_payment_submitted": "Procedure receipt sent",
+        "procedure_price_created": "Procedure price changed"
       },
       "field": {
         "first_name": "First name",
@@ -664,7 +667,7 @@
       "subtitle": "Submitted {date} · {course}",
       "image_title": "Receipt",
       "image_note": "We keep the processed version, never the original file.",
-      "check_expected": "Frozen plan price",
+      "check_expected": "Frozen price",
       "check_difference": "Off by {amount}",
       "approve": "Approve payment",
       "reject": "Reject",
@@ -726,7 +729,8 @@
       "reread_pending": "New reading requested. It shows up here in a few seconds.",
       "reread_not_rereadable": "This payment has no processed receipt to read again.",
       "reread_error": "The new reading could not be requested. Try again; if it keeps failing, tell the technical team.",
-      "reread_note": "The AI reads the same image again. The payment’s status does not change: the decision is still yours."
+      "reread_note": "The AI reads the same image again. The payment’s status does not change: the decision is still yours.",
+      "procedure_note": "This payment is for a procedure: deciding it does not change the student's seat."
     },
     "rejection_reason": {
       "amount_mismatch": "The amount does not match",
@@ -871,7 +875,10 @@
       "email_verification_code": "E-mail verification code",
       "portal_password_reset": "Portal password reset",
       "staff_password_reset": "Panel password reset",
-      "staff_mfa_code": "Panel access code"
+      "staff_mfa_code": "Panel access code",
+      "procedure_payment_under_review": "Procedure payment under review",
+      "procedure_payment_approved": "Procedure payment approved",
+      "procedure_payment_rejected": "Procedure payment rejected"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -885,7 +892,10 @@
       "email_verification_code": "When the student asks for the code on the details step, while enrolling.",
       "portal_password_reset": "When the student asks to recover their portal password.",
       "staff_password_reset": "When a staff member asks to recover their panel password.",
-      "staff_mfa_code": "Every sign-in to the panel with two-step verification, and when turning it on."
+      "staff_mfa_code": "Every sign-in to the panel with two-step verification, and when turning it on.",
+      "procedure_payment_under_review": "When a procedure's receipt goes to manual review.",
+      "procedure_payment_approved": "When a procedure's payment is approved.",
+      "procedure_payment_rejected": "When the review rejects a procedure's receipt."
     },
     "email_audience": {
       "student": "Student",
@@ -901,7 +911,10 @@
     "email_condition": {
       "payment_under_review": "if it needs human review",
       "payment_rejected": "if it is rejected",
-      "enrollment_certificate_issued": "if they request it"
+      "enrollment_certificate_issued": "if they request it",
+      "procedure_payment_under_review": "if it is a procedure and goes to review",
+      "procedure_payment_approved": "if it is a procedure",
+      "procedure_payment_rejected": "if it is a procedure and is rejected"
     },
     "email_delivery_reason": {
       "provider_unavailable": "The provider did not answer",
@@ -1974,7 +1987,8 @@
       "load_error_body": "The system did not answer. Reload the page; if it keeps happening, tell the technical team.",
       "rules_load_error_title": "Could not load the academic rules",
       "rules_load_error_body": "Without the passing grade and the certificate deadline this screen cannot tell who passed. Reload the page; if it keeps happening, tell the technical team.",
-      "documents_title": "Documents"
+      "documents_title": "Documents",
+      "constancia_fee_saved_toast": "Price saved. It applies to new requests."
     },
     "features": {
       "title": "Features",
@@ -2099,7 +2113,10 @@
       "enrollment_created": "Enrollment opened from the panel",
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
-      "receipt_viewed": "Receipt viewed"
+      "receipt_viewed": "Receipt viewed",
+      "procedure_request_opened": "Procedure requested",
+      "procedure_payment_submitted": "Procedure receipt sent",
+      "procedure_price_created": "Procedure price changed"
     },
     "class_links": {
       "classroom": "Open Classroom"
@@ -2358,6 +2375,10 @@
       "course_name_what": "The name the student sees for the course.",
       "course_language_what": "The course's language. It groups the course on the enrollment form and decides which teachers can be assigned to its class groups.",
       "course_level_what": "The course's level, for example B2 or Basic. It shows next to the name."
+    },
+    "payment_origin": {
+      "enrollment": "Enrollment",
+      "enrollment_certificate": "Enrollment certificate"
     }
   }
 }

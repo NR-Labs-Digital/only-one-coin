@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
+import { getConstanciaFeeCents, getPlatformSettings } from '@/lib/backoffice/platform-settings'
+import { ConstanciaPriceForm } from './constancia-price-form'
 import { canConfigureSettings } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SettingsTabs } from './settings-tabs'
@@ -48,8 +49,8 @@ export default async function SettingsPage({
 
   /* A failure is shown as a failure: a form filled with made-up numbers would
      look saved, and saving it would overwrite the real ones. */
-  const settings = await getPlatformSettings()
-  if (!settings) {
+  const [settings, constanciaFeeCents] = await Promise.all([getPlatformSettings(), getConstanciaFeeCents()])
+  if (!settings || constanciaFeeCents === null) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('settings.title')} />
@@ -67,10 +68,10 @@ export default async function SettingsPage({
         settings={{
           passingGrade: settings.passingGrade,
           certificateDeadlineBusinessDays: settings.certificateDeadlineBusinessDays,
-          constanciaFeeCents: settings.constanciaFeeCents,
           contractAlertDays: settings.contractAlertDays,
         }}
       />
+      <ConstanciaPriceForm amountCents={constanciaFeeCents} />
     </div>
   )
 }

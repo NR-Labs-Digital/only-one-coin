@@ -986,7 +986,12 @@ export interface TeacherDetail extends TeacherRow {
  * One line of the payment ledger, as `GET /api/v1/payments` serves it. Every
  * payment today belongs to an enrollment, so the course is what it was for.
  */
+/** What a payment is for, when it is not the enrollment itself (OOC-83). */
+export type PaymentProcedureKind = 'enrollment_certificate'
+
 export interface PaymentRow {
+  /** Null is the enrollment's own payment. */
+  procedureKind: PaymentProcedureKind | null
   id: string
   enrollmentId: string
   studentId: string
@@ -999,7 +1004,7 @@ export interface PaymentRow {
   operationNumber: string | null
   /** What the receipt says — equals the expected value once approved. */
   amountCents: number
-  /** The frozen plan price it is checked against. */
+  /** The frozen price it is checked against: the plan's or the procedure's. */
   expectedAmountCents: number
   currency: 'PEN'
   submittedAt: string
@@ -1088,6 +1093,8 @@ export interface ReviewVerdict {
 
 /** One payment still owed a decision, as `GET /api/v1/payments/review` serves it. */
 export interface PaymentReviewItem {
+  /** Null is the enrollment's own payment. */
+  procedureKind: PaymentProcedureKind | null
   id: string
   enrollmentId: string
   studentId: string

@@ -15,30 +15,29 @@ import { Icon } from './icons'
  *
  * The amount is display-only: it is the price in force and there are no
  * discounts, ever (CLAUDE.md §1) — a field somebody can type into is a field
- * somebody can undercharge from. In production the file goes straight to
- * storage on a signed URL (CLAUDE.md §5); in this mockup it stays in the
- * browser and `onSubmit` just tells the caller to show the submitted state.
+ * somebody can undercharge from. The form only collects: the caller sends the
+ * file straight to storage on a signed URL (CLAUDE.md §5) — the procedures do,
+ * through `lib/portal/procedure-request.ts`; the monthly module and the
+ * continuation reservation still have no backend (OOC-86).
  */
 
-/** Browser-side filter only — the real gate is magic bytes server-side (CLAUDE.md §8). */
-const ACCEPTED = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf'
-const ACCEPTED_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-  'image/heif',
-  'application/pdf',
-])
+/** Browser-side filter only — the real gate is magic bytes server-side
+ * (CLAUDE.md §8). The same list the API signs an upload for
+ * (`RECEIPT_CONTENT_TYPES`): offering more would only fail later. */
+const ACCEPTED = 'image/jpeg,image/png,image/heic,image/heif'
+const ACCEPTED_TYPES = new Set(ACCEPTED.split(','))
 
-/** Mock ceiling — in production this comes from backoffice settings. */
+/** Below the API's signed limit (`RECEIPT_MAX_UPLOAD_BYTES`). A receipt is a
+ * phone photo: anything larger is a wrong file. */
 const MAX_RECEIPT_BYTES = 10_000_000
 
 const RAILS: PaymentRail[] = ['yape', 'plin', 'bcp', 'interbank']
 
 export interface ReceiptSubmission {
   method: PaymentRail
-  fileName: string
+  file: File
+  /** Empty unless the form asked for it (`askOperationNumber`). */
+  operationNumber: string
 }
 
 export function ReceiptUploadForm({
@@ -46,24 +45,36 @@ export function ReceiptUploadForm({
   currency,
   submitLabel,
   onSubmit,
+  askOperationNumber = false,
+  busy = false,
+  error = null,
 }: {
   amountCents: number
   currency: string
   submitLabel: string
   onSubmit: (submission: ReceiptSubmission) => void
+  /** The real flows ask: the operation number is what stops the same receipt
+   * paying twice and what the traffic light compares against the reading. */
+  askOperationNumber?: boolean
+  /** The submission is on its way: the button holds. */
+  busy?: boolean
+  /** Already translated by the caller, which knows what failed. */
+  error?: string | null
 }) {
   const t = useTranslations('portal')
   const locale = useLocale() as Locale
   const fileInput = useRef<HTMLInputElement>(null)
 
   const [method, setMethod] = useState<PaymentRail | null>(null)
-  const [file, setFile] = useState<{ name: string; sizeBytes: number } | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [operationNumber, setOperationNumber] = useState('')
   const [fileError, setFileError] = useState<'type' | 'size' | null>(null)
   const [touched, setTouched] = useState(false)
 
   const missingMethod = method === null
   const missingFile = file === null
-  const ready = !missingMethod && !missingFile
+  const missingOperation = askOperationNumber && operationNumber.trim() === ''
+  const ready = !missingMethod && !missingFile && !missingOperation
 
   function pickFile(picked: File | null) {
     if (!picked) return
@@ -76,7 +87,7 @@ export function ReceiptUploadForm({
       return
     }
     setFileError(null)
-    setFile({ name: picked.name, sizeBytes: picked.size })
+    setFile(picked)
   }
 
   function dropFile() {
@@ -87,7 +98,7 @@ export function ReceiptUploadForm({
   function submit() {
     setTouched(true)
     if (!ready || method === null || file === null) return
-    onSubmit({ method, fileName: file.name })
+    onSubmit({ method, file, operationNumber: operationNumber.trim() })
   }
 
   return (
@@ -129,10 +140,29 @@ export function ReceiptUploadForm({
         )}
       </div>
 
-      {/* Receipt. The operation number is not asked for: the OCR reads it off
-          the image, and a number typed by hand is one more thing that can
-          disagree with the receipt and send the payment to the human queue
-          (CLAUDE.md §5). */}
+      {askOperationNumber && (
+        <div>
+          <label htmlFor="receipt-operation" className="mb-1.5 block text-sm font-semibold text-ink">
+            {t('receipt_form.operation_label')}
+          </label>
+          <input
+            id="receipt-operation"
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            maxLength={64}
+            value={operationNumber}
+            onChange={(e) => setOperationNumber(e.target.value)}
+            className="min-h-tap w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-blue"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">{t('receipt_form.operation_hint')}</p>
+          {touched && missingOperation && (
+            <FieldError>{t('receipt_form.error_operation')}</FieldError>
+          )}
+        </div>
+      )}
+
+      {/* Receipt. */}
       <div>
         <p className="mb-1.5 text-sm font-semibold text-ink">
           {t('receipt_form.file_label')}
@@ -152,7 +182,7 @@ export function ReceiptUploadForm({
                 {file.name}
               </span>
               <span className="text-xs text-emerald-800">
-                {formatFileSize(file.sizeBytes, locale)}
+                {formatFileSize(file.size, locale)}
               </span>
             </span>
             <button
@@ -191,13 +221,16 @@ export function ReceiptUploadForm({
         )}
       </div>
 
+      {error && <FieldError>{error}</FieldError>}
+
       <button
         type="button"
         onClick={submit}
-        className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-brand-blue px-5 py-2.5 text-sm font-bold text-white shadow-card transition hover:bg-brand-yellow hover:text-ink"
+        disabled={busy}
+        className="inline-flex min-h-tap w-full items-center justify-center gap-2 rounded-full bg-brand-blue px-5 py-2.5 text-sm font-bold text-white shadow-card transition hover:bg-brand-yellow hover:text-ink disabled:opacity-60 @lg/page:w-auto @lg/page:self-start"
       >
         <Icon name="upload" size={16} />
-        {submitLabel}
+        {busy ? t('receipt_form.sending') : submitLabel}
       </button>
     </div>
   )
