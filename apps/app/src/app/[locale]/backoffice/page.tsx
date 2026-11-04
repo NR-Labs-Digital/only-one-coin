@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { AuthBannerLayout } from '@/components/auth/auth-banner-layout'
 import { ShieldIcon } from '@/components/backoffice/auth-icons'
 import { StaffLoginForm, type InitialLoginStep } from '@/components/backoffice/staff-login-form'
+import { redirect } from '@/i18n/navigation'
+import { isStaffSignedIn } from '@/lib/backoffice/session'
 
 /**
  * Backoffice entry point — deliberately discreet: never linked from the landing
@@ -38,6 +40,14 @@ export default async function BackofficePage({
   const { mfa } = await searchParams
   const initialStep = typeof mfa === 'string' ? INITIAL_STEPS[mfa] : undefined
   setRequestLocale(locale)
+
+  /* A live session has nothing to do on the login. `?mfa=` is left alone: those
+     steps are the middle of a sign-in. A teacher goes on to their own door from
+     the panel's shell (`getBackofficeSession`), the one place that decides it. */
+  if (!initialStep && (await isStaffSignedIn())) {
+    redirect({ href: '/backoffice/home', locale })
+  }
+
   const t = await getTranslations('backoffice')
 
   return (

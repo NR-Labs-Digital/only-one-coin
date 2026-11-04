@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { AuthBannerLayout } from '@/components/auth/auth-banner-layout'
 import { StaffLoginForm } from '@/components/backoffice/staff-login-form'
+import { redirect } from '@/i18n/navigation'
+import { isStaffSignedIn } from '@/lib/backoffice/session'
 
 /**
  * The docente portal's own door. Teachers no longer sign in through the
@@ -20,6 +22,14 @@ export default async function TeacherLoginPage({
 }) {
   const { locale } = await params
   setRequestLocale(locale)
+
+  /* A live session has nothing to do on the login. Anybody but a teacher goes on
+     to the backoffice from the portal's shell (`getTeacherSession`), the one
+     place that decides it. */
+  if (await isStaffSignedIn()) {
+    redirect({ href: '/docente/home', locale })
+  }
+
   const t = await getTranslations('bo.teacher_portal')
 
   /* Blue where the backoffice is navy, plus the badge, so nobody mistakes one
