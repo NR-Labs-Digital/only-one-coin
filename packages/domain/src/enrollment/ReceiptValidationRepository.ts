@@ -10,6 +10,8 @@ export interface ReceiptValidationSubject {
   /** The enrollment's, for who to write to if the payment goes to review. */
   studentId: string;
   classGroupId: string;
+  /** A procedure's payment (OOC-83) is told in its own words. */
+  isProcedure: boolean;
   paymentStatus: PaymentStatus;
   /** `payments.amount_cents` — the price frozen at enrollment, never today's. */
   expectedCents: number;

@@ -123,7 +123,7 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
         }),
         payment: new Payment({
           id: paymentRow.id,
-          enrollmentId: paymentRow.enrollmentId,
+          enrollmentId: enrollmentRow.id,
           idempotencyKey: paymentRow.idempotencyKey,
           status: paymentRow.status as PaymentStatus,
           method: paymentRow.method as PaymentMethod,

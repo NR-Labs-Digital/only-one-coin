@@ -27,8 +27,11 @@ export const deliveryStudentIdSql: SQL = sql`coalesce(
   (select e.student_id from enrollments e
     where e.id = case when o.template_key = 'enrollment_received'
                       then split_part(o.dedupe_key, ':', 2)::uuid end),
-  (select e.student_id from payments p join enrollments e on e.id = p.enrollment_id
-    where p.id = case when o.template_key in ('payment_under_review', 'payment_approved', 'payment_rejected')
+  (select e.student_id from payments p
+     left join procedure_requests r on r.id = p.procedure_request_id
+     join enrollments e on e.id = coalesce(p.enrollment_id, r.enrollment_id)
+    where p.id = case when o.template_key in ('payment_under_review', 'payment_approved', 'payment_rejected',
+                                              'procedure_payment_under_review', 'procedure_payment_approved', 'procedure_payment_rejected')
                       then split_part(o.dedupe_key, ':', 2)::uuid end),
   (select s.id from students s
     where o.template_key in ('portal_credentials', 'portal_password_reset')

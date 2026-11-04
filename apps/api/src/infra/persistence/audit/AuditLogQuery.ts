@@ -17,12 +17,14 @@ import {
   classGroups,
   courses,
   enrollments,
+  procedureRequests,
   payments,
   plans,
   students,
   teachers,
 } from "@ooc/db";
 import { eq, inArray, sql, type SQL } from "drizzle-orm";
+import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 import type { Db } from "@/infra/db/client.js";
 import { decodeStudentCursor, encodeStudentCursor } from "@/infra/persistence/student/ListStudentsQuery.js";
 
@@ -362,7 +364,8 @@ export class AuditLogQuery {
             lastName: students.lastName,
           })
           .from(payments)
-          .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+          .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+          .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
           .innerJoin(students, eq(students.id, enrollments.studentId))
           .where(inArray(payments.id, paymentIds))
           .then((rows) => {

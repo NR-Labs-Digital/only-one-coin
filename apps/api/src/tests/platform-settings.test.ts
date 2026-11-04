@@ -48,7 +48,7 @@ describe("UpdatePlatformSettingsUseCase", () => {
   it("writes and audits nothing when no value changes", async () => {
     const settings = new FakePlatformSettings();
 
-    const result = await run(settings, { passingGrade: 14, constanciaFeeCents: 2500 });
+    const result = await run(settings, { passingGrade: 14, contractAlertDays: 45 });
 
     expect(result).toEqual(TEST_SETTINGS);
     expect(settings.updates).toEqual([]);
@@ -76,9 +76,5 @@ describe("UpdatePlatformSettingsUseCase", () => {
     const settings = new FakePlatformSettings();
 
     await expect(run(settings, { maxStudents: 3 })).rejects.toBeInstanceOf(InvalidPlatformSettingError);
-  });
-
-  it("refuses a free constancia — a procedure is paid", async () => {
-    await expect(run(new FakePlatformSettings(), { constanciaFeeCents: 0 })).rejects.toBeInstanceOf(InvalidPlatformSettingError);
   });
 });

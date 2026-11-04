@@ -38,6 +38,30 @@
         "Si crees que se trata de un error, comunícate con nosotros por los canales de atención de Only One Coin."
       ]
     },
+    "procedure_payment_under_review": {
+      "subject": "Estamos revisando el pago del trámite de {studentName}",
+      "preheader": "Nuestro equipo verificará el comprobante.",
+      "paragraphs": [
+        "El pago del trámite de {studentName}, sobre su matrícula en {courseName}, pasó a revisión manual.",
+        "Nuestro equipo verificará el comprobante y te escribiremos por este medio con el resultado. No necesitas enviarlo de nuevo."
+      ]
+    },
+    "procedure_payment_approved": {
+      "subject": "Aprobamos el pago del trámite de {studentName}",
+      "preheader": "El trámite ya está en atención.",
+      "paragraphs": [
+        "Aprobamos el pago del trámite de {studentName}, sobre su matrícula en {courseName}.",
+        "El trámite ya está en atención y te avisaremos por este medio cuando esté listo. Puedes seguir su estado en el portal del alumno."
+      ]
+    },
+    "procedure_payment_rejected": {
+      "subject": "No pudimos confirmar el pago del trámite de {studentName}",
+      "preheader": "El comprobante no fue aprobado.",
+      "paragraphs": [
+        "No pudimos confirmar el pago del trámite de {studentName}, sobre su matrícula en {courseName}. La matrícula no cambia: esto solo afecta al trámite.",
+        "Puedes solicitar el trámite de nuevo desde el portal del alumno. Si crees que se trata de un error, comunícate con nosotros por los canales de atención de Only One Coin."
+      ]
+    },
     "portal_credentials": {
       "subject": "Activa tu acceso al portal del alumno de Only One Coin",
       "preheader": "Crea tu contraseña para ingresar.",

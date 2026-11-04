@@ -1,4 +1,4 @@
-import type { IReceiptUploadRepository, ReceiptExifFacts, ReceiptUpload, ReceiptUploadStatus } from "@ooc/domain";
+import type { IReceiptUploadRepository, ReceiptExifFacts, ReceiptUpload, ReceiptUploadOwner, ReceiptUploadStatus } from "@ooc/domain";
 import { paymentReceipts, receiptUploads } from "@ooc/db";
 import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -35,12 +35,13 @@ export interface IReceiptNormalizationStore {
 export class DrizzleReceiptUploadRepository implements IReceiptUploadRepository, IReceiptNormalizationStore {
   constructor(private readonly db: Db) {}
 
-  async create(params: { id: string; seatHoldId: string; objectKey: string; contentType: string }): Promise<ReceiptUpload> {
+  async create(params: { id: string; owner: ReceiptUploadOwner; objectKey: string; contentType: string }): Promise<ReceiptUpload> {
     const [row] = await this.db
       .insert(receiptUploads)
       .values({
         id: params.id,
-        seatHoldId: params.seatHoldId,
+        seatHoldId: params.owner.kind === "seat_hold" ? params.owner.seatHoldId : null,
+        procedureRequestId: params.owner.kind === "procedure_request" ? params.owner.procedureRequestId : null,
         objectKey: params.objectKey,
         contentType: params.contentType,
       })
@@ -182,6 +183,7 @@ function toReceiptUpload(row: typeof receiptUploads.$inferSelect): ReceiptUpload
   return {
     id: row.id,
     seatHoldId: row.seatHoldId,
+    procedureRequestId: row.procedureRequestId,
     paymentId: row.paymentId,
     objectKey: row.objectKey,
     status: row.status as ReceiptUploadStatus,

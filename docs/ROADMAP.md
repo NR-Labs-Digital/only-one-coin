@@ -46,7 +46,7 @@ entra aqui ou vira sessão nova.
 | 1 — Site público | 0 | 6 | 0 | Páginas e SEO no ar; faltam píxeis/PostHog, blog, redirects do WordPress e o cutover de DNS |
 | 2 — Matrícula + IA | 9 | 3 | 3 | Núcleo construído de ponta a ponta; falta medir a OCR, o nível 2 e a espera no checkout |
 | 3 — Backoffice | 5 | 1 | 4 | Operacional fechado na semana de 19–23/10: alunos, turmas, Pagos, equipe, docentes, contrato e auditoria reais. Notas, conciliação e relatórios ficam para depois |
-| 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32) e o enlace da aula (Classroom da turma, OOC-98); faltam módulos/mensalidade, trâmites pagos e documentos |
+| 4 — Portal do aluno | 1 | 2 | 2 | Login e telas reais (OOC-32), o enlace da aula (Classroom da turma, OOC-98) e o pedido pago da constancia (OOC-83, em revisão); faltam módulos/mensalidade, os demais trâmites e os documentos |
 | 5 — E-mail | 0 | 1 | 3 | Envio real via Brevo pela outbox; telas de e-mail ainda mock |
 | 6 — Instalável | 0 | 0 | 4 | — |
 | 7 — Lançamento | 0 | 2 | 4 | Backup a cada deploy já roda; restauração nunca testada; Sentry/PostHog não instalados |
@@ -60,7 +60,7 @@ Fora desta semana, de propósito: certificados (OOC-33 e OOC-59, dependem de not
 | Frente | Ticket | Destrava | Prazo |
 | --- | --- | --- | --- |
 | Notas | OOC-38 + OOC-102 (nota do exame final, DA, ficha de notas do docente; dois critérios da 102 contradizem regra fechada, ver abaixo) | Sessão 37, OOC-85 (progressão), OOC-33 e OOC-59 (certificado) | 06/11 |
-| Dinheiro | OOC-83 (solicitação de procedimento com pagamento associado; primeira leva sugerida: constancia) | OOC-84 (procedimentos), OOC-86 (mensual), o lado da constancia da OOC-33 | 06/11 |
+| Dinheiro | OOC-83 (solicitação de procedimento com pagamento associado; primeira leva: constancia. Em revisão: pagamento, Pagos e tela do portal prontos) | OOC-84 (procedimentos), OOC-86 (mensual), o lado da constancia da OOC-33 | 06/11 |
 | E-mail | OOC-89 (envio de prova real; a OOC-87 e a OOC-88 já fecharam) | Parte "prova" da sessão 49 | 06/11 |
 | Acadêmico | OOC-99 (calendário de docentes) | Agenda dos docentes na seção Acadêmico | 06/11 |
 | Lançamento | OOC-50 (restauração do backup, vinda do sprint anterior; espera o OK do dono sobre onde restaurar) | Sessão 55, que está na lista do que nunca se corta | 06/11 |
@@ -156,7 +156,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | # | Sessão | Entregável | Pronto quando | Estado |
 | --- | --- | --- | --- | --- |
 | 41 | **Acesso do aluno** | Login com credencial recebida por e-mail, recuperação de senha, política de senha, rate limit, anti-enumeração | Aluno só vê os próprios dados, comprovado por teste de autorização | ✅ OOC-28: conta criada na aprovação, login por e-mail ou documento, link de 1 h |
-| 42 | **Painel do aluno** | Cursos, horário, data de início, enlace à aula, estado de matrícula e pagamento | Constancia visível na tela, sem depender do e-mail | 🟡 OOC-32: cursos, horário, data de início, próxima aula, estado de matrícula e pagamento leem `GET /portal/overview`. O enlace da aula é o Classroom da turma (OOC-98, em revisão), entregue só a vaga confirmada. Faltam módulos/cadeado (OOC-94/OOC-85), mensalidade (OOC-86) e a constancia (OOC-33/OOC-83) |
+| 42 | **Painel do aluno** | Cursos, horário, data de início, enlace à aula, estado de matrícula e pagamento | Constancia visível na tela, sem depender do e-mail | 🟡 OOC-32: cursos, horário, data de início, próxima aula, estado de matrícula e pagamento leem `GET /portal/overview`. O enlace da aula é o Classroom da turma (OOC-98, em revisão), entregue só a vaga confirmada. O aluno já pede e paga a constancia em Trâmites e acompanha o estado (OOC-83, em revisão). Faltam módulos/cadeado (OOC-94/OOC-85), mensalidade (OOC-86) e o documento da constancia (OOC-33) |
 | 43 | **Materiais e reenvio** | Materiais e links de gravação, carga de novo comprovante pelo portal | Nenhum vídeo no Storage — só link externo | 🟡 O aluno já reabre o comprovante enviado (URL de 5 min, OOC-32). Materiais do lado do docente feitos (OOC-100, em revisão: o material do módulo da turma no portal do docente); materiais para o aluno, gravações e reenvio pelo portal ainda não — OOC-62 |
 | 44 | **Notas, frequência e perfil** | Visualização de notas e avanço, perfil editável, dados do apoderado | — | 🟡 Perfil e apoderado reais, só leitura (OOC-32); o aluno editar o próprio contato é o OOC-110; notas e avanço dependem da 37 |
 | 45 | **Certificados** | Constancia e certificado em PDF, código de verificação, página pública de validação | Página pública valida sem expor dado pessoal além do nome e curso | ⬜ OOC-33, OOC-59 (em P3, 23/11: dependem de notas). Base pronta (OOC-123, 23/10/2026): engine de templates em `packages/templates` (LiquidJS), modelos versionados (rascunho + versões imutáveis, `0034`), PDF com WeasyPrint na API e preview pelo pipeline real — com o contrato do docente como primeiro documento. Baixar o contrato preenchido pela ficha também (*Generar contrato*, sem guardar o PDF). Editor visual em Configuração → Documentos, com preview do PDF ao lado. Desde a OOC-124 (24/10/2026) gerar o contrato registra o período com a versão do modelo, e o registro reimprime pela versão gravada — primeiro documento emitido que aponta a versão; constancia e certificado entram no mesmo mecanismo |

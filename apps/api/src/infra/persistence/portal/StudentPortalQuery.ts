@@ -1,9 +1,23 @@
-import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, receiptUploads, students } from "@ooc/db";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+  academicPeriods,
+  classGroups,
+  courses,
+  enrollments,
+  payments,
+  planPrices,
+  plans,
+  procedurePrices,
+  procedureRequests,
+  receiptUploads,
+  students,
+} from "@ooc/db";
+import { PROCEDURE_KINDS, type ProcedureKind, type ProcedureRequestStatus } from "@ooc/domain";
+import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
 import type { GetStudentQuery, StudentDetailRow } from "../student/GetStudentQuery.js";
 import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 
 export interface PortalPaymentRow {
   id: string;
@@ -42,9 +56,31 @@ export interface PortalEnrollmentRow {
   payments: PortalPaymentRow[];
 }
 
+/** A paid procedure the student can start: today's price, and which of their
+ * enrollments may ask for it right now. */
+export interface PortalProcedureRow {
+  kind: ProcedureKind;
+  priceCents: number;
+  eligible: { enrollmentId: string; courseName: string }[];
+}
+
+/** A procedure the student asked for and paid, or tried to. A request with no
+ * payment yet is an abandoned form, and not listed. */
+export interface PortalProcedureRequestRow {
+  id: string;
+  kind: ProcedureKind;
+  status: ProcedureRequestStatus;
+  courseName: string;
+  amountCents: number;
+  createdAt: Date;
+  payment: PortalPaymentRow;
+}
+
 export interface PortalOverview {
   student: StudentDetailRow;
   enrollments: PortalEnrollmentRow[];
+  procedures: PortalProcedureRow[];
+  requests: PortalProcedureRequestRow[];
 }
 
 /**
@@ -108,10 +144,29 @@ export class StudentPortalQuery {
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));
 
-    const paymentsByEnrollment = await this.paymentsOf(rows.map((row) => row.id));
+    const [paymentsByEnrollment, prices, requests] = await Promise.all([
+      this.paymentsOf(rows.map((row) => row.id)),
+      this.currentPrices(),
+      this.requestsOf(fileIds),
+    ]);
+
+    // Blocked by a request that carries money or is paid; one still waiting for
+    // its receipt is the same form picked up again.
+    const live = new Set(
+      requests.filter((request) => request.status === "requested" || request.status === "paid").map((request) => `${request.kind}:${request.enrollmentId}`),
+    );
+    const procedures = prices.map(({ kind, priceCents }): PortalProcedureRow => ({
+      kind,
+      priceCents,
+      eligible: rows
+        .filter((row) => row.seatStatus === "confirmed" && !live.has(`${kind}:${row.id}`))
+        .map((row) => ({ enrollmentId: row.id, courseName: row.courseName })),
+    }));
 
     return {
       student,
+      procedures,
+      requests: requests.map(({ enrollmentId: _enrollmentId, ...request }) => request),
       enrollments: rows.map((row): PortalEnrollmentRow => {
         const enrollmentPayments = paymentsByEnrollment.get(row.id) ?? [];
         // Same derivation as the ledger and the student file: the newest
@@ -157,7 +212,8 @@ export class StudentPortalQuery {
     const [row] = await this.db
       .select({ id: payments.id })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .where(
         and(
@@ -169,6 +225,69 @@ export class StudentPortalQuery {
       )
       .limit(1);
     return row !== undefined;
+  }
+
+  private async currentPrices(): Promise<{ kind: ProcedureKind; priceCents: number }[]> {
+    const rows = await this.db
+      .selectDistinctOn([procedurePrices.kind], { kind: procedurePrices.kind, priceCents: procedurePrices.amountCents })
+      .from(procedurePrices)
+      .where(and(inArray(procedurePrices.kind, [...PROCEDURE_KINDS]), lte(procedurePrices.validFrom, sql`now()`)))
+      .orderBy(procedurePrices.kind, desc(procedurePrices.validFrom), desc(procedurePrices.id));
+    return rows.map((row) => ({ kind: row.kind as ProcedureKind, priceCents: row.priceCents }));
+  }
+
+  /** Inner join on the payment: a request is only a request to the student once
+   * the receipt went in. */
+  private async requestsOf(fileIds: string[]): Promise<(PortalProcedureRequestRow & { enrollmentId: string })[]> {
+    const rows = await this.db
+      .select({
+        id: procedureRequests.id,
+        kind: procedureRequests.kind,
+        status: procedureRequests.status,
+        enrollmentId: procedureRequests.enrollmentId,
+        amountCents: procedureRequests.amountCents,
+        createdAt: procedureRequests.createdAt,
+        courseName: courses.name,
+        paymentId: payments.id,
+        paymentMethod: payments.method,
+        paymentMethodDetail: payments.methodDetail,
+        paymentStatus: payments.status,
+        operationNumber: payments.operationNumber,
+        submittedAt: payments.createdAt,
+        decidedAt: payments.decidedAt,
+        hasReceipt: sql<boolean>`exists (
+          select 1 from ${receiptUploads}
+          where ${receiptUploads.paymentId} = ${payments.id}
+            and ${receiptUploads.processedObjectKey} is not null
+        )`,
+      })
+      .from(procedureRequests)
+      .innerJoin(payments, eq(payments.procedureRequestId, procedureRequests.id))
+      .innerJoin(enrollments, eq(enrollments.id, procedureRequests.enrollmentId))
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .innerJoin(courses, eq(courses.id, classGroups.courseId))
+      .where(inArray(procedureRequests.studentId, fileIds))
+      .orderBy(desc(procedureRequests.createdAt), desc(procedureRequests.id));
+    return rows.map((row) => ({
+      id: row.id,
+      kind: row.kind as ProcedureKind,
+      status: row.status as ProcedureRequestStatus,
+      enrollmentId: row.enrollmentId,
+      courseName: row.courseName,
+      amountCents: row.amountCents,
+      createdAt: row.createdAt,
+      payment: {
+        id: row.paymentId,
+        amountCents: row.amountCents,
+        method: row.paymentMethod,
+        methodDetail: row.paymentMethodDetail,
+        status: row.paymentStatus,
+        operationNumber: row.operationNumber,
+        submittedAt: row.submittedAt,
+        settledAt: row.decidedAt,
+        hasReceipt: row.hasReceipt,
+      },
+    }));
   }
 
   private async paymentsOf(enrollmentIds: string[]): Promise<Map<string, PortalPaymentRow[]>> {
@@ -202,7 +321,10 @@ export class StudentPortalQuery {
       .orderBy(desc(payments.createdAt), desc(payments.id));
 
     for (const row of rows) {
-      const list = byEnrollment.get(row.enrollmentId) ?? [];
+      // Never null here: the WHERE names enrollments, and the check allows one
+      // origin per payment.
+      const enrollmentId = row.enrollmentId!;
+      const list = byEnrollment.get(enrollmentId) ?? [];
       list.push({
         id: row.id,
         amountCents: row.amountCents,
@@ -214,7 +336,7 @@ export class StudentPortalQuery {
         settledAt: row.status === "approved" || row.status === "rejected" ? row.updatedAt : null,
         hasReceipt: row.hasReceipt,
       });
-      byEnrollment.set(row.enrollmentId, list);
+      byEnrollment.set(enrollmentId, list);
     }
     return byEnrollment;
   }

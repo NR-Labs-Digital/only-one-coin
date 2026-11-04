@@ -12,7 +12,6 @@ export const PlatformSettingsResponseSchema = z.object({
   ocrLowConfidencePercent: z.number().int(),
   passingGrade: z.number().int(),
   certificateDeadlineBusinessDays: z.number().int(),
-  constanciaFeeCents: z.number().int(),
   contractAlertDays: z.number().int(),
 });
 

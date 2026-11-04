@@ -9,6 +9,8 @@ export interface ReceiptScreeningSubject {
   /** The enrollment's, for who to write to if the payment goes to review. */
   studentId: string;
   classGroupId: string;
+  /** A procedure's payment (OOC-83) is told in its own words. */
+  isProcedure: boolean;
   exif: ReceiptExifFacts | null;
 }
 

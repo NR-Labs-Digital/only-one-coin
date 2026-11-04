@@ -9,7 +9,6 @@ export const TEST_SETTINGS: PlatformSettings = {
   ocrLowConfidencePercent: 75,
   passingGrade: 14,
   certificateDeadlineBusinessDays: 25,
-  constanciaFeeCents: 2500,
   contractAlertDays: 45,
 };
 

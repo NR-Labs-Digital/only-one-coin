@@ -17,7 +17,6 @@ const DEFAULTS: PlatformSettings = {
   ocrLowConfidencePercent: 75,
   passingGrade: 14,
   certificateDeadlineBusinessDays: 25,
-  constanciaFeeCents: 2500,
   contractAlertDays: 45,
 };
 
@@ -34,7 +33,6 @@ export class DrizzlePlatformSettingsRepository implements IPlatformSettingsRepos
         ocrLowConfidencePercent: platformSettings.ocrLowConfidencePercent,
         passingGrade: platformSettings.passingGrade,
         certificateDeadlineBusinessDays: platformSettings.certificateDeadlineBusinessDays,
-        constanciaFeeCents: platformSettings.constanciaFeeCents,
         contractAlertDays: platformSettings.contractAlertDays,
       })
       .from(platformSettings)

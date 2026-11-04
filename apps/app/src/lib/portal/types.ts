@@ -320,13 +320,15 @@ export interface ProcedureCatalogItem {
   type: RequestType
   priceCents: number
   currency: 'PEN'
+  /** The student's enrollments that may ask for it now — the API's rule. */
+  eligible: { enrollmentId: string; courseName: string }[]
 }
 
 export interface StudentRequest {
   id: string
   type: RequestType
   status: RequestStatus
-  enrollmentId: string
+  courseName: string
   /** Procedure price frozen when the request was made (CLAUDE.md §5). */
   priceCents: number
   currency: 'PEN'

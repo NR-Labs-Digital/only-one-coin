@@ -169,6 +169,7 @@ const SUBJECT: ReceiptScreeningSubject = {
   paymentId: "payment-new",
   studentId: "student-new",
   classGroupId: "group-new",
+  isProcedure: false,
   exif: null,
 };
 const EDITED = { software: "Snapseed 2.0", capturedAt: null, modifiedAt: null };

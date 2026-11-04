@@ -28,7 +28,11 @@ const operationNumberKey = sql`upper(regexp_replace(${payments.operationNumber},
  *
  * Every payment counts, whatever its status: a rejected payment's operation
  * was still spent, and a replacement receipt for the same payment is a new
- * `payment_receipts` row, not a new payment.
+ * `payment_receipts` row, not a new payment. The one exception is a rejection
+ * for `illegible` (decision of 04/11/2026): nobody could read that receipt, so
+ * nothing says the operation was misused, and the person who did pay has to be
+ * able to send a better photo of it. The partial match below still leaves the
+ * lookup on `payments_method_operation_key_idx`.
  */
 export async function assertOperationNumberUnused(tx: Tx, claim: OperationNumberClaim): Promise<void> {
   const key = normalizeOperationNumber(claim.operationNumber);
@@ -46,6 +50,7 @@ export async function assertOperationNumberUnused(tx: Tx, claim: OperationNumber
         eq(payments.method, claim.method),
         sql`${payments.operationNumber} is not null`,
         sql`${operationNumberKey} = ${key}`,
+        sql`${payments.rejectionReason} is distinct from 'illegible'`,
       ),
     )
     .limit(1);

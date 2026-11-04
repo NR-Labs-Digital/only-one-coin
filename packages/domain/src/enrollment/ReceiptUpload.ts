@@ -15,7 +15,10 @@ export type ReceiptUploadStatus = "pending" | "uploaded" | "processing" | "proce
  */
 export interface ReceiptUpload {
   id: string;
-  seatHoldId: string;
+  /** Exactly one of these two (`receipt_uploads_owner_check`): the checkout's
+   * hold, or the procedure request of a signed-in student (OOC-83). */
+  seatHoldId: string | null;
+  procedureRequestId: string | null;
   paymentId: string | null;
   objectKey: string;
   status: ReceiptUploadStatus;

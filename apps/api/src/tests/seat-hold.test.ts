@@ -115,6 +115,7 @@ class FakeReceiptUploads implements IReceiptUploadRepository {
 const UPLOADED_RECEIPT: ReceiptUpload = {
   id: RECEIPT_UPLOAD_ID,
   seatHoldId: HOLD_ID,
+  procedureRequestId: null,
   paymentId: null,
   objectKey: `receipts/raw/${HOLD_ID}/${RECEIPT_UPLOAD_ID}`,
   status: "uploaded",

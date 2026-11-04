@@ -44,6 +44,24 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** The payment of a paid procedure (OOC-83): its own wording, because the
+   * enrollment ones say the seat is confirmed or lost, which is not what
+   * deciding a constancia's receipt does. */
+  procedure_payment_under_review: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
+  procedure_payment_approved: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
+  procedure_payment_rejected: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;

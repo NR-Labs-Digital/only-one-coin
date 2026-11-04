@@ -92,7 +92,9 @@ describe("audit catalogue", () => {
   });
 
   it("expands one screen key into every stored action behind it", () => {
-    expect(storedActionsOf("platform_setting_updated")).toHaveLength(AUDITED_PLATFORM_SETTINGS.length);
+    // One more than the columns of today: the constancia's fee has entries in the
+    // trail from when it was a setting (OOC-83).
+    expect(storedActionsOf("platform_setting_updated")).toHaveLength(AUDITED_PLATFORM_SETTINGS.length + 1);
     expect(storedActionsOf("payment_approved")).toEqual(["payment.approved"]);
   });
 

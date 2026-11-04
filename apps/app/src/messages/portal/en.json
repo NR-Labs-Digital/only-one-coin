@@ -194,10 +194,14 @@
       "file_label": "Receipt",
       "attach": "Attach receipt",
       "remove": "Remove file",
-      "file_hint": "Photo or PDF, max {size}.",
-      "error_type": "Invalid format. Upload a photo (JPG, PNG, HEIC) or a PDF.",
+      "file_hint": "Photo (JPG, PNG or HEIC), max {size}.",
+      "error_type": "Invalid format. Upload a photo (JPG, PNG or HEIC).",
       "error_size": "The file exceeds the maximum size.",
-      "error_file": "Attach your receipt."
+      "error_file": "Attach your receipt.",
+      "operation_label": "Operation number",
+      "operation_hint": "It is printed on your receipt.",
+      "error_operation": "Enter the operation number.",
+      "sending": "Sending…"
     },
     "payments": {
       "title": "Payments",
@@ -252,7 +256,13 @@
       "col_course": "Course",
       "col_date": "Date",
       "col_price": "Price",
-      "col_status": "Status"
+      "col_status": "Status",
+      "error": {
+        "operation_used": "This operation number was already used on another payment. Check the receipt.",
+        "already_open": "You already have this procedure in progress for this course.",
+        "receipt_rejected": "We couldn't receive the file. Try again with another photo.",
+        "generic": "We couldn't send your request. Try again."
+      }
     },
     "continue_page": {
       "title": "Keep studying",

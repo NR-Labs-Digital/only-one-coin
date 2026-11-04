@@ -1,8 +1,7 @@
 'use client'
 
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import type { PlatformSettings } from '@/lib/backoffice/platform-settings'
-import { formatMoney, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from './settings-ui'
@@ -10,22 +9,21 @@ import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from './se
 /** The academic half of the settings. */
 export type AcademicSettings = Pick<
   PlatformSettings,
-  'passingGrade' | 'certificateDeadlineBusinessDays' | 'constanciaFeeCents' | 'contractAlertDays'
+  'passingGrade' | 'certificateDeadlineBusinessDays' | 'contractAlertDays'
 >
 
 /**
  * The academic numbers the platform runs on: what counts as approved, how long
- * the institution has to issue, what a paid procedure costs and how early a
- * contract starts warning. Settings rather than constants: the Asociación
+ * the institution has to issue and how early a contract starts warning. Settings rather than constants: the Asociación
  * changing what a rule means must not require a deploy.
  *
  * Saved to `apps/api` (`PATCH /settings`, OOC-41), one audit entry per
  * changed number; grades, certificates, the student's documents and the
- * teacher roster read them from there.
+ * teacher roster read them from there. What a procedure costs is next to it,
+ * in `ConstanciaPriceForm`: it is a versioned price, not a setting (OOC-83).
  */
 export function AcademicSettingsForm({ settings }: { settings: AcademicSettings }) {
   const t = useTranslations('bo')
-  const locale = useLocale() as Locale
   const { draft, set, dirty, saving, toast, dismissToast, save, cancel } = useSettingsForm(settings)
 
   return (
@@ -66,29 +64,6 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
               value={draft.certificateDeadlineBusinessDays}
               onChange={(event) =>
                 set('certificateDeadlineBusinessDays', Number(event.target.value))
-              }
-              className={numberClass}
-            />
-          </Row>
-
-          <Row
-            helpLabel={t('common.help')}
-            label={t('settings.constancia_fee_label')}
-            hint={t('settings.constancia_fee_hint')}
-            value={formatMoney(draft.constanciaFeeCents, 'PEN', locale)}
-          >
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              step={0.5}
-              aria-label={t('settings.constancia_fee_label')}
-              value={draft.constanciaFeeCents / 100}
-              onChange={(event) =>
-                // Soles typed by hand are the only float in the flow, and it
-                // stops on this line: what is stored is integer cents
-                // (CLAUDE.md §5).
-                set('constanciaFeeCents', Math.round(Number(event.target.value) * 100))
               }
               className={numberClass}
             />

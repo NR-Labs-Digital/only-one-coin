@@ -78,6 +78,10 @@ export function PaymentDetailDialog({
                   tone={paymentTone[payment.status]}
                   label={t(`payment_status.${payment.status}`)}
                 />
+                <StatusBadge
+                  tone={payment.procedureKind ? 'info' : 'neutral'}
+                  label={t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)}
+                />
               </div>
             </DialogHeader>
 

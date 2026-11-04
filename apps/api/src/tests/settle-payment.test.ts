@@ -1,3 +1,4 @@
+import type { SeatStatus } from "@ooc/domain";
 import {
   PaymentAlreadySettledError,
   PaymentNotFoundError,
@@ -34,8 +35,15 @@ class FakeSettlementRepository implements IPaymentSettlementRepository {
 
   async settle(params: Parameters<IPaymentSettlementRepository["settle"]>[0]) {
     this.settled.push(params);
+    const { origin } = this.target!;
     const seatStatus =
-      this.target!.seatStatus === "reserved" ? (params.to === "approved" ? "confirmed" : "released") : this.target!.seatStatus;
+      origin.kind === "procedure"
+        ? null
+        : origin.seatStatus === "reserved"
+          ? params.to === "approved"
+            ? "confirmed"
+            : "released"
+          : origin.seatStatus;
     return { seatStatus, portalAccess: params.portalAccess ? this.portalOutcome : null };
   }
 }
@@ -60,17 +68,22 @@ const MINOR_CONTEXT: EnrollmentEmailContext = {
   classGroupStartsOn: new Date("2026-11-02T00:00:00.000Z"),
 };
 
-function target(overrides: Partial<PaymentToSettle> = {}): PaymentToSettle {
+const CLASS_GROUP = "018f2b5c-0000-7000-8000-00000000g001";
+const REQUEST = "018f2b5c-0000-7000-8000-00000000r001";
+
+function target(overrides: Partial<PaymentToSettle> & { seatStatus?: SeatStatus } = {}): PaymentToSettle {
+  const { seatStatus = "reserved", ...rest } = overrides;
   return {
     paymentId: PAYMENT,
-    enrollmentId: "018f2b5c-0000-7000-8000-00000000e001",
     studentId: "018f2b5c-0000-7000-8000-00000000s001",
-    classGroupId: "018f2b5c-0000-7000-8000-00000000g001",
+    classGroupId: CLASS_GROUP,
     status: "pending",
-    seatStatus: "reserved",
-    ...overrides,
+    origin: { kind: "enrollment", enrollmentId: "018f2b5c-0000-7000-8000-00000000e001", classGroupId: CLASS_GROUP, seatStatus },
+    ...rest,
   };
 }
+
+const procedureTarget = () => target({ origin: { kind: "procedure", procedureRequestId: REQUEST } });
 
 let repository: FakeSettlementRepository;
 let useCase: SettlePaymentUseCase;
@@ -190,5 +203,42 @@ describe("SettlePaymentUseCase", () => {
     });
 
     expect(result).toMatchObject({ status: "rejected", seatStatus: "released" });
+  });
+
+  describe("a procedure's payment (OOC-83)", () => {
+    beforeEach(() => {
+      repository.target = procedureTarget();
+    });
+
+    it("approving moves the request, and opens no portal account: whoever asked is signed in", async () => {
+      const result = await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } });
+
+      expect(result).toEqual({ paymentId: PAYMENT, status: "approved", seatStatus: null, portalAccess: null });
+      const settled = repository.settled[0]!;
+      expect(settled.origin).toEqual({ kind: "procedure", procedureRequestId: REQUEST });
+      expect(settled.portalAccess).toBeNull();
+      expect(settled.audit.metadata).toEqual({ procedureRequestId: REQUEST });
+    });
+
+    it("tells the student and a minor's guardian in the procedure's words, not the enrollment's", async () => {
+      await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } });
+
+      expect(repository.settled[0]!.notifications.map((email) => [email.templateKey, email.to])).toEqual([
+        ["procedure_payment_approved", "ana@gmail.com"],
+        ["procedure_payment_approved", "rosa@example.com"],
+      ]);
+    });
+
+    it("rejecting records the reason and says no seat was at stake", async () => {
+      const result = await useCase.run({
+        actorId: ACTOR,
+        paymentId: PAYMENT,
+        decision: { kind: "reject", reason: "illegible", note: "" },
+      });
+
+      expect(result).toMatchObject({ status: "rejected", seatStatus: null });
+      expect(repository.settled[0]!.decision.rejectionReason).toBe("illegible");
+      expect(repository.settled[0]!.notifications[0]!.templateKey).toBe("procedure_payment_rejected");
+    });
   });
 });

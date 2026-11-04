@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
 import { paymentUnderReviewEmails } from "../notification/enrollmentEmails.js";
+import { procedurePaymentUnderReviewEmails } from "../notification/procedureEmails.js";
 import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSettingsRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IEnrollmentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
@@ -82,6 +83,8 @@ export class ValidateReceiptUseCase extends BaseUseCase<ValidateReceiptInput, Va
 
   private async underReviewEmails(subject: ReceiptValidationSubject): Promise<EmailNotification[]> {
     const context = await this.emailContextLookup.find({ studentId: subject.studentId, classGroupId: subject.classGroupId });
-    return context ? paymentUnderReviewEmails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE) : [];
+    if (!context) return [];
+    const emails = subject.isProcedure ? procedurePaymentUnderReviewEmails : paymentUnderReviewEmails;
+    return emails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE);
   }
 }

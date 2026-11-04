@@ -465,7 +465,8 @@ export function ReviewQueueView({
                       </td>
 
                       {/* The class group rides under the course: it says which
-                          seat the payment is holding. */}
+                          seat the payment is holding — or, for a procedure,
+                          which enrollment it is about. */}
                       <td className={tdClass}>
                         <span className="block max-w-[15rem]">
                           <span className="block truncate text-sm text-ink">
@@ -473,6 +474,9 @@ export function ReviewQueueView({
                           </span>
                           <span className="block truncate text-xs text-muted-foreground">
                             {item.classGroupName}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
                           </span>
                         </span>
                       </td>

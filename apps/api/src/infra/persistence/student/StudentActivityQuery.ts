@@ -114,7 +114,8 @@ export class StudentActivityQuery {
         union all
         select p."id"::text
           from "payments" p
-          join "enrollments" e on e."id" = p."enrollment_id"
+          left join "procedure_requests" r on r."id" = p."procedure_request_id"
+          join "enrollments" e on e."id" = coalesce(p."enrollment_id", r."enrollment_id")
          where e."student_id" = ${studentId}::uuid
       )
       select
@@ -130,7 +131,8 @@ export class StudentActivityQuery {
       from "audit_log" a
       left join "user" actor on actor."id" = a."actor_id"
       left join "payments" pay on pay."id"::text = a."target_id"
-      left join "enrollments" enr on enr."id"::text = coalesce(pay."enrollment_id"::text, a."target_id")
+      left join "procedure_requests" req on req."id" = pay."procedure_request_id"
+      left join "enrollments" enr on enr."id"::text = coalesce(pay."enrollment_id"::text, req."enrollment_id"::text, a."target_id")
       left join "class_groups" cg on cg."id" = enr."class_group_id"
       left join "courses" c on c."id" = cg."course_id"
       where a."target_id" in (select id from targets)

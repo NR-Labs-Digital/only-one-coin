@@ -63,6 +63,7 @@ function subject(overrides: Partial<ReceiptValidationSubject> = {}): ReceiptVali
     paymentId: PAYMENT,
     studentId: "018f2b5c-0000-7000-8000-00000000s001",
     classGroupId: "018f2b5c-0000-7000-8000-00000000g001",
+    isProcedure: false,
     paymentStatus: "pending",
     expectedCents: 15000,
     declaredOperationNumber: "08312457",

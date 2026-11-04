@@ -35,6 +35,21 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
   },
+  procedure_payment_under_review: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
+  procedure_payment_approved: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
+  procedure_payment_rejected: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
   portal_credentials: {
     recipientName: "María Fernanda",
     loginEmail: "maria.quispe@gmail.com",

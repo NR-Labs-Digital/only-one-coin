@@ -49,6 +49,13 @@ import { getDashboardSummaryRoute } from "@/http/dashboard/GetDashboardSummaryRo
 import { getPaymentReceiptRoute } from "@/http/payment/GetPaymentReceiptRoute.js";
 import { approvePaymentRoute, rejectPaymentRoute } from "@/http/payment/SettlePaymentRoute.js";
 import { rereadPaymentReceiptRoute } from "@/http/payment/RereadPaymentReceiptRoute.js";
+import {
+  confirmProcedureReceiptUploadRoute,
+  openProcedureRequestRoute,
+  requestProcedureReceiptUploadRoute,
+  submitProcedurePaymentRoute,
+} from "@/http/procedure/PortalProcedureRoutes.js";
+import { listProcedurePricesRoute, setProcedurePriceRoute } from "@/http/procedure/ProcedurePriceRoutes.js";
 import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
 import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { claimSeatHoldRoute } from "@/http/enrollment/ClaimSeatHoldRoute.js";
@@ -211,6 +218,12 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(approvePaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(rejectPaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(rereadPaymentReceiptRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(openProcedureRequestRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestProcedureReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmProcedureReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(submitProcedurePaymentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listProcedurePricesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(setProcedurePriceRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(claimSeatHoldRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(releaseSeatHoldRoute);

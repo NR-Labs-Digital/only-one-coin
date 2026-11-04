@@ -2,16 +2,18 @@ import {
   PaymentAlreadySettledError,
   PaymentSeatReleasedError,
   type IPaymentSettlementRepository,
+  type PaymentOrigin,
   type PortalAccessOutcome,
   type PaymentStatus,
   type PaymentToSettle,
   type SeatStatus,
 } from "@ooc/domain";
-import { auditLog, classGroups, enrollments, payments } from "@ooc/db";
+import { auditLog, classGroups, enrollments, payments, procedureRequests } from "@ooc/db";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { provisionPortalAccount } from "@/infra/persistence/portal/provisionPortalAccount.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
+import { paymentEnrollmentId } from "./paymentOrigin.js";
 
 const OPEN: PaymentStatus[] = ["pending", "under_review"];
 
@@ -22,6 +24,7 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
     const [row] = await this.db
       .select({
         paymentId: payments.id,
+        procedureRequestId: payments.procedureRequestId,
         enrollmentId: enrollments.id,
         studentId: enrollments.studentId,
         classGroupId: enrollments.classGroupId,
@@ -29,13 +32,31 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
         seatStatus: enrollments.seatStatus,
       })
       .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .where(eq(payments.id, paymentId));
+    if (!row) return null;
 
-    return row ? { ...row, status: row.status as PaymentStatus, seatStatus: row.seatStatus as SeatStatus } : null;
+    const origin: PaymentOrigin = row.procedureRequestId
+      ? { kind: "procedure", procedureRequestId: row.procedureRequestId }
+      : {
+          kind: "enrollment",
+          enrollmentId: row.enrollmentId,
+          classGroupId: row.classGroupId,
+          seatStatus: row.seatStatus as SeatStatus,
+        };
+    return {
+      paymentId: row.paymentId,
+      studentId: row.studentId,
+      classGroupId: row.classGroupId,
+      status: row.status as PaymentStatus,
+      origin,
+    };
   }
 
-  async settle(params: Parameters<IPaymentSettlementRepository["settle"]>[0]): Promise<{ seatStatus: SeatStatus; portalAccess: PortalAccessOutcome | null }> {
+  async settle(
+    params: Parameters<IPaymentSettlementRepository["settle"]>[0],
+  ): Promise<{ seatStatus: SeatStatus | null; portalAccess: PortalAccessOutcome | null }> {
     return this.db.transaction(async (tx) => {
       // The guard against two reviewers (or one double click): the payment
       // only moves out of an open state, and Postgres serialises the two
@@ -53,7 +74,10 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
         .returning({ id: payments.id });
       if (!moved) throw new PaymentAlreadySettledError();
 
-      const seatStatus = params.to === "approved" ? await this.confirmSeat(tx, params) : await this.releaseSeat(tx, params);
+      const { origin, to } = params;
+      let seatStatus: SeatStatus | null = null;
+      if (origin.kind === "procedure") await this.moveRequest(tx, origin.procedureRequestId, to);
+      else seatStatus = to === "approved" ? await this.confirmSeat(tx, origin) : await this.releaseSeat(tx, origin);
 
       await insertOutboxEmails(tx, params.notifications);
       await tx.insert(auditLog).values({
@@ -68,6 +92,20 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
 
       return { seatStatus, portalAccess };
     });
+  }
+
+  /** requested → paid | rejected, and nothing about the seat: the enrollment a
+   * request refers to does not depend on the procedure's money (OOC-83). A
+   * request that is not `requested` under an open payment breaks an invariant
+   * (`SubmitProcedurePayment` only opens one on `requested`, one per request),
+   * so the transaction fails rather than settling money against nothing. */
+  private async moveRequest(tx: Tx, procedureRequestId: string, to: "approved" | "rejected"): Promise<void> {
+    const [moved] = await tx
+      .update(procedureRequests)
+      .set({ status: to === "approved" ? "paid" : "rejected", updatedAt: sql`now()` })
+      .where(and(eq(procedureRequests.id, procedureRequestId), eq(procedureRequests.status, "requested")))
+      .returning({ id: procedureRequests.id });
+    if (!moved) throw new Error(`Procedure request ${procedureRequestId} is not awaiting a decision`);
   }
 
   /** reserved → confirmed. Already confirmed (a monthly module) stays; released refuses. */

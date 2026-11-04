@@ -53,6 +53,11 @@ export const EMAIL_CATALOG = {
   payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
   payment_approved: { audience: "student", stage: "payment_settled", conditional: false, emitted: true },
   payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  /* A paid procedure's money (OOC-83): the same three moments, without the
+     seat the enrollment's wording talks about. */
+  procedure_payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
+  procedure_payment_approved: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  procedure_payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
   /* The first approval opens the portal account. */
   portal_credentials: { audience: "student", stage: "access", conditional: false, emitted: true },
   /* The Classroom invitation, three days before the class group starts

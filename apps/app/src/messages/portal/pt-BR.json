@@ -194,10 +194,14 @@
       "file_label": "Comprovante",
       "attach": "Anexar comprovante",
       "remove": "Remover arquivo",
-      "file_hint": "Foto ou PDF, máx. {size}.",
-      "error_type": "Formato inválido. Envie uma foto (JPG, PNG, HEIC) ou um PDF.",
+      "file_hint": "Foto (JPG, PNG ou HEIC), máx. {size}.",
+      "error_type": "Formato inválido. Envie uma foto (JPG, PNG ou HEIC).",
       "error_size": "O arquivo excede o tamanho máximo.",
-      "error_file": "Anexe seu comprovante."
+      "error_file": "Anexe seu comprovante.",
+      "operation_label": "Número da operação",
+      "operation_hint": "Está impresso no seu comprovante.",
+      "error_operation": "Digite o número da operação.",
+      "sending": "Enviando…"
     },
     "payments": {
       "title": "Pagamentos",
@@ -252,7 +256,13 @@
       "col_course": "Curso",
       "col_date": "Data",
       "col_price": "Preço",
-      "col_status": "Estado"
+      "col_status": "Estado",
+      "error": {
+        "operation_used": "Este número de operação já foi usado em outro pagamento. Confira o comprovante.",
+        "already_open": "Você já tem este trâmite em andamento para este curso.",
+        "receipt_rejected": "Não conseguimos receber o arquivo. Tente de novo com outra foto.",
+        "generic": "Não conseguimos enviar sua solicitação. Tente de novo."
+      }
     },
     "continue_page": {
       "title": "Continue estudando",

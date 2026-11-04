@@ -1,4 +1,4 @@
-import { PaymentMethodSchema } from "@ooc/domain";
+import { PaymentMethodSchema, ProcedureKindSchema } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -23,6 +23,7 @@ const QuerySchema = z.object({
 const RowSchema = z.object({
   id: z.string().uuid(),
   enrollmentId: z.string().uuid(),
+  procedureKind: ProcedureKindSchema.nullable(),
   studentId: z.string().uuid(),
   studentName: z.string(),
   courseName: z.string(),

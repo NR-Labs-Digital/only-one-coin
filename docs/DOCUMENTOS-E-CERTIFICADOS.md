@@ -45,10 +45,12 @@ aluno pede a constancia no portal
   → duvidoso: mesma fila de revisão humana
 ```
 
-Modelado como `DocumentRequest`: `feeCents` congelado no momento do pedido
-(mesma regra do preço versionado, `CLAUDE.md` §5), `paymentStatus` reusando a
-máquina de estados de pagamento. Vira `DocumentItem` só quando o pagamento é
-aprovado.
+Modelado como `procedure_requests` (OOC-83, 04/11/2026): `amount_cents`
+congelado no momento do pedido, a partir do preço versionado em
+`procedure_prices`, com um pagamento na mesma máquina de estados da matrícula.
+Vira documento só depois do pagamento aprovado, o que é a OOC-33: hoje a
+solicitação para em `paid`. Mecanismo em `apps/api/CLAUDE.md`, "Procedimentos
+pagos".
 
 Outros procedimentos da mesma tabela (exame de rezagados S/10, repetir módulo
 S/20, cambio de e-mail S/5, congelamento S/10) têm o mesmo formato. Se forem
@@ -130,12 +132,13 @@ o prestou fica fora do lote, com o motivo na tela. Nota mínima **não** basta.
 
 ### Nota mínima e taxa: configuráveis
 
-Nota mínima (14), prazo do certificado (25 dias úteis) e taxa da constancia
-(S/25) são **configuração de backoffice** desde a OOC-41 (22/10/2026):
-`platform_settings.passing_grade`, `certificate_deadline_business_days` e
-`constancia_fee_cents`, editáveis em Configuração e lidos pelas telas de notas,
-certificados e documentos — nunca constante no código (`apps/api/CLAUDE.md`,
-"Configurações da plataforma").
+Nota mínima (14) e prazo do certificado (25 dias úteis) são **configuração de
+backoffice** desde a OOC-41 (22/10/2026): `platform_settings.passing_grade` e
+`certificate_deadline_business_days`, editáveis em Configuração e lidos pelas
+telas de notas e certificados — nunca constante no código
+(`apps/api/CLAUDE.md`, "Configurações da plataforma"). A taxa da constancia
+(S/25) também se edita em Configuração, mas desde a OOC-83 é preço versionado
+(`procedure_prices`), não um parâmetro.
 
 ---
 
