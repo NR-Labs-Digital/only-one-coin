@@ -51,22 +51,21 @@ entra aqui ou vira sessão nova.
 | 6 — Instalável | 0 | 0 | 4 | — |
 | 7 — Lançamento | 0 | 2 | 4 | Backup a cada deploy já roda; restauração nunca testada; Sentry/PostHog não instalados |
 
-### Sprint da semana (26–30/10/2026): destravar o que vence em 06/11
+### Sprint da semana (02–06/11/2026): notas e procedimentos pagos
 
-A semana de 19–23/10 fechou tudo o que tinha planejado (OOC-79, 82, 101, 81, 124, 41, 70, 61, 120, 121, 122), e o feedback do cliente de 16 e 25/10 saiu em 26/10 (OOC-125, 126, 127). Este sprint é do time inteiro: pega os tickets que não dependem de decisão do dono e que destravam uma sessão inteira. Todos em Todo no Linear, sem dono atribuído, prazo 01/11.
+A semana de 26–30/10 fechou em 01/11 (OOC-87, 88, 90, 91, 94, 97, 98, 100, 48, além de OOC-128 e OOC-129, que entraram no caminho). Só a OOC-50 ficou, esperando decisão. Este sprint é do time inteiro e ataca os dois tickets que seguram o resto da Fase 3 e da Fase 4: notas (destravam progressão e certificado) e pagamento de procedimento (destrava constancia, troca de turma, congelamento e mensual). Todos em Todo no Linear, sem dono atribuído, prazo 06/11.
 
-Fora desta semana, de propósito: notas e frequência (37), certificados (45), procedimentos pagos (OOC-83, 13/11) e mensual.
+Fora desta semana, de propósito: certificados (OOC-33 e OOC-59, dependem de notas), progressão (OOC-85), procedimentos e mensual (OOC-84 e OOC-86, dependem da OOC-83) e o cargo Assistente Acadêmico (OOC-96, prazo 13/11, lê notas que ainda não existem).
 
 | Frente | Ticket | Destrava | Prazo |
 | --- | --- | --- | --- |
-| E-mail | ✅ OOC-87 (um catálogo só de templates entre app e domínio; `payment_under_review` pelo outbox) → 🟡 OOC-88 em revisão (catálogo e detalhe com contagem real do outbox e preview do template do repositório; depende da 87) | Sessão 47; nenhuma tela de e-mail se religa antes da 87 | 01/11 |
-| Enlace da aula | OOC-98 (link do Classroom/Meet na turma, visível no portal do docente e no do aluno) | Sessão 42 (o que falta do painel do aluno) e o flag `teacher.class_links` | 01/11 |
-| Catálogo | OOC-94 (curso com módulos e o material de cada um) | OOC-85 (progressão), OOC-86 (mensual), OOC-100 (materiais) | 01/11 |
-| E-mail (entrega) | ✅ OOC-90 (não entregues com as falhas reais do outbox e reenvio auditado) · ✅ OOC-91 no código (webhook do Brevo: entregue, bounce, motivo; falta ligar em produção) | Sessão 46 inteira e os motivos da tela de não entregues | 01/11 |
-| Acadêmico | OOC-97 (turmas sem docente atribuído, na seção Acadêmico) · OOC-100 (materiais do módulo no portal do docente; depende da 94) | Atribuição de docente vira fila de trabalho; sessão 43 começa pelo lado do docente | 01/11 |
-| Lançamento | OOC-48 (seed de carga fictício, idempotente) · OOC-50 (restauração do backup testada em staging, documentada) | Sessões 57 e 55 — a 55 está na lista do que nunca se corta | 01/11 |
+| Notas | OOC-38 + OOC-102 (nota do exame final, DA, ficha de notas do docente; dois critérios da 102 contradizem regra fechada, ver abaixo) | Sessão 37, OOC-85 (progressão), OOC-33 e OOC-59 (certificado) | 06/11 |
+| Dinheiro | OOC-83 (solicitação de procedimento com pagamento associado; primeira leva sugerida: constancia) | OOC-84 (procedimentos), OOC-86 (mensual), o lado da constancia da OOC-33 | 06/11 |
+| E-mail | OOC-89 (envio de prova real; a OOC-87 e a OOC-88 já fecharam) | Parte "prova" da sessão 49 | 06/11 |
+| Acadêmico | OOC-99 (calendário de docentes) | Agenda dos docentes na seção Acadêmico | 06/11 |
+| Lançamento | OOC-50 (restauração do backup, vinda do sprint anterior; espera o OK do dono sobre onde restaurar) | Sessão 55, que está na lista do que nunca se corta | 06/11 |
 
-Esperando decisão: OOC-72 (como chega o consentimento do apoderado, prazo 06/11), dois critérios da OOC-98 que contradizem a OOC-35 e a OOC-80 (a turma "fica ativa" ao atribuir docente, e docente só se atribui com link), a OOC-95 pedindo "editar nota" contra a nota travada de 08/10/2026, a OOC-103 pedindo que o docente preencha a própria ficha contra a ficha só de leitura da OOC-79, onde mostrar os comprovantes do aluno (OOC-62), quem exporta alunos (`STUDENT_EXPORT_ROLES`, OOC-121), quem vê a auditoria (`AUDIT_LOG_ROLES`, OOC-122), quem reenvia e-mail que falhou (`EMAIL_DELIVERY_RESEND_ROLES`, OOC-90) e a regra de suspensão de aluno.
+Esperando decisão: OOC-72 (como chega o consentimento do apoderado, prazo 06/11, vai estourar sem resposta), onde restaurar o backup (OOC-50), se frequência continua no escopo (OOC-38), a OOC-102 pedindo que enviar notas finalize a turma contra o status só por mão da OOC-35, a OOC-95 e a OOC-102 pedindo "editar nota" contra a nota travada de 08/10/2026, dois critérios da OOC-98 que contradizem a OOC-35 e a OOC-80 (a turma "fica ativa" ao atribuir docente, e docente só se atribui com link), a OOC-103 pedindo que o docente preencha a própria ficha contra a ficha só de leitura da OOC-79, onde mostrar os comprovantes do aluno (OOC-62), se o aluno corrige o próprio celular (OOC-110), a definição de "vagas fechadas" (OOC-97), quem exporta alunos (`STUDENT_EXPORT_ROLES`, OOC-121), quem vê a auditoria (`AUDIT_LOG_ROLES`, OOC-122), quem reenvia e-mail que falhou (`EMAIL_DELIVERY_RESEND_ROLES`, OOC-90) e a regra de suspensão de aluno.
 
 ---
 
