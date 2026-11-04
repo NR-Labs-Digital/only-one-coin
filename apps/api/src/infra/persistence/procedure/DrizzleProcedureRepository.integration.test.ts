@@ -196,7 +196,7 @@ async function seat(tx: Tx, enrollmentId: string) {
   return { seatStatus: row!.seatStatus, seatsTaken: group!.seatsTaken };
 }
 
-describe("origin of a payment (0045)", () => {
+describe("origin of a payment (0046)", () => {
   it("refuses a payment with no origin and one with both", async () => {
     await rolledBack(async (tx, seeded) => {
       const request = await open(seeded);

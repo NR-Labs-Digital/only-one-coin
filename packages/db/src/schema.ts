@@ -774,7 +774,7 @@ export const procedurePrices = pgTable(
     kind: text("kind").notNull(),
     amountCents: integer("amount_cents").notNull(),
     validFrom: timestamp("valid_from", { withTimezone: true }).notNull().defaultNow(),
-    // Better Auth's "user" is not modelled here; FK written by hand in 0045.
+    // Better Auth's "user" is not modelled here; FK written by hand in 0046.
     // Null only for the row the migration carried over from the settings.
     createdBy: text("created_by"),
     createdAt: createdAt(),
