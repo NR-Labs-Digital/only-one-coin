@@ -36,6 +36,20 @@ export const readStaffSession = cache(async (): Promise<StaffUser | null> => {
 })
 
 /**
+ * Whether whoever opened a staff login is already in: asked of `apps/api`
+ * (`/me`), never read off the cookie, which may have expired or been revoked. A
+ * read that fails counts as not signed in: the logins never depended on the API
+ * to render, and an outage must not turn the door into an error page.
+ */
+export async function isStaffSignedIn(): Promise<boolean> {
+  try {
+    return (await readStaffSession()) !== null
+  } catch {
+    return false
+  }
+}
+
+/**
  * The signed-in staff member, read from the real session — never a client
  * choice (CLAUDE.md §8).
  *
