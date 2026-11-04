@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE } from "../notification/EmailNotification.js";
 import { paymentApprovedEmails, paymentRejectedEmails } from "../notification/enrollmentEmails.js";
+import { procedurePaymentApprovedEmails, procedurePaymentRejectedEmails } from "../notification/procedureEmails.js";
 import { newPortalToken, type PortalAccessOutcome } from "../identity/portal/PortalAccess.js";
 import { portalCredentialsEmail } from "../identity/portal/portalEmails.js";
 import type { IPortalLinkBuilder, PortalAccountProvisioning } from "../identity/portal/ports.js";
@@ -18,7 +19,8 @@ export interface SettlePaymentInput {
 export interface SettlePaymentOutput {
   paymentId: string;
   status: "approved" | "rejected";
-  seatStatus: SeatStatus;
+  /** Null for a procedure's payment: it has no seat to move. */
+  seatStatus: SeatStatus | null;
   portalAccess: PortalAccessOutcome | null;
 }
 
@@ -31,6 +33,10 @@ export interface SettlePaymentOutput {
  *
  * Approving also creates the student's portal account (first approval only —
  * later ones find it linked).
+ *
+ * A procedure's payment (OOC-83) goes through the same door and moves only its
+ * request: `paid` frees the procedure's own flow to run. Whoever asked is already
+ * signed in to the portal, so there is no account to create.
  *
  * The e-mail goes out in es-PE: the enrollment does not record the language
  * its form was filled in.
@@ -49,26 +55,31 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
     if (!target) throw new PaymentNotFoundError();
     if (target.status === "approved" || target.status === "rejected") throw new PaymentAlreadySettledError();
 
+    const { origin } = target;
     const approving = input.decision.kind === "approve";
-    if (approving && target.seatStatus === "released") throw new PaymentSeatReleasedError();
+    if (approving && origin.kind === "enrollment" && origin.seatStatus === "released") throw new PaymentSeatReleasedError();
 
     const context = await this.emailContextLookup.find({
       studentId: target.studentId,
       classGroupId: target.classGroupId,
     });
     const facts = context ? { paymentId: target.paymentId, ...context } : null;
-    const notifications = facts
-      ? approving
-        ? paymentApprovedEmails(facts, DEFAULT_LOCALE)
-        : paymentRejectedEmails(facts, DEFAULT_LOCALE)
-      : [];
+    const emailsFor =
+      origin.kind === "procedure"
+        ? approving
+          ? procedurePaymentApprovedEmails
+          : procedurePaymentRejectedEmails
+        : approving
+          ? paymentApprovedEmails
+          : paymentRejectedEmails;
+    const notifications = facts ? emailsFor(facts, DEFAULT_LOCALE) : [];
 
     // The first approval opens the portal (CLAUDE.md §1, reopened 05/10/2026):
     // the account is created with the settlement, and its e-mail carries a
     // link to set the password — never the password (outbox.vars is plain).
     const now = new Date();
     const activation = newPortalToken("activation", now);
-    const portalAccess: PortalAccountProvisioning | null = approving
+    const portalAccess: PortalAccountProvisioning | null = approving && origin.kind === "enrollment"
       ? {
           studentId: target.studentId,
           actorId: input.actorId,
@@ -83,8 +94,7 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
     const to = approving ? "approved" : "rejected";
     const { seatStatus, portalAccess: portalOutcome } = await this.settlements.settle({
       paymentId: target.paymentId,
-      enrollmentId: target.enrollmentId,
-      classGroupId: target.classGroupId,
+      origin,
       to,
       decision: {
         by: input.actorId,
@@ -96,10 +106,10 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
         actorId: input.actorId,
         action: approving ? "payment.approved" : "payment.rejected",
         targetId: target.paymentId,
-        metadata:
-          input.decision.kind === "reject"
-            ? { enrollmentId: target.enrollmentId, reason: input.decision.reason, note: input.decision.note }
-            : { enrollmentId: target.enrollmentId },
+        metadata: {
+          ...(origin.kind === "enrollment" ? { enrollmentId: origin.enrollmentId } : { procedureRequestId: origin.procedureRequestId }),
+          ...(input.decision.kind === "reject" ? { reason: input.decision.reason, note: input.decision.note } : {}),
+        },
         at: now,
       },
       portalAccess,

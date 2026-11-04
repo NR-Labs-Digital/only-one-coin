@@ -38,6 +38,30 @@
         "If you think this is a mistake, please reach out through Only One Coin's support channels."
       ]
     },
+    "procedure_payment_under_review": {
+      "subject": "We are reviewing the payment for {studentName}'s request",
+      "preheader": "Our team will check the receipt.",
+      "paragraphs": [
+        "The payment for {studentName}'s request, about the enrollment in {courseName}, has gone to manual review.",
+        "Our team will check the receipt and write to you here with the result. There is no need to send it again."
+      ]
+    },
+    "procedure_payment_approved": {
+      "subject": "We approved the payment for {studentName}'s request",
+      "preheader": "The request is now being handled.",
+      "paragraphs": [
+        "We approved the payment for {studentName}'s request, about the enrollment in {courseName}.",
+        "The request is now being handled and we will let you know here when it is ready. You can follow its status in the student portal."
+      ]
+    },
+    "procedure_payment_rejected": {
+      "subject": "We could not confirm the payment for {studentName}'s request",
+      "preheader": "The receipt was not approved.",
+      "paragraphs": [
+        "We could not confirm the payment for {studentName}'s request, about the enrollment in {courseName}. The enrollment does not change: this only affects the request.",
+        "You can make the request again from the student portal. If you think this is a mistake, contact us through Only One Coin's support channels."
+      ]
+    },
     "portal_credentials": {
       "subject": "Activate your Only One Coin student portal access",
       "preheader": "Create your password to sign in.",

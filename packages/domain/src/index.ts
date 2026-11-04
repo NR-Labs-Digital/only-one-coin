@@ -194,7 +194,7 @@ export { ClaimSeatHoldUseCase, type ClaimSeatHoldInput } from "./enrollment/Clai
 export { ReleaseSeatHoldUseCase } from "./enrollment/ReleaseSeatHoldUseCase.js";
 export { ExpireSeatHoldsUseCase, EXPIRE_SEAT_HOLDS_BATCH } from "./enrollment/ExpireSeatHoldsUseCase.js";
 export type { ReceiptUpload, ReceiptUploadStatus } from "./enrollment/ReceiptUpload.js";
-export type { IReceiptUploadRepository } from "./enrollment/ReceiptUploadRepository.js";
+export type { IReceiptUploadRepository, ReceiptUploadOwner } from "./enrollment/ReceiptUploadRepository.js";
 export type { IReceiptStorage, PresignedReceiptUpload, StoredObjectHead } from "./enrollment/ReceiptStorage.js";
 export {
   exifSignals,
@@ -422,6 +422,39 @@ export {
 export { DisableOwnMfaUseCase, type DisableOwnMfaInput } from "./identity/DisableOwnMfaUseCase.js";
 export { STAFF_MFA_CODE_TTL_MINUTES, staffMfaCodeEmail } from "./identity/staffMfaEmail.js";
 
+export {
+  PROCEDURE_KINDS,
+  PROCEDURE_PRICE_BOUNDS,
+  PROCEDURE_REQUEST_STATUSES,
+  ProcedureKindSchema,
+  acceptsPayment,
+  type ProcedureKind,
+  type ProcedurePrice,
+  type ProcedureRequestRef,
+  type ProcedureRequestStatus,
+} from "./procedure/Procedure.js";
+export {
+  InvalidProcedurePriceError,
+  ProcedureAlreadyOpenError,
+  ProcedureEnrollmentNotEligibleError,
+  ProcedureNotPayableError,
+  ProcedurePriceNotSetError,
+  ProcedureRequestNotFoundError,
+} from "./procedure/errors.js";
+export type { IProcedureRepository, SubmitProcedurePaymentParams } from "./procedure/ProcedureRepository.js";
+export { OpenProcedureRequestUseCase, type OpenProcedureRequestInput } from "./procedure/OpenProcedureRequestUseCase.js";
+export {
+  RequestProcedureReceiptUploadUseCase,
+  type RequestProcedureReceiptUploadInput,
+  type RequestProcedureReceiptUploadOutput,
+} from "./procedure/RequestProcedureReceiptUploadUseCase.js";
+export {
+  ConfirmProcedureReceiptUploadUseCase,
+  type ConfirmProcedureReceiptUploadInput,
+} from "./procedure/ConfirmProcedureReceiptUploadUseCase.js";
+export { SubmitProcedurePaymentUseCase, type SubmitProcedurePaymentInput } from "./procedure/SubmitProcedurePaymentUseCase.js";
+export { SetProcedurePriceUseCase, type SetProcedurePriceInput } from "./procedure/SetProcedurePriceUseCase.js";
+
 export type {
   FeatureFlagOverride,
   FeatureFlagOverrideView,
@@ -589,6 +622,7 @@ export {
   PaymentRejectionReasonSchema,
   type PaymentRejectionReason,
   type PaymentDecision,
+  type PaymentOrigin,
   type PaymentToSettle,
   type IPaymentSettlementRepository,
 } from "./enrollment/PaymentSettlement.js";

@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
 import { paymentUnderReviewEmails } from "../notification/enrollmentEmails.js";
+import { procedurePaymentUnderReviewEmails } from "../notification/procedureEmails.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IEnrollmentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
 import { exifSignals, routesToHumanReview, type ReceiptFraudSignal } from "./ReceiptScreening.js";
@@ -68,7 +69,9 @@ export class ScreenReceiptUploadUseCase extends BaseUseCase<ScreenReceiptUploadI
    * checking the receipt, not that it looked like another one. */
   private async underReviewEmails(subject: ReceiptScreeningSubject): Promise<EmailNotification[]> {
     const context = await this.emailContextLookup.find({ studentId: subject.studentId, classGroupId: subject.classGroupId });
-    return context ? paymentUnderReviewEmails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE) : [];
+    if (!context) return [];
+    const emails = subject.isProcedure ? procedurePaymentUnderReviewEmails : paymentUnderReviewEmails;
+    return emails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE);
   }
 }
 

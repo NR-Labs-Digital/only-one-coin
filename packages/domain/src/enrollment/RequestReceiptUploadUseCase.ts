@@ -59,7 +59,7 @@ export class RequestReceiptUploadUseCase extends BaseUseCase<RequestReceiptUploa
 
     await this.receiptUploads.create({
       id: receiptUploadId,
-      seatHoldId: hold.id,
+      owner: { kind: "seat_hold", seatHoldId: hold.id },
       objectKey,
       contentType: input.contentType,
     });

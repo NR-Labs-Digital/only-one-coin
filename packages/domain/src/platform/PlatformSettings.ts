@@ -25,9 +25,6 @@ export interface PlatformSettings {
   passingGrade: number;
   /** Business days the institution has to issue a certificate. */
   certificateDeadlineBusinessDays: number;
-  /** Today's price of the constancia. A request freezes the value it was
-   * asked at; changing this never reprices one already made. */
-  constanciaFeeCents: number;
   /** How early a teacher's contract starts warning. 45 is provisional. */
   contractAlertDays: number;
 }
@@ -51,7 +48,6 @@ export const PLATFORM_SETTING_BOUNDS = {
   passingGrade: { min: 0, max: 20 },
   certificateDeadlineBusinessDays: { min: 1, max: 90 },
   // S/1 to S/1,000: a procedure is paid (CLAUDE.md §1), never free.
-  constanciaFeeCents: { min: 100, max: 100_000 },
   contractAlertDays: { min: 1, max: 180 },
 } as const satisfies Record<PlatformSettingKey, { min: number; max: number }>;
 
@@ -67,7 +63,6 @@ export const PLATFORM_SETTING_COLUMNS: Record<PlatformSettingKey, string> = {
   ocrLowConfidencePercent: "ocr_low_confidence_percent",
   passingGrade: "passing_grade",
   certificateDeadlineBusinessDays: "certificate_deadline_business_days",
-  constanciaFeeCents: "constancia_fee_cents",
   contractAlertDays: "contract_alert_days",
 };
 

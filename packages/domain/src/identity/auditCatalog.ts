@@ -71,16 +71,23 @@ export const AUDITED_PLATFORM_SETTINGS = [
   "ocr_low_confidence_percent",
   "passing_grade",
   "certificate_deadline_business_days",
-  "constancia_fee_cents",
   "contract_alert_days",
 ] as const;
 
+/** Columns that were settings once and have entries in the trail: the fee of
+ * the constancia moved to `procedure_prices` (OOC-83). Nothing writes these
+ * actions any more, and what was written still has to read. */
+const RETIRED_PLATFORM_SETTINGS = ["constancia_fee_cents"] as const;
+
 const PLATFORM_SETTING_ACTIONS = Object.fromEntries(
-  AUDITED_PLATFORM_SETTINGS.map((column) => [
+  [...AUDITED_PLATFORM_SETTINGS, ...RETIRED_PLATFORM_SETTINGS].map((column) => [
     `platform_settings.${column}`,
     { key: "platform_setting_updated", entity: "platform", subject: "none" },
   ]),
-) as Record<`platform_settings.${(typeof AUDITED_PLATFORM_SETTINGS)[number]}`, AuditActionEntry>;
+) as Record<
+  `platform_settings.${(typeof AUDITED_PLATFORM_SETTINGS)[number] | (typeof RETIRED_PLATFORM_SETTINGS)[number]}`,
+  AuditActionEntry
+>;
 
 export const AUDIT_ACTIONS = {
   "student.registered": { key: "student_registered", entity: "student", subject: "target" },
@@ -102,6 +109,10 @@ export const AUDIT_ACTIONS = {
   // A failed e-mail sent again (OOC-90): the target is the failed outbox row,
   // the file travels in metadata (null when the subject no longer resolves).
   "email.resent": { key: "email_resent", entity: "student", subject: "metadata_student" },
+
+  "procedure_request.opened": { key: "procedure_request_opened", entity: "student", subject: "metadata_student" },
+  "procedure_request.payment_submitted": { key: "procedure_payment_submitted", entity: "payment", subject: "target" },
+  "procedure_price.created": { key: "procedure_price_created", entity: "platform", subject: "none" },
 
   "payment.approved": { key: "payment_approved", entity: "payment", subject: "target" },
   "payment.rejected": { key: "payment_rejected", entity: "payment", subject: "target" },
