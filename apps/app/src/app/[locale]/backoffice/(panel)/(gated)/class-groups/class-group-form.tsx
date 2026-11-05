@@ -926,7 +926,14 @@ export function ClassGroupForm({
   /* Create, one step at a time. Each step is left only with what it needs;
      everything optional (module, dates, window, teacher, Classroom) stays
      optional — without dates the last step only saves a draft. */
-  const current = CREATE_STEPS.indexOf(step)
+  /* Several class groups at once have nothing to fill on the teacher step:
+     teacher and Classroom belong to one group each (OOC-132), so the step leaves
+     the flow instead of showing an empty page (OOC-137). The group count only
+     changes on the schedule step, so `step` is never 'teacher' here. */
+  const steps: readonly CreateStep[] = severalGroups
+    ? CREATE_STEPS.filter((item) => item !== 'teacher')
+    : CREATE_STEPS
+  const current = steps.indexOf(step)
 
   function missingHere(): string | null {
     if (step === 'course') {
@@ -948,7 +955,7 @@ export function ClassGroupForm({
       if (opensAt && closesAt && opensAt >= closesAt) return t('class_groups.step_error_window')
       return null
     }
-    if (step === 'teacher' && !severalGroups) {
+    if (step === 'teacher') {
       return classroomInvalid ? t('class_groups.classroom_invalid') : null
     }
     return null
@@ -967,7 +974,7 @@ export function ClassGroupForm({
       setStepAttempted(true)
       return
     }
-    go(CREATE_STEPS[current + 1])
+    go(steps[current + 1])
   }
 
   const course = catalog.find((item) => item.id === courseId)
@@ -1032,7 +1039,7 @@ export function ClassGroupForm({
       <p className="mb-4 text-sm font-semibold text-ink">{t('class_groups.new_title')}</p>
 
       <Stepper
-        steps={[...CREATE_STEPS]}
+        steps={[...steps]}
         current={current}
         labelOf={(key) => t(`class_groups.step_${key as CreateStep}`)}
         onPick={(key) => go(key as CreateStep)}
@@ -1043,7 +1050,7 @@ export function ClassGroupForm({
 
       <div className="mt-5 rounded-lg bg-sky-soft px-3 py-2.5">
         <p className="text-sm font-semibold text-ink">
-          {t('class_groups.step_of', { step: current + 1, total: CREATE_STEPS.length })}
+          {t('class_groups.step_of', { step: current + 1, total: steps.length })}
           {' · '}
           {t(`class_groups.step_${step}`)}
         </p>
@@ -1089,22 +1096,14 @@ export function ClassGroupForm({
               <BoIcon name="help" size={18} className="mt-0.5 shrink-0 text-brand-blue" />
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-semibold text-ink">{t('class_groups.teacher_optional_title')}</p>
-                <p className="text-sm text-ink">
-                  {severalGroups
-                    ? t('class_groups.teacher_many_hint', { count: groupCount })
-                    : t('class_groups.teacher_optional_hint')}
-                </p>
+                <p className="text-sm text-ink">{t('class_groups.teacher_optional_hint')}</p>
               </div>
             </div>
-            {!severalGroups && (
-              <>
-                <AutoGrid min="15rem" gap="gap-3">
-                  {teacherField}
-                  {classroomField}
-                </AutoGrid>
-                {teacherWarnings}
-              </>
-            )}
+            <AutoGrid min="15rem" gap="gap-3">
+              {teacherField}
+              {classroomField}
+            </AutoGrid>
+            {teacherWarnings}
           </div>
         )}
 
@@ -1118,6 +1117,12 @@ export function ClassGroupForm({
                 </div>
               ))}
             </dl>
+            {severalGroups && (
+              <p className="flex items-start gap-2 rounded-lg border border-brand-blue/30 bg-sky-soft p-3.5 text-sm text-ink">
+                <BoIcon name="help" size={18} className="mt-0.5 shrink-0 text-brand-blue" />
+                {t('class_groups.teacher_many_hint', { count: groupCount })}
+              </p>
+            )}
             {missingDatesNote}
           </div>
         )}
@@ -1143,7 +1148,7 @@ export function ClassGroupForm({
         {current > 0 && (
           <button
             type="button"
-            onClick={() => go(CREATE_STEPS[current - 1])}
+            onClick={() => go(steps[current - 1])}
             className={secondaryButtonClass}
           >
             <BoIcon name="arrow-left" size={16} />
@@ -1172,7 +1177,7 @@ export function ClassGroupForm({
           </>
         ) : (
           <button type="button" onClick={advance} className={primaryButtonClass}>
-            {step === 'teacher' && !severalGroups && teacherId === ''
+            {step === 'teacher' && teacherId === ''
               ? t('class_groups.step_skip_teacher')
               : t('class_groups.step_next')}
             <BoIcon name="chevron-right" size={16} />
