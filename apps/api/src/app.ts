@@ -125,6 +125,7 @@ import { completeStaffInviteRoute } from "@/http/identity/CompleteStaffInviteRou
 import { promoteStaffRoleRoute } from "@/http/identity/PromoteStaffRoleRoute.js";
 import { removeStaffAccessRoute } from "@/http/identity/RemoveStaffAccessRoute.js";
 import { restoreStaffAccessRoute } from "@/http/identity/RestoreStaffAccessRoute.js";
+import { retireStaffAccountRoute } from "@/http/identity/RetireStaffAccountRoute.js";
 import { createStaffPasswordResetRoute } from "@/http/identity/CreateStaffPasswordResetRoute.js";
 import { renewStaffPasswordResetRoute } from "@/http/identity/RenewStaffPasswordResetRoute.js";
 import { cancelStaffPasswordResetRoute } from "@/http/identity/CancelStaffPasswordResetRoute.js";
@@ -289,6 +290,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(completeStaffInviteRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(promoteStaffRoleRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(removeStaffAccessRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireStaffAccountRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(restoreStaffAccessRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffPasswordResetRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(renewStaffPasswordResetRoute);

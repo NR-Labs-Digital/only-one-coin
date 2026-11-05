@@ -4,6 +4,7 @@ import {
   type ITeacherContractStorage,
   type ITeacherRepository,
   type NationalIdType,
+  type RetirableStaffAccount,
   type Teacher,
   type TeacherContract,
 } from "@ooc/domain";
@@ -75,12 +76,27 @@ export class FakeStaffAccessRepository implements IStaffAccessRepository {
   public readonly banned: { userId: string; reason: string }[] = [];
   public readonly unbanned: string[] = [];
 
-  async ban(userId: string, reason: string): Promise<void> {
+  public readonly retirable = new Map<string, RetirableStaffAccount>();
+  public readonly retired: { userId: string; retiredEmail: string }[] = [];
+
+  async ban(userId: string, reason: string): Promise<boolean> {
     this.banned.push({ userId, reason });
+    return !this.retired.some((item) => item.userId === userId);
   }
 
-  async unban(userId: string): Promise<void> {
+  async unban(userId: string): Promise<boolean> {
     this.unbanned.push(userId);
+    return !this.retired.some((item) => item.userId === userId);
+  }
+
+  async findRetirable(userId: string): Promise<RetirableStaffAccount | null> {
+    return this.retirable.get(userId) ?? null;
+  }
+
+  async retire(userId: string, retiredEmail: string): Promise<boolean> {
+    if (!this.retirable.delete(userId)) return false;
+    this.retired.push({ userId, retiredEmail });
+    return true;
   }
 }
 

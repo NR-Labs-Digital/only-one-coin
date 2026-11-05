@@ -70,6 +70,7 @@ import {
   RequestStaffPasswordResetUseCase,
   RestoreCatalogEntryUseCase,
   RestoreStaffAccessUseCase,
+  RetireStaffAccountUseCase,
   SchedulePlanPriceUseCase,
   SetFeatureFlagOverrideUseCase,
   SubmitPublicEnrollmentUseCase,
@@ -317,6 +318,7 @@ export interface AppUseCases {
     completeInvite: CompleteStaffInviteUseCase;
     removeAccess: RemoveStaffAccessUseCase;
     restoreAccess: RestoreStaffAccessUseCase;
+    retireAccount: RetireStaffAccountUseCase;
     createPasswordReset: CreateStaffPasswordResetUseCase;
     renewPasswordReset: RenewStaffPasswordResetUseCase;
     cancelPasswordReset: CancelStaffPasswordResetUseCase;
@@ -600,6 +602,7 @@ function buildContainer(): AppContainer {
   );
   const removeAccess = new RemoveStaffAccessUseCase(staffAccessRepository, auditLogRepository);
   const restoreAccess = new RestoreStaffAccessUseCase(staffAccessRepository, teacherRepository, auditLogRepository);
+  const retireAccount = new RetireStaffAccountUseCase(staffAccessRepository, auditLogRepository);
   const setTeacherRosterStatus = new SetTeacherRosterStatusUseCase(
     teacherRepository,
     staffAccessRepository,
@@ -844,6 +847,7 @@ function buildContainer(): AppContainer {
         completeInvite,
         removeAccess,
         restoreAccess,
+        retireAccount,
         createPasswordReset,
         renewPasswordReset,
         cancelPasswordReset,

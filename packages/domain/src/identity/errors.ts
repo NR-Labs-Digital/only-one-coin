@@ -167,6 +167,28 @@ export class TeacherRoleLockedError extends UnableToProcessEntryError {
   }
 }
 
+/** The e-mail typed to confirm "eliminar perfil" is not the target's (OOC-136). */
+export class StaffAccountConfirmationMismatchError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "staff_account.confirmation_mismatch",
+      message: "The confirmation does not match this account's e-mail.",
+      ...params,
+    });
+  }
+}
+
+/** A teacher's account leaves through the roster, never through Equipe (OOC-79). */
+export class StaffAccountTeacherLinkedError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "staff_account.teacher_linked",
+      message: "This account belongs to a teacher file.",
+      ...params,
+    });
+  }
+}
+
 /**
  * Leaving the roster closed this account (OOC-78); only rejoining the roster
  * reopens it — not Equipe's "restore access".

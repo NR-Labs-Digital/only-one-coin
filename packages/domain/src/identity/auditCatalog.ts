@@ -167,6 +167,7 @@ export const AUDIT_ACTIONS = {
   "staff.invite_completed": { key: "staff_invite_completed", entity: "staff", subject: "target" },
   "staff.access_removed": { key: "staff_access_removed", entity: "staff", subject: "target" },
   "staff.access_restored": { key: "staff_access_restored", entity: "staff", subject: "target" },
+  "staff.account_retired": { key: "staff_account_retired", entity: "staff", subject: "target" },
   "staff.password_changed": { key: "staff_password_changed", entity: "staff", subject: "target" },
   "staff.password_reset_created": { key: "staff_password_reset_created", entity: "staff", subject: "target" },
   "staff.password_reset_requested": { key: "staff_password_reset_requested", entity: "staff", subject: "target" },

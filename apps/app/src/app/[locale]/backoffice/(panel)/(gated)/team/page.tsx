@@ -55,6 +55,7 @@ export default async function TeamPage({
         rows={rows}
         invitableTeachers={invitableTeachers}
         currentUserId={staff.id}
+        currentUserRole={staff.role}
         currentUserName={`${staff.firstName} ${staff.lastName}`}
       />
       <RoleChangeLog items={roleChanges} />

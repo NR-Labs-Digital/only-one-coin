@@ -329,7 +329,7 @@ export type {
   ProvisionStaffAccountInput,
   ProvisionStaffAccountOutput,
 } from "./identity/ports/IStaffAccountProvisioner.js";
-export type { IStaffAccessRepository } from "./identity/ports/IStaffAccessRepository.js";
+export type { IStaffAccessRepository, RetirableStaffAccount } from "./identity/ports/IStaffAccessRepository.js";
 export type { IStaffUserLookup, StaffUserDisplay, ResettableStaffUser } from "./identity/ports/IStaffUserLookup.js";
 export type {
   IStaffPasswordResetRepository,
@@ -374,6 +374,11 @@ export {
   RemoveStaffAccessUseCase,
   type RemoveStaffAccessInput,
 } from "./identity/RemoveStaffAccessUseCase.js";
+export {
+  RetireStaffAccountUseCase,
+  retiredStaffEmail,
+  type RetireStaffAccountInput,
+} from "./identity/RetireStaffAccountUseCase.js";
 export {
   RestoreStaffAccessUseCase,
   type RestoreStaffAccessInput,
