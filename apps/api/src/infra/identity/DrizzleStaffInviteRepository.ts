@@ -1,7 +1,8 @@
 import { staffInvites } from "@ooc/db";
 import { and, eq } from "drizzle-orm";
-import type { CreateStaffInviteRecord, IStaffInviteRepository, Role, StaffInvite } from "@ooc/domain";
+import type { CreateStaffInviteRecord, EmailNotification, IStaffInviteRepository, Role, StaffInvite } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
+import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 
 type StaffInviteRow = typeof staffInvites.$inferSelect;
 
@@ -22,22 +23,29 @@ function toDomain(row: StaffInviteRow): StaffInvite {
 export class DrizzleStaffInviteRepository implements IStaffInviteRepository {
   constructor(private readonly db: Db) {}
 
-  async create(record: CreateStaffInviteRecord): Promise<StaffInvite> {
-    const [row] = await this.db
-      .insert(staffInvites)
-      .values({
-        email: record.email,
-        firstName: record.firstName,
-        lastName: record.lastName,
-        role: record.role,
-        token: record.token,
-        invitedBy: record.invitedBy,
-        teacherId: record.teacherId,
-        expiresAt: record.expiresAt,
-      })
-      .returning();
+  async create(
+    record: CreateStaffInviteRecord,
+    notify: (invite: StaffInvite) => EmailNotification[],
+  ): Promise<StaffInvite> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(staffInvites)
+        .values({
+          email: record.email,
+          firstName: record.firstName,
+          lastName: record.lastName,
+          role: record.role,
+          token: record.token,
+          invitedBy: record.invitedBy,
+          teacherId: record.teacherId,
+          expiresAt: record.expiresAt,
+        })
+        .returning();
 
-    return toDomain(row!);
+      const invite = toDomain(row!);
+      await insertOutboxEmails(tx, notify(invite));
+      return invite;
+    });
   }
 
   async findPendingByEmail(email: string): Promise<StaffInvite | null> {

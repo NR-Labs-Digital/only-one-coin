@@ -1,4 +1,5 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
+import { NotFoundError } from "../shared/base/errors/NotFoundError.js";
 import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
 import { CannotActOnSelfError, TeacherOffRosterAccessError } from "./errors.js";
 import type { IAuditLogRepository } from "./ports/IAuditLogRepository.js";
@@ -32,7 +33,13 @@ export class RestoreStaffAccessUseCase extends BaseUseCase<RestoreStaffAccessInp
       throw new TeacherOffRosterAccessError();
     }
 
-    await this.staffAccessRepository.unban(input.targetUserId);
+    const restored = await this.staffAccessRepository.unban(input.targetUserId);
+    if (!restored) {
+      throw new NotFoundError({
+        reason: "staff_account.not_found",
+        message: "No panel account with this id.",
+      });
+    }
 
     await this.auditLogRepository.append({
       actorId: input.actorId,

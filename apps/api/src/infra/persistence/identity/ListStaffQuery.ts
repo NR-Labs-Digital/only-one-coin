@@ -66,6 +66,7 @@ export class ListStaffQuery {
       from "user" u
       left join "teachers" t on t."user_id" = u."id" and t."deleted_at" is null
       where u."role" not in ('student', 'guardian')
+        and u."deletedAt" is null
     `);
 
     const staffRows: StaffMemberRow[] = usersResult.rows.map((row) => {

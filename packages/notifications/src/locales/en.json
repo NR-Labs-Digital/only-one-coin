@@ -82,6 +82,16 @@
       ],
       "action": "Create a new password"
     },
+    "staff_invite": {
+      "subject": "You were invited to the Only One Coin panel",
+      "preheader": "Create your password to sign in. The link is valid for seven days.",
+      "paragraphs": [
+        "You were invited to join the team on the Only One Coin panel.",
+        "Use the button below to create your password and activate your account. The link is valid for seven days and can only be used once.",
+        "If you were not expecting this invitation, ignore this e-mail: no account is created unless you complete the registration."
+      ],
+      "action": "Activate my account"
+    },
     "staff_password_reset": {
       "subject": "Reset your Only One Coin panel password",
       "preheader": "The link is valid for one hour.",

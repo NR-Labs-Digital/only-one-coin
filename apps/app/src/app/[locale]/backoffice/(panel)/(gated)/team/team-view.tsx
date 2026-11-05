@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { NewStaffForm } from './new-staff-form'
+import { RetireAccountDialog, retireOutcome, type RetireOutcome } from './retire-account-dialog'
 import { RoleChangeDialog, roleChangeOutcome, type RoleChangeOutcome } from './role-change-dialog'
 
 /**
@@ -78,6 +79,7 @@ export function TeamView({
   rows,
   invitableTeachers,
   currentUserId,
+  currentUserRole,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
 }: {
@@ -86,6 +88,8 @@ export function TeamView({
   invitableTeachers: InvitableTeacher[]
   /** The signed-in admin: nobody moves their own cargo or their own door. */
   currentUserId: string
+  /** Only a master deletes a master; the API refuses it either way. */
+  currentUserRole: StaffRole
   currentUserName: string
 }) {
   const t = useTranslations('bo')
@@ -101,6 +105,7 @@ export function TeamView({
   const [changing, setChanging] = useState<StaffMemberRow | null>(null)
   const [removing, setRemoving] = useState<StaffMemberRow | null>(null)
   const [cancelling, setCancelling] = useState<StaffMemberRow | null>(null)
+  const [retiring, setRetiring] = useState<StaffMemberRow | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [resetLink, setResetLink] = useState<{ name: string; link: string } | null>(null)
@@ -220,6 +225,27 @@ export function TeamView({
     } finally {
       setBusyId(null)
     }
+  }
+
+  /** The profile leaves the directory; the row behind it stays for what points
+      at it (RetireStaffAccountUseCase). */
+  async function retireAccount(member: StaffMemberRow, confirmEmail: string): Promise<RetireOutcome> {
+    const response = await fetch(`/api/v1/staff/${member.id}/retire`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmEmail }),
+    }).catch(() => null)
+    if (!response) return 'failed'
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { reason?: string } | null
+      return retireOutcome(body?.reason)
+    }
+
+    setMembers((current) => current.filter((row) => row.id !== member.id))
+    setRetiring(null)
+    setToast(t('team.retired_toast'))
+    router.refresh()
+    return 'ok'
   }
 
   /** Withdrawing the invite before the person ever completed it. The link
@@ -654,6 +680,20 @@ export function TeamView({
                                 {t('team.restore_access')}
                               </button>
                             )}
+
+                            {/* A linked docente leaves through the roster
+                                (OOC-79), and only a master deletes a master. */}
+                            {!row.teacherId &&
+                              (row.role !== 'master' || currentUserRole === 'master') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setRetiring(row)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-sm font-semibold text-red-600 transition hover:border-red-400 hover:bg-red-50"
+                                >
+                                  <BoIcon name="close" size={14} />
+                                  {t('team.retire_action')}
+                                </button>
+                              )}
                           </span>
                         )}
                       </td>
@@ -711,6 +751,12 @@ export function TeamView({
         member={cancelling}
         onClose={() => setCancelling(null)}
         onConfirm={cancelInvite}
+      />
+
+      <RetireAccountDialog
+        member={retiring}
+        onClose={() => setRetiring(null)}
+        onConfirm={retireAccount}
       />
 
       <PasswordResetLinkDialog data={resetLink} onClose={() => setResetLink(null)} />

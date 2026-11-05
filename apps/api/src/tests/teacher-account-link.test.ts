@@ -57,7 +57,9 @@ function setup(...onFile: Teacher[]) {
     provisioner,
     access,
     roles,
-    create: new CreateStaffInviteUseCase(new FakeStaffUserLookup(), invites, teachers, audit),
+    create: new CreateStaffInviteUseCase(new FakeStaffUserLookup(), invites, teachers, audit, {
+      build: (token) => `https://panel.test/backoffice/invite/${token}`,
+    }),
     complete: new CompleteStaffInviteUseCase(invites, provisioner, teachers, audit),
     restore: new RestoreStaffAccessUseCase(access, teachers, audit),
     promote: new PromoteUserRoleUseCase(new FakeFreshAuthVerifier(), roles, audit),

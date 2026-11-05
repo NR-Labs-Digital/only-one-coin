@@ -1,5 +1,6 @@
 import type {
   CreateStaffInviteRecord,
+  EmailNotification,
   IFreshAuthVerifier,
   IStaffAccountProvisioner,
   IStaffInviteRepository,
@@ -30,12 +31,16 @@ export class FakeStaffUserLookup implements IStaffUserLookup {
 export class FakeStaffInviteRepository implements IStaffInviteRepository {
   public readonly rows: StaffInvite[] = [];
   public readonly completed: { id: string; userId: string }[] = [];
+  public readonly emails: EmailNotification[] = [];
 
   constructor(...onFile: StaffInvite[]) {
     this.rows.push(...onFile);
   }
 
-  async create(record: CreateStaffInviteRecord): Promise<StaffInvite> {
+  async create(
+    record: CreateStaffInviteRecord,
+    notify: (invite: StaffInvite) => EmailNotification[],
+  ): Promise<StaffInvite> {
     const invite: StaffInvite = {
       id: `inv_${this.rows.length + 1}`,
       email: record.email,
@@ -48,6 +53,7 @@ export class FakeStaffInviteRepository implements IStaffInviteRepository {
       expiresAt: record.expiresAt,
     };
     this.rows.push(invite);
+    this.emails.push(...notify(invite));
     return invite;
   }
 

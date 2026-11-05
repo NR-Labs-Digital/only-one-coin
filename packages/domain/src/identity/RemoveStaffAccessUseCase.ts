@@ -1,4 +1,5 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
+import { NotFoundError } from "../shared/base/errors/NotFoundError.js";
 import { CannotActOnSelfError } from "./errors.js";
 import type { IAuditLogRepository } from "./ports/IAuditLogRepository.js";
 import type { IStaffAccessRepository } from "./ports/IStaffAccessRepository.js";
@@ -22,7 +23,13 @@ export class RemoveStaffAccessUseCase extends BaseUseCase<RemoveStaffAccessInput
       throw new CannotActOnSelfError();
     }
 
-    await this.staffAccessRepository.ban(input.targetUserId, "backoffice_access_removed");
+    const banned = await this.staffAccessRepository.ban(input.targetUserId, "backoffice_access_removed");
+    if (!banned) {
+      throw new NotFoundError({
+        reason: "staff_account.not_found",
+        message: "No panel account with this id.",
+      });
+    }
 
     await this.auditLogRepository.append({
       actorId: input.actorId,

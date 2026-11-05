@@ -82,6 +82,16 @@
       ],
       "action": "Crear contraseña nueva"
     },
+    "staff_invite": {
+      "subject": "Te invitaron al panel de Only One Coin",
+      "preheader": "Crea tu contraseña para entrar. El enlace vale por siete días.",
+      "paragraphs": [
+        "Te invitaron a formar parte del equipo en el panel de Only One Coin.",
+        "Usa el botón de abajo para crear tu contraseña y activar tu cuenta. El enlace vale por siete días y solo se puede usar una vez.",
+        "Si no esperabas esta invitación, ignora este correo: no se crea ninguna cuenta sin que completes el registro."
+      ],
+      "action": "Activar mi cuenta"
+    },
     "staff_password_reset": {
       "subject": "Restablece tu contraseña del panel de Only One Coin",
       "preheader": "El enlace vale por una hora.",

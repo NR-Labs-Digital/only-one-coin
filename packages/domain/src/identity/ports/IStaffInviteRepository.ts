@@ -1,3 +1,4 @@
+import type { EmailNotification } from "../../notification/EmailNotification.js";
 import type { Role } from "../Role.js";
 
 export interface StaffInvite {
@@ -25,7 +26,8 @@ export interface CreateStaffInviteRecord {
 }
 
 export interface IStaffInviteRepository {
-  create(record: CreateStaffInviteRecord): Promise<StaffInvite>;
+  /** Writes the invite and the e-mails `notify` builds from it in one transaction. */
+  create(record: CreateStaffInviteRecord, notify: (invite: StaffInvite) => EmailNotification[]): Promise<StaffInvite>;
   findPendingByEmail(email: string): Promise<StaffInvite | null>;
   findPendingByTeacherId(teacherId: string): Promise<StaffInvite | null>;
   findById(id: string): Promise<StaffInvite | null>;
