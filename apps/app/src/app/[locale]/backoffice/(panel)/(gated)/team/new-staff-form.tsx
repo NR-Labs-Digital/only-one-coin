@@ -199,6 +199,7 @@ export function NewStaffForm({
         </p>
         <p className="mb-4 text-xs text-muted-foreground">
           {t('team.invite_created_subtitle', {
+            email: created.member.email,
             name: `${created.member.firstName} ${created.member.lastName}`,
             date: formatDate(created.member.inviteExpiresAt as string, locale),
           })}

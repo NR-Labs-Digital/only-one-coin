@@ -5,7 +5,9 @@ import type { ITeacherRepository } from "../teacher/TeacherRepository.js";
 import { TeacherInviteRefusedError } from "./errors.js";
 import type { IAuditLogRepository } from "./ports/IAuditLogRepository.js";
 import type { IStaffInviteRepository, StaffInvite } from "./ports/IStaffInviteRepository.js";
+import type { IStaffInviteLinkBuilder } from "./ports/IStaffInviteLinkBuilder.js";
 import type { IStaffUserLookup } from "./ports/IStaffUserLookup.js";
+import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
 import type { Role } from "./Role.js";
 
 const INVITE_TTL_DAYS = 7;
@@ -42,6 +44,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
     private readonly staffInviteRepository: IStaffInviteRepository,
     private readonly teacherRepository: ITeacherRepository,
     private readonly auditLogRepository: IAuditLogRepository,
+    private readonly linkBuilder: IStaffInviteLinkBuilder,
   ) {
     super();
   }
@@ -71,16 +74,32 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + INVITE_TTL_DAYS);
 
-    const invite = await this.staffInviteRepository.create({
-      email,
-      firstName: input.firstName.trim(),
-      lastName: input.lastName.trim(),
-      role: input.role,
-      token,
-      invitedBy: input.actorId,
-      teacherId,
-      expiresAt,
-    });
+    const invite = await this.staffInviteRepository.create(
+      {
+        email,
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        role: input.role,
+        token,
+        invitedBy: input.actorId,
+        teacherId,
+        expiresAt,
+      },
+      // Spanish, like a manual enrollment's e-mail: the invite does not record
+      // the language the person reads, only the one the admin was using.
+      (created): EmailNotification[] => [
+        {
+          templateKey: "staff_invite",
+          to: created.email,
+          locale: DEFAULT_LOCALE,
+          vars: {
+            recipientName: `${created.firstName} ${created.lastName}`,
+            accessUrl: this.linkBuilder.build(created.token, DEFAULT_LOCALE),
+          },
+          dedupeKey: `staff_invite:${created.id}:staff`,
+        },
+      ],
+    );
 
     await this.auditLogRepository.append({
       actorId: input.actorId,

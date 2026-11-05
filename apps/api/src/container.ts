@@ -125,6 +125,7 @@ import { BetterAuthStaffSecondFactor } from "./infra/identity/BetterAuthStaffSec
 import { OutboxTwoFactorCodeSender } from "./infra/auth/OutboxTwoFactorCodeSender.js";
 import { recoveryCodeCipher } from "./infra/auth/recoveryCodes.js";
 import { PortalLinkBuilder } from "./infra/identity/PortalLinkBuilder.js";
+import { BackofficeInviteLinkBuilder } from "./infra/identity/BackofficeInviteLinkBuilder.js";
 import { BackofficePasswordResetLinkBuilder } from "./infra/identity/BackofficePasswordResetLinkBuilder.js";
 import { BetterAuthStaffAccountProvisioner } from "./infra/identity/BetterAuthStaffAccountProvisioner.js";
 import { BetterAuthPortalPasswordSetter } from "./infra/identity/BetterAuthPortalPasswordSetter.js";
@@ -591,6 +592,7 @@ function buildContainer(): AppContainer {
     staffInviteRepository,
     teacherRepository,
     auditLogRepository,
+    new BackofficeInviteLinkBuilder(config.BACKOFFICE_PUBLIC_URL),
   );
   const renewInvite = new RenewStaffInviteUseCase(staffInviteRepository, auditLogRepository);
   const cancelInvite = new CancelStaffInviteUseCase(staffInviteRepository, auditLogRepository);

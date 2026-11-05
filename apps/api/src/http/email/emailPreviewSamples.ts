@@ -59,6 +59,10 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     recipientName: "María Fernanda",
     resetUrl: "https://example.com/access/sample",
   },
+  staff_invite: {
+    recipientName: "Lucía Ramírez",
+    accessUrl: "https://example.com/backoffice/invite/sample",
+  },
   staff_password_reset: {
     recipientName: "Lucía Ramírez",
     resetUrl: "https://example.com/backoffice/reset-password/sample",

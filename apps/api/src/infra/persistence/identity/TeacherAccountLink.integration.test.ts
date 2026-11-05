@@ -96,6 +96,40 @@ function teacherInvite(teacherId: string, email: string) {
 }
 
 describe("teacher account link", () => {
+  it("writes the invite and its e-mail in one transaction (OOC-138)", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const invites = new DrizzleStaffInviteRepository(tx);
+      const luis = await teachers.create(Teacher.create(LUIS));
+      const email = "invite.ooc138@test.local";
+
+      const invite = await invites.create(teacherInvite(luis.id, email), (created) => [
+        {
+          templateKey: "staff_invite",
+          to: created.email,
+          locale: "es-PE",
+          vars: { recipientName: "Luis Vínculo", accessUrl: "https://panel.test/backoffice/invite/x" },
+          dedupeKey: `staff_invite:${created.id}:staff`,
+        },
+      ]);
+
+      const queued = await tx.execute<{ recipient: string; status: string }>(
+        sql`select "recipient", "status" from "outbox" where "dedupe_key" = ${`staff_invite:${invite.id}:staff`}`,
+      );
+      expect(queued.rows).toEqual([{ recipient: email, status: "pending" }]);
+
+      // An e-mail that cannot be built leaves no invite behind.
+      const refused = "refused.ooc138@test.local";
+      const rita = await teachers.create(Teacher.create(RITA));
+      await expect(
+        invites.create(teacherInvite(rita.id, refused), () => {
+          throw new Error("no e-mail");
+        }),
+      ).rejects.toThrow("no e-mail");
+      expect(await invites.findPendingByEmail(refused)).toBeNull();
+    });
+  });
+
   it("shows the file behind each teacher account and invite on the team list", async () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
@@ -103,7 +137,7 @@ describe("teacher account link", () => {
       const ana = await teachers.create(Teacher.create(ANA));
       const luis = await teachers.create(Teacher.create(LUIS));
       await teachers.linkAccount(ana.id, ANA_ACCOUNT);
-      const invite = await invites.create(teacherInvite(luis.id, "luis.ooc79@test.local"));
+      const invite = await invites.create(teacherInvite(luis.id, "luis.ooc79@test.local"), () => []);
 
       const rows = await new ListStaffQuery(tx).run();
 
@@ -125,9 +159,9 @@ describe("teacher account link", () => {
       eva.leaveRoster();
       await teachers.create(eva);
       await teachers.linkAccount(ana.id, ANA_ACCOUNT);
-      await invites.create(teacherInvite(luis.id, "luis.ooc79@test.local"));
+      await invites.create(teacherInvite(luis.id, "luis.ooc79@test.local"), () => []);
 
-      const ids = (await new ListInvitableTeachersQuery(tx).run()).map((teacher) => teacher.id);
+      const ids =(await new ListInvitableTeachersQuery(tx).run()).map((teacher) => teacher.id);
 
       expect(ids).toContain(rita.id);
       expect(ids).not.toContain(ana.id);

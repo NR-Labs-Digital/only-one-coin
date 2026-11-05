@@ -330,6 +330,7 @@ export type {
   ProvisionStaffAccountOutput,
 } from "./identity/ports/IStaffAccountProvisioner.js";
 export type { IStaffAccessRepository, RetirableStaffAccount } from "./identity/ports/IStaffAccessRepository.js";
+export type { IStaffInviteLinkBuilder } from "./identity/ports/IStaffInviteLinkBuilder.js";
 export type { IStaffUserLookup, StaffUserDisplay, ResettableStaffUser } from "./identity/ports/IStaffUserLookup.js";
 export type {
   IStaffPasswordResetRepository,

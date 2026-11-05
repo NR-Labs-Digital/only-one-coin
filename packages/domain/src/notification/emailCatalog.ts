@@ -68,6 +68,7 @@ export const EMAIL_CATALOG = {
 
   email_verification_code: { audience: "student", stage: null, conditional: false, emitted: true },
   portal_password_reset: { audience: "student", stage: null, conditional: true, emitted: true },
+  staff_invite: { audience: "staff", stage: null, conditional: false, emitted: true },
   staff_password_reset: { audience: "staff", stage: null, conditional: true, emitted: true },
   staff_mfa_code: { audience: "staff", stage: null, conditional: false, emitted: true },
 } as const satisfies Record<string, EmailCatalogEntry>;

@@ -73,6 +73,13 @@ export interface EmailTemplateVars {
     recipientName: string;
     resetUrl: string;
   };
+  /** Somebody was invited to the panel: the link opens the account. The link
+   * is a one-time secret, and `accessUrl` is scrubbed from `outbox.vars` on the
+   * row's final transition. */
+  staff_invite: {
+    recipientName: string;
+    accessUrl: string;
+  };
   /** A student asked for a new portal password (05/10/2026). */
   portal_password_reset: {
     recipientName: string;

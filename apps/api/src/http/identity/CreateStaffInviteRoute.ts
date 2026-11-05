@@ -57,7 +57,7 @@ export const createStaffInviteRoute = RouteBuilder.post("/staff/invites")
   .docs({
     tags: ["Identity"],
     summary: "Invite somebody to the panel",
-    description: "Generates a one-time invite link — the person completes their own registration.",
+    description: "Generates a one-time invite link and e-mails it — the person completes their own registration.",
   })
   .roles("master", "admin")
   .body(CreateStaffInviteBodySchema)

@@ -4,7 +4,7 @@ import type { IStaffPasswordResetLinkBuilder, Locale } from "@ooc/domain";
  * apps/app routes on short locale codes with the default one unprefixed
  * (`apps/app/src/i18n/routing.ts`: es, en, pt — `localePrefix: "as-needed"`).
  */
-const APP_LOCALE_PREFIX: Record<Locale, string> = {
+export const APP_LOCALE_PREFIX: Record<Locale, string> = {
   "es-PE": "",
   "pt-BR": "/pt",
   en: "/en",
