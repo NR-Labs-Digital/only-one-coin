@@ -209,6 +209,8 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 | Tema | Tickets | Decisão de origem |
 | --- | --- | --- |
 | Modalidade mensual do inglês e adiantar módulos | OOC-86 | 02/09 e 06/09/2026 |
+| Equipe: eliminar perfil com o e-mail digitado; convite enviado por e-mail | OOC-136, OOC-138 | 04/11/2026 |
+| *Nueva aula*: passo Docente some ao abrir mais de uma turma | OOC-137 | 04/11/2026 |
 | Procedimentos pagos além da matrícula (constancia, congelamento, troca de turma) | OOC-83, OOC-84, OOC-105 | 02/09/2026 |
 | Progressão de módulo em lote e curso com módulos | OOC-85, OOC-94 (cada curso guarda um link de material — Drive ou Docs — por módulo, exigido ao criar e ao mexer nos módulos; curso antigo aparece "Sin material" e segue editável — em revisão; mostrar o link ao docente é a OOC-100, em revisão: a turma guarda o módulo que dá), OOC-97 | 02/09/2026 |
 | Exame de clasificación | sem ticket | 02/09/2026 |
