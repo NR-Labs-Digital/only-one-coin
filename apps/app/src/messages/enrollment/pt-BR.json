@@ -42,42 +42,12 @@
         "full_name_hint": "Exatamente como está no seu documento. É assim que vai sair no seu certificado.",
         "phone_hint": "Número de celular para falarmos sobre a sua matrícula.",
         "min_age_hint": "Este curso é a partir de {age} anos.",
-        "email_hint": "Precisa ser uma conta pessoal do Gmail do aluno. Não aceitamos e-mails institucionais nem corporativos: o acesso à aula chega pelo Google Classroom.",
+        "email_hint": "Digite só o seu usuário do Gmail: o «@gmail.com» já está preenchido. Precisa ser uma conta pessoal do aluno; não aceitamos e-mails institucionais nem corporativos, porque o acesso à aula chega pelo Google Classroom.",
         "guardian_title": "Dados do responsável",
         "guardian_subtitle": "O aluno é menor de idade, então precisamos dos dados e do consentimento do responsável.",
         "guardian_email_hint": "Pode ser de qualquer provedor.",
         "consent_label": "Autorizo a matrícula do menor e o tratamento dos seus dados pessoais para fins acadêmicos.",
         "consent_version": "Texto de consentimento versão {version}. Guardamos a data e a hora do seu aceite.",
-        "verify": {
-          "title": "Verifique seu e-mail",
-          "intro": "Vamos enviar um código de 6 dígitos para {email}. Assim confirmamos que o e-mail existe e é seu: é nele que chegam o acesso à aula e os avisos da sua matrícula.",
-          "send": "Enviar código",
-          "sending": "Enviando…",
-          "sent": "Enviamos um código para {email}. Pode levar até um minuto; confira também a pasta de spam.",
-          "code_label": "Código de 6 dígitos",
-          "confirm": "Verificar",
-          "confirming": "Verificando…",
-          "resend": "Reenviar código",
-          "resend_in": "Você pode pedir outro código em {seconds} s",
-          "change_email": "Trocar e-mail",
-          "verified": "E-mail verificado",
-          "required": "Verifique seu e-mail com o código para continuar.",
-          "fill_email_first": "Digite um e-mail do Gmail válido para receber o código.",
-          "captcha_hint": "Conclua a verificação de segurança para enviar o código.",
-          "error": {
-            "code_invalid": "O código não está correto. Confira e tente de novo.",
-            "code_expired": "Esse código venceu ou foi substituído por um novo. Peça outro código.",
-            "attempts_exhausted": "Tentativas demais com este código. Peça outro código.",
-            "not_found": "Ainda não enviamos um código para este e-mail. Peça um.",
-            "cooldown": "Acabamos de enviar um código. Espere um momento antes de pedir outro.",
-            "too_many_sends": "Já enviamos vários códigos nesta matrícula. Confira se o e-mail está certo ou fale conosco pelo WhatsApp.",
-            "captcha_failed": "A verificação de segurança venceu ou não foi aceita. Conclua de novo.",
-            "captcha_unavailable": "Não conseguimos carregar a verificação de segurança. Recarregue a página; se continuar, desative o bloqueador de anúncios.",
-            "rate_limited": "Recebemos tentativas demais da sua conexão. Espere alguns minutos.",
-            "invalid_email": "Confira o e-mail: precisa ser uma conta do Gmail válida.",
-            "failed": "Não conseguimos concluir a operação. Tente de novo."
-          }
-        },
         "email_suggestion": "Você quis dizer {email}?",
         "email_suggestion_apply": "Usar este",
         "guardian_email_confirm": "Confirme o e-mail do responsável"
@@ -131,8 +101,7 @@
         "captcha_hint": "Complete a verificação de segurança para enviar sua matrícula.",
         "captcha_failed": "A verificação de segurança expirou ou não foi aceita. Complete de novo e envie outra vez.",
         "captcha_unavailable": "Não conseguimos carregar a verificação de segurança. Recarregue a página; se continuar, desative o bloqueador de anúncios ou fale com a gente pelo WhatsApp.",
-        "rate_limited": "Recebemos tentativas demais da sua conexão. Espere alguns minutos e envie de novo — seus dados e sua vaga continuam aqui.",
-        "email_unverified": "Precisamos verificar o e-mail do aluno antes de enviar. Volte ao passo de dados do aluno e digite o código."
+        "rate_limited": "Recebemos tentativas demais da sua conexão. Espere alguns minutos e envie de novo — seus dados e sua vaga continuam aqui."
       }
     },
     "time_range": "{start} às {end}",

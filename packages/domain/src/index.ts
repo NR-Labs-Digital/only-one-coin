@@ -180,7 +180,6 @@ export {
   EmailVerificationCodeInvalidError,
   EmailVerificationCooldownError,
   EmailVerificationNotFoundError,
-  EmailVerificationRequiredError,
   EmailVerificationTooManySendsError,
 } from "./enrollment/errors.js";
 export {

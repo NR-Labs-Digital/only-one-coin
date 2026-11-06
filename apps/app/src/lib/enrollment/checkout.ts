@@ -471,7 +471,6 @@ export function emptyDraft(source: EnrollmentSource = 'web'): CheckoutDraft {
       consentAccepted: false,
     },
     payment: { method: null, operationNumber: '', receipt: null },
-    emailVerification: null,
     source,
     campaign: {},
   }

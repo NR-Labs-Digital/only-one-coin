@@ -3,7 +3,6 @@ import {
   academicPeriods,
   classGroups,
   courses,
-  emailVerifications,
   enrollments,
   payments,
   planPrices,
@@ -13,7 +12,6 @@ import {
   students,
 } from "@ooc/db";
 import {
-  EmailVerificationRequiredError,
   Enrollment,
   OperationNumberAlreadyUsedError,
   Payment,
@@ -29,9 +27,9 @@ import { DrizzlePublicEnrollmentRepository } from "./DrizzlePublicEnrollmentRepo
 import { DrizzleSeatHoldRepository } from "./DrizzleSeatHoldRepository.js";
 
 /**
- * The public submit's e-mail gate in SQL (spec 2026-10-07): no verified proof
- * for this hold and address, no enrollment; a proof is consumed by the submit
- * that uses it, and a later refusal in the same transaction gives it back.
+ * The public submit in SQL. It used to require a verified e-mail proof for the
+ * hold (spec 2026-10-07); since OOC-141 (06/11/2026) it enrolls without one,
+ * and a refusal inside the transaction still writes nothing.
  *
  * Runs with `pnpm test:api:db`. Every test runs inside one transaction that is
  * always rolled back — the repository's own transaction nests as a savepoint —
@@ -115,20 +113,6 @@ async function seed(tx: Db): Promise<{ holdId: string; receiptUploadId: string }
   return { holdId, receiptUploadId: upload!.id };
 }
 
-async function addProof(tx: Db, holdId: string, email: string): Promise<string> {
-  const [row] = await tx
-    .insert(emailVerifications)
-    .values({
-      seatHoldId: holdId,
-      email,
-      codeHash: "hash",
-      expiresAt: new Date(Date.now() + 10 * 60_000),
-      verifiedAt: new Date(),
-    })
-    .returning({ id: emailVerifications.id });
-  return row!.id;
-}
-
 function submitParams(holdId: string, receiptUploadId: string, operationNumber = "99900001"): SubmitPublicEnrollmentParams {
   const student = Student.create({
     firstName: "Rosa",
@@ -164,55 +148,22 @@ async function holdStatus(tx: Db, holdId: string): Promise<string> {
   return row!.status;
 }
 
-describe("DrizzlePublicEnrollmentRepository.submit — e-mail proof", () => {
-  it("refuses without a verified proof and writes nothing", async () => {
+describe("DrizzlePublicEnrollmentRepository.submit", () => {
+  it("enrolls without an e-mail proof, consuming the hold", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { holdId, receiptUploadId } = await seed(tx);
-      const params = submitParams(holdId, receiptUploadId);
-
-      await expect(new DrizzlePublicEnrollmentRepository(tx).submit(params)).rejects.toBeInstanceOf(EmailVerificationRequiredError);
-
-      expect(await tx.select().from(enrollments).where(eq(enrollments.id, params.enrollment.id))).toHaveLength(0);
-      expect(await tx.select().from(payments).where(eq(payments.id, params.payment.id))).toHaveLength(0);
-      expect(await tx.select().from(students).where(eq(students.id, params.student.id))).toHaveLength(0);
-      expect(await holdStatus(tx, holdId)).toBe("active");
-    });
-  });
-
-  it("enrolls with a verified proof for the same hold and address, consuming it", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { holdId, receiptUploadId } = await seed(tx);
-      const proofId = await addProof(tx, holdId, EMAIL);
       const params = submitParams(holdId, receiptUploadId);
 
       const result = await new DrizzlePublicEnrollmentRepository(tx).submit(params);
 
       expect(result.enrollment.id).toBe(params.enrollment.id);
-      const [proof] = await tx.select().from(emailVerifications).where(eq(emailVerifications.id, proofId));
-      expect(proof!.consumedAt).not.toBeNull();
       expect(await holdStatus(tx, holdId)).toBe("consumed");
     });
   });
 
-  it("refuses a proof verified for a different address", async () => {
+  it("writes nothing when a check inside the transaction refuses", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { holdId, receiptUploadId } = await seed(tx);
-      const proofId = await addProof(tx, holdId, "otra.persona@gmail.com");
-      const params = submitParams(holdId, receiptUploadId);
-
-      await expect(new DrizzlePublicEnrollmentRepository(tx).submit(params)).rejects.toBeInstanceOf(EmailVerificationRequiredError);
-
-      const [proof] = await tx.select().from(emailVerifications).where(eq(emailVerifications.id, proofId));
-      expect(proof!.consumedAt).toBeNull();
-      expect(await holdStatus(tx, holdId)).toBe("active");
-    });
-  });
-
-  it("gives the proof back when a later check in the same transaction refuses", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { holdId, receiptUploadId } = await seed(tx);
-      const proofId = await addProof(tx, holdId, EMAIL);
-
       // Somebody else already spent this operation number.
       await tx.insert(students).values({
         id: OTHER_STUDENT,
@@ -246,8 +197,8 @@ describe("DrizzlePublicEnrollmentRepository.submit — e-mail proof", () => {
       const params = submitParams(holdId, receiptUploadId, "99900002");
       await expect(new DrizzlePublicEnrollmentRepository(tx).submit(params)).rejects.toBeInstanceOf(OperationNumberAlreadyUsedError);
 
-      const [proof] = await tx.select().from(emailVerifications).where(eq(emailVerifications.id, proofId));
-      expect(proof!.consumedAt).toBeNull();
+      expect(await tx.select().from(enrollments).where(eq(enrollments.id, params.enrollment.id))).toHaveLength(0);
+      expect(await tx.select().from(students).where(eq(students.id, params.student.id))).toHaveLength(0);
       expect(await holdStatus(tx, holdId)).toBe("active");
     });
   });

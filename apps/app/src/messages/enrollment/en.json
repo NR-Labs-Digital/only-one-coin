@@ -42,42 +42,12 @@
         "full_name_hint": "Exactly as it appears on your ID. This is how it will read on your certificate.",
         "phone_hint": "Mobile number so we can reach you about your enrolment.",
         "min_age_hint": "This course is for ages {age} and up.",
-        "email_hint": "It must be the student’s own Gmail account. Institutional and corporate addresses are not accepted: class access arrives through Google Classroom.",
+        "email_hint": "Type only your Gmail username: “@gmail.com” is already there. It must be the student’s own account; institutional and corporate addresses are not accepted, because class access arrives through Google Classroom.",
         "guardian_title": "Guardian details",
         "guardian_subtitle": "The student is under 18, so we need their guardian's details and consent.",
         "guardian_email_hint": "Any provider is fine.",
         "consent_label": "I authorise the minor's enrolment and the processing of their personal data for academic purposes.",
         "consent_version": "Consent text version {version}. We record the date and time you accepted.",
-        "verify": {
-          "title": "Verify your e-mail",
-          "intro": "We will send a 6-digit code to {email}. That is how we confirm the address exists and is yours: class access and your enrollment notices arrive there.",
-          "send": "Send code",
-          "sending": "Sending…",
-          "sent": "We sent a code to {email}. It can take up to a minute; check your spam folder too.",
-          "code_label": "6-digit code",
-          "confirm": "Verify",
-          "confirming": "Verifying…",
-          "resend": "Resend code",
-          "resend_in": "You can ask for another code in {seconds} s",
-          "change_email": "Change e-mail",
-          "verified": "E-mail verified",
-          "required": "Verify your e-mail with the code to continue.",
-          "fill_email_first": "Type a valid Gmail address to receive the code.",
-          "captcha_hint": "Complete the security check to send the code.",
-          "error": {
-            "code_invalid": "That code is not right. Check it and try again.",
-            "code_expired": "That code expired or was replaced by a newer one. Ask for another code.",
-            "attempts_exhausted": "Too many tries with this code. Ask for another code.",
-            "not_found": "We have not sent a code to this address yet. Ask for one.",
-            "cooldown": "We just sent you a code. Wait a moment before asking for another.",
-            "too_many_sends": "We already sent several codes for this enrollment. Check the address is right, or message us on WhatsApp.",
-            "captcha_failed": "The security check expired or was not accepted. Complete it again.",
-            "captcha_unavailable": "We could not load the security check. Reload the page; if it persists, turn off your ad blocker.",
-            "rate_limited": "We received too many attempts from your connection. Wait a few minutes.",
-            "invalid_email": "Check the address: it must be a valid Gmail account.",
-            "failed": "We could not complete that. Try again."
-          }
-        },
         "email_suggestion": "Did you mean {email}?",
         "email_suggestion_apply": "Use this",
         "guardian_email_confirm": "Confirm the guardian's e-mail"
@@ -131,8 +101,7 @@
         "captcha_hint": "Complete the security check to submit your enrollment.",
         "captcha_failed": "The security check expired or was not accepted. Complete it again and resubmit.",
         "captcha_unavailable": "We could not load the security check. Reload the page; if it keeps happening, turn off your ad blocker or message us on WhatsApp.",
-        "rate_limited": "We received too many attempts from your connection. Wait a few minutes and submit again — your details and your seat are still here.",
-        "email_unverified": "We need to verify the student's e-mail before sending. Go back to the student step and type the code."
+        "rate_limited": "We received too many attempts from your connection. Wait a few minutes and submit again — your details and your seat are still here."
       }
     },
     "time_range": "{start} to {end}",

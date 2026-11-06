@@ -2,7 +2,6 @@ import {
   Enrollment,
   Guardian,
   Payment,
-  EmailVerificationRequiredError,
   ReceiptNotReadyError,
   SeatHoldExpiredError,
   Student,
@@ -33,7 +32,6 @@ import {
 import { and, eq, gt, inArray, isNull, lte, desc, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
-import { consumeVerifiedEmail } from "./DrizzleEmailVerificationRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -144,15 +142,6 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
 
       if (!receiptRow) {
         throw new ReceiptNotReadyError();
-      }
-
-      // The student's e-mail must have been proven on this same checkout
-      // (spec 2026-10-07). Consumed here, inside the submit's transaction, so
-      // one proof becomes at most one enrollment — and a refused submit rolls
-      // the consumption back with everything else. `params.student.email` is
-      // already normalized by Student.create.
-      if (!(await consumeVerifiedEmail(tx, { seatHoldId: liveHold.id, email: params.student.email }))) {
-        throw new EmailVerificationRequiredError();
       }
 
       // Before any write: a refused operation number leaves the hold, the
