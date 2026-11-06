@@ -100,7 +100,6 @@ export interface CatalogClassGroup {
    * meets.
    */
   code: string
-  teacherName: string
   slots: WeeklySlot[]
   startDate: string
   endDate: string
