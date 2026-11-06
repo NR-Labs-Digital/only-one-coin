@@ -3,7 +3,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import {
   EmailVerificationCodeInvalidError,
   EmailVerificationCooldownError,
-  EmailVerificationRequiredError,
   SeatHoldExpiredError,
 } from "@ooc/domain";
 import { buildApp } from "@/app.js";
@@ -115,47 +114,5 @@ describe("POST /enrollments/email-verifications/confirm", () => {
     const response = await confirm({ holdId: HOLD, email: "rosa.quispe@gmail.com", code: "000000" });
     expect(response.statusCode).toBe(422);
     expect(response.json()).toMatchObject({ reason: "email_verification.code_invalid" });
-  });
-});
-
-describe("POST /enrollments/public without a proof", () => {
-  it("surfaces email_verification.required as 422", async () => {
-    vi.spyOn(container.edge.idempotency, "begin").mockResolvedValue({
-      kind: "fresh",
-      complete: vi.fn(async () => {}),
-      abandon: vi.fn(async () => {}),
-    });
-    vi.spyOn(container.edge.captcha, "verify").mockResolvedValue("passed");
-    vi.spyOn(container.useCases.enrollment.submitPublic, "run").mockRejectedValue(new EmailVerificationRequiredError());
-
-    const response = await app.inject({
-      method: "POST",
-      url: "/api/v1/enrollments/public",
-      payload: {
-        captchaToken: "t",
-        holdId: HOLD,
-        receiptUploadId: "018f2b5c-8000-7000-8000-000000000002",
-        classGroupId: "018f2b5c-8000-7000-8000-000000000003",
-        planId: "018f2b5c-8000-7000-8000-000000000004",
-        student: {
-          firstName: "Rosa",
-          lastName: "Quispe",
-          nationalIdType: "DNI",
-          nationalId: "70123456",
-          email: "rosa.quispe@gmail.com",
-          phone: "987654321",
-          birthDate: "1996-04-12",
-          country: "PE",
-          region: "Lima",
-          city: "Chorrillos",
-        },
-        guardian: null,
-        locale: "es-PE",
-        payment: { method: "yape", methodDetail: null, operationNumber: "12345678", idempotencyKey: "018f2b5c-8000-7000-8000-000000000005" },
-      },
-    });
-
-    expect(response.statusCode).toBe(422);
-    expect(response.json()).toMatchObject({ reason: "email_verification.required" });
   });
 });

@@ -272,22 +272,11 @@ export interface PaymentDraft {
   receipt: ReceiptDraft | null
 }
 
-/**
- * The student's e-mail, proven with the 6-digit code on this checkout's seat
- * hold (spec 2026-10-07). Kept so a reload does not ask for the code again;
- * it only counts while both the hold and the address still match.
- */
-export interface EmailVerificationProof {
-  holdId: string
-  email: string
-}
-
 export interface CheckoutDraft {
   course: CourseDraft
   student: StudentDraft
   guardian: GuardianDraft
   payment: PaymentDraft
-  emailVerification: EmailVerificationProof | null
   /** Resolved once, on first arrival, and carried to submit. */
   source: EnrollmentSource
   /** Campaign parameters, kept apart from the business field, for reporting. */

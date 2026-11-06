@@ -198,15 +198,3 @@ export class EmailVerificationAttemptsExhaustedError extends UnableToProcessEntr
     });
   }
 }
-
-/** The submit found no verified, unconsumed proof for its seat hold and the
- * student's e-mail (spec 2026-10-07). Nothing was written. */
-export class EmailVerificationRequiredError extends UnableToProcessEntryError {
-  constructor(params?: { path?: string; cause?: unknown }) {
-    super({
-      reason: "email_verification.required",
-      message: "The student's e-mail was not verified on this checkout.",
-      ...params,
-    });
-  }
-}

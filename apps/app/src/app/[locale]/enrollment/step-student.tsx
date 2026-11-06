@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { normalizeEmail } from '@ooc/domain/fields'
 import type {
   CheckoutDraft,
   GuardianRelationship,
@@ -32,8 +31,7 @@ import { citiesOf, PERU_REGIONS } from '@/lib/geo'
 import { PhoneField } from '@/components/enrollment/phone-field'
 import { BirthDateField } from '@/components/enrollment/birth-date-field'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
-import { isEmailVerified } from '@/lib/enrollment/email-verification'
-import { EmailVerification } from './email-verification'
+import { GMAIL_SUFFIX, gmailFromUsername, gmailUsernameOf } from '@/lib/enrollment/gmail'
 import { EmailSuggestion } from './email-suggestion'
 
 const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
@@ -51,7 +49,10 @@ const RELATIONSHIPS: GuardianRelationship[] = ['mother', 'father', 'legal_guardi
  * **The address must be a personal Gmail.** Not advice — a gate. Class access
  * arrives through Google Classroom, and the current form refuses institutional
  * and corporate addresses in capitals. A colegio address that stops working in
- * December is a student who loses the course they paid for.
+ * December is a student who loses the course they paid for. The reader types
+ * only the username; `@gmail.com` is fixed beside the field (OOC-141). No code
+ * proves the address any more — leaving the page to fetch it lost sales, and
+ * the owner accepted the risk of a wrong contact (decision of 06/11/2026).
  *
  * **A minor is the normal case.** Much of the public is under 18
  * (`CLAUDE.md` §1), so the guardian block is not an edge case bolted on — it
@@ -69,17 +70,12 @@ export function StepStudent({
   catalog,
   draft,
   setDraft,
-  holdId,
-  onHoldExpired,
   onBack,
   onContinue,
 }: {
   catalog: PublicCatalog
   draft: CheckoutDraft
   setDraft: (next: (prev: CheckoutDraft) => CheckoutDraft) => void
-  /** The seat hold the e-mail proof is bound to. */
-  holdId: string | null
-  onHoldExpired: () => void
   onBack: () => void
   onContinue: () => void
 }) {
@@ -101,15 +97,7 @@ export function StepStudent({
     [minor, draft.guardian],
   )
 
-  // The proof counts for this hold and this exact address — edit the e-mail
-  // after verifying and the step asks for a code again.
-  const emailVerified = isEmailVerified(draft, holdId)
-  const ready = !hasErrors(studentErrors) && !hasErrors(guardianErrors) && emailVerified
-  // Who the code e-mail greets. The API takes a person's name (1–80 chars);
-  // until the first name is valid, the Gmail username stands in for it.
-  const recipientName = studentErrors.firstName
-    ? (normalizeEmail(draft.student.email).split('@')[0] ?? '')
-    : draft.student.firstName.trim()
+  const ready = !hasErrors(studentErrors) && !hasErrors(guardianErrors)
   /** A field's error shows once the reader leaves it, or once they try to
       move on — never while they are still typing the first letter of it. */
   const leave = (key: string) => () =>
@@ -247,30 +235,27 @@ export function StepStudent({
             error={sErr('email', studentErrors.email)}
             hint={t('step.student.email_hint')}
           >
-            <TextInput
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={draft.student.email}
-              invalid={Boolean(sErr('email', studentErrors.email))}
-              onChange={(e) => patchStudent({ email: e.target.value })}
-            />
-            <EmailSuggestion email={draft.student.email} onApply={(email) => patchStudent({ email })} />
+            <span className="flex gap-2">
+              <TextInput
+                id="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby="email-suffix"
+                className="min-w-0 flex-1"
+                value={gmailUsernameOf(draft.student.email)}
+                invalid={Boolean(sErr('email', studentErrors.email))}
+                onChange={(e) => patchStudent({ email: gmailFromUsername(e.target.value) })}
+              />
+              <span
+                id="email-suffix"
+                className="flex shrink-0 items-center rounded-lg border border-line bg-sky-soft px-3 text-sm font-medium text-ink"
+              >
+                {GMAIL_SUFFIX}
+              </span>
+            </span>
           </FieldGroup>
-
-          <div className={fullRowClass}>
-            <EmailVerification
-              holdId={holdId}
-              email={draft.student.email}
-              recipientName={recipientName}
-              ready={!studentErrors.email}
-              verified={emailVerified}
-              onVerified={(email) =>
-                setDraft((prev) => ({ ...prev, emailVerification: holdId ? { holdId, email } : null }))
-              }
-              onHoldExpired={onHoldExpired}
-            />
-          </div>
 
           {/* One pair, always in its own row: region decides what city offers,
               and the two read as one address line — an outer auto-fit column
@@ -503,8 +488,7 @@ export function StepStudent({
         </Card>
       )}
 
-      {show && !emailVerified && <Note tone="danger">{t('step.student.verify.required')}</Note>}
-      {show && !ready && emailVerified && <Note tone="danger">{t('error.fix_fields')}</Note>}
+      {show && !ready && <Note tone="danger">{t('error.fix_fields')}</Note>}
 
       <StepNav
         back={

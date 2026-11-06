@@ -23,9 +23,8 @@ export interface PublicEnrollmentContext {
 export interface SubmitPublicEnrollmentParams {
   /** Consumed in the same transaction: it must still be `active`, unexpired
    * on the database clock and for the same class group, or the submit fails
-   * with `SeatHoldExpiredError` and writes nothing. It must also carry a
-   * verified, unconsumed e-mail proof for `student.email`, or the submit fails
-   * with `EmailVerificationRequiredError` and writes nothing (spec 2026-10-07). */
+   * with `SeatHoldExpiredError` and writes nothing. No e-mail proof is
+   * required since OOC-141 (06/11/2026). */
   seatHoldId: string;
   student: Student;
   guardian: Guardian | null;

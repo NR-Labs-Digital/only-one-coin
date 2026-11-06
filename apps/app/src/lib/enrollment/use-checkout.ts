@@ -187,7 +187,6 @@ export function useCheckout(
         course,
         student: { ...fallback.student, ...stored.student },
         guardian: { ...fallback.guardian, ...stored.guardian },
-        emailVerification: stored.emailVerification ?? null,
         // The object URL from the previous page life is dead; the file
         // description survives so the reader sees what they attached.
         payment: {

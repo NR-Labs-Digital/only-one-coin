@@ -30,7 +30,6 @@ export type SubmitOutcome =
   | 'operation_number_used'
   | 'captcha_failed'
   | 'rate_limited'
-  | 'email_unverified'
   | { kind: 'invalid_fields'; fields: FieldError[] }
 
 type SubmitError = Exclude<SubmitOutcome, 'sent'> | 'failed'
@@ -264,9 +263,6 @@ export function StepReview({
       {submitError === 'rate_limited' && <Note tone="danger">{t('step.review.rate_limited')}</Note>}
       {submitError === 'operation_number_used' && (
         <Note tone="danger">{t('step.review.operation_number_used')}</Note>
-      )}
-      {submitError === 'email_unverified' && (
-        <Note tone="danger">{t('step.review.email_unverified')}</Note>
       )}
       {typeof submitError === 'object' && submitError !== null && (
         <Note tone="danger">
