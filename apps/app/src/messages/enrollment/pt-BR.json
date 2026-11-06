@@ -32,7 +32,6 @@
         "no_groups": "Por enquanto não há horários abertos para este curso. Fale com a gente pelo WhatsApp e avisamos quando abrir o próximo ciclo.",
         "seats_left": "{count, plural, one {Resta # vaga} other {Restam # vagas}}",
         "group_full": "Sem vagas",
-        "teacher": "Docente: {name}",
         "summary_label": "Resumo da sua escolha",
         "single_payment_note": "Pagamento único. Não há mensalidade nem parcelamento."
       },

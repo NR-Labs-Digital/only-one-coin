@@ -32,7 +32,6 @@
         "no_groups": "No schedules are open for this course right now. Message us on WhatsApp and we will let you know when the next cycle opens.",
         "seats_left": "{count, plural, one {# seat left} other {# seats left}}",
         "group_full": "No seats left",
-        "teacher": "Teacher: {name}",
         "summary_label": "Your selection",
         "single_payment_note": "One single payment. No monthly fees, no instalments."
       },
