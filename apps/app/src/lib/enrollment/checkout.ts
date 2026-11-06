@@ -26,6 +26,7 @@ import type {
   PaymentDraft,
   PublicCatalog,
   StudentDraft,
+  Weekday,
 } from './types'
 
 /* -------------------------------------------------------------------------- */
@@ -99,13 +100,16 @@ export function resolvePrefill(
   if (!course) {
     return { languageId: null, courseId: null, startDate: null, classGroupId: null }
   }
-  const group =
-    catalog.classGroups.find(
-      (item) =>
-        item.id === params[QUERY_KEYS.classGroup] &&
-        item.courseId === course.id &&
-        hasSeat(item),
-    ) ?? null
+  // A link naming a class group that filled up still means its schedule: the
+  // seat goes to the next group of the same offer (OOC-140).
+  const named = catalog.classGroups.find(
+    (item) => item.id === params[QUERY_KEYS.classGroup] && item.courseId === course.id,
+  )
+  const group = !named
+    ? null
+    : hasSeat(named)
+      ? named
+      : (sameOfferGroups(catalog, named.id).find(hasSeat) ?? null)
   return {
     languageId: course.languageId,
     courseId: course.id,
@@ -145,7 +149,7 @@ export function groupsOfCourse(
 /** One entry per date the course opens on, with what is still available on it. */
 export interface StartDateOption {
   startDate: string
-  /** Schedules on this date that still have a seat. */
+  /** Distinct schedules on this date that still have a seat. */
   openGroups: number
   /** Seats left across the whole date — what "almost gone" is measured on. */
   seatsLeft: number
@@ -175,10 +179,16 @@ export function startDatesOfCourse(
       seatsLeft: 0,
     }
     if (hasSeat(group)) {
-      entry.openGroups += 1
       entry.seatsLeft += seatsLeft(group)
     }
     byDate.set(group.startDate, entry)
+  }
+  // A schedule, not a class group, is what the reader picks (OOC-140): five
+  // class groups at the same hour are one open schedule, not five.
+  for (const entry of byDate.values()) {
+    entry.openGroups = scheduleOptionsOnStartDate(catalog, courseId, entry.startDate).filter(
+      (option) => option.seatsLeft > 0,
+    ).length
   }
   return [...byDate.values()]
     .filter((entry) => entry.openGroups > 0)
@@ -194,6 +204,88 @@ export function groupsOnStartDate(
   return groupsOfCourse(catalog, courseId).filter(
     (group) => group.startDate === startDate,
   )
+}
+
+const WEEKDAY_ORDER: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+/**
+ * What makes two class groups the same offer to the person enrolling: same
+ * course, same dates, same week. The code, the teacher and the Classroom are
+ * the institution's business — none of them is something the reader chooses.
+ */
+function offerKey(group: CatalogClassGroup): string {
+  const week = [...group.slots]
+    .sort(
+      (a, b) =>
+        WEEKDAY_ORDER.indexOf(a.weekday) - WEEKDAY_ORDER.indexOf(b.weekday) ||
+        a.startTime.localeCompare(b.startTime),
+    )
+    .map((slot) => `${slot.weekday}@${slot.startTime}-${slot.endTime}`)
+    .join('|')
+  return `${group.courseId}#${group.startDate}#${group.endDate}#${week}`
+}
+
+/**
+ * The order class groups of one schedule are filled in: by code, which is the
+ * order they were opened in (`A-` + a sequence, OOC-?/27-10-2026). The first
+ * fills up before the next one takes anybody — coordination opens five groups
+ * of thirty, and five groups of six each is not what it asked for.
+ */
+function byFillOrder(a: CatalogClassGroup, b: CatalogClassGroup): number {
+  return (
+    a.code.localeCompare(b.code, undefined, { numeric: true }) || a.id.localeCompare(b.id)
+  )
+}
+
+/**
+ * One schedule as the reader sees it (OOC-140). Coordination opens several
+ * class groups of the same course at the same hour when demand is larger than
+ * one group; to the person enrolling they are one choice, and which group the
+ * seat lands in is decided here, never by them.
+ */
+export interface ScheduleOption {
+  key: string
+  /** Every class group behind this schedule, in fill order. */
+  groups: CatalogClassGroup[]
+  /** Seats left across all of them. */
+  seatsLeft: number
+}
+
+export function scheduleOptionsOnStartDate(
+  catalog: PublicCatalog,
+  courseId: string | null,
+  startDate: string | null,
+): ScheduleOption[] {
+  const byKey = new Map<string, ScheduleOption>()
+  for (const group of groupsOnStartDate(catalog, courseId, startDate)) {
+    const key = offerKey(group)
+    const option = byKey.get(key) ?? { key, groups: [], seatsLeft: 0 }
+    option.groups.push(group)
+    option.seatsLeft += seatsLeft(group)
+    byKey.set(key, option)
+  }
+  for (const option of byKey.values()) option.groups.sort(byFillOrder)
+  return [...byKey.values()]
+}
+
+/** The class group the next seat of this schedule goes to, or null when all are full. */
+export function fillTarget(option: ScheduleOption): CatalogClassGroup | null {
+  return option.groups.find(hasSeat) ?? null
+}
+
+/**
+ * The class groups that are the same offer as this one — itself included —
+ * in fill order. Where the hold moves to when the catalog on screen said a
+ * group had a seat and the server says it no longer does.
+ */
+export function sameOfferGroups(
+  catalog: PublicCatalog,
+  groupId: string | null,
+): CatalogClassGroup[] {
+  const group = groupById(catalog, groupId)
+  if (!group) return []
+  const key = offerKey(group)
+  return catalog.classGroups.filter((item) => offerKey(item) === key).sort(byFillOrder)
 }
 
 export function planOfCourse(catalog: PublicCatalog, courseId: string | null) {

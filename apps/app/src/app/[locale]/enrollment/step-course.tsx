@@ -6,11 +6,11 @@ import type { CheckoutDraft, HoldOutcome, PublicCatalog } from '@/lib/enrollment
 import {
   coursesOfLanguage,
   courseById,
-  groupsOnStartDate,
-  hasSeat,
+  fillTarget,
   planOfCourse,
-  seatsLeft,
+  scheduleOptionsOnStartDate,
   startDatesOfCourse,
+  type ScheduleOption,
 } from '@/lib/enrollment/checkout'
 import { scheduleLines } from '@/lib/enrollment/schedule'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
@@ -42,6 +42,14 @@ const SCARCE_SEATS = 6
  * end of the month — each with its own three or four hours. Flattening that
  * into one list of twelve is how somebody picks a convenient hour on a date
  * they cannot make.
+ *
+ * **One card per schedule, never per class group (OOC-140).** Coordination opens
+ * several class groups of the same course at the same hour when one is not
+ * enough; to the reader that is one choice, so it is one card with the seats
+ * of all of them, and the seat lands in the first group that still has room
+ * (`scheduleOptionsOnStartDate`). The teacher is not on the card either: it is
+ * assigned after enrollment closes (OOC-97), and an empty "Teacher:" line is
+ * all the reader would ever see.
  *
  * Two rules the screen has to keep:
  *
@@ -82,13 +90,16 @@ export function StepCourse({
     () => startDatesOfCourse(catalog, courseId),
     [catalog, courseId],
   )
-  const groups = useMemo(
-    () => groupsOnStartDate(catalog, courseId, startDate),
+  const options = useMemo(
+    () => scheduleOptionsOnStartDate(catalog, courseId, startDate),
     [catalog, courseId, startDate],
   )
   const course = courseById(catalog, courseId)
   const plan = planOfCourse(catalog, courseId)
-  const selectedGroup = groups.find((group) => group.id === classGroupId) ?? null
+  const selectedOption =
+    options.find((option) => option.groups.some((group) => group.id === classGroupId)) ?? null
+  const selectedGroup =
+    selectedOption?.groups.find((group) => group.id === classGroupId) ?? null
 
   function pickLanguage(id: string) {
     // Changing the language invalidates everything downstream — a course from
@@ -126,8 +137,13 @@ export function StepCourse({
     }))
   }
 
-  function pickGroup(id: string) {
-    setDraft((prev) => ({ ...prev, course: { ...prev.course, classGroupId: id } }))
+  function pickOption(option: ScheduleOption) {
+    // Picking the schedule already chosen keeps the class group behind it —
+    // it may be the one a seat is already held in.
+    if (option === selectedOption) return
+    const target = fillTarget(option)
+    if (!target) return
+    setDraft((prev) => ({ ...prev, course: { ...prev.course, classGroupId: target.id } }))
   }
 
   const schedule = (group: Parameters<typeof scheduleLines>[0]) =>
@@ -267,20 +283,20 @@ export function StepCourse({
             {t('step.course.group_hint')}
           </p>
 
-          {groups.length === 0 ? (
+          {options.length === 0 ? (
             <Note tone="warning">{t('step.course.no_groups')}</Note>
           ) : (
             <AutoGrid min="18rem" gap="gap-3">
-              {groups.map((group) => {
-                const open = hasSeat(group)
-                const left = seatsLeft(group)
+              {options.map((option) => {
+                const left = option.seatsLeft
+                const open = left > 0
                 return (
                   <ChoiceCard
-                    key={group.id}
-                    selected={classGroupId === group.id}
+                    key={option.key}
+                    selected={option === selectedOption}
                     disabled={!open}
-                    onSelect={() => pickGroup(group.id)}
-                    title={scheduleBlock(group)}
+                    onSelect={() => pickOption(option)}
+                    title={scheduleBlock(option.groups[0])}
                     aside={
                       open ? (
                         left <= SCARCE_SEATS ? (
@@ -294,11 +310,7 @@ export function StepCourse({
                         </span>
                       )
                     }
-                  >
-                    <span className="mt-1.5 text-xs text-muted-foreground">
-                      {t('step.course.teacher', { name: group.teacherName })}
-                    </span>
-                  </ChoiceCard>
+                  />
                 )
               })}
             </AutoGrid>

@@ -991,8 +991,12 @@ export function ClassGroupForm({
     ],
     [
       t('class_groups.field_period'),
+      // The review rows are built on every render, not only on the review step,
+      // so the new period's dates may still be empty here.
       newPeriod
-        ? `${newPeriodName.trim()} · ${formatDateRange(limaDateToIso(newPeriodStartsOn), limaDateToIso(newPeriodEndsOn), locale)}`
+        ? newPeriodStartsOn !== '' && newPeriodEndsOn !== ''
+          ? `${newPeriodName.trim()} · ${formatDateRange(limaDateToIso(newPeriodStartsOn), limaDateToIso(newPeriodEndsOn), locale)}`
+          : newPeriodName.trim()
         : (pickedPeriod?.name ?? ''),
     ],
     [
