@@ -1,6 +1,7 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { ITeacherContractStorage } from "@ooc/domain";
+import { contentDisposition } from "./contentDisposition.js";
 
 /**
  * The `ITeacherContractStorage` port, on the same bucket and client as the
@@ -21,18 +22,9 @@ export class TigrisTeacherContractStorage implements ITeacherContractStorage {
         Bucket: this.bucket,
         Key: params.objectKey,
         ResponseContentType: "application/pdf",
-        ResponseContentDisposition: contentDisposition(params.fileName),
+        ResponseContentDisposition: contentDisposition(params.fileName, "contrato.pdf"),
       }),
       { expiresIn: params.expiresInSeconds },
     );
   }
-}
-
-/**
- * `attachment` with the name the person filed it under: an ASCII fallback for
- * old clients and the UTF-8 form (RFC 6266) for the accents a Peruvian name has.
- */
-export function contentDisposition(fileName: string): string {
-  const ascii = fileName.normalize("NFKD").replace(/[^\x20-\x7e]/g, "").replace(/["\\]/g, "") || "contrato.pdf";
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
 }

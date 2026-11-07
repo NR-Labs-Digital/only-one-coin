@@ -85,6 +85,13 @@ export const ConfigSchema = z
       .string()
       .default("15000000")
       .transform((val) => parseInt(val, 10)),
+    // A file attached to a student (OOC-143): a scanned DNI, a signed
+    // consent — PDFs and phone photos. Env constant for the same reason as the
+    // receipt's cap; with a default, so no new Fly secret is required.
+    ATTACHMENT_MAX_UPLOAD_BYTES: z
+      .string()
+      .default("10000000")
+      .transform((val) => parseInt(val, 10)),
 
     // OCR level 1 (packages/ocr — OOC-20): provider, keys and model ids, in
     // their own module so the ocr:eval script validates them the same way.

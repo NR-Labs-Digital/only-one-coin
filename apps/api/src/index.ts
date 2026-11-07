@@ -8,6 +8,8 @@ import {
   createReceiptValidateQueue,
   createRedisConnection,
   createSeatHoldSweepQueue,
+  createAttachmentSweepQueue,
+  scheduleAttachmentSweep,
   createSendEmailQueue,
   scheduleOutboxRelay,
   scheduleReceiptUploadRelay,
@@ -30,6 +32,7 @@ import { startReceiptScreenWorker } from "./workers/receipt-screen.worker.js";
 import { startReceiptUploadRelayWorker } from "./workers/receipt-upload-relay.worker.js";
 import { startReceiptValidateWorker } from "./workers/receipt-validate.worker.js";
 import { startSeatHoldSweepWorker } from "./workers/seat-hold-sweep.worker.js";
+import { startAttachmentSweepWorker } from "./workers/attachment-sweep.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
 
 const {
@@ -77,6 +80,13 @@ const seatHoldSweepQueue = createSeatHoldSweepQueue(connection);
 await scheduleSeatHoldSweep(seatHoldSweepQueue);
 const seatHoldSweepWorker = startSeatHoldSweepWorker(connection, logger, {
   expireSeatHolds: useCases.enrollment.expireSeatHolds,
+});
+// Attachments (OOC-143): uploads never confirmed are cleared from the bucket
+// and marked rejected.
+const attachmentSweepQueue = createAttachmentSweepQueue(connection);
+await scheduleAttachmentSweep(attachmentSweepQueue);
+const attachmentSweepWorker = startAttachmentSweepWorker(connection, logger, {
+  expirePending: useCases.attachment.expirePending,
 });
 
 // Receipt uploads (OOC-19): confirm flips a row to `uploaded`, the relay
@@ -155,7 +165,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -185,6 +195,7 @@ async function shutdown() {
   await outboxRelayWorker.close();
   await sendEmailWorker.close();
   await seatHoldSweepWorker.close();
+  await attachmentSweepWorker.close();
   await receiptUploadRelayWorker.close();
   await receiptNormalizeWorker.close();
   await receiptScreenWorker.close();
@@ -194,6 +205,7 @@ async function shutdown() {
   await outboxRelayQueue.close();
   await sendEmailQueue.close();
   await seatHoldSweepQueue.close();
+  await attachmentSweepQueue.close();
   await receiptUploadRelayQueue.close();
   await receiptNormalizeQueue.close();
   await receiptScreenQueue.close();

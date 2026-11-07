@@ -1,5 +1,12 @@
 import type { FastifyBaseLogger } from "fastify";
 import {
+  AttachmentAccess,
+  ConfirmAttachmentUploadUseCase,
+  ExpirePendingAttachmentsUseCase,
+  ListAttachmentsUseCase,
+  OpenAttachmentUseCase,
+  RemoveAttachmentUseCase,
+  RequestAttachmentUploadUseCase,
   CancelStaffInviteUseCase,
   ClaimSeatHoldUseCase,
   SendEmailVerificationCodeUseCase,
@@ -163,6 +170,12 @@ import { TeacherContractDocumentService } from "./documents/TeacherContractDocum
 import { WeasyPrintRenderer } from "./infra/pdf/WeasyPrintRenderer.js";
 import { DrizzleDocumentTemplateRepository } from "./infra/persistence/document/DrizzleDocumentTemplateRepository.js";
 import { TigrisTeacherContractStorage } from "./infra/storage/TigrisTeacherContractStorage.js";
+import { TigrisAttachmentStorage } from "./infra/storage/TigrisAttachmentStorage.js";
+import {
+  DrizzleAttachmentOwners,
+  DrizzleAttachmentRepository,
+} from "./infra/persistence/attachment/DrizzleAttachmentRepository.js";
+import { ATTACHMENT_STAFF_POLICY } from "./http/attachment/attachmentRoles.js";
 import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery.js";
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
@@ -295,6 +308,16 @@ export interface AppUseCases {
     /** Run by the `receipt-validate` worker, never a route (OOC-21). Pure
      * comparison — no AI module, so it may live in the container. */
     validateReceipt: ValidateReceiptUseCase;
+  };
+  /** Files sent to the platform (OOC-143): one bucket, keyed by id. */
+  attachment: {
+    list: ListAttachmentsUseCase;
+    requestUpload: RequestAttachmentUploadUseCase;
+    confirmUpload: ConfirmAttachmentUploadUseCase;
+    open: OpenAttachmentUseCase;
+    remove: RemoveAttachmentUseCase;
+    /** Run by the `attachment-sweep` worker, never a route. */
+    expirePending: ExpirePendingAttachmentsUseCase;
   };
   procedure: {
     openRequest: OpenProcedureRequestUseCase;
@@ -529,6 +552,7 @@ function buildContainer(): AppContainer {
   const receiptStorage = new TigrisReceiptStorage(s3Client, config.BUCKET_NAME);
   const receiptObjectStore = new ReceiptObjectStore(s3Client, config.BUCKET_NAME);
   const teacherContractStorage = new TigrisTeacherContractStorage(s3Client, config.BUCKET_NAME);
+  const attachmentStorage = new TigrisAttachmentStorage(s3Client, config.BUCKET_NAME);
   const teacherContractRepository = new DrizzleTeacherContractRepository(db);
 
   // Editable documents (OOC-123)
@@ -582,6 +606,27 @@ function buildContainer(): AppContainer {
     confirmReceiptUpload: new ConfirmProcedureReceiptUploadUseCase(procedureRepository, receiptUploadRepository, receiptStorage),
     submitPayment: new SubmitProcedurePaymentUseCase(procedureRepository),
     setPrice: new SetProcedurePriceUseCase(procedureRepository),
+  };
+  const attachmentRepository = new DrizzleAttachmentRepository(db);
+  const attachmentAccess = new AttachmentAccess(new DrizzleAttachmentOwners(db), ATTACHMENT_STAFF_POLICY);
+  const attachmentUseCases = {
+    list: new ListAttachmentsUseCase(attachmentRepository, attachmentAccess),
+    requestUpload: new RequestAttachmentUploadUseCase(
+      attachmentRepository,
+      attachmentStorage,
+      attachmentAccess,
+      config.ATTACHMENT_MAX_UPLOAD_BYTES,
+    ),
+    confirmUpload: new ConfirmAttachmentUploadUseCase(
+      attachmentRepository,
+      attachmentStorage,
+      attachmentAccess,
+      auditLogRepository,
+      config.ATTACHMENT_MAX_UPLOAD_BYTES,
+    ),
+    open: new OpenAttachmentUseCase(attachmentRepository, attachmentStorage, attachmentAccess, auditLogRepository),
+    remove: new RemoveAttachmentUseCase(attachmentRepository, attachmentAccess, auditLogRepository),
+    expirePending: new ExpirePendingAttachmentsUseCase(attachmentRepository, attachmentStorage),
   };
   const sendEmailVerification = new SendEmailVerificationCodeUseCase(emailVerificationRepository);
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
@@ -833,6 +878,7 @@ function buildContainer(): AppContainer {
         validateReceipt,
       },
       procedure: procedureUseCases,
+      attachment: attachmentUseCases,
       payment: {
         settlePayment,
         requestReceiptReread: new RequestReceiptRereadUseCase(receiptRereadRepository),

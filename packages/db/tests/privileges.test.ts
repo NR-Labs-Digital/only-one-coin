@@ -60,6 +60,7 @@ const DELETE_LOCKED = [
   "payment_receipts",
   "receipt_rereads",
   "procedure_requests",
+  "documents",
   "consents",
   "audit_log",
   "teachers",

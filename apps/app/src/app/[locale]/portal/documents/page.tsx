@@ -12,6 +12,8 @@ import {
 import { documentTone } from '@/components/portal/status-tone'
 import { Icon } from '@/components/portal/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { getAttachments } from '@/lib/attachments/server'
+import { AttachmentsSection } from '@/components/attachments/attachments-section'
 import {
   RequestsView,
   type ProcedureView,
@@ -23,7 +25,8 @@ import {
  * documents already issued (or waiting to be) and the paid procedures that
  * produce them. They were two screens, and a student looking for a constancia
  * had to know that "Solicitações" was where you buy the document that
- * "Documentos" would later hand you.
+ * "Documentos" would later hand you. Below them, the files the student sends
+ * (OOC-143), which are never an issued document.
  */
 
 export default async function DocumentsPage({
@@ -36,7 +39,10 @@ export default async function DocumentsPage({
   setRequestLocale(raw)
   const t = await getTranslations('portal')
 
-  const { enrollments, documents, procedures, requests } = await getPortalView()
+  const [{ enrollments, documents, procedures, requests }, attachments] = await Promise.all([
+    getPortalView(),
+    getAttachments({ kind: 'portal' }),
+  ])
   const enrollmentOf = (enrollmentId: string) =>
     enrollments.find((e) => e.id === enrollmentId)
   const courseName = (enrollmentId: string) =>
@@ -126,6 +132,18 @@ export default async function DocumentsPage({
       <div className="mt-8">
         <RequestsView procedures={procedureViews} initialRequests={requestViews} />
       </div>
+
+      {/* Files the student sends — and the ones the coordination attached to
+          their file (OOC-143). Never a document the institution issues. */}
+      <Card className="mt-8 p-5">
+        <AttachmentsSection
+          scope={{ kind: 'portal' }}
+          initial={attachments}
+          variant="portal"
+          canUpload
+          canRemove={false}
+        />
+      </Card>
     </div>
   )
 }

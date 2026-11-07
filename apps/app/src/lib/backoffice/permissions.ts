@@ -196,6 +196,15 @@ export function canEditStudent(role: StaffRole): boolean {
 }
 
 /**
+ * Who lists, attaches, downloads and removes a student's files (OOC-143): the
+ * same three who keep the file — a scanned DNI is not for every reader of the
+ * directory. Mirrors `ATTACHMENT_STAFF_POLICY` in `apps/api`, which decides.
+ */
+export function canManageStudentAttachments(role: StaffRole): boolean {
+  return canEditStudent(role)
+}
+
+/**
  * Who takes the directory away as a CSV (OOC-121): the same three who keep the
  * file, so nobody exports a document or contact the ficha would not show them.
  * `sales` and `support` answer for one student at a time; the whole base does

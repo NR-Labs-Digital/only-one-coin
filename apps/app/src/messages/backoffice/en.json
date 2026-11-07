@@ -352,7 +352,10 @@
         "language_retired": "Language retired",
         "procedure_request_opened": "Procedure requested",
         "procedure_payment_submitted": "Procedure receipt sent",
-        "procedure_price_created": "Procedure price changed"
+        "procedure_price_created": "Procedure price changed",
+        "attachment_uploaded": "File attached",
+        "attachment_downloaded": "File downloaded",
+        "attachment_removed": "File removed"
       },
       "field": {
         "first_name": "First name",
@@ -560,12 +563,6 @@
       "request_requested_at": "Requested on {date}",
       "request_operation": "Operation {number}",
       "request_hint": "The constancia is issued once the fee payment is approved.",
-      "attachments_title": "Student files",
-      "attach_file": "Attach file",
-      "no_attachments_title": "No files",
-      "no_attachments_body": "Files the student uploads from the portal and files staff attach here show up in this list.",
-      "attachments_hint": "Attached files, not institution documents: they carry no verification code.",
-      "file_meta": "{size} · {source} · {date}",
       "portal_access_state": {
         "none": "No portal access",
         "pending_activation": "Access sent, password pending",
@@ -1068,16 +1065,6 @@
       "queued": "Queued",
       "sent": "Sent",
       "failed": "Delivery failed"
-    },
-    "attachment_kind": {
-      "national_id": "ID document",
-      "guardian_consent": "Guardian consent",
-      "receipt": "Receipt",
-      "other": "Other"
-    },
-    "attachment_source": {
-      "student": "Uploaded by the student",
-      "staff": "Uploaded by staff"
     },
     "class_groups": {
       "title": "Class groups",

@@ -56,6 +56,19 @@ import {
   submitProcedurePaymentRoute,
 } from "@/http/procedure/PortalProcedureRoutes.js";
 import { listProcedurePricesRoute, setProcedurePriceRoute } from "@/http/procedure/ProcedurePriceRoutes.js";
+import {
+  confirmAttachmentUploadRoute,
+  downloadAttachmentRoute,
+  listAttachmentsRoute,
+  removeAttachmentRoute,
+  requestAttachmentUploadRoute,
+} from "@/http/attachment/AttachmentRoutes.js";
+import {
+  confirmPortalAttachmentUploadRoute,
+  downloadPortalAttachmentRoute,
+  listPortalAttachmentsRoute,
+  requestPortalAttachmentUploadRoute,
+} from "@/http/attachment/PortalAttachmentRoutes.js";
 import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
 import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { claimSeatHoldRoute } from "@/http/enrollment/ClaimSeatHoldRoute.js";
@@ -225,6 +238,15 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(submitProcedurePaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listProcedurePricesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setProcedurePriceRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listAttachmentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestAttachmentUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmAttachmentUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadAttachmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(removeAttachmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listPortalAttachmentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestPortalAttachmentUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmPortalAttachmentUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalAttachmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(claimSeatHoldRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(releaseSeatHoldRoute);
