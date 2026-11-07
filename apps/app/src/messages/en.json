@@ -174,5 +174,48 @@
     "description": "You are seeing features that are not live for anyone else yet.",
     "exit": "Exit",
     "owner_description": "Your account sees features that are off for everyone else."
+  },
+  "attachments": {
+    "title_staff": "Student files",
+    "title_portal": "My files",
+    "empty_staff_title": "No files",
+    "empty_staff_body": "Files the student uploads from the portal and files the team attaches show up here.",
+    "empty_portal_title": "You haven't sent any files yet",
+    "empty_portal_body": "Send your ID, your guardian's consent or any other file the coordination asks for here.",
+    "load_error": "We couldn't load the files. Reload the page to try again.",
+    "attach": "Attach file",
+    "category_label": "File type",
+    "file_label": "File",
+    "rules": "{types} · up to {size}",
+    "send": "Send file",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "sent": "“{name}” was sent.",
+    "download": "Download",
+    "download_failed": "We couldn't open the file. Try again.",
+    "remove": "Remove",
+    "remove_question": "Remove “{name}” from the list?",
+    "remove_confirm": "Yes, remove",
+    "remove_failed": "We couldn't remove the file. Try again.",
+    "removed": "“{name}” was removed from the list.",
+    "meta": "{size} · {source} · {date}",
+    "by": "by {name}",
+    "hint": "Attached files, not documents issued by the institution: they carry no verification code.",
+    "category": {
+      "national_id": "ID document",
+      "guardian_consent": "Guardian consent",
+      "receipt": "Receipt",
+      "other": "Other"
+    },
+    "source": {
+      "portal": "Uploaded by the student",
+      "backoffice": "Uploaded by the team"
+    },
+    "error": {
+      "unsupported_type": "This file type isn't accepted. Send a PDF or a photo (JPG, PNG or HEIC).",
+      "too_large": "The file is empty or larger than {size}.",
+      "upload_failed": "The file didn't arrive. Check your connection and try again.",
+      "generic": "We couldn't send the file. Try again."
+    }
   }
 }

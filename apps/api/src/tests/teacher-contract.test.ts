@@ -7,7 +7,7 @@ import {
   type CreateTeacherDTO,
 } from "@ooc/domain";
 import { describe, expect, it } from "vitest";
-import { contentDisposition } from "@/infra/storage/TigrisTeacherContractStorage.js";
+import { contentDisposition } from "@/infra/storage/contentDisposition.js";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
 import { FakeTeacherContractRepository, FakeTeacherContractStorage } from "./fakes/teacher.js";
 
@@ -147,7 +147,7 @@ describe("OpenTeacherContractUseCase", () => {
 
 describe("contentDisposition", () => {
   it("downloads under the filed name, with an ASCII fallback for the accents", () => {
-    expect(contentDisposition('Contrato "Peña".pdf')).toBe(
+    expect(contentDisposition('Contrato "Peña".pdf', "contrato.pdf")).toBe(
       `attachment; filename="Contrato Pena.pdf"; filename*=UTF-8''Contrato%20%22Pe%C3%B1a%22.pdf`,
     );
   });

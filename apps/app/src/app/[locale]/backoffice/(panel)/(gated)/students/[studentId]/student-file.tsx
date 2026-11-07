@@ -34,6 +34,7 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { EnrollmentDetailSheet } from './enrollment-detail-sheet'
 import { GuardianEditForm, type EditableGuardian } from './guardian-edit-form'
 import { StudentDocuments } from './student-documents'
+import type { AttachmentList } from '@/lib/attachments/types'
 import { StudentEditForm, type EditableStudent } from './student-edit-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
@@ -76,6 +77,8 @@ export function StudentFile({
   canEdit,
   activity,
   constanciaFeeCents,
+  attachments,
+  canManageAttachments,
 }: {
   student: StudentDetail
   /** Whether the reader's cargo opens Pagos — decides whether the file links there. */
@@ -86,6 +89,9 @@ export function StudentFile({
   activity: StudentActivityPage | null
   /** Today's constancia fee (`platform_settings`, OOC-41); null when it could not be read. */
   constanciaFeeCents: number | null
+  /** Attached files (OOC-143), read on the server; null when the API failed. */
+  attachments: AttachmentList | null
+  canManageAttachments: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -490,7 +496,14 @@ export function StudentFile({
         </Card>
       )}
 
-      {tab === 'documents' && <StudentDocuments student={student} constanciaFeeCents={constanciaFeeCents} />}
+      {tab === 'documents' && (
+        <StudentDocuments
+          student={student}
+          constanciaFeeCents={constanciaFeeCents}
+          attachments={attachments}
+          canManageAttachments={canManageAttachments}
+        />
+      )}
 
       {tab === 'activity' && (
         <Card className="p-5">

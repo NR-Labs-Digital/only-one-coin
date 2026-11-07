@@ -747,3 +747,52 @@ export type {
   AuditStoredAction,
   AuditSubject,
 } from "./identity/auditCatalog.js";
+export {
+  ATTACHMENT_CATEGORIES,
+  ATTACHMENT_CONTENT_TYPES,
+  ATTACHMENT_DOWNLOAD_URL_SECONDS,
+  ATTACHMENT_OWNER_TYPES,
+  ATTACHMENT_PENDING_TTL_MS,
+  isAttachmentContentType,
+  normalizeAttachmentName,
+  type AttachmentActor,
+  type AttachmentCategory,
+  type AttachmentContentType,
+  type AttachmentListItem,
+  type AttachmentOwner,
+  type AttachmentOwnerType,
+  type AttachmentRejectionReason,
+  type AttachmentSource,
+  type AttachmentStaffPolicy,
+  type AttachmentStatus,
+  type StoredAttachment,
+} from "./attachment/Attachment.js";
+export {
+  AttachmentNotFoundError,
+  AttachmentNotUploadedError,
+  AttachmentOwnerForbiddenError,
+  AttachmentOwnerNotFoundError,
+  AttachmentTooLargeError,
+  AttachmentUnsupportedTypeError,
+} from "./attachment/errors.js";
+export type {
+  AttachmentInspection,
+  IAttachmentOwners,
+  IAttachmentRepository,
+  IAttachmentStorage,
+  NewAttachment,
+  UploadedAttachmentFacts,
+} from "./attachment/AttachmentPorts.js";
+export { AttachmentAccess } from "./attachment/AttachmentAccess.js";
+export {
+  ConfirmAttachmentUploadUseCase,
+  ExpirePendingAttachmentsUseCase,
+  ListAttachmentsUseCase,
+  OpenAttachmentUseCase,
+  RemoveAttachmentUseCase,
+  RequestAttachmentUploadUseCase,
+  type AttachmentActionInput,
+  type ListAttachmentsInput,
+  type RequestAttachmentUploadInput,
+  type RequestAttachmentUploadOutput,
+} from "./attachment/AttachmentUseCases.js";

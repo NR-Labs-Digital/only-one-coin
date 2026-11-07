@@ -352,7 +352,10 @@
         "language_retired": "Idioma retirado",
         "procedure_request_opened": "Trámite solicitado",
         "procedure_payment_submitted": "Comprobante de trámite enviado",
-        "procedure_price_created": "Precio de trámite cambiado"
+        "procedure_price_created": "Precio de trámite cambiado",
+        "attachment_uploaded": "Archivo adjuntado",
+        "attachment_downloaded": "Archivo descargado",
+        "attachment_removed": "Archivo quitado"
       },
       "field": {
         "first_name": "Nombre",
@@ -560,12 +563,6 @@
       "request_requested_at": "Solicitada el {date}",
       "request_operation": "Operación {number}",
       "request_hint": "La constancia se emite cuando el pago de la tasa queda aprobado.",
-      "attachments_title": "Archivos del alumno",
-      "attach_file": "Adjuntar archivo",
-      "no_attachments_title": "Sin archivos",
-      "no_attachments_body": "Aquí aparecen los archivos que sube el alumno desde su portal y los que adjunta el equipo.",
-      "attachments_hint": "Archivos adjuntos, no documentos de la institución: no llevan código de verificación.",
-      "file_meta": "{size} · {source} · {date}",
       "portal_access_state": {
         "none": "Sin acceso al portal",
         "pending_activation": "Acceso enviado, contraseña pendiente",
@@ -1068,16 +1065,6 @@
       "queued": "En cola",
       "sent": "Enviado",
       "failed": "Falló el envío"
-    },
-    "attachment_kind": {
-      "national_id": "Documento de identidad",
-      "guardian_consent": "Consentimiento del apoderado",
-      "receipt": "Comprobante",
-      "other": "Otro"
-    },
-    "attachment_source": {
-      "student": "Subido por el alumno",
-      "staff": "Subido por el equipo"
     },
     "class_groups": {
       "title": "Aulas",

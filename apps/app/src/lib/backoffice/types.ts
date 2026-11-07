@@ -299,31 +299,6 @@ export interface DocumentRequest {
   operationNumber: string | null
 }
 
-/** What an uploaded file is. Never a document the platform issues. */
-export type AttachmentKind =
-  | 'national_id'
-  | 'guardian_consent'
-  | 'receipt'
-  | 'other'
-
-export type AttachmentSource = 'student' | 'staff'
-
-/**
- * A file attached to the student, uploaded by the student from the portal or by
- * staff here. Deliberately NOT a `DocumentItem`: an uploaded PDF carries no
- * verification code, so it must never reach the public validation page.
- */
-export interface StudentAttachment {
-  id: string
-  kind: AttachmentKind
-  /** Real file name as uploaded — student data, shown as is (CLAUDE.md §4). */
-  fileName: string
-  sizeBytes: number
-  uploadedAt: string
-  uploadedBy: AttachmentSource
-  uploadedByName: string
-}
-
 /**
  * Append-only audit trail (CLAUDE.md §8), as the student file reads it
  * (OOC-75). The union is what `GET /students/:id/activity` can answer — one
@@ -401,7 +376,6 @@ export interface StudentDetail extends StudentRow {
   documents: DocumentItem[]
   /** Paid procedures still on their way to becoming a document. */
   documentRequests: DocumentRequest[]
-  attachments: StudentAttachment[]
 }
 
 /* -------------------------------------------------------------------------- */

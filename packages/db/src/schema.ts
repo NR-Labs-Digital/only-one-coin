@@ -1557,3 +1557,66 @@ export const documentTemplateVersions = pgTable(
     check("document_template_versions_version_check", sql`${table.version} > 0`),
   ],
 );
+
+// A file someone sent to the platform (OOC-143): one bucket, one key per row,
+// and the key is the row's id (`documents/<id>`) — the name the person gave the
+// file lives only here, never in the bucket. Generic on purpose: `owner_type`
+// + `owner_id` say whose file it is (a student today; a teacher, an enrollment
+// or a payment later), with no FK, because the owner can be any of them. The
+// set of owner types and categories is the domain's (`ATTACHMENT_OWNER_TYPES`,
+// `ATTACHMENT_CATEGORIES`), not a CHECK: a new kind of owner must not cost a
+// migration, as with `courses.landing_key` (0028).
+//
+// Never an issued document: an uploaded file carries no verification code.
+// `uploaded_by` and `removed_by` are Better Auth's "user".id — FKs written by
+// hand in 0048. `size_bytes`, `checksum_sha256` and `uploaded_at` arrive with
+// the confirm step, which reads what actually landed in the bucket.
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuidPk(),
+    ownerType: text("owner_type").notNull(),
+    ownerId: uuid("owner_id").notNull(),
+    category: text("category").notNull(),
+    objectKey: text("object_key").notNull(),
+    originalName: text("original_name").notNull(),
+    // What the client declared until the confirm step, then what the file's
+    // own bytes say it is.
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes"),
+    checksumSha256: text("checksum_sha256"),
+    source: text("source").notNull(),
+    uploadedBy: text("uploaded_by").notNull(),
+    status: text("status").notNull().default("pending"),
+    rejectionReason: text("rejection_reason"),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
+    removedBy: text("removed_by"),
+    ...softDeletable(),
+  },
+  (table) => [
+    uniqueIndex("documents_object_key_uidx").on(table.objectKey),
+    check("documents_status_check", sql`${table.status} in ('pending', 'uploaded', 'rejected', 'removed')`),
+    check("documents_source_check", sql`${table.source} in ('portal', 'backoffice')`),
+    check("documents_size_bytes_check", sql`${table.sizeBytes} is null or ${table.sizeBytes} > 0`),
+    // Uploaded (and removed after it) carries what the bucket holds.
+    check(
+      "documents_uploaded_check",
+      sql`(${table.status} in ('uploaded', 'removed')) = (${table.uploadedAt} is not null and ${table.sizeBytes} is not null and ${table.checksumSha256} is not null)`,
+    ),
+    check(
+      "documents_rejection_check",
+      sql`(${table.status} = 'rejected') = (${table.rejectionReason} is not null)`,
+    ),
+    // Removed is the only retirement there is, and it says who.
+    check(
+      "documents_removed_check",
+      sql`(${table.status} = 'removed') = (${table.deletedAt} is not null) and (${table.status} = 'removed') = (${table.removedBy} is not null)`,
+    ),
+    // The owner's list: live files, newest first.
+    index("documents_owner_idx")
+      .on(table.ownerType, table.ownerId, table.createdAt)
+      .where(sql`${table.status} = 'uploaded' and ${table.deletedAt} is null`),
+    // The sweep's only query: uploads never confirmed.
+    index("documents_pending_idx").on(table.createdAt).where(sql`${table.status} = 'pending'`),
+  ],
+);

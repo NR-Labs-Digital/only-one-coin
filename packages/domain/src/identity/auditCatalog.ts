@@ -114,6 +114,12 @@ export const AUDIT_ACTIONS = {
   "procedure_request.payment_submitted": { key: "procedure_payment_submitted", entity: "payment", subject: "target" },
   "procedure_price.created": { key: "procedure_price_created", entity: "platform", subject: "none" },
 
+  // A file sent to a student's file (OOC-143): the target is the file, the
+  // student travels in metadata.
+  "attachment.uploaded": { key: "attachment_uploaded", entity: "student", subject: "metadata_student" },
+  "attachment.downloaded": { key: "attachment_downloaded", entity: "student", subject: "metadata_student" },
+  "attachment.removed": { key: "attachment_removed", entity: "student", subject: "metadata_student" },
+
   "payment.approved": { key: "payment_approved", entity: "payment", subject: "target" },
   "payment.rejected": { key: "payment_rejected", entity: "payment", subject: "target" },
   "payment.receipt_viewed": { key: "receipt_viewed", entity: "payment", subject: "target" },
