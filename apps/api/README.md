@@ -54,11 +54,13 @@ src/
     enrollment/                           # ClaimSeatHoldRoute, ReleaseSeatHoldRoute e SubmitPublicEnrollmentRoute (checkout público), CreateManualEnrollmentRoute e ListEnrollmentsRoute (backoffice)
     identity/                             # staff: convite, promoção de cargo, acesso, redefinição de senha, bitácora
     platform/                             # feature flags: Get/List/Set; settings: GetPlatformSettings, UpdatePlatformSettings (PATCH) — cargos em settingsRoles.ts
+    attachment/                           # arquivos anexados (OOC-143): lista, upload assinado, confirm, download, remover — staff e portal; cargos em attachmentRoles.ts
     student/                              # diretório e seletor (ListStudents, SearchStudents), ficha (GetStudent, ListStudentActivity), cadastro e edição (RegisterStudent, UpdateStudent, SaveGuardian) — cargos em studentRoles.ts
   workers/
     outbox-relay.worker.ts     # a cada 5 s oferece as linhas pending da outbox à fila send-email
     send-email.worker.ts       # entrega pelo NotificationProvider (Brevo, atrás da allowlist)
     seat-hold-sweep.worker.ts  # a cada 30 s expira os holds de checkout vencidos e devolve as vagas
+    attachment-sweep.worker.ts # a cada 10 min limpa os anexos nunca confirmados (OOC-143)
     receipt-upload-relay.worker.ts  # a cada 5 s oferece comprovantes `uploaded` ao normalize e os `processed` + ligados a pagamento ao screen
     receipt-normalize.worker.ts     # magic bytes, HEIC, downscale/cinza/strip EXIF + impressão digital (sha256, pHash, EXIF)
     receipt-screen.worker.ts        # antifraude nível 0: compara com comprovantes de outros pagamentos, grava os sinais

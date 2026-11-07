@@ -352,7 +352,10 @@
         "language_retired": "Idioma retirado",
         "procedure_request_opened": "Trâmite solicitado",
         "procedure_payment_submitted": "Comprovante de trâmite enviado",
-        "procedure_price_created": "Preço de trâmite alterado"
+        "procedure_price_created": "Preço de trâmite alterado",
+        "attachment_uploaded": "Arquivo anexado",
+        "attachment_downloaded": "Arquivo baixado",
+        "attachment_removed": "Arquivo removido"
       },
       "field": {
         "first_name": "Nome",
@@ -560,12 +563,6 @@
       "request_requested_at": "Solicitada em {date}",
       "request_operation": "Operação {number}",
       "request_hint": "A constancia é emitida quando o pagamento da taxa for aprovado.",
-      "attachments_title": "Arquivos do aluno",
-      "attach_file": "Anexar arquivo",
-      "no_attachments_title": "Sem arquivos",
-      "no_attachments_body": "Aqui aparecem os arquivos que o aluno sobe pelo portal e os que a equipe anexa.",
-      "attachments_hint": "Arquivos anexados, não documentos da instituição: não têm código de verificação.",
-      "file_meta": "{size} · {source} · {date}",
       "portal_access_state": {
         "none": "Sem acesso ao portal",
         "pending_activation": "Acesso enviado, senha pendente",
@@ -1068,16 +1065,6 @@
       "queued": "Na fila",
       "sent": "Enviado",
       "failed": "Falha no envio"
-    },
-    "attachment_kind": {
-      "national_id": "Documento de identidade",
-      "guardian_consent": "Consentimento do apoderado",
-      "receipt": "Comprovante",
-      "other": "Outro"
-    },
-    "attachment_source": {
-      "student": "Enviado pelo aluno",
-      "staff": "Anexado pela equipe"
     },
     "class_groups": {
       "title": "Turmas",

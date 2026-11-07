@@ -10,7 +10,6 @@ import type {
 import {
   formatDate,
   formatDateTime,
-  formatFileSize,
   formatMoney,
   type Locale,
 } from '@/lib/format'
@@ -18,6 +17,8 @@ import { Card, EmptyState, SectionTitle, StatusBadge } from '@/components/backof
 import { deliveryTone, documentTone, paymentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { AttachmentsSection } from '@/components/attachments/attachments-section'
+import type { AttachmentList } from '@/lib/attachments/types'
 
 const DOCUMENT_TYPES: DocumentType[] = ['enrollment_certificate', 'certificate']
 
@@ -32,17 +33,23 @@ const DOCUMENT_TYPES: DocumentType[] = ['enrollment_certificate', 'certificate']
  * 2. Open requests — the constancia de matrícula is a paid procedure (S/25,
  *    `docs/REGRAS-NEGOCIO.md` §5). It becomes a document only once the receipt
  *    for the fee is approved, through the same OCR ladder as an enrollment.
- * 3. Attached files — uploads from the student or from staff. These carry no
- *    verification code and must never be confused with an issued document.
+ * 3. Attached files — uploads from the student or from staff (OOC-143). These
+ *    carry no verification code and must never be confused with an issued
+ *    document. Real: `AttachmentsSection` reads and writes through the API.
  *
- * Everything here is screen-local state: the real write goes through
- * `apps/api`, never from the browser (CLAUDE.md §8).
+ * Blocks 1 and 2 are still screen-local state (OOC-33): nothing there is saved.
  */
 export function StudentDocuments({
   student,
   constanciaFeeCents,
+  attachments,
+  canManageAttachments,
 }: {
   student: StudentDetail
+  /** The student's attached files, read on the server; null when the API failed. */
+  attachments: AttachmentList | null
+  /** Whether the reader's cargo attaches and removes files (the API decides too). */
+  canManageAttachments: boolean
   /** Today's fee, from `platform_settings` (OOC-41). Null when it could not
    * be read: the notice still says the constancia is paid, without a figure. */
   constanciaFeeCents: number | null
@@ -355,72 +362,15 @@ export function StudentDocuments({
         </Card>
       )}
 
-      {/* 3. Uploaded files — never an issued document */}
+      {/* 3. Uploaded files — never an issued document (OOC-143) */}
       <Card className="p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <SectionTitle icon="students">
-            {t('student_file.attachments_title')}
-          </SectionTitle>
-          <button
-            type="button"
-            onClick={() => setNotice({ key: 'issued_local_only', at: new Date().toISOString() })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
-          >
-            <BoIcon name="download" size={14} className="rotate-180" />
-            {t('student_file.attach_file')}
-          </button>
-        </div>
-
-        {student.attachments.length === 0 ? (
-          <EmptyState
-            icon="doc"
-            title={t('student_file.no_attachments_title')}
-            body={t('student_file.no_attachments_body')}
-          />
-        ) : (
-          <ul className="divide-y divide-line">
-            {student.attachments.map((file) => (
-              <li
-                key={file.id}
-                className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0"
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500">
-                    <BoIcon name="doc" size={18} />
-                  </span>
-                  <span className="flex min-w-0 flex-col leading-tight">
-                    <span className="text-sm font-semibold text-ink">
-                      {t(`attachment_kind.${file.kind}`)}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {file.fileName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {t('student_file.file_meta', {
-                        size: formatFileSize(file.sizeBytes, locale),
-                        source: t(`attachment_source.${file.uploadedBy}`),
-                        date: formatDate(file.uploadedAt, locale),
-                      })}
-                    </span>
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setNotice({ key: 'issued_local_only', at: new Date().toISOString() })}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
-                >
-                  <BoIcon name="download" size={14} />
-                  {t('student_file.download')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
-          <BoIcon name="shield" size={14} className="mt-0.5 shrink-0" />
-          {t('student_file.attachments_hint')}
-        </p>
+        <AttachmentsSection
+          scope={{ kind: 'staff', ownerType: 'student', ownerId: student.id }}
+          initial={attachments}
+          variant="staff"
+          canUpload={canManageAttachments}
+          canRemove={canManageAttachments}
+        />
       </Card>
     </div>
   )

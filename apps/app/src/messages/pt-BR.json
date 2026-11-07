@@ -174,5 +174,48 @@
     "description": "Você está vendo funcionalidades que ainda não estão ativas para mais ninguém.",
     "exit": "Sair",
     "owner_description": "Sua conta vê funcionalidades que estão desligadas para todo o resto."
+  },
+  "attachments": {
+    "title_staff": "Arquivos do aluno",
+    "title_portal": "Meus arquivos",
+    "empty_staff_title": "Sem arquivos",
+    "empty_staff_body": "Aqui aparecem os arquivos que o aluno envia pelo portal e os que a equipe anexa.",
+    "empty_portal_title": "Você ainda não enviou arquivos",
+    "empty_portal_body": "Aqui você pode enviar seu documento de identidade, o consentimento do seu responsável ou outro arquivo que a coordenação pedir.",
+    "load_error": "Não conseguimos carregar os arquivos. Recarregue a página para tentar de novo.",
+    "attach": "Anexar arquivo",
+    "category_label": "Tipo de arquivo",
+    "file_label": "Arquivo",
+    "rules": "{types} · até {size}",
+    "send": "Enviar arquivo",
+    "sending": "Enviando…",
+    "cancel": "Cancelar",
+    "sent": "«{name}» foi enviado.",
+    "download": "Baixar",
+    "download_failed": "Não conseguimos abrir o arquivo. Tente de novo.",
+    "remove": "Remover",
+    "remove_question": "Remover «{name}» da lista?",
+    "remove_confirm": "Sim, remover",
+    "remove_failed": "Não conseguimos remover o arquivo. Tente de novo.",
+    "removed": "«{name}» saiu da lista.",
+    "meta": "{size} · {source} · {date}",
+    "by": "por {name}",
+    "hint": "Arquivos anexados, não documentos da instituição: não têm código de verificação.",
+    "category": {
+      "national_id": "Documento de identidade",
+      "guardian_consent": "Consentimento do responsável",
+      "receipt": "Comprovante",
+      "other": "Outro"
+    },
+    "source": {
+      "portal": "Enviado pelo aluno",
+      "backoffice": "Enviado pela equipe"
+    },
+    "error": {
+      "unsupported_type": "Este tipo de arquivo não é aceito. Envie um PDF ou uma foto (JPG, PNG ou HEIC).",
+      "too_large": "O arquivo está vazio ou passa de {size}.",
+      "upload_failed": "O arquivo não chegou. Verifique sua conexão e tente de novo.",
+      "generic": "Não conseguimos enviar o arquivo. Tente de novo."
+    }
   }
 }

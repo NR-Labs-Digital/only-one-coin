@@ -41,8 +41,9 @@ export interface StudentDetailRow {
  * The student file's identity half — contact, guardian and consent. The rest
  * of the file is read by its neighbours: the enrollment history by
  * `StudentEnrollmentHistoryQuery` (OOC-73) and the activity timeline, out of
- * `audit_log`, by `StudentActivityQuery` (OOC-75). Issued documents, paid
- * procedures and uploaded attachments have no table yet (OOC-33), so the
+ * `audit_log`, by `StudentActivityQuery` (OOC-75); the attached files by
+ * `GET /attachments` (OOC-143). Issued documents and paid
+ * procedures have no table behind this read yet (OOC-33), so the
  * route sends those as empty lists rather than reaching for mock fixtures.
  */
 export class GetStudentQuery {

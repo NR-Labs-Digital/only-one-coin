@@ -4,10 +4,12 @@ import { Link } from '@/i18n/navigation'
 import { getStudent, getStudentActivity } from '@/lib/backoffice/students'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getConstanciaFeeCents } from '@/lib/backoffice/platform-settings'
+import { getAttachments } from '@/lib/attachments/server'
 import {
   canBrowseStudents,
   canEditStudent,
   canIssuePortalAccess,
+  canManageStudentAttachments,
   canViewPayments,
 } from '@/lib/backoffice/permissions'
 import { initials } from '@/lib/format'
@@ -34,11 +36,12 @@ export default async function StudentDetailPage({
   /* One wave of calls, not two: the file is fetched alongside the session.
      A cargo that may not browse is refused by the API too (403 → null), and
      its answer is never shown. */
-  const [staff, student, activity, constanciaFeeCents] = await Promise.all([
+  const [staff, student, activity, constanciaFeeCents, attachments] = await Promise.all([
     getStaffSession(),
     getStudent(studentId),
     getStudentActivity(studentId),
     getConstanciaFeeCents(),
+    getAttachments({ kind: 'staff', ownerType: 'student', ownerId: studentId }),
   ])
   if (!canBrowseStudents(staff.role)) notFound()
   if (!student) notFound()
@@ -95,6 +98,8 @@ export default async function StudentDetailPage({
         canEdit={canEditStudent(staff.role)}
         activity={activity}
         constanciaFeeCents={constanciaFeeCents}
+        attachments={attachments}
+        canManageAttachments={canManageStudentAttachments(staff.role)}
       />
     </div>
   )

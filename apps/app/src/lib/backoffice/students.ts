@@ -40,9 +40,10 @@ export async function listStudents(query: StudentDirectoryQuery): Promise<Studen
 
 /**
  * One student's file: identity, guardian and the full enrollment history
- * (OOC-73). `documents`, `documentRequests` and `attachments` come back empty
- * from the API itself (no table backs them yet, OOC-33), not faked here, so a
- * real id never mixes with unrelated mock fixture content.
+ * (OOC-73). `documents` and `documentRequests` come back empty from the API
+ * itself (no table backs them yet, OOC-33), not faked here, so a real id never
+ * mixes with unrelated mock fixture content. Attached files are their own
+ * route (`lib/attachments`, OOC-143).
  */
 export async function getStudent(id: string): Promise<StudentDetail | null> {
   const response = await apiFetch(`/api/v1/students/${id}`)
