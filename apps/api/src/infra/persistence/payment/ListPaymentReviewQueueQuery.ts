@@ -94,6 +94,10 @@ export interface PaymentReviewItem {
   procedureKind: ProcedureKind | null;
   studentId: string;
   studentName: string;
+  /** The file's mobile number — the queue's WhatsApp shortcut (OOC-146). The
+   * route sends it only to the roles that act on the payment or answer the
+   * student (`PAYMENT_CONTACT_ROLES`). */
+  studentPhone: string | null;
   courseName: string;
   classGroupName: string;
   planName: string;
@@ -342,6 +346,7 @@ export class ListPaymentReviewQueueQuery {
         studentId: students.id,
         firstName: students.firstName,
         lastName: students.lastName,
+        phone: students.phone,
         courseName: courses.name,
         classGroupCode: classGroups.code,
         classGroupSchedule: classGroups.schedule,
@@ -429,6 +434,7 @@ export class ListPaymentReviewQueueQuery {
         procedureKind: row.procedureKind as ProcedureKind | null,
         studentId: row.studentId,
         studentName: `${row.firstName} ${row.lastName}`,
+        studentPhone: row.phone || null,
         courseName: row.courseName,
         // Same label as the enrollment ledger: the printed code when the
         // class group has one, the schedule otherwise.

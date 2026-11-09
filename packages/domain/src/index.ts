@@ -457,6 +457,15 @@ export {
   ConfirmProcedureReceiptUploadUseCase,
   type ConfirmProcedureReceiptUploadInput,
 } from "./procedure/ConfirmProcedureReceiptUploadUseCase.js";
+export {
+  RequestManualReceiptUploadUseCase,
+  type RequestManualReceiptUploadInput,
+  type RequestManualReceiptUploadOutput,
+} from "./enrollment/RequestManualReceiptUploadUseCase.js";
+export {
+  ConfirmManualReceiptUploadUseCase,
+  type ConfirmManualReceiptUploadInput,
+} from "./enrollment/ConfirmManualReceiptUploadUseCase.js";
 export { SubmitProcedurePaymentUseCase, type SubmitProcedurePaymentInput } from "./procedure/SubmitProcedurePaymentUseCase.js";
 export { SetProcedurePriceUseCase, type SetProcedurePriceInput } from "./procedure/SetProcedurePriceUseCase.js";
 

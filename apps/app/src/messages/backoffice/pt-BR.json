@@ -596,7 +596,7 @@
       "rejected": "Recusada"
     },
     "payment_status": {
-      "pending": "Pendente",
+      "pending": "Em revisão",
       "under_review": "Em revisão",
       "approved": "Aprovado",
       "rejected": "Recusado"
@@ -832,15 +832,17 @@
       "field_operation": "Número de operação",
       "operation_placeholder": "Ex.: 00993412",
       "attach_receipt": "Imagem do comprovante",
-      "receipt_attach": "Anexar comprovante",
-      "receipt_attached": "Comprovante anexado",
-      "notice_pending": "A vaga fica reservada e o pagamento, pendente. Quando o comprovante chegar, entra na mesma fila de revisão dos demais.",
-      "notice_under_review": "A vaga fica reservada e o comprovante entra na fila de revisão. Nenhum pagamento é aprovado por esta tela.",
+      "notice_under_review": "A vaga fica reservada e o comprovante passa pela mesma leitura e fila de revisão dos que chegam pelo formulário público. Nenhum pagamento é aprovado por esta tela.",
       "create": "Criar a matrícula",
       "cancel": "Cancelar",
       "submit_error": "Não foi possível criar a matrícula. Tente novamente.",
       "operation_number_used": "Esse número de operação já pagou outra matrícula com o mesmo meio de pagamento. Confira o comprovante.",
-      "missing_fields": "Preencha os campos obrigatórios para criar a matrícula."
+      "missing_fields": "Preencha os campos obrigatórios para criar a matrícula.",
+      "receipt_pick": "Escolher imagem do comprovante",
+      "receipt_remove": "Remover comprovante",
+      "receipt_error_type": "Use uma foto ou captura em JPG, PNG ou HEIC.",
+      "receipt_error_size": "A imagem passa de 10 MB. Envie uma captura ou uma foto mais leve.",
+      "receipt_upload_error": "Não foi possível enviar o comprovante. Confira a conexão e tente novamente."
     },
     "seat_status": {
       "reserved": "Reservada",
@@ -2380,6 +2382,12 @@
     "payment_origin": {
       "enrollment": "Matrícula",
       "enrollment_certificate": "Constancia de matrícula"
+    },
+    "student_actions": {
+      "whatsapp": "Escrever para {name} no WhatsApp",
+      "whatsapp_short": "WhatsApp",
+      "file": "Abrir a ficha de {name}",
+      "file_short": "Ficha"
     }
   }
 }

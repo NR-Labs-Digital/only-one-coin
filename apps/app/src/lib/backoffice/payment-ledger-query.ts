@@ -32,11 +32,16 @@ export type PaymentLedgerState = 'open' | 'closed' | 'all'
 /** Tab order on screen; the first is the default. */
 export const PAYMENT_LEDGER_STATES: readonly PaymentLedgerState[] = ['open', 'closed', 'all']
 
-/** The fine statuses a tab holds — the only ones its status filter offers. */
+/**
+ * The fine statuses a tab's status filter offers. `pending` and `under_review`
+ * are one state on screen (OOC-146) — both wait on a person, and the traffic
+ * light's verdict is what tells them apart — so the open tab has no status
+ * filter at all, and the whole-ledger tab offers the open state once, as the
+ * tab itself does.
+ */
 export function statusesOf(state: PaymentLedgerState): readonly PaymentStatus[] {
-  if (state === 'open') return PAYMENT_STATUSES.filter((s) => s === 'under_review' || s === 'pending')
-  if (state === 'closed') return PAYMENT_STATUSES.filter((s) => s === 'approved' || s === 'rejected')
-  return PAYMENT_STATUSES
+  if (state === 'open') return []
+  return PAYMENT_STATUSES.filter((s) => s === 'approved' || s === 'rejected')
 }
 
 export const PAYMENT_METHODS: readonly PaymentMethod[] = [
@@ -98,9 +103,10 @@ export function paymentLedgerSearchParams(query: PaymentLedgerQuery): URLSearchP
 }
 
 /**
- * How the review queue is ordered (Sessão 32). `priority` is the default:
- * suggested rejection, then review, then green, the least confident reading
- * first within each. `oldest` is plain arrival order.
+ * How the review queue is ordered. `oldest` — plain arrival order — is the
+ * default since OOC-146: whoever paid first is answered first. `priority`
+ * (Sessão 32) stays one click away: suggested rejection, then review, then
+ * green, the least confident reading first within each.
  */
 export type ReviewQueueSort = 'priority' | 'oldest'
 
@@ -116,14 +122,14 @@ export function parseReviewQueueQuery(
   params: Record<string, string | string[] | undefined>,
 ): ReviewQueueQuery {
   const { page, q } = parsePaymentLedgerQuery(params)
-  return { page, q, sort: first(params.sort) === 'oldest' ? 'oldest' : 'priority' }
+  return { page, q, sort: first(params.sort) === 'priority' ? 'priority' : 'oldest' }
 }
 
 export function reviewQueueSearchParams(query: ReviewQueueQuery): URLSearchParams {
   const search = new URLSearchParams()
   if (query.page > 1) search.set('page', String(query.page))
   if (query.q) search.set('q', query.q)
-  if (query.sort !== 'priority') search.set('sort', query.sort)
+  if (query.sort !== 'oldest') search.set('sort', query.sort)
   return search
 }
 

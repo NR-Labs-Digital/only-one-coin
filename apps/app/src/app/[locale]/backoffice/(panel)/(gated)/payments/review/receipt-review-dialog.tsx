@@ -16,6 +16,7 @@ import { formatPaymentMethod } from '@/lib/payment-method'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone, receiptStateTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
 import {
   Dialog,
   DialogContent,
@@ -116,6 +117,7 @@ export function ReceiptReviewDialog({
   onNext,
   onPrev,
   lowConfidencePercent,
+  canOpenStudentFile,
 }: {
   payment: PaymentReviewItem | null
   /** When the server rendered the queue — what the deadline is measured from. */
@@ -131,6 +133,8 @@ export function ReceiptReviewDialog({
   /** Below this (whole percent) a field read is flagged (`platform_settings`,
    * OOC-41); null when the settings could not be read — nothing is flagged. */
   lowConfidencePercent: number | null
+  /** Whether the reader may open the student's file (`canBrowseStudents`). */
+  canOpenStudentFile: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -368,6 +372,14 @@ export function ReceiptReviewDialog({
                   course: `${payment.courseName} · ${payment.classGroupName}`,
                 })}
               </DialogDescription>
+              {/* Asking the student for a better photo is usually what an
+                  unreadable receipt needs (OOC-146). */}
+              <StudentQuickActions
+                studentId={payment.studentId}
+                studentName={payment.studentName}
+                phone={payment.studentPhone}
+                canOpenFile={canOpenStudentFile}
+              />
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <StatusBadge
                   tone={paymentTone[payment.status]}

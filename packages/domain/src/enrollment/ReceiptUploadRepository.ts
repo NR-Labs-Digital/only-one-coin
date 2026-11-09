@@ -3,7 +3,9 @@ import type { ReceiptUpload } from "./ReceiptUpload.js";
 /** Who a receipt belongs to before there is a payment to link it to. */
 export type ReceiptUploadOwner =
   | { kind: "seat_hold"; seatHoldId: string }
-  | { kind: "procedure_request"; procedureRequestId: string };
+  | { kind: "procedure_request"; procedureRequestId: string }
+  /** The staff account opening a manual enrollment (OOC-146). */
+  | { kind: "staff"; userId: string };
 
 /**
  * File custody rows for checkout receipts. Every transition is guarded on

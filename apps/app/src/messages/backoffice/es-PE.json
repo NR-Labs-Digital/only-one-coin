@@ -596,7 +596,7 @@
       "rejected": "Rechazada"
     },
     "payment_status": {
-      "pending": "Pendiente",
+      "pending": "En revisión",
       "under_review": "En revisión",
       "approved": "Aprobado",
       "rejected": "Rechazado"
@@ -832,15 +832,17 @@
       "field_operation": "Número de operación",
       "operation_placeholder": "Ej.: 00993412",
       "attach_receipt": "Imagen del comprobante",
-      "receipt_attach": "Adjuntar comprobante",
-      "receipt_attached": "Comprobante adjunto",
-      "notice_pending": "El asiento queda reservado y el pago, pendiente. Cuando llegue el comprobante entra a la misma cola de revisión que los demás.",
-      "notice_under_review": "El asiento queda reservado y el comprobante entra a la cola de revisión. Ningún pago se aprueba desde esta pantalla.",
+      "notice_under_review": "El asiento queda reservado y el comprobante entra a la misma lectura y cola de revisión que los del formulario público. Ningún pago se aprueba desde esta pantalla.",
       "create": "Crear la matrícula",
       "cancel": "Cancelar",
       "submit_error": "No se pudo crear la matrícula. Intenta de nuevo.",
       "operation_number_used": "Ese número de operación ya pagó otra matrícula con el mismo medio de pago. Revisa el comprobante.",
-      "missing_fields": "Completa los campos obligatorios para crear la matrícula."
+      "missing_fields": "Completa los campos obligatorios para crear la matrícula.",
+      "receipt_pick": "Elegir imagen del comprobante",
+      "receipt_remove": "Quitar comprobante",
+      "receipt_error_type": "Usa una foto o captura en JPG, PNG o HEIC.",
+      "receipt_error_size": "La imagen supera los 10 MB. Envía una captura o una foto más liviana.",
+      "receipt_upload_error": "No se pudo subir el comprobante. Revisa la conexión e intenta de nuevo."
     },
     "seat_status": {
       "reserved": "Reservada",
@@ -2380,6 +2382,12 @@
     "payment_origin": {
       "enrollment": "Matrícula",
       "enrollment_certificate": "Constancia de matrícula"
+    },
+    "student_actions": {
+      "whatsapp": "Escribir a {name} por WhatsApp",
+      "whatsapp_short": "WhatsApp",
+      "file": "Abrir la ficha de {name}",
+      "file_short": "Ficha"
     }
   }
 }

@@ -51,10 +51,10 @@ export class Payment extends BaseModel {
 
   /**
    * Manual backoffice enrollment (CLAUDE.md §1, lock (d)): the payment never
-   * starts approved. With a receipt attached it enters the same review
-   * ladder every other receipt does (`under_review`); without one it is
-   * still `pending` on the student sending it — mirroring
-   * apps/app/.../new-enrollment-form.tsx's own submit logic.
+   * starts approved. The receipt is mandatory (OOC-146) and the payment is
+   * born `under_review`: the OCR ladder still reads and judges it, but the
+   * student is not sent `payment_under_review` on top of the "enrollment
+   * received" that goes out at the same moment (decision of 28/10/2026).
    */
   static createManual(params: {
     enrollmentId: string;
@@ -62,13 +62,12 @@ export class Payment extends BaseModel {
     methodDetail: string | null;
     amountCents: number;
     operationNumber: string;
-    receiptAttached: boolean;
   }): Payment {
     const result = PaymentPropsSchema.safeParse({
       id: uuid(),
       enrollmentId: params.enrollmentId,
       idempotencyKey: uuid(),
-      status: params.receiptAttached ? "under_review" : "pending",
+      status: "under_review",
       method: params.method,
       methodDetail: params.methodDetail,
       amountCents: params.amountCents,

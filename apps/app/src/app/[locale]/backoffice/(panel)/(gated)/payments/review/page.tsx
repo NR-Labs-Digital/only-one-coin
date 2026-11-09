@@ -4,7 +4,7 @@ import { reviewQueueSearchParams } from '@/lib/backoffice/payment-ledger-query'
 import { redirect } from '@/i18n/navigation'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
-import { canReviewPayments, canViewPayments } from '@/lib/backoffice/permissions'
+import { canBrowseStudents, canReviewPayments, canViewPayments } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { SectionTabs } from '@/components/backoffice/section-tabs'
 import { ReviewQueueView } from './review-queue-view'
@@ -123,6 +123,7 @@ export default async function PaymentsReviewPage({
         // Settings that could not be read only lose the low-confidence flag;
         // the queue itself still works.
         lowConfidencePercent={settings?.ocrLowConfidencePercent ?? null}
+        canOpenStudentFile={canBrowseStudents(staff.role)}
       />
     </div>
   )

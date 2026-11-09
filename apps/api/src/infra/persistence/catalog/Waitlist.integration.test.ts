@@ -9,6 +9,7 @@ import type { Db } from "@/infra/db/client.js";
 import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
 import { DrizzleWaitlistRepository } from "./DrizzleWaitlistRepository.js";
 import { ListWaitlistQuery } from "./ListWaitlistQuery.js";
+import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
 
 /**
  * The manual waitlist (OOC-35), checked where it is written: the same student
@@ -222,9 +223,9 @@ describe("waitlist", { timeout: 30_000 }, () => {
         methodDetail: null,
         amountCents: 9900,
         operationNumber: "WAITLISTINTEG0001",
-        receiptAttached: false,
       });
-      await new DrizzleEnrollmentRepository(tx).createWithPayment({ enrollment, payment, notifications: [] });
+      const { receipt } = await seedManualReceipt(tx, "usr_waitlist_integ");
+      await new DrizzleEnrollmentRepository(tx).createWithPayment({ enrollment, payment, notifications: [], receipt });
 
       const [row] = await tx.select().from(waitlistEntries).where(eq(waitlistEntries.id, entry.id));
       expect(row?.leftReason).toBe("enrolled");

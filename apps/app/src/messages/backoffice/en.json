@@ -596,7 +596,7 @@
       "rejected": "Rejected"
     },
     "payment_status": {
-      "pending": "Pending",
+      "pending": "In review",
       "under_review": "In review",
       "approved": "Approved",
       "rejected": "Rejected"
@@ -832,15 +832,17 @@
       "field_operation": "Operation number",
       "operation_placeholder": "e.g. 00993412",
       "attach_receipt": "Receipt image",
-      "receipt_attach": "Attach receipt",
-      "receipt_attached": "Receipt attached",
-      "notice_pending": "The seat is reserved and the payment stays open. Once the receipt arrives it joins the same review queue as every other one.",
-      "notice_under_review": "The seat is reserved and the receipt joins the review queue. No payment is ever approved from this screen.",
+      "notice_under_review": "The seat is reserved and the receipt goes through the same reading and review queue as the public form's. No payment is ever approved from this screen.",
       "create": "Create the enrollment",
       "cancel": "Cancel",
       "submit_error": "Could not create the enrollment. Try again.",
       "operation_number_used": "That operation number already paid for another enrollment with the same payment method. Check the receipt.",
-      "missing_fields": "Fill in the required fields to create the enrollment."
+      "missing_fields": "Fill in the required fields to create the enrollment.",
+      "receipt_pick": "Choose receipt image",
+      "receipt_remove": "Remove receipt",
+      "receipt_error_type": "Use a photo or screenshot in JPG, PNG or HEIC.",
+      "receipt_error_size": "The image is over 10 MB. Send a screenshot or a lighter photo.",
+      "receipt_upload_error": "Could not upload the receipt. Check the connection and try again."
     },
     "seat_status": {
       "reserved": "Reserved",
@@ -2380,6 +2382,12 @@
     "payment_origin": {
       "enrollment": "Enrollment",
       "enrollment_certificate": "Enrollment certificate"
+    },
+    "student_actions": {
+      "whatsapp": "Message {name} on WhatsApp",
+      "whatsapp_short": "WhatsApp",
+      "file": "Open {name}'s file",
+      "file_short": "File"
     }
   }
 }

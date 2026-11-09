@@ -30,7 +30,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary | null> {
  * same request; `cache` makes that one call to `apps/api`, not two.
  */
 export const getReviewQueueHead = cache(
-  (): Promise<PaymentReviewQueue | null> => listPaymentReviewQueue({ page: 1, q: '', sort: 'priority' }),
+  (): Promise<PaymentReviewQueue | null> => listPaymentReviewQueue({ page: 1, q: '', sort: 'oldest' }),
 )
 
 /** How many class groups the home shows under seat pressure. */
