@@ -680,11 +680,8 @@
       "no_receipt_warning": "Approving without a receipt: confirm the deposit on the bank statement first.",
       "refused_receipt_warning": "This receipt's file was refused: there is no image to review. Confirm the deposit on the bank statement before approving.",
       "uploading_receipt_warning": "The receipt is still being processed: the image and the antifraud signals may show up later. If you approve now, confirm the deposit on the bank statement first.",
-      "declared_title": "What the student declared",
       "signals_title": "Antifraud screening signals",
       "signals_none": "The antifraud screening found nothing.",
-      "reading_title": "AI reading",
-      "reading_intro": "What the AI read on the receipt. The confidence is the model's own report.",
       "reading_not_read": "The AI has not read this receipt yet.",
       "reading_failed": "The AI could not read this receipt: {reason}. Check it by hand.",
       "reading_failure_provider_unavailable": "the AI service did not respond",
@@ -728,7 +725,13 @@
       "reread_not_rereadable": "This payment has no processed receipt to read again.",
       "reread_error": "The new reading could not be requested. Try again; if it keeps failing, tell the technical team.",
       "reread_note": "The AI reads the same image again. The payment’s status does not change: the decision is still yours.",
-      "procedure_note": "This payment is for a procedure: deciding it does not change the student's seat."
+      "procedure_note": "This payment is for a procedure: deciding it does not change the student's seat.",
+      "compare_title": "Receipt against what was expected",
+      "compare_col_expected": "Expected",
+      "compare_col_read": "Read on the receipt",
+      "compare_match": "Matches",
+      "compare_differs": "Does not match",
+      "compare_empty": "—"
     },
     "rejection_reason": {
       "amount_mismatch": "The amount does not match",

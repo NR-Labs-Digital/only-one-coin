@@ -680,11 +680,8 @@
       "no_receipt_warning": "Aprobar sin comprobante: confirma el depósito en el estado de cuenta antes.",
       "refused_receipt_warning": "El archivo de este comprobante fue rechazado: no hay imagen que revisar. Confirma el depósito en el estado de cuenta antes de aprobar.",
       "uploading_receipt_warning": "El comprobante todavía se está procesando: la imagen y las señales antifraude pueden aparecer después. Si apruebas ahora, confirma el depósito en el estado de cuenta antes.",
-      "declared_title": "Lo que declaró el alumno",
       "signals_title": "Señales de la revisión antifraude",
       "signals_none": "La revisión antifraude no encontró nada.",
-      "reading_title": "Lectura de la IA",
-      "reading_intro": "Lo que la IA leyó en el comprobante. La confianza la informa el propio modelo.",
       "reading_not_read": "La IA todavía no leyó este comprobante.",
       "reading_failed": "La IA no pudo leer este comprobante: {reason}. Revísalo a mano.",
       "reading_failure_provider_unavailable": "el servicio de IA no respondió",
@@ -728,7 +725,13 @@
       "reread_not_rereadable": "Este pago no tiene un comprobante procesado para leer de nuevo.",
       "reread_error": "No se pudo pedir la nueva lectura. Inténtalo de nuevo; si sigue igual, avisa al equipo técnico.",
       "reread_note": "La IA lee la misma imagen otra vez. No cambia el estado del pago: la decisión sigue siendo tuya.",
-      "procedure_note": "Este pago es de un trámite: decidirlo no cambia la vacante del alumno."
+      "procedure_note": "Este pago es de un trámite: decidirlo no cambia la vacante del alumno.",
+      "compare_title": "Comprobante frente a lo esperado",
+      "compare_col_expected": "Esperado",
+      "compare_col_read": "Leído en el comprobante",
+      "compare_match": "Coincide",
+      "compare_differs": "No coincide",
+      "compare_empty": "—"
     },
     "rejection_reason": {
       "amount_mismatch": "El monto no corresponde",

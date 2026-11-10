@@ -680,11 +680,8 @@
       "no_receipt_warning": "Aprovar sem comprovante: confirme o depósito no extrato antes.",
       "refused_receipt_warning": "O arquivo deste comprovante foi recusado: não há imagem para revisar. Confirme o depósito no extrato antes de aprovar.",
       "uploading_receipt_warning": "O comprovante ainda está sendo processado: a imagem e os sinais antifraude podem aparecer depois. Se aprovar agora, confirme o depósito no extrato antes.",
-      "declared_title": "O que o aluno declarou",
       "signals_title": "Sinais da triagem antifraude",
       "signals_none": "A triagem antifraude não encontrou nada.",
-      "reading_title": "Leitura da IA",
-      "reading_intro": "O que a IA leu no comprovante. A confiança é informada pelo próprio modelo.",
       "reading_not_read": "A IA ainda não leu este comprovante.",
       "reading_failed": "A IA não conseguiu ler este comprovante: {reason}. Confira à mão.",
       "reading_failure_provider_unavailable": "o serviço de IA não respondeu",
@@ -728,7 +725,13 @@
       "reread_not_rereadable": "Este pagamento não tem um comprovante processado para ler de novo.",
       "reread_error": "Não foi possível pedir a nova leitura. Tente de novo; se continuar, avise a equipe técnica.",
       "reread_note": "A IA lê a mesma imagem outra vez. Não muda o status do pagamento: a decisão continua sendo sua.",
-      "procedure_note": "Este pagamento é de um trâmite: decidi-lo não muda a vaga do aluno."
+      "procedure_note": "Este pagamento é de um trâmite: decidi-lo não muda a vaga do aluno.",
+      "compare_title": "Comprovante frente ao esperado",
+      "compare_col_expected": "Esperado",
+      "compare_col_read": "Lido no comprovante",
+      "compare_match": "Confere",
+      "compare_differs": "Não confere",
+      "compare_empty": "—"
     },
     "rejection_reason": {
       "amount_mismatch": "O valor não corresponde",
