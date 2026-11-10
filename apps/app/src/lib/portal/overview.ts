@@ -57,6 +57,8 @@ interface ApiEnrollment {
   academicPeriodName: string
   plan: { name: string; priceId: string; priceCents: number; currency: 'PEN' }
   payments: ApiPayment[]
+  /** The final grade the teacher posted (OOC-38); `grade` null on a DA. */
+  finalGrade: { grade: number | null; didNotSit: boolean; recordedAt: string } | null
 }
 
 interface ApiProcedureRequest {
@@ -73,6 +75,8 @@ interface ApiProcedureRequest {
 export interface OverviewResponse {
   student: Student
   enrollments: ApiEnrollment[]
+  /** `platform_settings.passing_grade` (OOC-41); null when the API could not read it. */
+  passingGrade: number | null
   procedures: { kind: ProcedureCatalogItem['type']; priceCents: number; currency: 'PEN'; eligible: ProcedureCatalogItem['eligible'] }[]
   requests: ApiProcedureRequest[]
 }
@@ -146,15 +150,20 @@ export function toEnrollment(row: ApiEnrollment): Enrollment {
     },
     plan: { name: row.plan.name, priceCents: row.plan.priceCents, currency: row.plan.currency },
     academicPeriod: { name: row.academicPeriodName },
-    // Monthly billing, modules, the class-access lock, grades and progress
-    // have no backend yet (OOC-86, OOC-94/85, OOC-102): every enrollment is
-    // a package, unlocked, with nothing to draw a bar from.
+    // Monthly billing, modules, the class-access lock and progress have no
+    // backend yet (OOC-86, OOC-94/85): every enrollment is a package,
+    // unlocked, with nothing to draw a bar from. The final grade is real
+    // since OOC-38.
     billingMode: 'package',
     monthly: null,
     modules: [],
     payments,
     classAccessLock: null,
-    finalGrade: null,
+    finalGrade: row.finalGrade
+      ? row.finalGrade.didNotSit || row.finalGrade.grade === null
+        ? 'did_not_attempt'
+        : row.finalGrade.grade
+      : null,
     progressPct: null,
   }
 }

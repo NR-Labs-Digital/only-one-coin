@@ -147,3 +147,63 @@ describe("GET /emails/flows/:key/preview", () => {
     expect(response.statusCode).toBe(400);
   });
 });
+
+describe("POST /emails/flows/:key/proof (OOC-89)", () => {
+  const post = (url: string, payload: Record<string, unknown>) =>
+    app.inject({ method: "POST", url, payload, cookies: { [SESSION_COOKIE_NAME]: "token" } });
+
+  it("writes one proof per address over the sample data, in the language asked for", async () => {
+    signedIn();
+    const send = vi
+      .spyOn(container.useCases.emails.sendProof, "run")
+      .mockResolvedValue({ outboxIds: ["o-1", "o-2"] });
+
+    const response = await post("/api/v1/emails/flows/payment_approved/proof", {
+      locale: "pt-BR",
+      recipients: ["qa.one@onlyonecoin.edu.pe", "qa.two@onlyonecoin.edu.pe"],
+    });
+
+    expect(response.statusCode).toBe(202);
+    expect(response.json()).toEqual({ sent: 2 });
+    expect(send).toHaveBeenCalledWith({
+      actorId: SUPERVISOR.id,
+      templateKey: "payment_approved",
+      locale: "pt-BR",
+      recipients: ["qa.one@onlyonecoin.edu.pe", "qa.two@onlyonecoin.edu.pe"],
+      vars: EMAIL_PREVIEW_SAMPLES.payment_approved,
+    });
+  });
+
+  it("refuses more than five addresses before anything is written", async () => {
+    signedIn();
+    const send = vi.spyOn(container.useCases.emails.sendProof, "run");
+
+    const response = await post("/api/v1/emails/flows/payment_approved/proof", {
+      recipients: ["a@x.pe", "b@x.pe", "c@x.pe", "d@x.pe", "e@x.pe", "f@x.pe"],
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("refuses a template nothing sends yet", async () => {
+    signedIn();
+    const send = vi.spyOn(container.useCases.emails.sendProof, "run");
+
+    const response = await post("/api/v1/emails/flows/certificate_issued/proof", { recipients: ["a@x.pe"] });
+
+    expect(response.statusCode).toBe(400);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("is not the analyst's: observing never sends anything", async () => {
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue({ ...SUPERVISOR, role: "analyst" });
+    vi.spyOn(container.edge.rateLimiter, "hit").mockResolvedValue(null);
+    const send = vi.spyOn(container.useCases.emails.sendProof, "run");
+
+    const response = await post("/api/v1/emails/flows/payment_approved/proof", { recipients: ["a@x.pe"] });
+
+    expect(response.statusCode).toBe(403);
+    expect(send).not.toHaveBeenCalled();
+  });
+});

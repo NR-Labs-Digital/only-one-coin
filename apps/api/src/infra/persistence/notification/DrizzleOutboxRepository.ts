@@ -17,6 +17,8 @@ export interface OutboxEmailRow {
   vars: Record<string, unknown>;
   status: OutboxStatus;
   attempts: number;
+  /** A proof from the e-mail screen (OOC-89): the subject goes out marked. */
+  isProof: boolean;
 }
 
 /**
@@ -92,6 +94,7 @@ export class DrizzleOutboxRepository implements IOutboxStore {
         vars: outbox.vars,
         status: outbox.status,
         attempts: outbox.attempts,
+        isProof: outbox.isProof,
       })
       .from(outbox)
       .where(eq(outbox.id, id));

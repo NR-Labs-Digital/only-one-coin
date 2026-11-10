@@ -37,6 +37,9 @@ import {
   AdvanceClassGroupStatusUseCase,
   IssuePortalAccessUseCase,
   ResendFailedEmailUseCase,
+  ListOwnClassGroupGradesUseCase,
+  RecordOwnClassGroupGradesUseCase,
+  SendEmailProofUseCase,
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
   CreateManualEnrollmentUseCase,
@@ -217,12 +220,14 @@ import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroup
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
 import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
+import { DrizzleGradeRepository } from "./infra/persistence/teaching/DrizzleGradeRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
 import { EmailFlowCountsQuery } from "./infra/persistence/notification/EmailFlowCountsQuery.js";
 import { EmailDeliveryQuery } from "./infra/persistence/notification/EmailDeliveryQuery.js";
 import { DrizzleEmailResendRepository } from "./infra/persistence/notification/DrizzleEmailResendRepository.js";
+import { DrizzleEmailProofRepository } from "./infra/persistence/notification/DrizzleEmailProofRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
@@ -288,6 +293,8 @@ export interface AppUseCases {
     listOwnClassGroups: ListOwnClassGroupsUseCase;
     getOwnClassGroup: GetOwnClassGroupUseCase;
     listOwnClassGroupStudents: ListOwnClassGroupStudentsUseCase;
+    listOwnClassGroupGrades: ListOwnClassGroupGradesUseCase;
+    recordOwnClassGroupGrades: RecordOwnClassGroupGradesUseCase;
     summary: GetTeachingSummaryUseCase;
   };
   student: {
@@ -366,6 +373,7 @@ export interface AppUseCases {
   };
   emails: {
     resendDelivery: ResendFailedEmailUseCase;
+    sendProof: SendEmailProofUseCase;
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
@@ -777,6 +785,7 @@ function buildContainer(): AppContainer {
   const listWaitlist = new ListWaitlistQuery(db);
   const classGroupRoster = new ClassGroupRosterQuery(db);
   const teachingReader = new DrizzleTeachingReader(db, classGroupRoster);
+  const gradeRepository = new DrizzleGradeRepository(db);
   const listOwnClassGroups = new ListOwnClassGroupsUseCase(teacherRepository, teachingReader);
   const getOwnClassGroup = new GetOwnClassGroupUseCase(teacherRepository, teachingReader);
   const listStaff = new ListStaffQuery(db);
@@ -867,6 +876,13 @@ function buildContainer(): AppContainer {
         listOwnClassGroups,
         getOwnClassGroup,
         listOwnClassGroupStudents: new ListOwnClassGroupStudentsUseCase(getOwnClassGroup, teachingReader),
+        listOwnClassGroupGrades: new ListOwnClassGroupGradesUseCase(getOwnClassGroup, gradeRepository),
+        recordOwnClassGroupGrades: new RecordOwnClassGroupGradesUseCase(
+          getOwnClassGroup,
+          teachingReader,
+          gradeRepository,
+          platformSettingsRepository,
+        ),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
       },
       student: {
@@ -922,6 +938,7 @@ function buildContainer(): AppContainer {
       portal,
       emails: {
         resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(db)),
+        sendProof: new SendEmailProofUseCase(new DrizzleEmailProofRepository(db)),
       },
       platform: {
         setFeatureFlag,

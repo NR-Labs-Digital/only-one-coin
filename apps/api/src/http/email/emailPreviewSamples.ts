@@ -50,6 +50,18 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
   },
+  grade_posted: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    grade: 16.5,
+    passingGrade: 14,
+  },
+  grade_did_not_sit: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
   portal_credentials: {
     recipientName: "María Fernanda",
     loginEmail: "maria.quispe@gmail.com",

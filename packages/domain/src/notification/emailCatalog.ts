@@ -16,7 +16,7 @@
  * The domain events the student's e-mails hang off, in the order they happen
  * — the journey screen's spine and the catalog's order.
  */
-export const EMAIL_STAGES = ["submitted", "payment_pending", "payment_settled", "access", "documents"] as const;
+export const EMAIL_STAGES = ["submitted", "payment_pending", "payment_settled", "access", "grades", "documents"] as const;
 
 export type EmailStage = (typeof EMAIL_STAGES)[number];
 
@@ -63,6 +63,10 @@ export const EMAIL_CATALOG = {
   /* The Classroom invitation, three days before the class group starts
      (`docs/REGRAS-NEGOCIO.md` §5, step 9 — two days in one FAQ, §11). */
   class_access_ready: { audience: "student", stage: "access", conditional: false, emitted: false },
+  /* The teacher posted the final grade (OOC-38): the grade, or DA when the
+     final exam was not sat. Sent the moment it is posted — it is final then. */
+  grade_posted: { audience: "student", stage: "grades", conditional: false, emitted: true },
+  grade_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
   enrollment_certificate_issued: { audience: "student", stage: "documents", conditional: true, emitted: false },
   certificate_issued: { audience: "student", stage: "documents", conditional: false, emitted: false },
 

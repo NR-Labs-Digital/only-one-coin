@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgSequence,
   pgTable,
   text,
@@ -1226,6 +1227,38 @@ export const staffInvites = pgTable(
   ],
 );
 
+// One grade per seat in a class group (OOC-38, CLAUDE.md §1, decision
+// 08/10/2026): the final exam's, which is the module's grade, on the 0–20
+// scale with decimals — or DA, the final exam not sat, in its place. Posted
+// once and locked: append-only, no UPDATE nor DELETE, on both layers (0051).
+// Whether it passes is read against `platform_settings.passing_grade` at the
+// time it is read, never stored here.
+export const grades = pgTable(
+  "grades",
+  {
+    id: uuidPk(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    // Exact decimal, two places (`13.50`): a grade is compared as typed.
+    score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
+    didNotSit: boolean("did_not_sit").notNull().default(false),
+    // Better Auth's "user" is not modelled here; FK written by hand in 0051.
+    recordedBy: text("recorded_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("grades_class_group_enrollment_uidx").on(table.classGroupId, table.enrollmentId),
+    check(
+      "grades_value_check",
+      sql`(${table.didNotSit} and ${table.score} is null) or (not ${table.didNotSit} and ${table.score} between 0 and 20)`,
+    ),
+  ],
+);
+
 // Append-only history of staff/role events (CLAUDE.md §8, "toda mudança de
 // cargo → audit_log append-only"). No update/delete grant is set up for ANY
 // table yet in this schema, so this matches the codebase's current actual
@@ -1378,6 +1411,10 @@ export const outbox = pgTable(
     // until the webhook says anything (and forever, without a webhook).
     deliveryStatus: text("delivery_status"),
     deliveryStatusAt: timestamp("delivery_status_at", { withTimezone: true }),
+    // A proof somebody sent from the e-mail screen (OOC-89): sample data to a
+    // staff address, with the subject marked. Kept out of every figure about
+    // what the platform sent to students, and out of the resend list.
+    isProof: boolean("is_proof").notNull().default(false),
     ...timestamps(),
   },
   (table) => [

@@ -4,6 +4,7 @@ import {
   classGroups,
   courses,
   enrollments,
+  grades,
   guardians,
   payments,
   planPrices,
@@ -216,6 +217,26 @@ describe("StudentPortalQuery.overview", () => {
     // Same class group, same link: the seat decides, never the screen.
     expect(byId.get(ON_OLD_FILE)!.classGroup.classroomUrl).toBe("https://classroom.google.com/c/portal");
     expect(byId.get(ON_NEW_FILE)!.classGroup.classroomUrl).toBeNull();
+  });
+});
+
+describe("StudentPortalQuery.overview — the final grade (OOC-38)", () => {
+  it("carries the grade posted on the seat and the configured pass mark; none on a seat without one", async () => {
+    await db.insert(grades).values({ enrollmentId: ON_OLD_FILE, classGroupId: GROUP, score: 13.5, recordedBy: USER });
+
+    const overview = (await query.overview(USER))!;
+    const byId = new Map(overview.enrollments.map((row) => [row.id, row]));
+
+    expect(byId.get(ON_OLD_FILE)!.finalGrade).toMatchObject({ score: 13.5, didNotSit: false });
+    expect(byId.get(ON_NEW_FILE)!.finalGrade).toBeNull();
+    expect(overview.passingGrade).toEqual(expect.any(Number));
+  });
+
+  it("reads a DA as no score", async () => {
+    await db.insert(grades).values({ enrollmentId: ON_OLD_FILE, classGroupId: GROUP, didNotSit: true, recordedBy: USER });
+
+    const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
+    expect(byId.get(ON_OLD_FILE)!.finalGrade).toMatchObject({ score: null, didNotSit: true });
   });
 });
 

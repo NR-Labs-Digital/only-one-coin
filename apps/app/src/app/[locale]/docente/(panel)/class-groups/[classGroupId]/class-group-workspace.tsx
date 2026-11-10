@@ -1,10 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
-import type { TeachingClassGroup, TeachingStudent } from '@/lib/docente/teaching'
-import { formatDateTime, formatNumber, type Locale } from '@/lib/format'
+import { Link, useRouter } from '@/i18n/navigation'
+import type { TeachingClassGroup, TeachingGrade, TeachingStudent } from '@/lib/docente/teaching'
+import {
+  mergePendingGrades,
+  postGrades,
+  readPendingGrades,
+  writePendingGrades,
+  type PendingGrade,
+} from '@/lib/docente/grade-outbox'
+import { formatNumber, type Locale } from '@/lib/format'
 import { downloadCsv } from '@/lib/backoffice/csv'
 import { gradeReportCsv } from '@/lib/backoffice/grade-report'
 import { EmptyState, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
@@ -19,32 +26,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { ClassResources } from '../class-resources'
-import {
-  DA_MARK,
-  finalStatus,
-  isDa,
-  parseGrade,
-  workingSheet,
-  type GradeSheetRow,
-} from '../grade-sheet'
+import { DA_MARK, gradeSheet, isDa, parseGrade, type GradeSheetRow } from '../grade-sheet'
 import { BatchGrades, type BatchEntry } from '../batch-grades'
 import { ClassGroupFacts } from '../class-group-facts'
 import { ClassNotices } from '../class-notices'
 
 /**
  * Which of the class group's tools are on the air. Each one is a feature flag
- * (`teacher.grades`, `teacher.class_links`, `teacher.notices`). Grades and
- * notices stay off in production until they have an API — they write only on
- * this screen, and nothing "saved only here" may reach a teacher (OOC-82).
- * The class links read the API since OOC-98.
+ * (`teacher.grades`, `teacher.class_links`, `teacher.notices`). Grades are
+ * posted to the API since OOC-38; notices still write only on this screen and
+ * stay off in production — nothing "saved only here" may reach a teacher
+ * (OOC-82). The class links read the API since OOC-98.
  */
 export interface WorkspaceTools {
   grades: boolean
@@ -70,72 +63,139 @@ export function ClassGroupWorkspace({
   teacherName,
   tools,
   passingGrade,
+  grades,
 }: {
   group: TeachingClassGroup
   students: TeachingStudent[]
   teacherName: string
   tools: WorkspaceTools
-  /** Minimum final grade, from `platform_settings` (OOC-41). Null when the grade sheet is off. */
+  /** Minimum final grade, from `platform_settings` (OOC-41). Null when the grade sheet is off or the read failed. */
   passingGrade: number | null
+  /** The grades already posted (OOC-38). Null when the sheet is off or the read failed. */
+  grades: TeachingGrade[] | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
 
-  const grading = tools.grades && passingGrade !== null
+  /* Without the posted grades the sheet cannot tell an empty cell from a
+     final one — it is not drawn at all rather than drawn wrong. */
+  const grading = tools.grades && passingGrade !== null && grades !== null
+  const gradesUnavailable = tools.grades && !grading
   const gradingOpen = group.status === 'in_progress' || group.status === 'finished'
 
-  /* The sheet's working copy — grades and notes land here, and nowhere else. */
-  const [sheet, setSheet] = useState<GradeSheetRow[]>(() => workingSheet(students))
+  /* What this device confirmed and the API has not acknowledged yet. Read
+     from storage after mount — the server render cannot see it. */
+  const [pending, setPending] = useState<PendingGrade[]>([])
+  /* Posted from here and acknowledged, until the refreshed read brings them. */
+  const [acknowledged, setAcknowledged] = useState<TeachingGrade[]>([])
+  const [sync, setSync] = useState<'idle' | 'sending' | 'offline'>('idle')
+  const [notice, setNotice] = useState<string | null>(null)
+  const flushing = useRef(false)
+
   const [editing, setEditing] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   /* Posting is final: the dialog asks once more before it writes. */
   const [confirmingGrade, setConfirmingGrade] = useState(false)
   const [posted, setPosted] = useState<string | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
-  const [notesFor, setNotesFor] = useState<string | null>(null)
-  const [noteDraft, setNoteDraft] = useState('')
+
+  const sheet: GradeSheetRow[] =
+    grading && passingGrade !== null
+      ? gradeSheet(students, [...(grades ?? []), ...acknowledged], pending, passingGrade)
+      : gradeSheet(students, [], [], 0)
+
+  /**
+   * Sends everything waiting on the device, once at a time. Kept on no
+   * answer; dropped — and the sheet re-read — on any answer, because then the
+   * API holds the truth: posted, or refused for a reason the teacher is told.
+   */
+  const flush = useCallback(async () => {
+    const queue = readPendingGrades(group.id)
+    if (queue.length === 0 || flushing.current) return
+    flushing.current = true
+    setSync('sending')
+    const result = await postGrades(group.id, queue)
+    flushing.current = false
+
+    if (result === 'offline') {
+      setSync('offline')
+      return
+    }
+
+    writePendingGrades(group.id, [])
+    setPending([])
+    setSync('idle')
+    if (result === 'posted') {
+      const now = new Date().toISOString()
+      setAcknowledged((current) => [
+        ...current,
+        ...queue.map((entry) => ({
+          enrollmentId: entry.enrollmentId,
+          grade: entry.grade === 'da' ? null : entry.grade,
+          didNotSit: entry.grade === 'da',
+          recordedAt: now,
+        })),
+      ])
+      setNotice(null)
+      setPosted(
+        queue.length === 1 ? t('class_list.posted_toast') : t('class_list.batch_posted', { count: queue.length }),
+      )
+    } else {
+      setNotice(result === 'conflict' ? t('class_group.grades_conflict') : t('class_group.grades_refused'))
+    }
+    router.refresh()
+  }, [group.id, router, t])
+
+  /* Whatever a previous visit left unsent goes out on arrival, again when the
+     browser says the connection is back, and every 20 s while it is not —
+     a 3G phone often says it is online and still drops the request. */
+  useEffect(() => {
+    if (!grading) return
+    const stored = readPendingGrades(group.id)
+    if (stored.length > 0) {
+      setPending(stored)
+      void flush()
+    }
+    const onOnline = () => void flush()
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [grading, group.id, flush])
+
+  useEffect(() => {
+    if (sync !== 'offline') return
+    const timer = window.setInterval(() => void flush(), 20_000)
+    return () => window.clearInterval(timer)
+  }, [sync, flush])
+
+  function enqueue(entries: PendingGrade[]) {
+    if (entries.length === 0) return
+    const next = mergePendingGrades(readPendingGrades(group.id), entries)
+    writePendingGrades(group.id, next)
+    setPending(next)
+    void flush()
+  }
 
   /* One grade per student: the final exam's, which is the module's grade
      (`docs/REGRAS-NEGOCIO.md` §3). Once posted it is final (decision
      08/10/2026). A cell offers "add" only while empty, in a running or
      finished group. */
-  const canAdd = (row: GradeSheetRow) => gradingOpen && row.gradeStatus === 'pending'
+  const canAdd = (row: GradeSheetRow) => gradingOpen && row.sync === null
 
   const editingRow = editing ? (sheet.find((row) => row.enrollmentId === editing) ?? null) : null
   const editValid = editing !== null && parseGrade(editValue) !== null
 
   function postGrade() {
     if (passingGrade === null || !editing || !(editValid || isDa(editValue))) return
-    setSheet((current) =>
-      current.map((row) => {
-        if (row.enrollmentId !== editing) return row
-        if (isDa(editValue)) return { ...row, finalGrade: null, gradeStatus: 'auto_failed' }
-        const grade = parseGrade(editValue) as number
-        return { ...row, finalGrade: grade, gradeStatus: finalStatus(grade, passingGrade) }
-      }),
-    )
+    enqueue([{ enrollmentId: editing, grade: isDa(editValue) ? 'da' : (parseGrade(editValue) as number) }])
     setEditing(null)
     setConfirmingGrade(false)
-    setPosted(t('class_list.posted_toast'))
-    setSavedAt(new Date().toISOString())
   }
 
   const batchRows = sheet.filter(canAdd)
 
   function postBatch(entries: BatchEntry[]) {
-    if (passingGrade === null) return
-    const byId = new Map(entries.map((entry) => [entry.enrollmentId, entry]))
-    setSheet((current) =>
-      current.map((row) => {
-        const entry = byId.get(row.enrollmentId)
-        if (!entry || row.gradeStatus !== 'pending') return row
-        if (entry.grade === 'da') return { ...row, finalGrade: null, gradeStatus: 'auto_failed' }
-        return { ...row, finalGrade: entry.grade, gradeStatus: finalStatus(entry.grade, passingGrade) }
-      }),
-    )
-    setPosted(t('class_list.batch_posted', { count: entries.length }))
-    setSavedAt(new Date().toISOString())
+    enqueue(entries.map((entry) => ({ enrollmentId: entry.enrollmentId, grade: entry.grade })))
   }
 
   const editDisplay = isDa(editValue)
@@ -154,29 +214,8 @@ export function ClassGroupWorkspace({
     downloadCsv(t('grade_report.file_name', { code: group.code }), csv)
   }
 
-  const notesRow = sheet.find((row) => row.enrollmentId === notesFor) ?? null
-
-  function addNote() {
-    const text = noteDraft.trim()
-    if (!notesRow || text === '') return
-    setSheet((current) =>
-      current.map((row) =>
-        row.enrollmentId === notesRow.enrollmentId
-          ? {
-              ...row,
-              notes: [
-                { id: `note_local_${Date.now()}`, at: new Date().toISOString(), authorName: teacherName, text },
-                ...row.notes,
-              ],
-            }
-          : row,
-      ),
-    )
-    setNoteDraft('')
-  }
-
   const columns = grading
-    ? [t('grade_report.col_student'), t('grade_report.col_exam'), t('teacher_groups.notes_title')]
+    ? [t('grade_report.col_student'), t('grade_report.col_exam')]
     : [t('grade_report.col_student')]
 
   return (
@@ -280,10 +319,39 @@ export function ClassGroupWorkspace({
             {t('teacher_groups.not_started')}
           </p>
         )}
-        {grading && savedAt && (
-          <p className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs text-amber-800">
+        {gradesUnavailable && (
+          <p className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-5 py-2 text-xs text-red-800">
             <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-            {t('class_group.grades_saved_local_only', { time: formatDateTime(savedAt, locale) })}
+            {t('class_group.grades_load_error')}
+          </p>
+        )}
+        {grading && pending.length > 0 && (
+          <p
+            role="status"
+            className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs text-amber-800"
+          >
+            <BoIcon name={sync === 'sending' ? 'spinner' : 'clock'} size={14} className="shrink-0" />
+            <span className="flex-1">
+              {sync === 'sending'
+                ? t('class_group.grades_sending', { count: pending.length })
+                : t('class_group.grades_pending_offline', { count: pending.length })}
+            </span>
+            {sync === 'offline' && (
+              <button
+                type="button"
+                onClick={() => void flush()}
+                className="inline-flex min-h-tap items-center gap-1 font-semibold text-amber-900 underline-offset-2 hover:underline sm:min-h-0"
+              >
+                <BoIcon name="refresh" size={13} />
+                {t('class_group.grades_retry')}
+              </button>
+            )}
+          </p>
+        )}
+        {grading && notice && (
+          <p role="alert" className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-5 py-2 text-xs text-red-800">
+            <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+            {notice}
           </p>
         )}
 
@@ -313,8 +381,8 @@ export function ClassGroupWorkspace({
                     <span className="font-semibold text-ink">{row.fullName}</span>
                   </td>
                   {grading && passingGrade !== null && (
-                    <>
-                      <td className={tdClass}>
+                    <td className={tdClass}>
+                      <span className="inline-flex items-center gap-1.5">
                         {row.gradeStatus === 'auto_failed' ? (
                           <span className="font-semibold text-red-700">{DA_MARK}</span>
                         ) : row.finalGrade !== null ? (
@@ -337,21 +405,15 @@ export function ClassGroupWorkspace({
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
-                      </td>
-                      <td className={tdClass}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNotesFor(row.enrollmentId)
-                            setNoteDraft('')
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-1 text-xs font-semibold text-ink transition hover:border-brand-blue hover:text-brand-blue"
-                        >
-                          <BoIcon name="edit" size={13} />
-                          {t('class_list.notes_button', { count: row.notes.length })}
-                        </button>
-                      </td>
-                    </>
+                        {/* Confirmed here, not yet acknowledged by the API. */}
+                        {row.sync === 'pending' && (
+                          <span title={t('class_group.grade_pending_sync')} className="text-amber-600">
+                            <BoIcon name="clock" size={13} />
+                            <span className="sr-only">{t('class_group.grade_pending_sync')}</span>
+                          </span>
+                        )}
+                      </span>
+                    </td>
                   )}
                 </tr>
               ))}
@@ -491,52 +553,9 @@ export function ClassGroupWorkspace({
             </DialogContent>
           </Dialog>
 
-          {/* Observations live a click away: dated, append-only, per student. */}
-          <Sheet open={notesRow !== null} onOpenChange={(next) => !next && setNotesFor(null)}>
-            <SheetContent closeLabel={t('agenda.close')} className="gap-0 p-0">
-              {notesRow && (
-                <>
-                  <SheetHeader className="border-b border-line px-5 py-4">
-                    <SheetTitle>{notesRow.fullName}</SheetTitle>
-                    <SheetDescription>{t('teacher_groups.notes_title')}</SheetDescription>
-                  </SheetHeader>
-                  <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
-                    <textarea
-                      rows={3}
-                      value={noteDraft}
-                      onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder={t('teacher_groups.notes_placeholder', { name: notesRow.fullName })}
-                      className="w-full resize-y rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground/70 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
-                    />
-                    <button
-                      type="button"
-                      onClick={addNote}
-                      disabled={noteDraft.trim() === ''}
-                      className="self-end rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-default disabled:opacity-50"
-                    >
-                      {t('teacher_groups.notes_add')}
-                    </button>
-                    {notesRow.notes.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t('teacher_groups.notes_empty')}</p>
-                    ) : (
-                      <ul className="flex flex-col gap-2.5">
-                        {notesRow.notes.map((note) => (
-                          <li key={note.id} className="rounded-lg bg-sky-soft px-3 py-2.5">
-                            <p className="text-sm leading-relaxed text-ink">{note.text}</p>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              {`${note.authorName} · ${formatDateTime(note.at, locale)}`}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </>
-              )}
-            </SheetContent>
-          </Sheet>
-
           <BatchGrades
+            key={batchOpen ? 'open' : 'closed'}
+            classGroupId={group.id}
             open={batchOpen}
             onOpenChange={setBatchOpen}
             students={batchRows}

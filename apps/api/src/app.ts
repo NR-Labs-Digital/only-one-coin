@@ -27,6 +27,10 @@ import { getTeacherRoute } from "@/http/teacher/GetTeacherRoute.js";
 import { listOwnClassGroupsRoute } from "@/http/teaching/ListOwnClassGroupsRoute.js";
 import { getOwnClassGroupRoute } from "@/http/teaching/GetOwnClassGroupRoute.js";
 import { listOwnClassGroupStudentsRoute } from "@/http/teaching/ListOwnClassGroupStudentsRoute.js";
+import {
+  listOwnClassGroupGradesRoute,
+  recordOwnClassGroupGradesRoute,
+} from "@/http/teaching/OwnClassGroupGradesRoutes.js";
 import { getTeachingSummaryRoute } from "@/http/teaching/GetTeachingSummaryRoute.js";
 import { registerTeacherRoute } from "@/http/teacher/RegisterTeacherRoute.js";
 import { updateTeacherRoute } from "@/http/teacher/UpdateTeacherRoute.js";
@@ -127,6 +131,7 @@ import { exportAuditLogRoute } from "@/http/audit/ExportAuditLogRoute.js";
 import { listEmailFlowsRoute } from "@/http/email/ListEmailFlowsRoute.js";
 import { getEmailFlowRoute } from "@/http/email/GetEmailFlowRoute.js";
 import { previewEmailFlowRoute } from "@/http/email/PreviewEmailFlowRoute.js";
+import { sendEmailProofRoute } from "@/http/email/SendEmailProofRoute.js";
 import { listAuditActorsRoute } from "@/http/audit/ListAuditActorsRoute.js";
 import { listAuditLogRoute } from "@/http/audit/ListAuditLogRoute.js";
 import { listEmailDeliveriesRoute } from "@/http/notification/ListEmailDeliveriesRoute.js";
@@ -224,6 +229,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnClassGroupRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupStudentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupGradesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(recordOwnClassGroupGradesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getTeachingSummaryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(requestManualReceiptUploadRoute);
@@ -306,6 +313,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listEmailFlowsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getEmailFlowRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(previewEmailFlowRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(sendEmailProofRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listEmailDeliveriesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(resendEmailDeliveryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);

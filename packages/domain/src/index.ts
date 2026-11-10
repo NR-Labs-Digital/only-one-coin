@@ -64,6 +64,23 @@ export { GetOwnClassGroupUseCase, type GetOwnClassGroupInput } from "./teaching/
 export { ListOwnClassGroupStudentsUseCase } from "./teaching/ListOwnClassGroupStudentsUseCase.js";
 export { GetTeachingSummaryUseCase, type TeachingSummary } from "./teaching/GetTeachingSummaryUseCase.js";
 export {
+  MAX_GRADE,
+  MIN_GRADE,
+  isValidScore,
+  sameGrade,
+  type GradeEntry,
+  type GradeValue,
+  type IGradeRepository,
+  type RecordedGrade,
+  type RecordGradesResult,
+} from "./teaching/Grade.js";
+export {
+  ListOwnClassGroupGradesUseCase,
+  RecordOwnClassGroupGradesUseCase,
+  type RecordOwnClassGroupGradesInput,
+} from "./teaching/OwnClassGroupGradesUseCases.js";
+export { gradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
+export {
   Guardian,
   GuardianPropsSchema,
   GuardianFieldsSchema,
@@ -133,6 +150,13 @@ export {
   type IEmailDeliveryRepository,
   type ResendFailedEmailInput,
 } from "./notification/ResendFailedEmailUseCase.js";
+export {
+  MAX_EMAIL_PROOF_RECIPIENTS,
+  SendEmailProofUseCase,
+  type EmailProofMessage,
+  type IEmailProofRepository,
+  type SendEmailProofInput,
+} from "./notification/SendEmailProofUseCase.js";
 export {
   EMAIL_DELIVERY_KINDS,
   EMAIL_DELIVERY_REASONS,

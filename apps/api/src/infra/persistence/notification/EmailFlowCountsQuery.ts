@@ -37,7 +37,8 @@ const EMPTY: EmailFlowCounts = { sent: 0, failed: 0, blocked: 0 };
  *
  * Every catalog entry comes back, with zeros where nothing was written: a
  * template nothing sends yet still has a row on the screen. A key in the
- * outbox the catalog no longer names is ignored.
+ * outbox the catalog no longer names is ignored. A proof (OOC-89) never
+ * counts: it went to a staff address with sample data, not to a student.
  */
 export class EmailFlowCountsQuery {
   constructor(private readonly db: Db) {}
@@ -53,6 +54,7 @@ export class EmailFlowCountsQuery {
       from outbox
       where created_at >= ${since}::timestamptz
         and created_at <= ${now.toISOString()}::timestamptz
+        and not is_proof
       group by template_key
     `);
 

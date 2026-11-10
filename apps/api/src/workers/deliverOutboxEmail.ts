@@ -40,6 +40,7 @@ export async function deliverOutboxEmail(outboxId: string, deps: DeliverOutboxEm
     templateKey: row.templateKey,
     locale: row.locale,
     vars: row.vars,
+    ...(row.isProof ? { proof: true } : {}),
   } as OutgoingEmail;
 
   try {

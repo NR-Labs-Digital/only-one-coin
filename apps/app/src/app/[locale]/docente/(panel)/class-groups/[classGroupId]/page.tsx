@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import { getOwnClassGroup, listOwnClassGroupStudents } from '@/lib/docente/teaching'
+import { getOwnClassGroup, listOwnClassGroupGrades, listOwnClassGroupStudents } from '@/lib/docente/teaching'
 import { getTeacherSession } from '@/lib/backoffice/session'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
@@ -32,11 +32,13 @@ export default async function TeacherClassGroupPage({
   ])
   if (group === 'not_found') notFound()
 
-  /* The pass mark is the backoffice's (OOC-41), and only the grade sheet
-     needs it — asked for only when that sheet is on the air. */
-  const [students, settings] = await Promise.all([
+  /* The pass mark is the backoffice's (OOC-41) and the posted grades are the
+     API's (OOC-38); only the grade sheet needs them — asked for only when
+     that sheet is on the air. */
+  const [students, settings, grades] = await Promise.all([
     group ? listOwnClassGroupStudents(group.id) : Promise.resolve(null),
     flags['teacher.grades'] ? getPlatformSettings() : Promise.resolve(null),
+    group && flags['teacher.grades'] ? listOwnClassGroupGrades(group.id) : Promise.resolve(null),
   ])
 
   if (!group || !students) {
@@ -70,6 +72,7 @@ export default async function TeacherClassGroupPage({
         notices: flags['teacher.notices'],
       }}
       passingGrade={settings?.passingGrade ?? null}
+      grades={grades}
     />
   )
 }

@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { buildApp } from "@/app.js";
 import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
+import { DrizzleGradeRepository } from "@/infra/persistence/teaching/DrizzleGradeRepository.js";
 
 /**
  * The docente portal over HTTP (OOC-82). CI gate §6.5 both ways: the
@@ -37,6 +38,7 @@ const TEACHING_ROUTES = [
   "/api/v1/teaching/class-groups",
   `/api/v1/teaching/class-groups/${ID}`,
   `/api/v1/teaching/class-groups/${ID}/students`,
+  `/api/v1/teaching/class-groups/${ID}/grades`,
   "/api/v1/teaching/summary",
 ];
 
@@ -149,6 +151,19 @@ describe("teaching routes refuse every cargo but teacher", () => {
   });
 });
 
+describe("posting grades refuses every cargo but teacher (OOC-38)", () => {
+  it.each(STAFF)("POST grades refuses %s", async (role) => {
+    signIn(role);
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/teaching/class-groups/${ID}/grades`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: { entries: [{ enrollmentId: ID, grade: 15 }] },
+    });
+    expect(response.statusCode).toBe(403);
+  });
+});
+
 describe("a teacher is refused by Pagos and the coordination routes", () => {
   it.each(NOT_A_TEACHERS)("%s %s answers 403 to a teacher", async (method, url) => {
     signIn("teacher");
@@ -195,6 +210,44 @@ describe("the id in the URL is not proof of whose class group it is", () => {
 
     expect(response.statusCode).toBe(404);
     expect(students).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 when teacher A posts grades into teacher B's class group, writing nothing (OOC-38)", async () => {
+    asTeacherA();
+    vi.spyOn(container.repositories.teaching, "findClassGroup").mockResolvedValue(group(B_GROUP, B_TEACHER));
+    const record = vi.spyOn(DrizzleGradeRepository.prototype, "record");
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/teaching/class-groups/${B_GROUP}/grades`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: { entries: [{ enrollmentId: ID, grade: 15 }] },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 for teacher B's grades, without reading them (OOC-38)", async () => {
+    asTeacherA();
+    vi.spyOn(container.repositories.teaching, "findClassGroup").mockResolvedValue(group(B_GROUP, B_TEACHER));
+    const list = vi.spyOn(DrizzleGradeRepository.prototype, "listForClassGroup");
+
+    const response = await inject("GET", `/api/v1/teaching/class-groups/${B_GROUP}/grades`);
+
+    expect(response.statusCode).toBe(404);
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it("refuses a grade above 20 before the usecase runs (OOC-38)", async () => {
+    asTeacherA();
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/teaching/class-groups/${A_GROUP}/grades`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: { entries: [{ enrollmentId: ID, grade: 21 }] },
+    });
+    expect(response.statusCode).toBe(400);
   });
 
   it("serves the own class group without the teacher id", async () => {

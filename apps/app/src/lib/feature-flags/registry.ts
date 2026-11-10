@@ -162,11 +162,11 @@ export const FEATURE_FLAGS = {
    * on in the PR that gives the tool its backend.
    */
 
-  /** The grade sheet — final exam grade, DA, batch, observations, the CSV report — and the certificate batch. OOC-38, OOC-102, OOC-33. */
+  /** The grade sheet — final exam grade, DA, batch, the CSV report — posted to the API since OOC-38. */
   'teacher.grades': {
     surface: 'teacher',
     parent: 'teacher',
-    production: false,
+    production: true,
   },
   /** Notices to the class group. No ticket yet. */
   'teacher.notices': {

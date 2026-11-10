@@ -14,6 +14,7 @@ import {
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
+import { sendEmailProof } from '@/lib/backoffice/email-proof-client'
 import { ProofSend } from '../proof-send'
 import { EmailFlowState } from '../email-flow-state'
 
@@ -39,9 +40,12 @@ export function EmailFlowDetail({
   flow,
   windowDays,
   previews,
+  canSendProof,
 }: {
   flow: EmailFlow
   windowDays: number
+  /** The analyst reads the page and never sends (CLAUDE.md §8). */
+  canSendProof: boolean
   /** The three renders, es-PE first; null when nothing sends it yet or the read failed. */
   previews: EmailPreview[] | null
 }) {
@@ -214,12 +218,18 @@ export function EmailFlowDetail({
             </p>
           </section>
 
-          <section className="flex flex-col gap-3">
-            <SectionTitle icon="email">{t('emails.test_title')}</SectionTitle>
-            <ProofSend
-              onSent={(count) => setToast(t('emails.test_toast', { count }))}
-            />
-          </section>
+          {/* The proof goes out in the language on screen, over the same
+              sample data the preview draws (OOC-89). A template nothing
+              sends yet has no words to send. */}
+          {canSendProof && flow.emitted && (
+            <section className="flex flex-col gap-3">
+              <SectionTitle icon="email">{t('emails.test_title')}</SectionTitle>
+              <ProofSend
+                send={(recipients) => sendEmailProof(flow.template, shown, recipients)}
+                onSent={(count) => setToast(t('emails.test_toast', { count }))}
+              />
+            </section>
+          )}
 
           <p className="flex items-start gap-2 border-t border-line pt-4 text-xs text-muted-foreground">
             <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
