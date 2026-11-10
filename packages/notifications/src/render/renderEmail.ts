@@ -15,6 +15,10 @@ interface TemplateCopy {
 
 export interface LocaleCatalog {
   layout: { greeting: string; signature: string; footer: string };
+  /** Marks a proof sent from the e-mail screen (OOC-89). Outside `layout` on
+   * purpose: `templateVersion` fingerprints the layout, and the marker of a
+   * proof is not part of what the student reads. */
+  proof: { subjectPrefix: string };
   templates: Record<EmailTemplateKey, TemplateCopy>;
 }
 
@@ -126,7 +130,8 @@ export function renderEmail(email: OutgoingEmail): RenderedEmail {
   const values = placeholderValues(email.vars, email.locale);
   const url = actionUrl(email.templateKey, values);
 
-  const subject = interpolate(copy.subject, values);
+  const templateSubject = interpolate(copy.subject, values);
+  const subject = email.proof ? `${catalog.proof.subjectPrefix} ${templateSubject}` : templateSubject;
   const preheader = interpolate(copy.preheader, values);
   const greeting = interpolate(catalog.layout.greeting, values);
   const paragraphs = copy.paragraphs.map((paragraph) => interpolate(paragraph, values));

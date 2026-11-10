@@ -1,7 +1,10 @@
 import type { EmailNotification } from "@ooc/domain";
 
 /** One rendered-and-sent message: an `outbox` row minus its bookkeeping. */
-export type OutgoingEmail = Omit<EmailNotification, "dedupeKey">;
+export type OutgoingEmail = Omit<EmailNotification, "dedupeKey"> & {
+  /** A proof from the e-mail screen (OOC-89): the subject goes out marked. */
+  proof?: boolean;
+};
 
 /**
  * The only thing the rest of the platform knows about e-mail delivery

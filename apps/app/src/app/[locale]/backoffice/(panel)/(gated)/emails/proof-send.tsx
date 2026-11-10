@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { addTestRecipient, MAX_TEST_RECIPIENTS } from '@/lib/backoffice/email-proof'
+import type { SendEmailProofResult } from '@/lib/backoffice/email-proof-client'
 import { BoIcon } from '@/components/backoffice/icons'
 
 /**
@@ -12,9 +13,21 @@ import { BoIcon } from '@/components/backoffice/icons'
  * line it replaced asked somebody to punctuate a list correctly under no
  * feedback — and a proof that quietly went to four of five addresses is worse
  * than one that refused to go at all.
+ *
+ * With `send` it goes out for real (OOC-89, an automatic e-mail's page); the
+ * list stays on screen until the API says it went, so a failure costs nobody
+ * the addresses they typed. The composer still calls it without `send`: manual
+ * sends are campaigns (`docs/ROADMAP.md` fase 5), not built yet.
  */
-export function ProofSend({ onSent }: { onSent: (count: number) => void }) {
+export function ProofSend({
+  onSent,
+  send: deliver,
+}: {
+  onSent: (count: number) => void
+  send?: (recipients: string[]) => Promise<SendEmailProofResult>
+}) {
   const t = useTranslations('bo')
+  const [sending, setSending] = useState(false)
 
   const [list, setList] = useState<string[]>([])
   const [draft, setDraft] = useState('')
@@ -35,14 +48,28 @@ export function ProofSend({ onSent }: { onSent: (count: number) => void }) {
     setError(null)
   }
 
-  function send() {
+  async function send() {
     if (list.length === 0) {
       setError(t('emails.test_error_none'))
       return
     }
     setError(null)
+    if (deliver) {
+      setSending(true)
+      const result = await deliver(list)
+      setSending(false)
+      if (!result.ok) {
+        setError(
+          result.error === 'rate_limited'
+            ? t('emails.test_error_rate_limited')
+            : t('emails.test_error_failed'),
+        )
+        return
+      }
+    }
+    const count = list.length
     setList([])
-    onSent(list.length)
+    onSent(count)
   }
 
   const full = list.length >= MAX_TEST_RECIPIENTS
@@ -119,11 +146,12 @@ export function ProofSend({ onSent }: { onSent: (count: number) => void }) {
 
       <button
         type="button"
-        onClick={send}
-        className="inline-flex items-center justify-center gap-1.5 self-start rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-yellow hover:text-ink active:bg-brand-yellow-deep"
+        onClick={() => void send()}
+        disabled={sending}
+        className="inline-flex items-center justify-center gap-1.5 self-start rounded-lg bg-brand-blue disabled:cursor-wait disabled:opacity-60 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-yellow hover:text-ink active:bg-brand-yellow-deep"
       >
         <BoIcon name="email" size={16} />
-        {t('emails.test_send')}
+        {sending ? t('emails.test_sending') : t('emails.test_send')}
       </button>
 
       {/* The staging guard, said out loud: outside production the provider

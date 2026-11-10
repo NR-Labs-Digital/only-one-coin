@@ -134,6 +134,13 @@ export {
   type ResendFailedEmailInput,
 } from "./notification/ResendFailedEmailUseCase.js";
 export {
+  MAX_EMAIL_PROOF_RECIPIENTS,
+  SendEmailProofUseCase,
+  type EmailProofMessage,
+  type IEmailProofRepository,
+  type SendEmailProofInput,
+} from "./notification/SendEmailProofUseCase.js";
+export {
   EMAIL_DELIVERY_KINDS,
   EMAIL_DELIVERY_REASONS,
   deliveryStatusOf,

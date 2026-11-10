@@ -36,6 +36,7 @@ import {
   AdvanceClassGroupStatusUseCase,
   IssuePortalAccessUseCase,
   ResendFailedEmailUseCase,
+  SendEmailProofUseCase,
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
   CreateManualEnrollmentUseCase,
@@ -221,6 +222,7 @@ import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
 import { EmailFlowCountsQuery } from "./infra/persistence/notification/EmailFlowCountsQuery.js";
 import { EmailDeliveryQuery } from "./infra/persistence/notification/EmailDeliveryQuery.js";
 import { DrizzleEmailResendRepository } from "./infra/persistence/notification/DrizzleEmailResendRepository.js";
+import { DrizzleEmailProofRepository } from "./infra/persistence/notification/DrizzleEmailProofRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
@@ -362,6 +364,7 @@ export interface AppUseCases {
   };
   emails: {
     resendDelivery: ResendFailedEmailUseCase;
+    sendProof: SendEmailProofUseCase;
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
@@ -910,6 +913,7 @@ function buildContainer(): AppContainer {
       portal,
       emails: {
         resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(db)),
+        sendProof: new SendEmailProofUseCase(new DrizzleEmailProofRepository(db)),
       },
       platform: {
         setFeatureFlag,

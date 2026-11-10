@@ -1372,6 +1372,10 @@ export const outbox = pgTable(
     // until the webhook says anything (and forever, without a webhook).
     deliveryStatus: text("delivery_status"),
     deliveryStatusAt: timestamp("delivery_status_at", { withTimezone: true }),
+    // A proof somebody sent from the e-mail screen (OOC-89): sample data to a
+    // staff address, with the subject marked. Kept out of every figure about
+    // what the platform sent to students, and out of the resend list.
+    isProof: boolean("is_proof").notNull().default(false),
     ...timestamps(),
   },
   (table) => [

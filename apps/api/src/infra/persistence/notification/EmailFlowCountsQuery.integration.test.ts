@@ -81,6 +81,9 @@ describe("EmailFlowCountsQuery", () => {
           row("payment_approved", "sent", AFTER_NOW),
           row("payment_rejected", "failed", INSIDE),
           row("retired_template", "sent", INSIDE),
+          // A proof from the e-mail screen (OOC-89) went to staff, not to a student.
+          { ...row("payment_approved", "sent", INSIDE), isProof: true },
+          { ...row("payment_approved", "failed", INSIDE), isProof: true },
         ]);
 
         const after = await query.run(NOW);

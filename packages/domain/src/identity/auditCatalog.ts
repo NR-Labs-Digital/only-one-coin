@@ -109,6 +109,9 @@ export const AUDIT_ACTIONS = {
   // A failed e-mail sent again (OOC-90): the target is the failed outbox row,
   // the file travels in metadata (null when the subject no longer resolves).
   "email.resent": { key: "email_resent", entity: "student", subject: "metadata_student" },
+  // A proof of an automatic e-mail (OOC-89): sample data, no student. The
+  // target is the proof's own id; the outbox rows travel in metadata.
+  "email.proof_sent": { key: "email_proof_sent", entity: "platform", subject: "none" },
 
   "procedure_request.opened": { key: "procedure_request_opened", entity: "student", subject: "metadata_student" },
   "procedure_request.payment_submitted": { key: "procedure_payment_submitted", entity: "payment", subject: "target" },

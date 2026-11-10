@@ -104,6 +104,14 @@ describe("AllowlistGuard", () => {
       expect(inner.sent).toHaveLength(0);
     });
 
+    it("never redirects a proof: whoever typed the address asked for that inbox (OOC-89)", async () => {
+      const inner = new RecordingProvider();
+      const guard = new AllowlistGuard(inner, { enforce: true, allowlist: ["qa.one@gmail.com"] });
+
+      await expect(guard.sendEmail({ ...MFA_EMAIL, proof: true })).rejects.toBeInstanceOf(RecipientNotAllowedError);
+      expect(inner.sent).toHaveLength(0);
+    });
+
     it("never redirects any other template", async () => {
       const inner = new RecordingProvider();
       const guard = new AllowlistGuard(inner, { enforce: true, allowlist: ["qa.one@gmail.com"] });
@@ -202,6 +210,7 @@ function pendingRow(): OutboxEmailRow {
     vars: AN_EMAIL.vars,
     status: "pending",
     attempts: 0,
+    isProof: false,
   };
 }
 
@@ -217,6 +226,14 @@ describe("deliverOutboxEmail", () => {
     await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("sent");
     expect(provider.sent[0]).toEqual(AN_EMAIL);
     expect(store.calls).toEqual(["sent:msg-1"]);
+  });
+
+  it("sends a proof row as a proof, so the subject goes out marked (OOC-89)", async () => {
+    const store = new FakeOutboxStore({ ...pendingRow(), isProof: true });
+    const provider = new RecordingProvider();
+
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("sent");
+    expect(provider.sent[0]).toEqual({ ...AN_EMAIL, proof: true });
   });
 
   it("never sends a row twice", async () => {

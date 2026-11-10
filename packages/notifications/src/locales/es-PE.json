@@ -4,6 +4,9 @@
     "signature": "Equipo Only One Coin",
     "footer": "Este es un mensaje automático de Only One Coin. Por favor, no respondas a este correo."
   },
+  "proof": {
+    "subjectPrefix": "[PRUEBA]"
+  },
   "templates": {
     "enrollment_received": {
       "subject": "Recibimos la matrícula de {studentName}",
