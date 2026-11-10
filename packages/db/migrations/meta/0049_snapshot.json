@@ -1,5 +1,5 @@
 {
-  "id": "2c0110a7-8eb7-4801-9a8a-35c71ff9afac",
+  "id": "6a0580c1-e424-4473-9549-7c1b45d0bc90",
   "prevId": "6b07829a-4b2e-4afb-a5d3-19c5070db5b6",
   "version": "7",
   "dialect": "postgresql",
@@ -1722,13 +1722,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_proof": {
-          "name": "is_proof",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3265,6 +3258,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "payment_id": {
           "name": "payment_id",
           "type": "uuid",
@@ -3536,7 +3535,7 @@
       "checkConstraints": {
         "receipt_uploads_owner_check": {
           "name": "receipt_uploads_owner_check",
-          "value": "num_nonnulls(\"seat_hold_id\", \"procedure_request_id\") = 1"
+          "value": "num_nonnulls(\"seat_hold_id\", \"procedure_request_id\", \"uploaded_by\") = 1"
         },
         "receipt_uploads_status_check": {
           "name": "receipt_uploads_status_check",

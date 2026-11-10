@@ -1,6 +1,6 @@
 {
-  "id": "2cff56d0-8786-4936-bd83-a29743b06359",
-  "prevId": "2c0110a7-8eb7-4801-9a8a-35c71ff9afac",
+  "id": "1353197e-bac8-453b-9d89-c31b20b61c54",
+  "prevId": "6a0580c1-e424-4473-9549-7c1b45d0bc90",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1439,118 +1439,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.grades": {
-      "name": "grades",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "enrollment_id": {
-          "name": "enrollment_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "class_group_id": {
-          "name": "class_group_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "score": {
-          "name": "score",
-          "type": "numeric(4, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "did_not_sit": {
-          "name": "did_not_sit",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "recorded_by": {
-          "name": "recorded_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "grades_class_group_enrollment_uidx": {
-          "name": "grades_class_group_enrollment_uidx",
-          "columns": [
-            {
-              "expression": "class_group_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "enrollment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "grades_enrollment_id_enrollments_id_fk": {
-          "name": "grades_enrollment_id_enrollments_id_fk",
-          "tableFrom": "grades",
-          "tableTo": "enrollments",
-          "columnsFrom": [
-            "enrollment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "grades_class_group_id_class_groups_id_fk": {
-          "name": "grades_class_group_id_class_groups_id_fk",
-          "tableFrom": "grades",
-          "tableTo": "class_groups",
-          "columnsFrom": [
-            "class_group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "grades_value_check": {
-          "name": "grades_value_check",
-          "value": "(\"grades\".\"did_not_sit\" and \"grades\".\"score\" is null) or (not \"grades\".\"did_not_sit\" and \"grades\".\"score\" between 0 and 20)"
-        }
-      },
       "isRLSEnabled": false
     },
     "public.guardians": {
@@ -3377,6 +3265,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "payment_id": {
           "name": "payment_id",
           "type": "uuid",
@@ -3648,7 +3542,7 @@
       "checkConstraints": {
         "receipt_uploads_owner_check": {
           "name": "receipt_uploads_owner_check",
-          "value": "num_nonnulls(\"seat_hold_id\", \"procedure_request_id\") = 1"
+          "value": "num_nonnulls(\"seat_hold_id\", \"procedure_request_id\", \"uploaded_by\") = 1"
         },
         "receipt_uploads_status_check": {
           "name": "receipt_uploads_status_check",

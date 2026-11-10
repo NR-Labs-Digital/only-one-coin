@@ -1,14 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { NationalIdType, PaymentMethod, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
-import { formatMoney, type Locale } from '@/lib/format'
+import { formatFileSize, formatMoney, type Locale } from '@/lib/format'
 import { formatPaymentMethod } from '@/lib/payment-method'
 import {
+  MANUAL_RECEIPT_ACCEPT,
+  MANUAL_RECEIPT_MAX_BYTES,
+  MANUAL_RECEIPT_TYPES,
+  uploadManualReceipt,
+} from '@/lib/backoffice/manual-receipt-upload'
+import {
   Card,
-  OptionalMark,
   RequiredMark,
   StatusBadge,
 } from '@/components/backoffice/ui'
@@ -129,11 +134,41 @@ export function NewEnrollmentForm({
   const [method, setMethod] = useState<PaymentMethod>('yape')
   const [methodDetail, setMethodDetail] = useState('')
   const [operationNumber, setOperationNumber] = useState('')
-  const [receiptAttached, setReceiptAttached] = useState(false)
+  // The receipt is mandatory (OOC-146): the file goes up the same OCR ladder
+  // as the checkout's. Once uploaded, its id is kept for the picked file, so
+  // a submit refused for another reason (an operation number already used)
+  // does not upload the same image twice.
+  const receiptInput = useRef<HTMLInputElement>(null)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptUploadId, setReceiptUploadId] = useState<string | null>(null)
+  const [receiptFileError, setReceiptFileError] = useState<'type' | 'size' | null>(null)
   const [pending, setPending] = useState(false)
   // A refused operation number is its own message: retrying the same number
   // gets the same answer, so "try again" would be the wrong advice (OOC-22).
-  const [submitError, setSubmitError] = useState<'failed' | 'operation_number_used' | null>(null)
+  const [submitError, setSubmitError] = useState<
+    'failed' | 'operation_number_used' | 'receipt_upload_failed' | null
+  >(null)
+
+  function pickReceipt(picked: File | null) {
+    if (!picked) return
+    if (!MANUAL_RECEIPT_TYPES.has(picked.type)) {
+      setReceiptFileError('type')
+      return
+    }
+    if (picked.size > MANUAL_RECEIPT_MAX_BYTES) {
+      setReceiptFileError('size')
+      return
+    }
+    setReceiptFileError(null)
+    setReceiptFile(picked)
+    setReceiptUploadId(null)
+  }
+
+  function dropReceipt() {
+    if (receiptInput.current) receiptInput.current.value = ''
+    setReceiptFile(null)
+    setReceiptUploadId(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -209,15 +244,27 @@ export function NewEnrollmentForm({
     selectedStudent === null ||
     group === null ||
     operationNumber.trim() === '' ||
+    receiptFile === null ||
     (detailNeeded && methodDetail.trim() === '')
   const ready = !missing && !pending
 
   async function submit() {
-    if (!ready || !selectedStudent || !group) return
+    if (!ready || !selectedStudent || !group || !receiptFile) return
     setPending(true)
     setSubmitError(null)
 
     try {
+      let uploadId = receiptUploadId
+      if (uploadId === null) {
+        const uploaded = await uploadManualReceipt(receiptFile)
+        if (!uploaded.ok) {
+          setSubmitError('receipt_upload_failed')
+          return
+        }
+        uploadId = uploaded.receiptUploadId
+        setReceiptUploadId(uploadId)
+      }
+
       const response = await fetch('/api/v1/enrollments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,12 +275,15 @@ export function NewEnrollmentForm({
           method,
           methodDetail: method === 'other' ? methodDetail.trim() : null,
           operationNumber: operationNumber.trim(),
-          receiptAttached,
+          receiptUploadId: uploadId,
         }),
       })
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { reason?: string } | null
+        // A receipt the API no longer takes (swept, or attached by a double
+        // submit) is uploaded again on the next try.
+        if (body?.reason === 'enrollment.receipt_not_ready') setReceiptUploadId(null)
         setSubmitError(
           body?.reason === 'enrollment.operation_number_already_used' ? 'operation_number_used' : 'failed',
         )
@@ -485,41 +535,62 @@ export function NewEnrollmentForm({
             />
           </label>
 
-          {/* No storage is wired yet; in production the image goes straight to
-              the bucket through a signed URL and never through the app
-              (CLAUDE.md §5). */}
-          <label className="flex flex-col gap-1">
+          {/* Mandatory (OOC-146). The image goes straight to the bucket on a
+              signed POST and never through the app (CLAUDE.md §6); the upload
+              happens on submit, so a form abandoned halfway leaves nothing. */}
+          <div className="flex flex-col gap-1">
             <span className={labelClass}>
               {t('new_enrollment.attach_receipt')}
-              <OptionalMark label={t('common.optional')} />
+              <RequiredMark label={t('common.required')} />
             </span>
-            <button
-              type="button"
-              onClick={() => setReceiptAttached(!receiptAttached)}
-              aria-pressed={receiptAttached}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                receiptAttached
-                  ? 'border-brand-blue bg-sky text-brand-blue'
-                  : 'border-dashed border-line bg-white text-muted-foreground hover:text-ink'
-              }`}
-            >
-              <BoIcon name={receiptAttached ? 'check' : 'doc'} size={16} />
-              {t(
-                receiptAttached
-                  ? 'new_enrollment.receipt_attached'
-                  : 'new_enrollment.receipt_attach',
-              )}
-            </button>
-          </label>
+            <input
+              ref={receiptInput}
+              type="file"
+              accept={MANUAL_RECEIPT_ACCEPT}
+              className="sr-only"
+              aria-label={t('new_enrollment.attach_receipt')}
+              onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
+            />
+            {receiptFile ? (
+              <div className="flex min-h-tap items-center gap-2 rounded-lg border border-brand-blue bg-sky px-3 py-2">
+                <BoIcon name="doc" size={16} className="shrink-0 text-brand-blue" />
+                <span className="flex min-w-0 flex-col leading-tight">
+                  <span className="truncate text-sm font-semibold text-ink">{receiptFile.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatFileSize(receiptFile.size, locale)}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={dropReceipt}
+                  disabled={pending}
+                  aria-label={t('new_enrollment.receipt_remove')}
+                  className="ml-auto shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:bg-white hover:text-ink disabled:opacity-60"
+                >
+                  <BoIcon name="close" size={16} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => receiptInput.current?.click()}
+                className="inline-flex min-h-tap items-center justify-center gap-1.5 rounded-lg border border-dashed border-line bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+              >
+                <BoIcon name="doc" size={16} />
+                {t('new_enrollment.receipt_pick')}
+              </button>
+            )}
+            {receiptFileError && (
+              <span role="alert" className="text-xs text-red-700">
+                {t(receiptFileError === 'type' ? 'new_enrollment.receipt_error_type' : 'new_enrollment.receipt_error_size')}
+              </span>
+            )}
+          </div>
         </AutoGrid>
 
         <p className="mt-3 flex items-start gap-2 rounded-lg border border-dashed border-line bg-sky-soft px-3 py-2 text-xs text-muted-foreground">
           <BoIcon name="shield" size={14} className="mt-0.5 shrink-0" />
-          {t(
-            receiptAttached
-              ? 'new_enrollment.notice_under_review'
-              : 'new_enrollment.notice_pending',
-          )}
+          {t('new_enrollment.notice_under_review')}
         </p>
       </section>
 
@@ -551,7 +622,9 @@ export function NewEnrollmentForm({
           <span className="text-xs font-medium text-red-600">
             {submitError === 'operation_number_used'
               ? t('new_enrollment.operation_number_used')
-              : t('new_enrollment.submit_error')}
+              : submitError === 'receipt_upload_failed'
+                ? t('new_enrollment.receipt_upload_error')
+                : t('new_enrollment.submit_error')}
           </span>
         )}
       </div>

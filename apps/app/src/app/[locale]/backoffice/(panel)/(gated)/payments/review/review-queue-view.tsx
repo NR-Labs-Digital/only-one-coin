@@ -26,6 +26,7 @@ import {
 import { Toast } from '@/components/backoffice/controls'
 import { fraudSignalTone, receiptStateTone, verdictTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
 import {
   ReceiptReviewDialog,
   deadlineState,
@@ -41,10 +42,10 @@ const SEARCH_DEBOUNCE_MS = 350
 const REREAD_POLL_MS = 4000
 
 /**
- * The queue as a work list. By default the cases that most need a person
- * come first — suggested rejection, then review, then green, the least
- * confident reading first within each (ROADMAP Sessão 32); arrival order is
- * one click away.
+ * The queue as a work list. By default whoever paid first is answered first
+ * — arrival order (OOC-146); the traffic-light priority (suggested rejection,
+ * then review, then green, the least confident reading first within each —
+ * ROADMAP Sessão 32) is one click away.
  *
  * The row triages; the decision happens in the dialog, next to the receipt
  * image and to what the student declared. Settling a payment from a list is
@@ -69,6 +70,7 @@ export function ReviewQueueView({
   openReceiptId,
   renderedAt,
   lowConfidencePercent,
+  canOpenStudentFile,
 }: {
   items: PaymentReviewItem[]
   /** Open payments matching the query, across every page. */
@@ -86,6 +88,8 @@ export function ReviewQueueView({
   renderedAt: number
   /** The OCR confidence floor (`platform_settings`, OOC-41); null if unread. */
   lowConfidencePercent: number | null
+  /** Whether the reader may open a student's file (`canBrowseStudents`). */
+  canOpenStudentFile: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -553,19 +557,28 @@ export function ReviewQueueView({
                       </td>
 
                       <td className={`${tdClass} whitespace-nowrap text-right`}>
-                        {canReview && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCursor(index)
-                              setReviewingId(item.id)
-                            }}
-                            className={rowActionClass}
-                          >
-                            {t('receipt_review.open')}
-                            <BoIcon name="chevron-right" size={14} />
-                          </button>
-                        )}
+                        <span className="inline-flex items-center justify-end gap-1.5">
+                          <StudentQuickActions
+                            studentId={item.studentId}
+                            studentName={item.studentName}
+                            phone={item.studentPhone}
+                            canOpenFile={canOpenStudentFile}
+                            compact
+                          />
+                          {canReview && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCursor(index)
+                                setReviewingId(item.id)
+                              }}
+                              className={rowActionClass}
+                            >
+                              {t('receipt_review.open')}
+                              <BoIcon name="chevron-right" size={14} />
+                            </button>
+                          )}
+                        </span>
                       </td>
                     </tr>
                   )
@@ -594,6 +607,7 @@ export function ReviewQueueView({
         payment={reviewing}
         renderedAt={renderedAt}
         lowConfidencePercent={lowConfidencePercent}
+        canOpenStudentFile={canOpenStudentFile}
         onClose={closeCase}
         onDecide={decide}
         onReread={reread}

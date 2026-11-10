@@ -22,7 +22,7 @@ function valueOf(row: { score: number | null; didNotSit: boolean }): GradeValue 
 }
 
 /**
- * The grades table (OOC-38, `0050`): append-only, one row per seat. A posted
+ * The grades table (OOC-38, `0051`): append-only, one row per seat. A posted
  * grade is never updated — the database refuses it — so posting is an INSERT
  * that skips seats already graded, and a seat already graded with something
  * else rolls the whole batch back. The e-mails of the seats written go to

@@ -39,8 +39,11 @@ export const enrollmentTone: Record<EnrollmentStatus, Tone> = {
   rejected: 'danger',
 }
 
+// `pending` and `under_review` are one state on screen (OOC-146): both wait on
+// a person in Pagos, and the difference is the traffic light's verdict, which
+// the review dialog shows on its own.
 export const paymentTone: Record<PaymentStatus, Tone> = {
-  pending: 'neutral',
+  pending: 'warning',
   under_review: 'warning',
   approved: 'success',
   rejected: 'danger',

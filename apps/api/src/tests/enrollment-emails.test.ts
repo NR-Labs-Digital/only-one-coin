@@ -43,7 +43,12 @@ function yearsAgo(years: number): Date {
 
 class FakeEnrollmentRepository implements IEnrollmentRepository {
   notifications: EmailNotification[] = [];
-  async createWithPayment(params: { enrollment: Enrollment; payment: Payment; notifications: EmailNotification[] }) {
+  async createWithPayment(params: {
+    enrollment: Enrollment;
+    payment: Payment;
+    notifications: EmailNotification[];
+    receipt: { receiptUploadId: string; uploadedBy: string };
+  }) {
     this.notifications = params.notifications;
     return { enrollment: params.enrollment, payment: params.payment };
   }
@@ -65,7 +70,7 @@ const MANUAL_INPUT = {
   method: "yape" as const,
   methodDetail: null,
   operationNumber: "00012345",
-  receiptAttached: true,
+  receiptUploadId: "018f2b5c-0000-7000-8000-0000000000aa",
 };
 
 describe("CreateManualEnrollmentUseCase e-mails", () => {
@@ -179,6 +184,7 @@ function confirmedReceipt(): IReceiptUploadRepository {
     id: RECEIPT_UPLOAD_ID,
     seatHoldId: HOLD_ID,
     procedureRequestId: null,
+    uploadedBy: null,
     paymentId: null,
     objectKey: `receipts/raw/${HOLD_ID}/${RECEIPT_UPLOAD_ID}`,
     status: "uploaded",
@@ -255,7 +261,7 @@ describe("SubmitPublicEnrollmentUseCase e-mails", () => {
         actorId: "staff-1",
         action: "enrollment.created",
         targetId: enrollment.id,
-        metadata: { studentId: MANUAL_INPUT.studentId, paymentId: payment.id },
+        metadata: { studentId: MANUAL_INPUT.studentId, paymentId: payment.id, receiptUploadId: MANUAL_INPUT.receiptUploadId },
       }),
     ]);
   });

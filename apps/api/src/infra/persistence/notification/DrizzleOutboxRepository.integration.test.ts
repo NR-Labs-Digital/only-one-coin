@@ -11,6 +11,7 @@ import { DrizzleEnrollmentEmailContextLookup } from "@/infra/persistence/enrollm
 import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
 import { DrizzlePlanPriceLookup } from "@/infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { DrizzleOutboxRepository, insertOutboxEmails } from "./DrizzleOutboxRepository.js";
+import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
 
 /**
  * The outbox against a real, migrated Postgres — the "pronto quando" of the
@@ -123,13 +124,11 @@ function manualEnrollment(tx: Db): CreateManualEnrollmentUseCase {
 }
 
 const MANUAL_INPUT = {
-  actorId: "staff-integration",
   studentId: STUDENT,
   planId: PLAN,
   method: "yape" as const,
   methodDetail: null,
   operationNumber: "00077777",
-  receiptAttached: true,
 };
 
 describe("an enrollment writes its e-mail to the outbox", () => {
@@ -137,7 +136,13 @@ describe("an enrollment writes its e-mail to the outbox", () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
 
-      const { enrollment } = await manualEnrollment(tx).run({ ...MANUAL_INPUT, classGroupId: CLASS_GROUP });
+      const { actorId, receiptUploadId } = await seedManualReceipt(tx, "staff-integration");
+      const { enrollment } = await manualEnrollment(tx).run({
+        ...MANUAL_INPUT,
+        actorId,
+        receiptUploadId,
+        classGroupId: CLASS_GROUP,
+      });
 
       const rows = await tx.select().from(outbox).where(eq(outbox.dedupeKey, `enrollment_received:${enrollment.id}:student`));
       expect(rows).toHaveLength(1);
@@ -163,7 +168,10 @@ describe("an enrollment writes its e-mail to the outbox", () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
 
-      await expect(manualEnrollment(tx).run({ ...MANUAL_INPUT, classGroupId: FULL_CLASS_GROUP })).rejects.toBeInstanceOf(
+      const { actorId, receiptUploadId } = await seedManualReceipt(tx, "staff-integration");
+      await expect(
+        manualEnrollment(tx).run({ ...MANUAL_INPUT, actorId, receiptUploadId, classGroupId: FULL_CLASS_GROUP }),
+      ).rejects.toBeInstanceOf(
         ClassGroupFullError,
       );
 

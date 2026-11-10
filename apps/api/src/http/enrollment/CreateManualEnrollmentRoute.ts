@@ -3,6 +3,7 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
+import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 const CreateManualEnrollmentBodySchema = z
   .object({
@@ -12,7 +13,9 @@ const CreateManualEnrollmentBodySchema = z
     method: PaymentMethodSchema,
     methodDetail: z.string().min(1).nullable(),
     operationNumber: z.string().min(1),
-    receiptAttached: z.boolean(),
+    // Mandatory since OOC-146: the receipt this same account uploaded and
+    // confirmed through /enrollments/receipt-uploads.
+    receiptUploadId: z.string().uuid(),
   })
   .refine((body) => body.method !== "other" || body.methodDetail !== null, {
     message: "methodDetail is required when method is 'other'",
@@ -46,9 +49,9 @@ export const createManualEnrollmentRoute = RouteBuilder.post("/enrollments")
     tags: ["Enrollments"],
     summary: "Open an enrollment from the backoffice over an existing student",
     description:
-      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved.",
+      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready.",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .roles(...MANUAL_ENROLLMENT_ROLES)
   .body(CreateManualEnrollmentBodySchema)
   .response(201, CreateManualEnrollmentResponseSchema)
   .response(400, ErrorResponseSchema)

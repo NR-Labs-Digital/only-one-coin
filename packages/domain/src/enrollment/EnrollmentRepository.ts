@@ -17,6 +17,11 @@ import type { Payment } from "./Payment.js";
  * `notifications` land in the outbox inside the same transaction — the
  * e-mail about an enrollment exists exactly when the enrollment does.
  *
+ * `receipt` is the confirmed upload the payment is born with (OOC-146): it
+ * must belong to `uploadedBy`, be confirmed and not yet attached to any
+ * payment, or the whole write is refused with ReceiptNotReadyError — locked
+ * in the same transaction, so one file never pays for two enrollments.
+ *
  * The same transaction also closes the student's active waitlist entry for
  * that class group, if there is one (left_reason 'enrolled', OOC-35) — the
  * queue never shows somebody who already holds the seat.
@@ -26,6 +31,7 @@ export interface IEnrollmentRepository {
     enrollment: Enrollment;
     payment: Payment;
     notifications: EmailNotification[];
+    receipt: { receiptUploadId: string; uploadedBy: string };
   }): Promise<{
     enrollment: Enrollment;
     payment: Payment;

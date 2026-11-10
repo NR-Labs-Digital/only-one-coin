@@ -22,6 +22,7 @@ import {
   CompleteStaffPasswordResetUseCase,
   ConfirmEmailVerificationUseCase,
   ConfirmProcedureReceiptUploadUseCase,
+  ConfirmManualReceiptUploadUseCase,
   ConfirmReceiptUploadUseCase,
   OpenProcedureRequestUseCase,
   RequestProcedureReceiptUploadUseCase,
@@ -64,6 +65,7 @@ import {
   RenamePlanUseCase,
   ReleaseSeatHoldUseCase,
   RequestPortalPasswordResetUseCase,
+  RequestManualReceiptUploadUseCase,
   RequestReceiptUploadUseCase,
   ResolvePortalSignInEmailUseCase,
   ScreenReceiptUploadUseCase,
@@ -308,6 +310,8 @@ export interface AppUseCases {
     expireSeatHolds: ExpireSeatHoldsUseCase;
     requestReceiptUpload: RequestReceiptUploadUseCase;
     confirmReceiptUpload: ConfirmReceiptUploadUseCase;
+    requestManualReceiptUpload: RequestManualReceiptUploadUseCase;
+    confirmManualReceiptUpload: ConfirmManualReceiptUploadUseCase;
     sendEmailVerification: SendEmailVerificationCodeUseCase;
     confirmEmailVerification: ConfirmEmailVerificationUseCase;
     /** Run by the `receipt-screen` worker, never a route (OOC-22). */
@@ -602,6 +606,12 @@ function buildContainer(): AppContainer {
     config.RECEIPT_MAX_UPLOAD_BYTES,
   );
   const confirmReceiptUpload = new ConfirmReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
+  const requestManualReceiptUpload = new RequestManualReceiptUploadUseCase(
+    receiptUploadRepository,
+    receiptStorage,
+    config.RECEIPT_MAX_UPLOAD_BYTES,
+  );
+  const confirmManualReceiptUpload = new ConfirmManualReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
   const procedureRepository = new DrizzleProcedureRepository(db);
   const procedureUseCases = {
     openRequest: new OpenProcedureRequestUseCase(procedureRepository),
@@ -888,6 +898,8 @@ function buildContainer(): AppContainer {
         expireSeatHolds,
         requestReceiptUpload,
         confirmReceiptUpload,
+        requestManualReceiptUpload,
+        confirmManualReceiptUpload,
         sendEmailVerification,
         confirmEmailVerification,
         screenReceiptUpload,

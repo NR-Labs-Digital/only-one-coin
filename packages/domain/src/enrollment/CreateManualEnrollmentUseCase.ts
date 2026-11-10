@@ -18,7 +18,10 @@ export interface CreateManualEnrollmentInput {
   method: PaymentMethod;
   methodDetail: string | null;
   operationNumber: string;
-  receiptAttached: boolean;
+  /** The receipt this same account uploaded and confirmed — mandatory since
+   * OOC-146: the manual enrollment's receipt goes up the same OCR ladder as
+   * the checkout's, never as a box ticked by hand. */
+  receiptUploadId: string;
 }
 
 export interface CreateManualEnrollmentOutput {
@@ -34,7 +37,8 @@ export interface CreateManualEnrollmentOutput {
  *     creates a student; (b) the price is resolved server-side from the
  *     plan in force, never accepted from the client; (c) the seat is always
  *     reserved, never confirmed (Enrollment.createManual); (d) the payment
- *     never starts approved (Payment.createManual).
+ *     never starts approved (Payment.createManual), and is born with a real
+ *     receipt that goes up the same OCR ladder and review queue (OOC-146).
  *
  * The student hears about it exactly as a checkout student would — the same
  * "enrollment received" e-mail (decision of 27/09/2026). In es-PE: the
@@ -72,7 +76,6 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
       methodDetail: input.methodDetail,
       amountCents: price.amountCents,
       operationNumber: input.operationNumber,
-      receiptAttached: input.receiptAttached,
     });
 
     const emailContext = await this.emailContextLookup.find({
@@ -89,7 +92,12 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
         )
       : [];
 
-    const created = await this.enrollmentRepository.createWithPayment({ enrollment, payment, notifications });
+    const created = await this.enrollmentRepository.createWithPayment({
+      enrollment,
+      payment,
+      notifications,
+      receipt: { receiptUploadId: input.receiptUploadId, uploadedBy: input.actorId },
+    });
 
     // The exception path is the one that most needs a name on it: the
     // checkout is the student acting, this is staff acting for them.
@@ -97,7 +105,7 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
       actorId: input.actorId,
       action: "enrollment.created",
       targetId: created.enrollment.id,
-      metadata: { studentId: input.studentId, paymentId: created.payment.id },
+      metadata: { studentId: input.studentId, paymentId: created.payment.id, receiptUploadId: input.receiptUploadId },
       at: created.enrollment.createdAt,
     });
 

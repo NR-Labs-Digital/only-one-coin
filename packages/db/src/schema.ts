@@ -1004,11 +1004,14 @@ export const receiptUploads = pgTable(
   "receipt_uploads",
   {
     id: uuidPk(),
-    // Whose receipt this is before there is a payment: the checkout's hold, or
-    // the procedure request of a signed-in student (OOC-83) — exactly one,
+    // Whose receipt this is before there is a payment: the checkout's hold,
+    // the procedure request of a signed-in student (OOC-83), or the staff
+    // account opening a manual enrollment (OOC-146) — exactly one,
     // receipt_uploads_owner_check.
     seatHoldId: uuid("seat_hold_id").references(() => seatHolds.id, { onDelete: "restrict" }),
     procedureRequestId: uuid("procedure_request_id").references(() => procedureRequests.id, { onDelete: "restrict" }),
+    // FK to "user" written by hand in the migration, as for decided_by (0027).
+    uploadedBy: text("uploaded_by"),
     paymentId: uuid("payment_id").references(() => payments.id, { onDelete: "restrict" }),
     objectKey: text("object_key").notNull(),
     status: text("status").notNull().default("pending"),
@@ -1044,7 +1047,10 @@ export const receiptUploads = pgTable(
   },
   (table) => [
     uniqueIndex("receipt_uploads_object_key_uidx").on(table.objectKey),
-    check("receipt_uploads_owner_check", sql`num_nonnulls("seat_hold_id", "procedure_request_id") = 1`),
+    check(
+      "receipt_uploads_owner_check",
+      sql`num_nonnulls("seat_hold_id", "procedure_request_id", "uploaded_by") = 1`,
+    ),
     index("receipt_uploads_procedure_request_id_idx")
       .on(table.procedureRequestId)
       .where(sql`${table.procedureRequestId} is not null`),
@@ -1224,7 +1230,7 @@ export const staffInvites = pgTable(
 // One grade per seat in a class group (OOC-38, CLAUDE.md §1, decision
 // 08/10/2026): the final exam's, which is the module's grade, on the 0–20
 // scale with decimals — or DA, the final exam not sat, in its place. Posted
-// once and locked: append-only, no UPDATE nor DELETE, on both layers (0050).
+// once and locked: append-only, no UPDATE nor DELETE, on both layers (0051).
 // Whether it passes is read against `platform_settings.passing_grade` at the
 // time it is read, never stored here.
 export const grades = pgTable(
@@ -1240,7 +1246,7 @@ export const grades = pgTable(
     // Exact decimal, two places (`13.50`): a grade is compared as typed.
     score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
     didNotSit: boolean("did_not_sit").notNull().default(false),
-    // Better Auth's "user" is not modelled here; FK written by hand in 0050.
+    // Better Auth's "user" is not modelled here; FK written by hand in 0051.
     recordedBy: text("recorded_by").notNull(),
     createdAt: createdAt(),
   },

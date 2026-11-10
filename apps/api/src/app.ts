@@ -47,6 +47,8 @@ import { saveGuardianRoute } from "@/http/student/SaveGuardianRoute.js";
 import { listStudentActivityRoute } from "@/http/student/ListStudentActivityRoute.js";
 import { issuePortalAccessRoute } from "@/http/student/IssuePortalAccessRoute.js";
 import { createManualEnrollmentRoute } from "@/http/enrollment/CreateManualEnrollmentRoute.js";
+import { requestManualReceiptUploadRoute } from "@/http/enrollment/RequestManualReceiptUploadRoute.js";
+import { confirmManualReceiptUploadRoute } from "@/http/enrollment/ConfirmManualReceiptUploadRoute.js";
 import { listPaymentsRoute } from "@/http/payment/ListPaymentsRoute.js";
 import { listPaymentReviewQueueRoute } from "@/http/payment/ListPaymentReviewQueueRoute.js";
 import { getDashboardSummaryRoute } from "@/http/dashboard/GetDashboardSummaryRoute.js";
@@ -231,6 +233,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(recordOwnClassGroupGradesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getTeachingSummaryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestManualReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmManualReceiptUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listEnrollmentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPaymentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPaymentReviewQueueRoute);

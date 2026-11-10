@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import type {
   PaymentReviewItem,
   ReadField,
-  ReceiptReading,
   RejectionReason,
   ReviewDecision,
   ReviewVerdict,
@@ -13,9 +12,16 @@ import type {
 import { fetchReceiptUrl } from '@/lib/backoffice/payment-client'
 import { formatDate, formatDateTime, formatMoney, type Locale } from '@/lib/format'
 import { formatPaymentMethod } from '@/lib/payment-method'
+import {
+  compareAmount,
+  compareMethod,
+  compareOperationNumber,
+  type FieldComparison,
+} from '@/lib/backoffice/receipt-comparison'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone, receiptStateTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
 import {
   Dialog,
   DialogContent,
@@ -116,6 +122,7 @@ export function ReceiptReviewDialog({
   onNext,
   onPrev,
   lowConfidencePercent,
+  canOpenStudentFile,
 }: {
   payment: PaymentReviewItem | null
   /** When the server rendered the queue — what the deadline is measured from. */
@@ -131,6 +138,8 @@ export function ReceiptReviewDialog({
   /** Below this (whole percent) a field read is flagged (`platform_settings`,
    * OOC-41); null when the settings could not be read — nothing is flagged. */
   lowConfidencePercent: number | null
+  /** Whether the reader may open the student's file (`canBrowseStudents`). */
+  canOpenStudentFile: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -343,7 +352,7 @@ export function ReceiptReviewDialog({
     >
       <DialogContent
         closeLabel={t('receipt_review.close')}
-        className="bg-white sm:max-w-xl"
+        className="bg-white sm:max-w-5xl"
         // Esc steps back one layer before it closes the case: the enlarged
         // image first, then the rejection form.
         onEscapeKeyDown={(event) => {
@@ -368,6 +377,14 @@ export function ReceiptReviewDialog({
                   course: `${payment.courseName} · ${payment.classGroupName}`,
                 })}
               </DialogDescription>
+              {/* Asking the student for a better photo is usually what an
+                  unreadable receipt needs (OOC-146). */}
+              <StudentQuickActions
+                studentId={payment.studentId}
+                studentName={payment.studentName}
+                phone={payment.studentPhone}
+                canOpenFile={canOpenStudentFile}
+              />
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <StatusBadge
                   tone={paymentTone[payment.status]}
@@ -438,278 +455,251 @@ export function ReceiptReviewDialog({
               </button>
             )}
 
-            <div className="flex flex-col gap-6 p-5">
-              <section>
-                <SectionTitle icon="doc">{t('receipt_review.image_title')}</SectionTitle>
-                {payment.receipt === 'missing' ? (
-                  // No image at all: the only proof left is the bank statement,
-                  // and the reviewer is told so before the approve button.
-                  <ReceiptWarning text={t('receipt_review.no_receipt_warning')} />
-                ) : payment.receipt === 'ready' && image.kind === 'shown' ? (
-                  // A signed, five-minute URL straight from the bucket:
-                  // `next/image` would proxy and cache a link that is meant to
-                  // expire, so a plain <img> it is. The bucket origin is
-                  // allowed in the CSP `img-src` (RECEIPT_IMAGE_ORIGIN).
-                  <button
-                    type="button"
-                    onClick={() => setZoomed(true)}
-                    aria-label={t('receipt_review.image_zoom')}
-                    className="mt-3 block w-full cursor-zoom-in"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.url}
-                      alt={t('receipt_review.image_alt')}
-                      onError={() => setLoaded({ id: payment.id, state: { kind: 'unavailable' } })}
-                      className="max-h-[28rem] w-full rounded-xl border border-line bg-sky-soft object-contain"
-                    />
-                  </button>
-                ) : (
-                  <ImagePlaceholder
-                    busy={payment.receipt === 'ready' && image.kind === 'loading'}
-                    text={
-                      payment.receipt === 'ready'
-                        ? image.kind === 'unavailable'
-                          ? t('receipt_review.image_unavailable')
-                          : null
-                        : t(`receipt_state.${payment.receipt}`)
-                    }
-                  />
-                )}
-                {/* No usable image either way, so the same kind of warning as
-                    a missing receipt — it warns, it never blocks approving
-                    (a deposit on the bank statement is proof enough). Still
-                    uploading also means the antifraud screening has not run:
-                    its signals may arrive after the decision. */}
-                {payment.receipt === 'refused' && (
-                  <ReceiptWarning text={t('receipt_review.refused_receipt_warning')} />
-                )}
-                {payment.receipt === 'uploading' && (
-                  <ReceiptWarning text={t('receipt_review.uploading_receipt_warning')} />
-                )}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t('receipt_review.image_note')}
-                </p>
-              </section>
-
-              {/* What the student said they paid with, against the price frozen
-                  when the enrollment was opened. There is no discount: the
-                  expected amount is the plan price, always (CLAUDE.md §1). */}
-              <section>
-                <SectionTitle icon="payments">{t('receipt_review.declared_title')}</SectionTitle>
-                <dl className="mt-2">
-                  <DataRow
-                    label={t('payments.filter_method')}
-                    value={formatPaymentMethod(
-                      payment.method,
-                      payment.methodDetail,
-                      t('payment_method.other'),
-                    )}
-                  />
-                  <DataRow
-                    label={t('payments.col_operation')}
-                    value={payment.operationNumber ?? t('payments.no_operation')}
-                  />
-                  <DataRow
-                    label={t('receipt_review.check_expected')}
-                    value={formatMoney(payment.expectedAmountCents, payment.currency, locale)}
-                    strong
-                  />
-                  <DataRow
-                    label={t('review.col_deadline')}
-                    value={
-                      deadline === 'overdue'
-                        ? `${formatDateTime(payment.reviewDeadline, locale)} · ${t('review.deadline_overdue')}`
-                        : formatDateTime(payment.reviewDeadline, locale)
-                    }
-                    danger={deadline !== 'ok'}
-                  />
-                </dl>
-              </section>
-
-              {payment.verdict && <VerdictNotice verdict={payment.verdict} />}
-              {payment.reading && (
-                <ReadingSection
-                  reading={payment.reading}
-                  source={payment.readingSource}
-                  lowConfidencePercent={lowConfidencePercent}
-                />
-              )}
-
-              {/* A new reading of the same image (Sessão 32): when the first
-                  one failed, came out shaky, or the reviewer can see it is
-                  wrong. Queued, never waited on; the payment stays where it is. */}
-              {payment.receipt === 'ready' && (
-                <section className="-mt-3 flex flex-col gap-2">
-                  <div className="flex flex-wrap items-center gap-3">
+            {/* Two columns once the dialog has room (OOC-146): the receipt stays
+                in view on the left while the reviewer reads the comparison on
+                the right — before, the image alone filled the screen and the
+                numbers to check it against were a scroll away. Narrower, it
+                stacks. Either way the decision is a footer that never scrolls
+                out of reach. */}
+            <div className="@container/case">
+              <div className="grid gap-6 p-5 @3xl/case:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+                <section className="@3xl/case:sticky @3xl/case:top-5 @3xl/case:self-start">
+                  <SectionTitle icon="doc">{t('receipt_review.image_title')}</SectionTitle>
+                  {payment.receipt === 'missing' ? (
+                    // No image at all: the only proof left is the bank statement,
+                    // and the reviewer is told so before the approve button.
+                    <ReceiptWarning text={t('receipt_review.no_receipt_warning')} />
+                  ) : payment.receipt === 'ready' && image.kind === 'shown' ? (
+                    // A signed, five-minute URL straight from the bucket:
+                    // `next/image` would proxy and cache a link that is meant to
+                    // expire, so a plain <img> it is. The bucket origin is
+                    // allowed in the CSP `img-src` (RECEIPT_IMAGE_ORIGIN).
                     <button
                       type="button"
-                      onClick={() => void reread()}
-                      disabled={rereadBlocked}
-                      aria-busy={rereadSending}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => setZoomed(true)}
+                      aria-label={t('receipt_review.image_zoom')}
+                      className="mt-3 block w-full cursor-zoom-in"
                     >
-                      <BoIcon name="refresh" size={14} />
-                      {t('receipt_review.reread')}
-                      <Kbd>L</Kbd>
-                    </button>
-                    {rereadPending && (
-                      <span role="status" className="text-xs text-muted-foreground">
-                        {t('receipt_review.reread_pending')}
-                      </span>
-                    )}
-                  </div>
-                  {rereadError && (
-                    <p role="alert" className="text-xs font-semibold text-red-600">
-                      {t(
-                        rereadError === 'not_rereadable'
-                          ? 'receipt_review.reread_not_rereadable'
-                          : 'receipt_review.reread_error',
-                      )}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">{t('receipt_review.reread_note')}</p>
-                </section>
-              )}
-
-              <section>
-                <SectionTitle icon="shield">{t('receipt_review.signals_title')}</SectionTitle>
-                {payment.fraudSignals.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t('receipt_review.signals_none')}
-                  </p>
-                ) : (
-                  <ul className="mt-2 flex flex-col gap-1.5">
-                    {payment.fraudSignals.map((signal) => (
-                      <li
-                        key={signal}
-                        className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
-                      >
-                        <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                        {t(`fraud_signal.${signal}`)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {/* Decision */}
-              <section className="border-t border-line pt-5">
-                {rejecting ? (
-                  <div className="flex flex-col gap-3">
-                    <SectionTitle icon="close">{t('receipt_review.reject_title')}</SectionTitle>
-                    <div className="flex flex-col gap-1.5">
-                      {REASONS.map((value, index) => (
-                        <label
-                          key={value}
-                          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                            reason === value
-                              ? 'border-brand-blue bg-sky text-ink'
-                              : 'border-line text-muted-foreground hover:text-ink'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="rejection-reason"
-                            value={value}
-                            checked={reason === value}
-                            onChange={() => setReason(value)}
-                            disabled={rejectBlocked}
-                            className="accent-brand-blue"
-                          />
-                          <span className="flex-1">{t(`rejection_reason.${value}`)}</span>
-                          <Kbd>{String(index + 1)}</Kbd>
-                        </label>
-                      ))}
-                    </div>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {t('receipt_review.reject_note_label')}
-                      </span>
-                      <textarea
-                        ref={noteRef}
-                        value={note}
-                        onChange={(event) => setNote(event.target.value)}
-                        rows={3}
-                        maxLength={NOTE_MAX_LENGTH}
-                        disabled={rejectBlocked}
-                        placeholder={t('receipt_review.reject_note_placeholder')}
-                        className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.url}
+                        alt={t('receipt_review.image_alt')}
+                        onError={() => setLoaded({ id: payment.id, state: { kind: 'unavailable' } })}
+                        className="max-h-[28rem] w-full rounded-xl border border-line bg-sky-soft object-contain @3xl/case:max-h-[60dvh]"
                       />
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={rejectBlocked}
-                        aria-busy={sending}
-                        onClick={rejectNow}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <BoIcon name="close" size={16} />
-                        {t('receipt_review.reject_confirm')}
-                        <span className="ml-1 hidden items-center gap-0.5 sm:inline-flex">
-                          <Kbd>{KEY_CTRL}</Kbd>
-                          <Kbd>{KEY_ENTER}</Kbd>
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={sending}
-                        onClick={() => setRejecting(false)}
-                        className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {t('receipt_review.cancel')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={approveBlocked}
-                      aria-busy={sending}
-                      onClick={() => void send({ kind: 'approve' })}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-yellow hover:text-ink active:bg-brand-yellow-deep disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <BoIcon name="check" size={16} />
-                      {t('receipt_review.approve')}
-                      <span className="ml-1 hidden sm:inline-flex">
-                        <Kbd>A</Kbd>
-                      </span>
                     </button>
+                  ) : (
+                    <ImagePlaceholder
+                      busy={payment.receipt === 'ready' && image.kind === 'loading'}
+                      text={
+                        payment.receipt === 'ready'
+                          ? image.kind === 'unavailable'
+                            ? t('receipt_review.image_unavailable')
+                            : null
+                          : t(`receipt_state.${payment.receipt}`)
+                      }
+                    />
+                  )}
+                  {/* No usable image either way, so the same kind of warning as
+                      a missing receipt — it warns, it never blocks approving
+                      (a deposit on the bank statement is proof enough). Still
+                      uploading also means the antifraud screening has not run:
+                      its signals may arrive after the decision. */}
+                  {payment.receipt === 'refused' && (
+                    <ReceiptWarning text={t('receipt_review.refused_receipt_warning')} />
+                  )}
+                  {payment.receipt === 'uploading' && (
+                    <ReceiptWarning text={t('receipt_review.uploading_receipt_warning')} />
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t('receipt_review.image_note')}
+                  </p>
+                  {payment.receipt === 'ready' && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void reread()}
+                          disabled={rereadBlocked}
+                          aria-busy={rereadSending}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <BoIcon name="refresh" size={14} />
+                          {t('receipt_review.reread')}
+                          <Kbd>L</Kbd>
+                        </button>
+                        {rereadPending && (
+                          <span role="status" className="text-xs text-muted-foreground">
+                            {t('receipt_review.reread_pending')}
+                          </span>
+                        )}
+                      </div>
+                      {rereadError && (
+                        <p role="alert" className="text-xs font-semibold text-red-600">
+                          {t(
+                            rereadError === 'not_rereadable'
+                              ? 'receipt_review.reread_not_rereadable'
+                              : 'receipt_review.reread_error',
+                          )}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{t('receipt_review.reread_note')}</p>
+                    </div>
+                  )}
+                </section>
+
+                <div className="flex min-w-0 flex-col gap-6">
+                  {payment.verdict && <VerdictNotice verdict={payment.verdict} />}
+                  <ComparisonSection payment={payment} lowConfidencePercent={lowConfidencePercent} />
+                  <dl>
+                    <DataRow
+                      label={t('review.col_deadline')}
+                      value={
+                        deadline === 'overdue'
+                          ? `${formatDateTime(payment.reviewDeadline, locale)} · ${t('review.deadline_overdue')}`
+                          : formatDateTime(payment.reviewDeadline, locale)
+                      }
+                      danger={deadline !== 'ok'}
+                    />
+                  </dl>
+                  <section>
+                    <SectionTitle icon="shield">{t('receipt_review.signals_title')}</SectionTitle>
+                    {payment.fraudSignals.length === 0 ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t('receipt_review.signals_none')}
+                      </p>
+                    ) : (
+                      <ul className="mt-2 flex flex-col gap-1.5">
+                        {payment.fraudSignals.map((signal) => (
+                          <li
+                            key={signal}
+                            className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                          >
+                            <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+                            {t(`fraud_signal.${signal}`)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                  <p className="text-xs text-muted-foreground">{t('receipt_review.audit_notice')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* The decision, pinned to the bottom of the case. The rejection
+                reasons are chips, not a list, so the footer stays short enough
+                to leave the receipt in view while it is open. */}
+            <section className="sticky bottom-0 z-10 border-t border-line bg-white px-5 py-4">
+              {rejecting ? (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm font-semibold text-ink">{t('receipt_review.reject_title')}</p>
+                  <div role="radiogroup" aria-label={t('receipt_review.reject_title')} className="flex flex-wrap gap-1.5">
+                    {REASONS.map((value, index) => (
+                      <label
+                        key={value}
+                        className={`inline-flex min-h-tap cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-blue/30 ${
+                          reason === value
+                            ? 'border-brand-blue bg-sky font-semibold text-ink'
+                            : 'border-line text-muted-foreground hover:text-ink'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="rejection-reason"
+                          value={value}
+                          checked={reason === value}
+                          onChange={() => setReason(value)}
+                          disabled={rejectBlocked}
+                          className="sr-only"
+                        />
+                        {t(`rejection_reason.${value}`)}
+                        <span className="hidden sm:inline-flex">
+                          <Kbd>{String(index + 1)}</Kbd>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <textarea
+                    ref={noteRef}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={2}
+                    maxLength={NOTE_MAX_LENGTH}
+                    disabled={rejectBlocked}
+                    aria-label={t('receipt_review.reject_note_label')}
+                    placeholder={t('receipt_review.reject_note_placeholder')}
+                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted-foreground focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       disabled={rejectBlocked}
-                      onClick={() => setRejecting(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-busy={sending}
+                      onClick={rejectNow}
+                      className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <BoIcon name="close" size={16} />
-                      {t('receipt_review.reject')}
-                      <span className="ml-1 hidden sm:inline-flex">
-                        <Kbd>R</Kbd>
+                      {t('receipt_review.reject_confirm')}
+                      <span className="ml-1 hidden items-center gap-0.5 sm:inline-flex">
+                        <Kbd>{KEY_CTRL}</Kbd>
+                        <Kbd>{KEY_ENTER}</Kbd>
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      disabled={sending}
+                      onClick={() => setRejecting(false)}
+                      className="min-h-tap rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {t('receipt_review.cancel')}
+                    </button>
                   </div>
-                )}
-                {notice && (
-                  <p
-                    role="status"
-                    className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={approveBlocked}
+                    aria-busy={sending}
+                    onClick={() => void send({ kind: 'approve' })}
+                    className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-yellow hover:text-ink active:bg-brand-yellow-deep disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                    {t(`receipt_review.notice_${notice}`)}
-                  </p>
-                )}
-                {failed && (
-                  <p role="alert" className="mt-3 text-xs font-semibold text-red-600">
-                    {t('receipt_review.decide_error')}
-                  </p>
-                )}
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {t('receipt_review.audit_notice')}
+                    <BoIcon name="check" size={16} />
+                    {t('receipt_review.approve')}
+                    <span className="ml-1 hidden sm:inline-flex">
+                      <Kbd>A</Kbd>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={rejectBlocked}
+                    onClick={() => setRejecting(true)}
+                    className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <BoIcon name="close" size={16} />
+                    {t('receipt_review.reject')}
+                    <span className="ml-1 hidden sm:inline-flex">
+                      <Kbd>R</Kbd>
+                    </span>
+                  </button>
+                </div>
+              )}
+              {notice && (
+                <p
+                  role="status"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                >
+                  <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
+                  {t(`receipt_review.notice_${notice}`)}
                 </p>
-              </section>
-            </div>
+              )}
+              {failed && (
+                <p role="alert" className="mt-3 text-xs font-semibold text-red-600">
+                  {t('receipt_review.decide_error')}
+                </p>
+              )}
+            </section>
           </>
         )}
       </DialogContent>
@@ -748,140 +738,184 @@ function VerdictNotice({ verdict }: { verdict: ReviewVerdict }) {
 }
 
 /**
- * What OCR level 1 read off the receipt (OOC-20), field by field, with the
- * model's own confidence. The judgement on it is `VerdictNotice`, above; the
- * confidence threshold is still level 2's (Sessão 29), measured on real
- * receipts first (docs/OCR-AVALIACAO.md). The model id stays off screen — it is a technical id (CLAUDE.md §4) and lives
- * in the database for audit.
+ * The receipt's reading next to what it should say (OOC-146): for each field,
+ * what was expected or declared, what OCR level 1 read off the image (OOC-20)
+ * with the model's own confidence, and whether the two match. Amount is
+ * compared with the price frozen on the enrollment — there is no discount
+ * (CLAUDE.md §1); operation number and method with what the student declared.
+ * Payer and date have nothing to compare with: the form asks for neither.
+ *
+ * "Matches" is a fact about two values, not the verdict (`VerdictNotice`,
+ * above, which applies the configured tolerance); a person decides. The model
+ * id stays off screen — a technical id (CLAUDE.md §4) kept for audit.
  */
-function ReadingSection({
-  reading,
-  source,
+function ComparisonSection({
+  payment,
   lowConfidencePercent,
 }: {
-  reading: ReceiptReading
-  /** A re-read says so: the reviewer asked for it, and should see it came back. */
-  source: PaymentReviewItem['readingSource']
+  payment: PaymentReviewItem
   lowConfidencePercent: number | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
-
-  if (reading.state === 'not_read') {
-    return (
-      <section>
-        <SectionTitle icon="doc">{t('receipt_review.reading_title')}</SectionTitle>
-        <p className="mt-2 text-sm text-muted-foreground">{t('receipt_review.reading_not_read')}</p>
-      </section>
-    )
-  }
-
-  if (reading.state === 'failed') {
-    return (
-      <section>
-        <SectionTitle icon="doc">{t('receipt_review.reading_title')}</SectionTitle>
-        <ReceiptWarning
-          text={t('receipt_review.reading_failed', {
-            reason: t(`receipt_review.reading_failure_${reading.reason}`),
-          })}
-        />
-        {/* A failed re-read says it was one: the reviewer asked for it, and
-            must not read it as the first reading still standing. */}
-        {source === 'reread' && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t('receipt_review.reading_reread_failed_at', {
-              date: formatDateTime(reading.readAt, locale),
-            })}
-          </p>
-        )}
-      </section>
-    )
-  }
-
+  const reading = payment.reading
+  const read = reading?.state === 'read' ? reading : null
+  const empty = t('receipt_review.compare_empty')
   const notFound = t('receipt_review.reading_not_found')
-  const rows: { key: string; label: string; field: ReadField<unknown>; text: string }[] = [
+
+  /** What a field read says, or why there is nothing: not found on the image,
+   * or no reading at all. */
+  function readText<T>(field: ReadField<T> | undefined, format: (value: T) => string): string {
+    if (!field) return empty
+    return field.value === null ? notFound : format(field.value)
+  }
+
+  const rows: {
+    key: string
+    label: string
+    expected: string
+    field: ReadField<unknown> | undefined
+    read: string
+    comparison: FieldComparison
+  }[] = [
     {
       key: 'amount',
       label: t('receipt_review.reading_field_amount'),
-      field: reading.amountCents,
-      text: reading.amountCents.value === null ? notFound : formatMoney(reading.amountCents.value, 'PEN', locale),
+      expected: formatMoney(payment.expectedAmountCents, payment.currency, locale),
+      field: read?.amountCents,
+      read: readText(read?.amountCents, (value) => formatMoney(value, 'PEN', locale)),
+      comparison: compareAmount(payment.expectedAmountCents, read?.amountCents.value ?? null),
     },
     {
       key: 'operation',
       label: t('receipt_review.reading_field_operation'),
-      field: reading.operationNumber,
-      text: reading.operationNumber.value ?? notFound,
+      expected: payment.operationNumber ?? t('payments.no_operation'),
+      field: read?.operationNumber,
+      read: readText(read?.operationNumber, (value) => value),
+      comparison: compareOperationNumber(payment.operationNumber, read?.operationNumber.value ?? null),
     },
     {
       key: 'method',
       label: t('receipt_review.reading_field_method'),
-      field: reading.paymentMethod,
-      text:
-        reading.paymentMethod.value === null
-          ? notFound
-          : formatPaymentMethod(reading.paymentMethod.value, reading.paymentMethod.detail, t('payment_method.other')),
+      expected: formatPaymentMethod(payment.method, payment.methodDetail, t('payment_method.other')),
+      field: read?.paymentMethod,
+      read: readText(read?.paymentMethod, (value) =>
+        formatPaymentMethod(value, read?.paymentMethod.detail ?? null, t('payment_method.other')),
+      ),
+      comparison: compareMethod(payment.method, read?.paymentMethod.value ?? null),
     },
     {
       key: 'payer',
       label: t('receipt_review.reading_field_payer'),
-      field: reading.payerName,
-      text: reading.payerName.value ?? notFound,
+      expected: empty,
+      field: read?.payerName,
+      read: readText(read?.payerName, (value) => value),
+      comparison: 'none',
     },
     {
       key: 'paid_at',
       label: t('receipt_review.reading_field_paid_at'),
-      field: reading.paidAt,
-      text:
-        reading.paidAt.value === null
-          ? notFound
-          : reading.paidAt.value.length === 10
-            ? formatDate(reading.paidAt.value, locale)
-            : formatDateTime(reading.paidAt.value, locale),
+      expected: empty,
+      field: read?.paidAt,
+      read: readText(read?.paidAt, (value) =>
+        value.length === 10 ? formatDate(value, locale) : formatDateTime(value, locale),
+      ),
+      comparison: 'none',
     },
   ]
 
+  const grid = 'grid grid-cols-[6.5rem_minmax(0,1fr)_minmax(0,1fr)] gap-x-3'
+
   return (
     <section>
-      <SectionTitle icon="doc">{t('receipt_review.reading_title')}</SectionTitle>
-      <p className="mt-2 text-xs text-muted-foreground">{t('receipt_review.reading_intro')}</p>
-      <dl className="mt-2">
+      <SectionTitle icon="payments">{t('receipt_review.compare_title')}</SectionTitle>
+      <div className={`${grid} mt-2 border-b border-line pb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground`}>
+        <span aria-hidden="true" />
+        <span>{t('receipt_review.compare_col_expected')}</span>
+        <span>{t('receipt_review.compare_col_read')}</span>
+      </div>
+      <dl>
         {rows.map((row) => (
-          <div
-            key={row.key}
-            className="flex items-start justify-between gap-4 border-b border-line/70 py-2.5 last:border-b-0"
-          >
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{row.label}</dt>
-            <dd className="text-right">
+          <div key={row.key} className={`${grid} items-start border-b border-line/70 py-2.5 last:border-b-0`}>
+            <dt className="pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{row.label}</dt>
+            <dd className={`break-words text-sm tabular-nums ${row.expected === empty ? 'text-muted-foreground' : 'font-semibold text-ink'}`}>
+              <span className="sr-only">{t('receipt_review.compare_col_expected')}: </span>
+              {row.expected}
+            </dd>
+            <dd className="min-w-0">
+              <span className="sr-only">{t('receipt_review.compare_col_read')}: </span>
               <span
-                className={`block text-sm tabular-nums ${
-                  row.field.value === null ? 'text-muted-foreground' : 'font-medium text-ink'
+                className={`block break-words text-sm tabular-nums ${
+                  row.field?.value == null ? 'text-muted-foreground' : 'font-medium text-ink'
                 }`}
               >
-                {row.text}
+                {row.read}
               </span>
-              {row.field.value !== null &&
-                (lowConfidencePercent !== null && row.field.confidence * 100 < lowConfidencePercent ? (
-                  // Below the backoffice's floor (OOC-41): the one field to
-                  // check against the image first. Only flags — never decides.
-                  <span className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800">
-                    <BoIcon name="alert" size={12} />
-                    {t('receipt_review.reading_low_confidence', { value: Math.round(row.field.confidence * 100) })}
-                  </span>
-                ) : (
-                  <span className="block text-xs tabular-nums text-muted-foreground">
-                    {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
-                  </span>
-                ))}
+              <span className="mt-0.5 flex flex-wrap items-center gap-1">
+                <ComparisonMark comparison={row.comparison} />
+                {row.field && row.field.value !== null &&
+                  (lowConfidencePercent !== null && row.field.confidence * 100 < lowConfidencePercent ? (
+                    // Below the backoffice's floor (OOC-41): the one field to
+                    // check against the image first. Only flags — never decides.
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800">
+                      <BoIcon name="alert" size={12} />
+                      {t('receipt_review.reading_low_confidence', { value: Math.round(row.field.confidence * 100) })}
+                    </span>
+                  ) : (
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {t('receipt_review.reading_confidence', { value: Math.round(row.field.confidence * 100) })}
+                    </span>
+                  ))}
+              </span>
             </dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {t(source === 'reread' ? 'receipt_review.reading_reread_at' : 'receipt_review.reading_read_at', {
-          date: formatDateTime(reading.readAt, locale),
-        })}
-      </p>
+
+      {reading?.state === 'not_read' && (
+        <p className="mt-2 text-sm text-muted-foreground">{t('receipt_review.reading_not_read')}</p>
+      )}
+      {reading?.state === 'failed' && (
+        <>
+          <ReceiptWarning
+            text={t('receipt_review.reading_failed', {
+              reason: t(`receipt_review.reading_failure_${reading.reason}`),
+            })}
+          />
+          {/* A failed re-read says it was one: the reviewer asked for it, and
+              must not read it as the first reading still standing. */}
+          {payment.readingSource === 'reread' && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t('receipt_review.reading_reread_failed_at', { date: formatDateTime(reading.readAt, locale) })}
+            </p>
+          )}
+        </>
+      )}
+      {read && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t(payment.readingSource === 'reread' ? 'receipt_review.reading_reread_at' : 'receipt_review.reading_read_at', {
+            date: formatDateTime(read.readAt, locale),
+          })}
+        </p>
+      )}
     </section>
+  )
+}
+
+/** Whether a field read matches what was expected — a fact, not a verdict. */
+function ComparisonMark({ comparison }: { comparison: FieldComparison }) {
+  const t = useTranslations('bo')
+  if (comparison === 'none') return null
+  return comparison === 'match' ? (
+    <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-800">
+      <BoIcon name="check" size={12} />
+      {t('receipt_review.compare_match')}
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-700">
+      <BoIcon name="close" size={12} />
+      {t('receipt_review.compare_differs')}
+    </span>
   )
 }
 
