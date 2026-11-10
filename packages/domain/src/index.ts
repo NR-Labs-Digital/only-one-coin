@@ -79,6 +79,7 @@ export {
   RecordOwnClassGroupGradesUseCase,
   type RecordOwnClassGroupGradesInput,
 } from "./teaching/OwnClassGroupGradesUseCases.js";
+export { gradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
 export {
   Guardian,
   GuardianPropsSchema,

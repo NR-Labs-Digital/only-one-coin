@@ -1,7 +1,15 @@
-import { sameGrade, type GradeEntry, type GradeValue, type IGradeRepository, type RecordedGrade } from "@ooc/domain";
-import { auditLog, grades } from "@ooc/db";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import {
+  sameGrade,
+  type GradeEmailFacts,
+  type GradeEntry,
+  type GradeValue,
+  type IGradeRepository,
+  type RecordedGrade,
+} from "@ooc/domain";
+import { auditLog, classGroups, courses, enrollments, grades, guardians, students } from "@ooc/db";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 
 class ConflictingGrades extends Error {
   constructor(readonly enrollmentIds: string[]) {
@@ -17,7 +25,8 @@ function valueOf(row: { score: number | null; didNotSit: boolean }): GradeValue 
  * The grades table (OOC-38, `0050`): append-only, one row per seat. A posted
  * grade is never updated — the database refuses it — so posting is an INSERT
  * that skips seats already graded, and a seat already graded with something
- * else rolls the whole batch back.
+ * else rolls the whole batch back. The e-mails of the seats written go to
+ * the outbox in the same transaction.
  */
 export class DrizzleGradeRepository implements IGradeRepository {
   constructor(private readonly db: Db) {}
@@ -35,6 +44,37 @@ export class DrizzleGradeRepository implements IGradeRepository {
       .orderBy(asc(grades.createdAt));
 
     return rows.map((row) => ({ enrollmentId: row.enrollmentId, value: valueOf(row), recordedAt: row.createdAt }));
+  }
+
+  async emailFacts(classGroupId: string, enrollmentIds: string[]): Promise<GradeEmailFacts[]> {
+    if (enrollmentIds.length === 0) return [];
+    const rows = await this.db
+      .select({
+        enrollmentId: enrollments.id,
+        firstName: students.firstName,
+        lastName: students.lastName,
+        email: students.email,
+        birthDate: students.birthDate,
+        guardianFirstName: guardians.firstName,
+        guardianEmail: guardians.email,
+        courseName: courses.name,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(students.id, enrollments.studentId))
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .innerJoin(courses, eq(courses.id, classGroups.courseId))
+      .leftJoin(guardians, and(eq(guardians.studentId, students.id), isNull(guardians.deletedAt)))
+      .where(and(eq(enrollments.classGroupId, classGroupId), inArray(enrollments.id, enrollmentIds)));
+
+    return rows.map((row) => ({
+      enrollmentId: row.enrollmentId,
+      student: { firstName: row.firstName, lastName: row.lastName, email: row.email, birthDate: row.birthDate },
+      guardian:
+        row.guardianFirstName !== null && row.guardianEmail !== null
+          ? { firstName: row.guardianFirstName, email: row.guardianEmail }
+          : null,
+      courseName: row.courseName,
+    }));
   }
 
   async record(params: Parameters<IGradeRepository["record"]>[0]) {
@@ -82,6 +122,9 @@ export class DrizzleGradeRepository implements IGradeRepository {
 
         const recorded: GradeEntry[] = params.entries.filter((entry) => written.has(entry.enrollmentId));
         if (recorded.length > 0) {
+          // The grade and its e-mail commit together: a rolled-back batch
+          // e-mails nobody, and a retry that writes nothing sends nothing.
+          await insertOutboxEmails(tx, params.emails(recorded));
           const entry = params.audit(recorded);
           await tx.insert(auditLog).values({
             actorId: entry.actorId,

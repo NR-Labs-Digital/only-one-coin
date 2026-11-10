@@ -46,6 +46,8 @@ const PortalEnrollmentSchema = z.object({
   academicPeriodName: z.string(),
   plan: z.object({ name: z.string(), priceId: z.string().uuid(), priceCents: z.number().int(), currency: z.literal("PEN") }),
   payments: z.array(PortalPaymentSchema),
+  /** The final grade posted by the teacher (OOC-38): `grade` null on a DA; null while nothing is posted. */
+  finalGrade: z.object({ grade: z.number().nullable(), didNotSit: z.boolean(), recordedAt: z.string() }).nullable(),
 });
 
 const PortalOverviewSchema = z.object({
@@ -74,6 +76,8 @@ const PortalOverviewSchema = z.object({
       .nullable(),
   }),
   enrollments: z.array(PortalEnrollmentSchema),
+  /** The pass mark the screen compares a grade with (OOC-41); null when it could not be read. */
+  passingGrade: z.number().int().nullable(),
   procedures: z.array(
     z.object({
       kind: ProcedureKindSchema,
@@ -196,7 +200,15 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },
         payments: enrollment.payments.map(toPortalPayment),
+        finalGrade: enrollment.finalGrade
+          ? {
+              grade: enrollment.finalGrade.score,
+              didNotSit: enrollment.finalGrade.didNotSit,
+              recordedAt: enrollment.finalGrade.recordedAt.toISOString(),
+            }
+          : null,
       })),
+      passingGrade: overview.passingGrade,
       procedures: overview.procedures.map((procedure) => ({ ...procedure, currency: "PEN" as const })),
       requests: overview.requests.map((item) => ({
         id: item.id,

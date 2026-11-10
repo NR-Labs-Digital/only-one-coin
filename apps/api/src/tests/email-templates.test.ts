@@ -29,6 +29,14 @@ const SAMPLE_VARS: EmailTemplateVars = {
   procedure_payment_under_review: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_approved: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  grade_posted: {
+    recipientName: "Rosa",
+    studentName: "Rosa Quispe",
+    courseName: "Inglés Básico",
+    grade: 13.5,
+    passingGrade: 14,
+  },
+  grade_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   portal_credentials: {
     recipientName: "Rosa",
     loginEmail: "rosa.quispe@gmail.com",
@@ -147,5 +155,14 @@ describe("renderEmail", () => {
     } as OutgoingEmail;
 
     expect(() => renderEmail(email)).toThrow(TemplateRenderError);
+  });
+});
+
+describe("grade_posted (OOC-38)", () => {
+  it("writes the grade and the pass mark in the reader's convention", () => {
+    expect(renderEmail(sample("grade_posted", "es-PE")).text).toContain("13.5");
+    expect(renderEmail(sample("grade_posted", "pt-BR")).text).toContain("13,5");
+    expect(renderEmail(sample("grade_posted", "en")).subject).toBe("Final grade for Inglés Básico: 13.5");
+    expect(renderEmail(sample("grade_posted", "es-PE")).text).toContain("14");
   });
 });

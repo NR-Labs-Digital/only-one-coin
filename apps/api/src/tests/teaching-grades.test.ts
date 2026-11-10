@@ -7,6 +7,8 @@ import {
   type IGradeRepository,
   type ITeacherRepository,
   type ITeachingReader,
+  type IPlatformSettingsRepository,
+  type EmailNotification,
   type TeachingClassGroup,
 } from "@ooc/domain";
 import { describe, expect, it } from "vitest";
@@ -73,9 +75,27 @@ function group(status: TeachingClassGroup["status"]): TeachingClassGroup {
 class FakeGrades implements IGradeRepository {
   posted = new Map<string, GradeEntry["value"]>();
   audits: unknown[] = [];
+  emails: EmailNotification[] = [];
 
   async listForClassGroup() {
     return [];
+  }
+
+  async emailFacts(_classGroupId: string, enrollmentIds: string[]) {
+    return enrollmentIds
+      .filter((id) => id === SEAT_A || id === SEAT_B)
+      .map((enrollmentId) => ({
+        enrollmentId,
+        student: {
+          firstName: enrollmentId === SEAT_A ? "Rosa" : "Luis",
+          lastName: "Quispe",
+          email: `${enrollmentId === SEAT_A ? "rosa" : "luis"}@gmail.com`,
+          // Luis is a minor: his guardian hears it too.
+          birthDate: enrollmentId === SEAT_A ? new Date("2000-01-01") : new Date(Date.now() - 12 * 365 * 86_400_000),
+        },
+        guardian: enrollmentId === SEAT_B ? { firstName: "Carmen", email: "carmen@example.com" } : null,
+        courseName: "Inglés Básico",
+      }));
   }
 
   async record(params: Parameters<IGradeRepository["record"]>[0]) {
@@ -86,7 +106,10 @@ class FakeGrades implements IGradeRepository {
     if (conflicts.length > 0) return { conflicts: conflicts.map((entry) => entry.enrollmentId) };
     const fresh = params.entries.filter((entry) => !this.posted.has(entry.enrollmentId));
     for (const entry of fresh) this.posted.set(entry.enrollmentId, entry.value);
-    if (fresh.length > 0) this.audits.push(params.audit(fresh));
+    if (fresh.length > 0) {
+      this.audits.push(params.audit(fresh));
+      this.emails.push(...params.emails(fresh));
+    }
     return { recorded: fresh.length, alreadyRecorded: params.entries.length - fresh.length };
   }
 }
@@ -101,7 +124,13 @@ function setUp(status: TeachingClassGroup["status"] = "finished") {
     ],
   } as unknown as ITeachingReader;
   const grades = new FakeGrades();
-  const useCase = new RecordOwnClassGroupGradesUseCase(new GetOwnClassGroupUseCase(teachers, reader), reader, grades);
+  const settings = { get: async () => ({ passingGrade: 12 }) } as unknown as IPlatformSettingsRepository;
+  const useCase = new RecordOwnClassGroupGradesUseCase(
+    new GetOwnClassGroupUseCase(teachers, reader),
+    reader,
+    grades,
+    settings,
+  );
   return { useCase, grades };
 }
 
@@ -137,6 +166,33 @@ describe("RecordOwnClassGroupGradesUseCase", () => {
       alreadyRecorded: 1,
     });
     expect(grades.audits).toHaveLength(2);
+  });
+
+  it("e-mails each grade written to the student, and a minor's guardian, with the configured pass mark", async () => {
+    const { useCase, grades } = setUp();
+
+    await useCase.run(post([score(SEAT_A, 13.5), da(SEAT_B)]));
+
+    expect(grades.emails.map((email) => [email.templateKey, email.to])).toEqual([
+      ["grade_posted", "rosa@gmail.com"],
+      ["grade_did_not_sit", "luis@gmail.com"],
+      ["grade_did_not_sit", "carmen@example.com"],
+    ]);
+    expect(grades.emails[0]).toMatchObject({
+      locale: "es-PE",
+      vars: { recipientName: "Rosa", courseName: "Inglés Básico", grade: 13.5, passingGrade: 12 },
+      dedupeKey: `grade_posted:${GROUP}:${SEAT_A}:student`,
+    });
+  });
+
+  it("e-mails nobody on a retry that writes nothing", async () => {
+    const { useCase, grades } = setUp();
+    await useCase.run(post([score(SEAT_A, 15)]));
+    const sent = grades.emails.length;
+
+    await useCase.run(post([score(SEAT_A, 15)]));
+
+    expect(grades.emails).toHaveLength(sent);
   });
 
   it("refuses a different grade on a posted seat: a posted grade is final", async () => {

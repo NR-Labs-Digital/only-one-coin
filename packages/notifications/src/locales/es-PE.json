@@ -122,6 +122,23 @@
         "{code}",
         "El código vence en 10 minutos y solo se puede usar una vez. Si no fuiste tú, no lo compartas con nadie y cambia tu contraseña: sin este código nadie entra a tu cuenta."
       ]
+    },
+    "grade_posted": {
+      "subject": "Nota final de {courseName}: {grade}",
+      "preheader": "La nota del examen final ya está registrada.",
+      "paragraphs": [
+        "La nota final de {studentName} en {courseName} es {grade}, en la escala de 0 a 20. Es la nota del examen final, que es la nota del módulo.",
+        "La nota mínima para aprobar es {passingGrade}.",
+        "La nota ya quedó registrada y puedes verla en el portal del alumno."
+      ]
+    },
+    "grade_did_not_sit": {
+      "subject": "Resultado de {courseName}: no rindió el examen final",
+      "preheader": "El módulo quedó registrado como DA.",
+      "paragraphs": [
+        "{studentName} no rindió el examen final de {courseName}, así que el módulo quedó registrado como DA (desaprobado por no rendir el examen).",
+        "Puedes ver el resultado en el portal del alumno."
+      ]
     }
   }
 }

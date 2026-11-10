@@ -867,7 +867,12 @@ function buildContainer(): AppContainer {
         getOwnClassGroup,
         listOwnClassGroupStudents: new ListOwnClassGroupStudentsUseCase(getOwnClassGroup, teachingReader),
         listOwnClassGroupGrades: new ListOwnClassGroupGradesUseCase(getOwnClassGroup, gradeRepository),
-        recordOwnClassGroupGrades: new RecordOwnClassGroupGradesUseCase(getOwnClassGroup, teachingReader, gradeRepository),
+        recordOwnClassGroupGrades: new RecordOwnClassGroupGradesUseCase(
+          getOwnClassGroup,
+          teachingReader,
+          gradeRepository,
+          platformSettingsRepository,
+        ),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
       },
       student: {

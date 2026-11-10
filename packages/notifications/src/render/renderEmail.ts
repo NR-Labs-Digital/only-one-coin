@@ -84,6 +84,9 @@ function placeholderValues(
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) throw new TemplateRenderError(`Var "${name}" is not a date`);
       values.startsOn = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeZone: TIME_ZONE }).format(date);
+    } else if ((name === "grade" || name === "passingGrade") && typeof value === "number") {
+      // A grade as typed, up to two decimals, in the reader's convention (13.5 / 13,5).
+      values[name] = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 2 }).format(value);
     } else {
       values[name] = String(value);
     }

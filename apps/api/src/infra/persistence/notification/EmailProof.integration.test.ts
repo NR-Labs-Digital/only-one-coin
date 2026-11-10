@@ -2,7 +2,7 @@ import * as schema from "@ooc/db";
 import { auditLog, outbox } from "@ooc/db";
 import { SendEmailProofUseCase } from "@ooc/domain";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
@@ -70,7 +70,13 @@ describe("DrizzleEmailProofRepository", () => {
         "proof.two@onlyonecoin.edu.pe",
       ]);
 
-      const [entry] = await tx.select().from(auditLog).where(eq(auditLog.action, "email.proof_sent"));
+      // This send's entry — the local database may hold proofs sent by hand.
+      const entries = await tx
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "email.proof_sent"), sql`${auditLog.metadata}->'outboxIds' ? ${outboxIds[0]!}`));
+      expect(entries).toHaveLength(1);
+      const [entry] = entries;
       expect(entry?.metadata).toMatchObject({ template: "payment_approved", recipients: 2 });
       expect(JSON.stringify(entry?.metadata)).not.toContain("proof.one");
     });

@@ -122,6 +122,23 @@
         "{code}",
         "The code expires in 10 minutes and works only once. If this was not you, do not share it with anyone and change your password: without this code nobody gets into your account."
       ]
+    },
+    "grade_posted": {
+      "subject": "Final grade for {courseName}: {grade}",
+      "preheader": "The final exam grade has been posted.",
+      "paragraphs": [
+        "{studentName}'s final grade in {courseName} is {grade}, on the 0 to 20 scale. It is the final exam's grade, which is the module's grade.",
+        "The passing grade is {passingGrade}.",
+        "The grade is now on record and you can see it in the student portal."
+      ]
+    },
+    "grade_did_not_sit": {
+      "subject": "Result for {courseName}: final exam not taken",
+      "preheader": "The module was recorded as DA.",
+      "paragraphs": [
+        "{studentName} did not take the final exam of {courseName}, so the module was recorded as DA (failed for not taking the exam).",
+        "You can see the result in the student portal."
+      ]
     }
   }
 }

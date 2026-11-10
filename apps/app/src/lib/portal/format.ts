@@ -5,6 +5,7 @@
  */
 export {
   formatMoney,
+  formatNumber,
   formatDate,
   formatDateNumeric,
   formatDateTime,

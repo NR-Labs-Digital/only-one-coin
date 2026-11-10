@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, auditLog, classGroups, courses, enrollments, grades, planPrices, plans, students } from "@ooc/db";
+import { academicPeriods, auditLog, classGroups, courses, enrollments, grades, outbox, planPrices, plans, students } from "@ooc/db";
 import {
   CatalogClassGroupNotFoundError,
   GetOwnClassGroupUseCase,
@@ -11,7 +11,7 @@ import {
   Teacher,
   type CreateTeacherDTO,
 } from "@ooc/domain";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -21,6 +21,7 @@ import { ClassGroupRosterQuery } from "@/infra/persistence/catalog/ClassGroupRos
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
 import { DrizzleGradeRepository } from "./DrizzleGradeRepository.js";
+import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 
 /**
  * The docente portal's acceptance gate (OOC-82, Sessão 36): a teacher sees
@@ -358,7 +359,7 @@ describe("final grades (OOC-38)", () => {
     return {
       roster: new ListOwnClassGroupStudentsUseCase(get, reader),
       list: new ListOwnClassGroupGradesUseCase(get, repository),
-      record: new RecordOwnClassGroupGradesUseCase(get, reader, repository),
+      record: new RecordOwnClassGroupGradesUseCase(get, reader, repository, new DrizzlePlatformSettingsRepository(tx)),
     };
   }
 
@@ -380,8 +381,20 @@ describe("final grades (OOC-38)", () => {
       const posted = await list.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
       expect(posted).toEqual([expect.objectContaining({ enrollmentId: lucia!.enrollmentId, value: entry.value })]);
 
-      const audits = await tx.select().from(auditLog).where(eq(auditLog.action, "teaching.grades_recorded"));
+      const audits = await tx
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "teaching.grades_recorded"), eq(auditLog.targetId, A_RUNNING)));
       expect(audits).toHaveLength(1);
+
+      // One e-mail to the (adult) student, written with the grade — not again on the retry.
+      const mails = await tx
+        .select()
+        .from(outbox)
+        .where(eq(outbox.dedupeKey, `grade_posted:${A_RUNNING}:${lucia!.enrollmentId}:student`));
+      expect(mails).toHaveLength(1);
+      expect(mails[0]).toMatchObject({ templateKey: "grade_posted", recipient: "ooc82-student-1@gmail.com", locale: "es-PE" });
+      expect(mails[0]!.vars).toMatchObject({ grade: 13.75, courseName: "Curso (teaching integration)" });
       expect(audits[0]).toMatchObject({ actorId: A_ACCOUNT, targetId: A_RUNNING });
     });
   });

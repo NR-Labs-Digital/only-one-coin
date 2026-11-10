@@ -1,4 +1,7 @@
 import type { ClassGroupStatus } from "../catalog/ClassGroup.js";
+import { DEFAULT_LOCALE } from "../notification/EmailNotification.js";
+import { gradeEmails } from "../notification/gradeEmails.js";
+import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSettingsRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { ConflictError } from "../shared/base/errors/ConflictError.js";
 import { UnableToProcessEntryError } from "../shared/base/errors/UnableToProcessEntryError.js";
@@ -46,12 +49,19 @@ export interface RecordOwnClassGroupGradesInput extends GetOwnClassGroupInput {
  * sheet can resend what it could not confirm over a bad connection without
  * fear; posting a different value on a graded seat refuses the whole batch
  * (409 `teaching.grade_already_recorded`) and writes nothing.
+ *
+ * Each grade written e-mails the student — and a minor's guardian — in the
+ * same transaction (OOC-38, request of 09/11/2026, to confirm with the
+ * owner): the grade is final the moment it is posted, so that is when the
+ * student hears it. es-PE, like the payment e-mails: the platform does not
+ * keep a student's language.
  */
 export class RecordOwnClassGroupGradesUseCase extends BaseUseCase<RecordOwnClassGroupGradesInput, RecordGradesResult> {
   constructor(
     private readonly getOwnClassGroup: GetOwnClassGroupUseCase,
     private readonly reader: ITeachingReader,
     private readonly grades: IGradeRepository,
+    private readonly settings: IPlatformSettingsRepository,
   ) {
     super();
   }
@@ -94,10 +104,24 @@ export class RecordOwnClassGroupGradesUseCase extends BaseUseCase<RecordOwnClass
       }
     }
 
+    const [facts, { passingGrade }] = await Promise.all([
+      this.grades.emailFacts(
+        group.id,
+        input.entries.map((entry) => entry.enrollmentId),
+      ),
+      this.settings.get(),
+    ]);
+    const factsBySeat = new Map(facts.map((fact) => [fact.enrollmentId, fact]));
+
     const result = await this.grades.record({
       classGroupId: group.id,
       recordedBy: input.userId,
       entries: input.entries,
+      emails: (recorded) =>
+        recorded.flatMap((entry) => {
+          const fact = factsBySeat.get(entry.enrollmentId);
+          return fact ? gradeEmails(fact, group.id, entry.value, passingGrade, DEFAULT_LOCALE) : [];
+        }),
       // The seats and how many were DA — never the grades: they are the
       // `grades` rows themselves, and the log only says that they were posted.
       audit: (recorded) => ({

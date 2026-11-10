@@ -1,4 +1,6 @@
 import type { AuditLogEntry } from "../identity/ports/IAuditLogRepository.js";
+import type { EmailNotification } from "../notification/EmailNotification.js";
+import type { GradeEmailFacts } from "../notification/gradeEmails.js";
 
 /**
  * A grade as the sheet posts it (OOC-38, CLAUDE.md §1, decision 08/10/2026):
@@ -43,17 +45,20 @@ export interface RecordGradesResult {
 
 export interface IGradeRepository {
   listForClassGroup(classGroupId: string): Promise<RecordedGrade[]>;
+  /** The people and course behind these seats of the class group, for the grade e-mails. */
+  emailFacts(classGroupId: string, enrollmentIds: string[]): Promise<GradeEmailFacts[]>;
   /**
    * Posts the entries in one transaction: an entry whose seat already has the
    * same grade is skipped, and one whose seat has a different grade refuses
    * the whole batch — `conflicts` lists those seats and nothing is written.
-   * The audit entry is written in the same transaction, only when something
-   * was recorded.
+   * The audit entry and the e-mails of the seats actually written go in the
+   * same transaction — a retry that writes nothing e-mails nobody.
    */
   record(params: {
     classGroupId: string;
     recordedBy: string;
     entries: GradeEntry[];
     audit: (recorded: GradeEntry[]) => AuditLogEntry;
+    emails: (recorded: GradeEntry[]) => EmailNotification[];
   }): Promise<RecordGradesResult | { conflicts: string[] }>;
 }

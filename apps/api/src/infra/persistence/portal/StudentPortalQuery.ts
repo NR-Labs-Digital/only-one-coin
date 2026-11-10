@@ -3,7 +3,9 @@ import {
   classGroups,
   courses,
   enrollments,
+  grades,
   payments,
+  platformSettings,
   planPrices,
   plans,
   procedurePrices,
@@ -54,6 +56,11 @@ export interface PortalEnrollmentRow {
   plan: { name: string; priceId: string; priceCents: number };
   /** Every payment of the enrollment, newest first. */
   payments: PortalPaymentRow[];
+  /**
+   * The final grade the teacher posted in this class group (OOC-38) — final
+   * once posted. `score` is null on a DA. Null while nothing is posted.
+   */
+  finalGrade: { score: number | null; didNotSit: boolean; recordedAt: Date } | null;
 }
 
 /** A paid procedure the student can start: today's price, and which of their
@@ -78,6 +85,8 @@ export interface PortalProcedureRequestRow {
 
 export interface PortalOverview {
   student: StudentDetailRow;
+  /** `platform_settings.passing_grade` (OOC-41): the screen compares the grade with it, never with a constant. */
+  passingGrade: number | null;
   enrollments: PortalEnrollmentRow[];
   procedures: PortalProcedureRow[];
   requests: PortalProcedureRequestRow[];
@@ -132,6 +141,9 @@ export class StudentPortalQuery {
         planName: plans.name,
         planPriceId: planPrices.id,
         planPriceCents: planPrices.amountCents,
+        gradeScore: grades.score,
+        gradeDidNotSit: grades.didNotSit,
+        gradeRecordedAt: grades.createdAt,
       })
       .from(enrollments)
       // A retired course or class group still labels the enrollment that
@@ -141,13 +153,16 @@ export class StudentPortalQuery {
       .innerJoin(academicPeriods, eq(academicPeriods.id, classGroups.academicPeriodId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
       .innerJoin(plans, eq(plans.id, planPrices.planId))
+      // The grade of this seat in this class group (OOC-38) — one at most.
+      .leftJoin(grades, and(eq(grades.enrollmentId, enrollments.id), eq(grades.classGroupId, enrollments.classGroupId)))
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));
 
-    const [paymentsByEnrollment, prices, requests] = await Promise.all([
+    const [paymentsByEnrollment, prices, requests, settings] = await Promise.all([
       this.paymentsOf(rows.map((row) => row.id)),
       this.currentPrices(),
       this.requestsOf(fileIds),
+      this.db.select({ passingGrade: platformSettings.passingGrade }).from(platformSettings).limit(1),
     ]);
 
     // Blocked by a request that carries money or is paid; one still waiting for
@@ -165,6 +180,7 @@ export class StudentPortalQuery {
 
     return {
       student,
+      passingGrade: settings[0]?.passingGrade ?? null,
       procedures,
       requests: requests.map(({ enrollmentId: _enrollmentId, ...request }) => request),
       enrollments: rows.map((row): PortalEnrollmentRow => {
@@ -198,6 +214,14 @@ export class StudentPortalQuery {
           academicPeriodName: row.academicPeriodName,
           plan: { name: row.planName, priceId: row.planPriceId, priceCents: row.planPriceCents },
           payments: enrollmentPayments,
+          finalGrade:
+            row.gradeRecordedAt !== null
+              ? {
+                  score: row.gradeDidNotSit ? null : Number(row.gradeScore),
+                  didNotSit: row.gradeDidNotSit === true,
+                  recordedAt: row.gradeRecordedAt,
+                }
+              : null,
         };
       }),
     };

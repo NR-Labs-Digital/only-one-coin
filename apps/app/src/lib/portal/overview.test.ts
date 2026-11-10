@@ -22,6 +22,7 @@ function enrollmentWith(classroomUrl: string | null): ApiEnrollment {
     academicPeriodName: 'Ciclo 2026-IV',
     plan: { name: 'Paquete', priceId: 'p-1', priceCents: 6990, currency: 'PEN' },
     payments: [],
+    finalGrade: null,
   }
 }
 
@@ -39,5 +40,21 @@ describe('toEnrollment — the class group Classroom (OOC-98)', () => {
   it('never turns a link off the Classroom host into an href', () => {
     expect(toEnrollment(enrollmentWith('javascript:alert(1)')).classGroup.classroomUrl).toBeNull()
     expect(toEnrollment(enrollmentWith('https://evil.example/c/abc')).classGroup.classroomUrl).toBeNull()
+  })
+})
+
+describe('toEnrollment — the final grade (OOC-38)', () => {
+  it('carries the posted grade, decimals included', () => {
+    const row = { ...enrollmentWith(null), finalGrade: { grade: 13.5, didNotSit: false, recordedAt: '2026-12-16T15:00:00.000Z' } }
+    expect(toEnrollment(row).finalGrade).toBe(13.5)
+  })
+
+  it('reads a DA as did_not_attempt', () => {
+    const row = { ...enrollmentWith(null), finalGrade: { grade: null, didNotSit: true, recordedAt: '2026-12-16T15:00:00.000Z' } }
+    expect(toEnrollment(row).finalGrade).toBe('did_not_attempt')
+  })
+
+  it('has none while nothing is posted', () => {
+    expect(toEnrollment(enrollmentWith(null)).finalGrade).toBeNull()
   })
 })
