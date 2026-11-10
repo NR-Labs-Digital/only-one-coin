@@ -266,39 +266,6 @@ export interface DocumentDelivery {
   attempts: number
 }
 
-export interface DocumentItem {
-  id: string
-  type: DocumentType
-  status: DocumentStatus
-  enrollmentId: string
-  issuedAt: string | null
-  /** Printed on the PDF and checked by the public validation page. Set only
-   *  once the document actually exists. */
-  verificationCode: string | null
-  /** Null when the batch issued it — the actor is then the system. */
-  issuedByName: string | null
-  delivery: DocumentDelivery
-}
-
-/**
- * A paid administrative procedure that ends in a document. The constancia de
- * matrícula costs S/25 (`docs/REGRAS-NEGOCIO.md` §5) and is paid outside the
- * platform exactly like an enrollment: the student uploads the receipt and the
- * same OCR ladder validates it. No payment gateway is involved (CLAUDE.md §2).
- */
-export interface DocumentRequest {
-  id: string
-  type: DocumentType
-  enrollmentId: string
-  requestedAt: string
-  /** Fee frozen at request time, integer cents (CLAUDE.md §5). */
-  feeCents: number
-  currency: 'PEN'
-  paymentStatus: PaymentStatus
-  paymentMethod: PaymentMethod | null
-  operationNumber: string | null
-}
-
 /**
  * Append-only audit trail (CLAUDE.md §8), as the student file reads it
  * (OOC-75). The union is what `GET /students/:id/activity` can answer — one
@@ -373,9 +340,6 @@ export interface StudentDetail extends StudentRow {
   portalAccess: PortalAccessState
   guardian: GuardianSummary | null
   enrollments: EnrollmentHistoryItem[]
-  documents: DocumentItem[]
-  /** Paid procedures still on their way to becoming a document. */
-  documentRequests: DocumentRequest[]
 }
 
 /* -------------------------------------------------------------------------- */

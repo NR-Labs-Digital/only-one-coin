@@ -76,7 +76,6 @@ export function StudentFile({
   canViewPayments,
   canEdit,
   activity,
-  constanciaFeeCents,
   attachments,
   canManageAttachments,
 }: {
@@ -87,9 +86,7 @@ export function StudentFile({
   canEdit: boolean
   /** First page of the timeline; null when the API could not answer. */
   activity: StudentActivityPage | null
-  /** Today's constancia fee (`platform_settings`, OOC-41); null when it could not be read. */
-  constanciaFeeCents: number | null
-  /** Attached files (OOC-143), read on the server; null when the API failed. */
+  /** The student's documents (OOC-143/OOC-148), read on the server; null when the API failed. */
   attachments: AttachmentList | null
   canManageAttachments: boolean
 }) {
@@ -499,7 +496,6 @@ export function StudentFile({
       {tab === 'documents' && (
         <StudentDocuments
           student={student}
-          constanciaFeeCents={constanciaFeeCents}
           attachments={attachments}
           canManageAttachments={canManageAttachments}
         />

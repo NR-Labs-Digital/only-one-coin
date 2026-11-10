@@ -176,13 +176,13 @@
     "owner_description": "Your account sees features that are off for everyone else."
   },
   "attachments": {
-    "title_staff": "Student files",
-    "title_portal": "My files",
-    "empty_staff_title": "No files",
-    "empty_staff_body": "Files the student uploads from the portal and files the team attaches show up here.",
-    "empty_portal_title": "You haven't sent any files yet",
-    "empty_portal_body": "Send your ID, your guardian's consent or any other file the coordination asks for here.",
-    "load_error": "We couldn't load the files. Reload the page to try again.",
+    "title_staff": "Student documents",
+    "title_portal": "My documents",
+    "empty_staff_title": "No documents",
+    "empty_staff_body": "Documents the student uploads from the portal and documents the team attaches show up here.",
+    "empty_portal_title": "You don't have any documents yet",
+    "empty_portal_body": "Send your ID, your guardian's consent or any other file the coordination asks for here. Anything the team attaches to your file shows up here too.",
+    "load_error": "We couldn't load the documents. Reload the page to try again.",
     "attach": "Attach file",
     "category_label": "File type",
     "file_label": "File",
@@ -198,24 +198,55 @@
     "remove_confirm": "Yes, remove",
     "remove_failed": "We couldn't remove the file. Try again.",
     "removed": "“{name}” was removed from the list.",
-    "meta": "{size} · {source} · {date}",
+    "meta": "{size} · {date}",
     "by": "by {name}",
-    "hint": "Attached files, not documents issued by the institution: they carry no verification code.",
+    "hint": "Attached documents, not issued by the institution: they carry no verification code.",
     "category": {
       "national_id": "ID document",
       "guardian_consent": "Guardian consent",
       "receipt": "Receipt",
       "other": "Other"
     },
-    "source": {
-      "portal": "Uploaded by the student",
-      "backoffice": "Uploaded by the team"
-    },
     "error": {
       "unsupported_type": "This file type isn't accepted. Send a PDF or a photo (JPG, PNG or HEIC).",
       "too_large": "The file is empty or larger than {size}.",
       "upload_failed": "The file didn't arrive. Check your connection and try again.",
       "generic": "We couldn't send the file. Try again."
+    },
+    "origin": {
+      "staff": {
+        "portal": "Sent by the student",
+        "backoffice": "Sent by the team"
+      },
+      "portal": {
+        "portal": "Sent by you",
+        "backoffice": "Sent by the coordination"
+      }
+    },
+    "filter": {
+      "label": "Filter by origin",
+      "staff": {
+        "all": "All",
+        "backoffice": "From the team",
+        "portal": "From the student"
+      },
+      "portal": {
+        "all": "All",
+        "backoffice": "From the coordination",
+        "portal": "Sent by you"
+      }
+    },
+    "empty_filtered": {
+      "staff": {
+        "all": "No documents.",
+        "backoffice": "The team hasn't attached documents to this file yet.",
+        "portal": "The student hasn't sent documents from the portal yet."
+      },
+      "portal": {
+        "all": "You don't have any documents yet.",
+        "backoffice": "The coordination hasn't attached documents to your file yet.",
+        "portal": "You haven't sent any documents yet."
+      }
     }
   }
 }

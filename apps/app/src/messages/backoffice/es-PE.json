@@ -522,10 +522,6 @@
       "open_in_payments": "Ver en Pagos",
       "no_enrollments_title": "Sin matrículas",
       "no_enrollments_body": "Este alumno todavía no tiene ninguna matrícula registrada.",
-      "issued_at": "Emitido el {date}",
-      "not_issued": "Aún no emitido",
-      "no_documents_title": "Sin documentos",
-      "no_documents_body": "Las constancias y certificados aparecerán aquí cuando se emitan.",
       "activity_title": "Historial",
       "activity_subtitle": "Registro append-only: nada se edita ni se borra.",
       "activity_actor": "{actor} · {role}",
@@ -539,30 +535,7 @@
       "activity_load_error": "No se pudo cargar más actividad. Intenta de nuevo.",
       "activity_error_title": "No se pudo cargar la actividad",
       "activity_error_body": "El historial existe, pero el servidor no respondió. Recarga la página en unos minutos.",
-      "documents_title": "Documentos emitidos",
-      "issue_document": "Emitir documento",
-      "issue_title": "Emitir un documento",
-      "issue_type": "Tipo de documento",
-      "issue_enrollment": "Matrícula",
-      "issue_confirm": "Emitir y enviar por correo",
-      "issue_email_notice": "Al emitir, el correo con el documento sale solo. No hay un botón de envío aparte.",
-      "issue_fee_notice": "La constancia cuesta {amount} y se cobra aparte. Emítela solo con el pago ya verificado.",
-      "issue_fee_notice_no_amount": "La constancia es un trámite pagado y se cobra aparte. Emítela solo con el pago ya verificado.",
-      "issued_local_only": "Documento emitido solo en pantalla ({time}). Aún no hay servidor conectado.",
-      "verification_code": "Código de verificación",
       "download": "Descargar",
-      "resend_email": "Reenviar correo",
-      "resent_local_only": "Reenvío registrado solo en pantalla ({time}). Aún no hay servidor conectado.",
-      "email_sent_at": "Correo enviado el {date}",
-      "email_never_sent": "Todavía sin correo",
-      "email_attempts": "{count, plural, one {# intento} other {# intentos}}",
-      "issued_by": "Emitido por {name}",
-      "issued_by_system": "Emitido en lote",
-      "requests_title": "Solicitudes en curso",
-      "request_fee": "Tasa de {amount}",
-      "request_requested_at": "Solicitada el {date}",
-      "request_operation": "Operación {number}",
-      "request_hint": "La constancia se emite cuando el pago de la tasa queda aprobado.",
       "portal_access_state": {
         "none": "Sin acceso al portal",
         "pending_activation": "Acceso enviado, contraseña pendiente",
@@ -857,15 +830,6 @@
       "in_person": "Presencial",
       "hybrid": "Híbrida"
     },
-    "document_status": {
-      "available": "Disponible",
-      "pending": "En proceso",
-      "locked": "Aún no disponible"
-    },
-    "document_type": {
-      "enrollment_certificate": "Constancia de matrícula",
-      "certificate": "Certificado de finalización"
-    },
     "email_template": {
       "enrollment_received": "Matrícula recibida",
       "payment_under_review": "Comprobante en revisión",
@@ -1064,12 +1028,6 @@
       "review_subject": "Asunto",
       "review_body": "Mensaje",
       "review_html": "Archivo"
-    },
-    "delivery_status": {
-      "not_sent": "Sin enviar",
-      "queued": "En cola",
-      "sent": "Enviado",
-      "failed": "Falló el envío"
     },
     "class_groups": {
       "title": "Aulas",

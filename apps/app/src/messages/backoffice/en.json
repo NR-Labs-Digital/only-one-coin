@@ -522,10 +522,6 @@
       "open_in_payments": "View in Payments",
       "no_enrollments_title": "No enrollments",
       "no_enrollments_body": "This student has no enrollment on record yet.",
-      "issued_at": "Issued on {date}",
-      "not_issued": "Not issued yet",
-      "no_documents_title": "No documents",
-      "no_documents_body": "Enrollment certificates and diplomas show up here once issued.",
       "activity_title": "History",
       "activity_subtitle": "Append-only record: nothing is edited or deleted.",
       "activity_actor": "{actor} · {role}",
@@ -539,30 +535,7 @@
       "activity_load_error": "Could not load more activity. Try again.",
       "activity_error_title": "Could not load the activity",
       "activity_error_body": "The history exists, but the server did not answer. Reload the page in a few minutes.",
-      "documents_title": "Issued documents",
-      "issue_document": "Issue document",
-      "issue_title": "Issue a document",
-      "issue_type": "Document type",
-      "issue_enrollment": "Enrollment",
-      "issue_confirm": "Issue and send by e-mail",
-      "issue_email_notice": "Issuing sends the e-mail on its own. There is no separate send button.",
-      "issue_fee_notice": "The constancia costs {amount} and is charged separately. Only issue it once the payment is verified.",
-      "issue_fee_notice_no_amount": "The constancia is a paid procedure, charged separately. Issue it only once the payment is verified.",
-      "issued_local_only": "Document issued on screen only ({time}). No server connected yet.",
-      "verification_code": "Verification code",
       "download": "Download",
-      "resend_email": "Resend e-mail",
-      "resent_local_only": "Resend recorded on screen only ({time}). No server connected yet.",
-      "email_sent_at": "E-mail sent on {date}",
-      "email_never_sent": "No e-mail yet",
-      "email_attempts": "{count, plural, one {# attempt} other {# attempts}}",
-      "issued_by": "Issued by {name}",
-      "issued_by_system": "Issued in batch",
-      "requests_title": "Open requests",
-      "request_fee": "{amount} fee",
-      "request_requested_at": "Requested on {date}",
-      "request_operation": "Operation {number}",
-      "request_hint": "The constancia is issued once the fee payment is approved.",
       "portal_access_state": {
         "none": "No portal access",
         "pending_activation": "Access sent, password pending",
@@ -857,15 +830,6 @@
       "in_person": "In person",
       "hybrid": "Hybrid"
     },
-    "document_status": {
-      "available": "Available",
-      "pending": "In progress",
-      "locked": "Not available yet"
-    },
-    "document_type": {
-      "enrollment_certificate": "Enrollment certificate",
-      "certificate": "Completion certificate"
-    },
     "email_template": {
       "enrollment_received": "Enrollment received",
       "payment_under_review": "Receipt under review",
@@ -1064,12 +1028,6 @@
       "review_subject": "Subject",
       "review_body": "Message",
       "review_html": "File"
-    },
-    "delivery_status": {
-      "not_sent": "Not sent",
-      "queued": "Queued",
-      "sent": "Sent",
-      "failed": "Delivery failed"
     },
     "class_groups": {
       "title": "Class groups",

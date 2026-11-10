@@ -305,16 +305,6 @@ export interface Enrollment {
   progressPct: number | null
 }
 
-export interface PortalDocument {
-  id: string
-  type: DocumentType
-  status: DocumentStatus
-  enrollmentId: string
-  /** Present only when status === 'available'. */
-  fileUrl: string | null
-  issuedAt: string | null
-}
-
 /** One row of the paid-procedures price table (docs/REGRAS-NEGOCIO.md §5). */
 export interface ProcedureCatalogItem {
   type: RequestType
@@ -381,7 +371,6 @@ export interface ContinuationOffer {
 export interface PortalSession {
   student: Student
   enrollments: Enrollment[]
-  documents: PortalDocument[]
   requests: StudentRequest[]
   procedures: ProcedureCatalogItem[]
   offers: ContinuationOffer[]

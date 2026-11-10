@@ -69,13 +69,10 @@ const GetStudentResponseSchema = z.object({
   // still waiting on money and ones handed back (OOC-73). The ledger lists
   // confirmed seats only; this is the person's history.
   enrollments: z.array(EnrollmentHistoryItemSchema),
-  // Still empty: issued documents and paid procedures have no table behind
-  // this read yet (OOC-33). Sent as empty lists rather than omitted, so the
-  // screen's empty states render without a "not built yet" branch. The
-  // activity timeline (GET /students/:id/activity) and the attached files
-  // (GET /attachments, OOC-143) are their own routes.
-  documents: z.array(z.unknown()),
-  documentRequests: z.array(z.unknown()),
+  // The activity timeline (GET /students/:id/activity) and the student's
+  // documents (GET /attachments, OOC-143/OOC-148) are their own routes. The
+  // two always-empty lists this read used to send for issued documents and
+  // paid requests left with the screen blocks that rendered them (OOC-148).
 });
 
 // management + enrollment supervision only — same audience as the rest of the student
@@ -132,7 +129,5 @@ export const getStudentRoute = RouteBuilder.get("/students/:studentId")
         createdAt: item.createdAt.toISOString(),
         paidAt: item.paidAt?.toISOString() ?? null,
       })),
-      documents: [],
-      documentRequests: [],
     });
   });

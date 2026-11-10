@@ -1,6 +1,5 @@
 import type { Tone } from './ui'
 import type {
-  DocumentStatus,
   EnrollmentStatus,
   ModuleStatus,
   PaymentStatus,
@@ -29,12 +28,6 @@ export const seatTone: Record<SeatStatus, Tone> = {
   reserved: 'warning',
   confirmed: 'success',
   released: 'neutral',
-}
-
-export const documentTone: Record<DocumentStatus, Tone> = {
-  available: 'success',
-  pending: 'warning',
-  locked: 'neutral',
 }
 
 export const requestTone: Record<RequestStatus, Tone> = {

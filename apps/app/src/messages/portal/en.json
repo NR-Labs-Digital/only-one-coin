@@ -64,15 +64,6 @@
       "approved": "Approved",
       "rejected": "Rejected"
     },
-    "document_status": {
-      "available": "Available",
-      "pending": "Processing",
-      "locked": "Not available"
-    },
-    "document_type": {
-      "enrollment_certificate": "Enrollment certificate",
-      "certificate": "Completion certificate"
-    },
     "billing_mode": {
       "package": "Full package",
       "monthly": "Monthly (per module)"
@@ -283,11 +274,7 @@
       "submitted_body": "We're validating your payment. You'll get a confirmation email and your new enrollment will appear in the portal."
     },
     "documents": {
-      "title": "Documents",
-      "empty_title": "You don't have any documents yet",
-      "empty_body": "Your certificates and records will appear here once they're ready.",
-      "issued_on": "Issued on {date}",
-      "mine_title": "My documents"
+      "title": "Documents"
     },
     "profile": {
       "title": "My profile",
