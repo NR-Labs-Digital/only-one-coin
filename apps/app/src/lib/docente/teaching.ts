@@ -107,6 +107,32 @@ export const listOwnClassGroupStudents = cache(
   },
 )
 
+/** One final grade already posted (OOC-38): the exam's, or DA in its place. Final. */
+export interface TeachingGrade {
+  enrollmentId: string
+  /** 0–20, decimals allowed; null on a DA. */
+  grade: number | null
+  didNotSit: boolean
+  /** ISO 8601 UTC. */
+  recordedAt: string
+}
+
+/** The grades posted in one of the teacher's class groups; null when the read failed. */
+export const listOwnClassGroupGrades = cache(
+  async (id: string): Promise<TeachingGrade[] | null> => {
+    try {
+      const response = await apiFetch(
+        `/api/v1/teaching/class-groups/${encodeURIComponent(id)}/grades`,
+      )
+      if (!response.ok) return null
+      const { items } = (await response.json()) as { items: TeachingGrade[] }
+      return items
+    } catch {
+      return null
+    }
+  },
+)
+
 export const getTeachingSummary = cache(async (): Promise<TeachingSummary | null> => {
   try {
     const response = await apiFetch('/api/v1/teaching/summary')

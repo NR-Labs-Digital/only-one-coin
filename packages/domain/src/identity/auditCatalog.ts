@@ -137,6 +137,9 @@ export const AUDIT_ACTIONS = {
   },
   "catalog.waitlist.joined": { key: "waitlist_joined", entity: "class_group", subject: "metadata_class_group" },
   "catalog.waitlist.left": { key: "waitlist_left", entity: "class_group", subject: "metadata_class_group" },
+  // A teacher posting final grades (OOC-38): the target is the class group;
+  // the seats travel in metadata, the grades themselves never do.
+  "teaching.grades_recorded": { key: "grades_recorded", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },
   "catalog.course.updated": { key: "course_updated", entity: "course", subject: "target" },

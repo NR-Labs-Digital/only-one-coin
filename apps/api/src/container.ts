@@ -36,6 +36,8 @@ import {
   AdvanceClassGroupStatusUseCase,
   IssuePortalAccessUseCase,
   ResendFailedEmailUseCase,
+  ListOwnClassGroupGradesUseCase,
+  RecordOwnClassGroupGradesUseCase,
   SendEmailProofUseCase,
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
@@ -216,6 +218,7 @@ import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroup
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
 import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
+import { DrizzleGradeRepository } from "./infra/persistence/teaching/DrizzleGradeRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
@@ -288,6 +291,8 @@ export interface AppUseCases {
     listOwnClassGroups: ListOwnClassGroupsUseCase;
     getOwnClassGroup: GetOwnClassGroupUseCase;
     listOwnClassGroupStudents: ListOwnClassGroupStudentsUseCase;
+    listOwnClassGroupGrades: ListOwnClassGroupGradesUseCase;
+    recordOwnClassGroupGrades: RecordOwnClassGroupGradesUseCase;
     summary: GetTeachingSummaryUseCase;
   };
   student: {
@@ -770,6 +775,7 @@ function buildContainer(): AppContainer {
   const listWaitlist = new ListWaitlistQuery(db);
   const classGroupRoster = new ClassGroupRosterQuery(db);
   const teachingReader = new DrizzleTeachingReader(db, classGroupRoster);
+  const gradeRepository = new DrizzleGradeRepository(db);
   const listOwnClassGroups = new ListOwnClassGroupsUseCase(teacherRepository, teachingReader);
   const getOwnClassGroup = new GetOwnClassGroupUseCase(teacherRepository, teachingReader);
   const listStaff = new ListStaffQuery(db);
@@ -860,6 +866,8 @@ function buildContainer(): AppContainer {
         listOwnClassGroups,
         getOwnClassGroup,
         listOwnClassGroupStudents: new ListOwnClassGroupStudentsUseCase(getOwnClassGroup, teachingReader),
+        listOwnClassGroupGrades: new ListOwnClassGroupGradesUseCase(getOwnClassGroup, gradeRepository),
+        recordOwnClassGroupGrades: new RecordOwnClassGroupGradesUseCase(getOwnClassGroup, teachingReader, gradeRepository),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
       },
       student: {

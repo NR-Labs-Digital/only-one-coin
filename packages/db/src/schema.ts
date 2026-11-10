@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgSequence,
   pgTable,
   text,
@@ -1217,6 +1218,38 @@ export const staffInvites = pgTable(
       sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'teacher', 'sales', 'support', 'billing')`,
     ),
     check("staff_invites_status_check", sql`${table.status} in ('pending', 'completed', 'cancelled')`),
+  ],
+);
+
+// One grade per seat in a class group (OOC-38, CLAUDE.md §1, decision
+// 08/10/2026): the final exam's, which is the module's grade, on the 0–20
+// scale with decimals — or DA, the final exam not sat, in its place. Posted
+// once and locked: append-only, no UPDATE nor DELETE, on both layers (0050).
+// Whether it passes is read against `platform_settings.passing_grade` at the
+// time it is read, never stored here.
+export const grades = pgTable(
+  "grades",
+  {
+    id: uuidPk(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    // Exact decimal, two places (`13.50`): a grade is compared as typed.
+    score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
+    didNotSit: boolean("did_not_sit").notNull().default(false),
+    // Better Auth's "user" is not modelled here; FK written by hand in 0050.
+    recordedBy: text("recorded_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("grades_class_group_enrollment_uidx").on(table.classGroupId, table.enrollmentId),
+    check(
+      "grades_value_check",
+      sql`(${table.didNotSit} and ${table.score} is null) or (not ${table.didNotSit} and ${table.score} between 0 and 20)`,
+    ),
   ],
 );
 

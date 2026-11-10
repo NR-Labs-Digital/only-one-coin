@@ -64,6 +64,22 @@ export { GetOwnClassGroupUseCase, type GetOwnClassGroupInput } from "./teaching/
 export { ListOwnClassGroupStudentsUseCase } from "./teaching/ListOwnClassGroupStudentsUseCase.js";
 export { GetTeachingSummaryUseCase, type TeachingSummary } from "./teaching/GetTeachingSummaryUseCase.js";
 export {
+  MAX_GRADE,
+  MIN_GRADE,
+  isValidScore,
+  sameGrade,
+  type GradeEntry,
+  type GradeValue,
+  type IGradeRepository,
+  type RecordedGrade,
+  type RecordGradesResult,
+} from "./teaching/Grade.js";
+export {
+  ListOwnClassGroupGradesUseCase,
+  RecordOwnClassGroupGradesUseCase,
+  type RecordOwnClassGroupGradesInput,
+} from "./teaching/OwnClassGroupGradesUseCases.js";
+export {
   Guardian,
   GuardianPropsSchema,
   GuardianFieldsSchema,

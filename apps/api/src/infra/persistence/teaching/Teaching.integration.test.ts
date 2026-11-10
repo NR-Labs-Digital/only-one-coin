@@ -1,15 +1,17 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, enrollments, planPrices, plans, students } from "@ooc/db";
+import { academicPeriods, auditLog, classGroups, courses, enrollments, grades, planPrices, plans, students } from "@ooc/db";
 import {
   CatalogClassGroupNotFoundError,
   GetOwnClassGroupUseCase,
   GetTeachingSummaryUseCase,
   ListOwnClassGroupStudentsUseCase,
   ListOwnClassGroupsUseCase,
+  ListOwnClassGroupGradesUseCase,
+  RecordOwnClassGroupGradesUseCase,
   Teacher,
   type CreateTeacherDTO,
 } from "@ooc/domain";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -18,6 +20,7 @@ import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { ClassGroupRosterQuery } from "@/infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
+import { DrizzleGradeRepository } from "./DrizzleGradeRepository.js";
 
 /**
  * The docente portal's acceptance gate (OOC-82, Sessão 36): a teacher sees
@@ -342,6 +345,95 @@ describe("docente portal scope (OOC-82)", () => {
         inPortal: 0,
         students: 0,
       });
+    });
+  });
+});
+
+describe("final grades (OOC-38)", () => {
+  function sheet(tx: Db) {
+    const teachers = new DrizzleTeacherRepository(tx);
+    const reader = new DrizzleTeachingReader(tx, new ClassGroupRosterQuery(tx));
+    const get = new GetOwnClassGroupUseCase(teachers, reader);
+    const repository = new DrizzleGradeRepository(tx);
+    return {
+      roster: new ListOwnClassGroupStudentsUseCase(get, reader),
+      list: new ListOwnClassGroupGradesUseCase(get, repository),
+      record: new RecordOwnClassGroupGradesUseCase(get, reader, repository),
+    };
+  }
+
+  it("posts a decimal grade once, reads it back exact, and takes the same value again as a retry", async () => {
+    await seeded(async (tx) => {
+      const { roster, list, record } = sheet(tx);
+      const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      const entry = { enrollmentId: lucia!.enrollmentId, value: { kind: "score" as const, score: 13.75 } };
+
+      await expect(record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [entry] })).resolves.toEqual({
+        recorded: 1,
+        alreadyRecorded: 0,
+      });
+      await expect(record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [entry] })).resolves.toEqual({
+        recorded: 0,
+        alreadyRecorded: 1,
+      });
+
+      const posted = await list.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      expect(posted).toEqual([expect.objectContaining({ enrollmentId: lucia!.enrollmentId, value: entry.value })]);
+
+      const audits = await tx.select().from(auditLog).where(eq(auditLog.action, "teaching.grades_recorded"));
+      expect(audits).toHaveLength(1);
+      expect(audits[0]).toMatchObject({ actorId: A_ACCOUNT, targetId: A_RUNNING });
+    });
+  });
+
+  it("refuses a different grade on a posted seat and leaves the first one standing", async () => {
+    await seeded(async (tx) => {
+      const { roster, list, record } = sheet(tx);
+      const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      const enrollmentId = lucia!.enrollmentId;
+      await record.run({
+        userId: A_ACCOUNT,
+        classGroupId: A_RUNNING,
+        entries: [{ enrollmentId, value: { kind: "score", score: 15 } }],
+      });
+
+      await expect(
+        record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [{ enrollmentId, value: { kind: "did_not_sit" } }] }),
+      ).rejects.toMatchObject({ status: 409, reason: "teaching.grade_already_recorded" });
+
+      const posted = await list.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      expect(posted.map((grade) => grade.value)).toEqual([{ kind: "score", score: 15 }]);
+    });
+  });
+
+  it("answers not-found when teacher A posts into teacher B's class group, writing nothing", async () => {
+    await seeded(async (tx) => {
+      const { roster, record } = sheet(tx);
+      const [marco] = await roster.run({ userId: B_ACCOUNT, classGroupId: B_RUNNING });
+
+      await expect(
+        record.run({
+          userId: A_ACCOUNT,
+          classGroupId: B_RUNNING,
+          entries: [{ enrollmentId: marco!.enrollmentId, value: { kind: "score", score: 20 } }],
+        }),
+      ).rejects.toBeInstanceOf(CatalogClassGroupNotFoundError);
+      expect(await tx.select().from(grades).where(eq(grades.classGroupId, B_RUNNING))).toHaveLength(0);
+    });
+  });
+
+  it("refuses a seat of another class group, even the teacher's own", async () => {
+    await seeded(async (tx) => {
+      const { roster, record } = sheet(tx);
+      const [marco] = await roster.run({ userId: B_ACCOUNT, classGroupId: B_RUNNING });
+
+      await expect(
+        record.run({
+          userId: A_ACCOUNT,
+          classGroupId: A_RUNNING,
+          entries: [{ enrollmentId: marco!.enrollmentId, value: { kind: "score", score: 20 } }],
+        }),
+      ).rejects.toMatchObject({ status: 422, reason: "teaching.grade_unknown_enrollment" });
     });
   });
 });
