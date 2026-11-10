@@ -49,6 +49,10 @@ export const RATE_LIMITS = {
   /** The audit log as a file (OOC-122), per account — same reasoning as the student export. */
   auditExport: { name: "audit-export", by: "user", limit: 10, windowSeconds: 60 * MINUTE },
 
+  /** A proof of an automatic e-mail (OOC-89), per account — up to five
+   * addresses each, so this is a reviewer's afternoon, not a mailing list. */
+  emailProof: { name: "email-proof", by: "user", limit: 20, windowSeconds: 60 * MINUTE },
+
   /** Brevo's webhook (OOC-91). Every call comes from a handful of Brevo
    * addresses and one burst can be a whole campaign's worth of events, so
    * the ceiling is high; the bearer token, not the count, is the gate. */

@@ -1,5 +1,6 @@
-import type { GradeStatus, StudentNote } from '@/lib/backoffice/types'
-import type { TeachingStudent } from '@/lib/docente/teaching'
+import type { GradeStatus } from '@/lib/backoffice/types'
+import type { PendingGrade } from '@/lib/docente/grade-outbox'
+import type { TeachingGrade, TeachingStudent } from '@/lib/docente/teaching'
 
 /**
  * The grade sheet's rules, shared by the one-grade dialog and the batch one:
@@ -8,10 +9,8 @@ import type { TeachingStudent } from '@/lib/docente/teaching'
  */
 
 /**
- * One row of the grade sheet. Grades have no API yet (OOC-38), so the sheet is
- * a working copy that lives on the screen and is drawn only behind
- * `teacher.grades`, off in production (OOC-82). Keyed by enrollment: a grade
- * belongs to the seat in this class group, not to the person.
+ * One row of the grade sheet (OOC-38). Keyed by enrollment: a grade belongs
+ * to the seat in this class group, not to the person.
  */
 export interface GradeSheetRow {
   enrollmentId: string
@@ -19,19 +18,43 @@ export interface GradeSheetRow {
   /** 0–20. Null while not posted, and on a DA. */
   finalGrade: number | null
   gradeStatus: GradeStatus
-  /** The teacher's observations, newest first. */
-  notes: StudentNote[]
+  /**
+   * `posted` — the API holds it, final. `pending` — confirmed on this device
+   * and not acknowledged yet (no connection); it is sent again. `null` —
+   * nothing yet.
+   */
+  sync: 'posted' | 'pending' | null
 }
 
-/** The real roster with nothing posted on it — the only honest starting point while grades are not stored anywhere. */
-export function workingSheet(students: TeachingStudent[]): GradeSheetRow[] {
-  return students.map((student) => ({
-    enrollmentId: student.enrollmentId,
-    fullName: student.studentName,
-    finalGrade: null,
-    gradeStatus: 'pending',
-    notes: [],
-  }))
+/**
+ * The roster with what is posted on it, and on top what this device still
+ * has to send. A posted grade wins over a pending one for the same seat: the
+ * API is the record, and a pending copy of it is a resend about to be a no-op.
+ */
+export function gradeSheet(
+  students: TeachingStudent[],
+  posted: TeachingGrade[],
+  pending: PendingGrade[],
+  passingGrade: number,
+): GradeSheetRow[] {
+  const postedBy = new Map(posted.map((grade) => [grade.enrollmentId, grade]))
+  const pendingBy = new Map(pending.map((entry) => [entry.enrollmentId, entry]))
+  return students.map((student) => {
+    const base = { enrollmentId: student.enrollmentId, fullName: student.studentName }
+    const grade = postedBy.get(student.enrollmentId)
+    if (grade) {
+      if (grade.didNotSit || grade.grade === null) {
+        return { ...base, finalGrade: null, gradeStatus: 'auto_failed', sync: 'posted' }
+      }
+      return { ...base, finalGrade: grade.grade, gradeStatus: finalStatus(grade.grade, passingGrade), sync: 'posted' }
+    }
+    const waiting = pendingBy.get(student.enrollmentId)
+    if (waiting) {
+      if (waiting.grade === 'da') return { ...base, finalGrade: null, gradeStatus: 'auto_failed', sync: 'pending' }
+      return { ...base, finalGrade: waiting.grade, gradeStatus: finalStatus(waiting.grade, passingGrade), sync: 'pending' }
+    }
+    return { ...base, finalGrade: null, gradeStatus: 'pending', sync: null }
+  })
 }
 
 /**

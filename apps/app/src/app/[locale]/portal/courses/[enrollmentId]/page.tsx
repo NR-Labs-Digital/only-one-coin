@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPortalView } from '@/lib/portal/session'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
-import { formatDate, formatMoney } from '@/lib/portal/format'
+import { formatDate, formatMoney, formatNumber } from '@/lib/portal/format'
 import type { CourseMaterial, Locale } from '@/lib/portal/types'
 import { Card, Field, SectionTitle, StatusBadge } from '@/components/portal/ui'
 import { enrollmentTone, moduleTone, paymentTone } from '@/components/portal/status-tone'
@@ -29,7 +29,7 @@ export default async function CourseDetailPage({
   const flags = await getFeatureFlags('portal')
   // Looked up among the student's own enrollments only — an id from the URL
   // that is not theirs is a 404, never someone else's course (CLAUDE.md §8).
-  const { enrollments } = await getPortalView()
+  const { enrollments, passingGrade } = await getPortalView()
   const enrollment = enrollments.find((e) => e.id === enrollmentId)
   if (!enrollment) notFound()
 
@@ -249,8 +249,10 @@ export default async function CourseDetailPage({
             </div>
           </Card>
 
-          {/* Final grade — only once the class group closed. */}
-          {enrollment.status === 'completed' && enrollment.finalGrade !== null && (
+          {/* Final grade — from the moment the teacher posts it, which is
+              when it becomes final (OOC-38). Pass or not is read against the
+              backoffice's pass mark, never a constant. */}
+          {enrollment.finalGrade !== null && (
             <Card className="p-5 sm:p-6">
               <SectionTitle>{t('course_detail.result_title')}</SectionTitle>
               {enrollment.finalGrade === 'did_not_attempt' ? (
@@ -260,17 +262,19 @@ export default async function CourseDetailPage({
               ) : (
                 <>
                   <p className="mt-3 text-3xl font-bold tracking-tight text-ink">
-                    {enrollment.finalGrade}
+                    {formatNumber(enrollment.finalGrade, locale)}
                     <span className="text-base font-semibold text-muted-foreground">
                       {' '}
                       {t('course_detail.result_grade_scale')}
                     </span>
                   </p>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {enrollment.finalGrade >= 14
-                      ? t('course_detail.result_pass_note')
-                      : t('course_detail.result_fail_note')}
-                  </p>
+                  {passingGrade !== null && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {enrollment.finalGrade >= passingGrade
+                        ? t('course_detail.result_pass_note', { passingGrade })
+                        : t('course_detail.result_fail_note', { passingGrade })}
+                    </p>
+                  )}
                 </>
               )}
             </Card>

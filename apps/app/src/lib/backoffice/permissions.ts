@@ -320,6 +320,15 @@ export function canResendEmail(role: StaffRole): boolean {
 }
 
 /**
+ * Who sends a proof of an automatic e-mail (OOC-89): the same cargos as the
+ * resend — a proof is a real e-mail leaving the platform. The API enforces the
+ * same list (`EMAIL_PROOF_ROLES`).
+ */
+export function canSendEmailProof(role: StaffRole): boolean {
+  return canResendEmail(role)
+}
+
+/**
  * Who opens the platform settings. Management only: that screen holds the grade
  * that decides who is certified and the tolerance the platform approves a
  * receipt with when nobody is looking.

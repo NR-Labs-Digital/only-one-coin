@@ -62,6 +62,22 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** The final grade was posted (OOC-38) — final once posted. `grade` is the
+   * 0–20 grade as typed (up to two decimals); `passingGrade` is the pass mark
+   * from `platform_settings` at the time, so the e-mail never hardcodes 14. */
+  grade_posted: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    grade: number;
+    passingGrade: number;
+  };
+  /** The final exam was not sat (DA) — the module's grade is DA (OOC-38). */
+  grade_did_not_sit: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;

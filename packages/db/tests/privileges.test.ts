@@ -151,6 +151,15 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("procedure_prices"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A posted grade is final (OOC-38, decision 08/10/2026).
+  it("refuses UPDATE on grades", async () => {
+    expect(await answerTo(`update grades set score = score where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on grades", async () => {
+    expect(await answerTo(deleteFrom("grades"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("refuses TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_GRANT);
   });
@@ -254,6 +263,15 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on procedure_prices", async () => {
     expect(await answerTo(deleteFrom("procedure_prices"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // A posted grade is final (OOC-38, decision 08/10/2026).
+  it("refuses UPDATE on grades", async () => {
+    expect(await answerTo(`update grades set score = score where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on grades", async () => {
+    expect(await answerTo(deleteFrom("grades"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

@@ -88,6 +88,7 @@ export class EmailDeliveryQuery {
                ${deliveryStudentIdSql} as student_id
           from outbox o
          where o.status = 'failed'
+           and not o.is_proof
            and o.template_key in (${sql.join(
              templates.map((template) => sql`${template}`),
              sql`, `,

@@ -153,9 +153,9 @@
       "module_price": "Preço por módulo",
       "result_title": "Seu resultado",
       "result_grade_scale": "/ 20",
-      "result_pass_note": "Nota de aprovação (mínimo 14): seu certificado gratuito é emitido em até 25 dias úteis.",
-      "result_fail_note": "O certificado exige nota mínima de 14.",
-      "result_did_not_attempt": "Você não fez o exame final (DA), portanto não há certificado. Você pode solicitar o exame de segunda chamada em Solicitações.",
+      "result_pass_note": "Você foi aprovado: a nota mínima é {passingGrade}.",
+      "result_fail_note": "Você não alcançou a nota mínima, que é {passingGrade}.",
+      "result_did_not_attempt": "Você não fez o exame final, então o módulo ficou registrado como DA.",
       "enrolled_on": "Matriculada em {date}",
       "period_dates": "De {start} a {end}"
     },

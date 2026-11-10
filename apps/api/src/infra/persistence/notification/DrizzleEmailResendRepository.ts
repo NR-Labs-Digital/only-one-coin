@@ -17,11 +17,13 @@ interface RawDelivery extends Record<string, unknown> {
 export class DrizzleEmailResendRepository implements IEmailDeliveryRepository {
   constructor(private readonly db: Db) {}
 
+  /** A proof (OOC-89) is not a delivery to anybody's file, so it is not found. */
   async findDelivery(outboxId: string): Promise<FailedDelivery | null> {
     const result = await this.db.execute<RawDelivery>(sql`
       select o.id, o.template_key, o.dedupe_key, o.status, ${deliveryStudentIdSql} as student_id
         from outbox o
        where o.id = ${outboxId}
+         and not o.is_proof
     `);
     const row = result.rows[0];
     if (!row) return null;

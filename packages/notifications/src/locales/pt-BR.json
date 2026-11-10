@@ -4,6 +4,9 @@
     "signature": "Equipe Only One Coin",
     "footer": "Esta é uma mensagem automática da Only One Coin. Por favor, não responda a este e-mail."
   },
+  "proof": {
+    "subjectPrefix": "[PRUEBA]"
+  },
   "templates": {
     "enrollment_received": {
       "subject": "Recebemos a matrícula de {studentName}",
@@ -118,6 +121,23 @@
         "Alguém que conhece a senha da sua conta no painel da Only One Coin está entrando ou ativando a verificação em duas etapas. Para continuar, digite este código:",
         "{code}",
         "O código vence em 10 minutos e só pode ser usado uma vez. Se não foi você, não o compartilhe com ninguém e troque sua senha: sem este código ninguém entra na sua conta."
+      ]
+    },
+    "grade_posted": {
+      "subject": "Nota final de {courseName}: {grade}",
+      "preheader": "A nota do exame final já foi lançada.",
+      "paragraphs": [
+        "A nota final de {studentName} em {courseName} é {grade}, na escala de 0 a 20. É a nota do exame final, que é a nota do módulo.",
+        "A nota mínima para aprovação é {passingGrade}.",
+        "A nota já está lançada e você pode vê-la no portal do aluno."
+      ]
+    },
+    "grade_did_not_sit": {
+      "subject": "Resultado de {courseName}: não fez o exame final",
+      "preheader": "O módulo ficou registrado como DA.",
+      "paragraphs": [
+        "{studentName} não fez o exame final de {courseName}, então o módulo ficou registrado como DA (reprovado por não fazer o exame).",
+        "Você pode ver o resultado no portal do aluno."
       ]
     }
   }

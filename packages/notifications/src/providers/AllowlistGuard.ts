@@ -29,7 +29,8 @@ const REDIRECTED_OUTSIDE_PRODUCTION: ReadonlySet<OutgoingEmail["templateKey"]> =
  * `REDIRECTED_OUTSIDE_PRODUCTION` addressed to someone off the list is sent to
  * every exact address on the list instead (domain entries name no inbox). It
  * still reaches nobody outside the allowlist; it only changes who on it gets
- * the code. No exact address configured → refused like any other.
+ * the code. No exact address configured → refused like any other. A proof
+ * from the e-mail screen is refused like any other too.
  */
 export class AllowlistGuard implements NotificationProvider {
   private readonly addresses: Set<string>;
@@ -58,7 +59,9 @@ export class AllowlistGuard implements NotificationProvider {
     if (this.allows(email.to)) {
       return this.inner.sendEmail(email);
     }
-    if (REDIRECTED_OUTSIDE_PRODUCTION.has(email.templateKey) && this.addresses.size > 0) {
+    // A proof (OOC-89) is never redirected: whoever typed the address asked
+    // for that inbox, and a sample code landing in everybody's would be noise.
+    if (!email.proof && REDIRECTED_OUTSIDE_PRODUCTION.has(email.templateKey) && this.addresses.size > 0) {
       const sent: string[] = [];
       for (const address of this.addresses) {
         const { providerId } = await this.inner.sendEmail({ ...email, to: address });

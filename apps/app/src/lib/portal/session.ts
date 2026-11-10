@@ -48,6 +48,7 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
   const enrollments = overview.enrollments.map(toEnrollment)
   return {
     student: overview.student,
+    passingGrade: overview.passingGrade,
     enrollments,
     requests: overview.requests.map(toRequest),
     procedures: overview.procedures.map(toProcedure),

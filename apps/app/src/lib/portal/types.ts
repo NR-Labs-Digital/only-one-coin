@@ -292,9 +292,10 @@ export interface Enrollment {
    */
   classAccessLock: ClassAccessLock
   /**
-   * Final grade once the class group closes. ≥ 14 earns the free certificate;
-   * `did_not_attempt` (DA — skipped the final exam) never does
-   * (docs/DOCUMENTOS-E-CERTIFICADOS.md). Null while the course runs.
+   * The final exam's grade, the module's one grade, from the moment the
+   * teacher posts it (OOC-38) — final then. Compared with the session's
+   * `passingGrade`, never a constant. `did_not_attempt` is DA (skipped the
+   * final exam). Null while nothing is posted.
    */
   finalGrade: number | 'did_not_attempt' | null
   /**
@@ -370,6 +371,8 @@ export interface ContinuationOffer {
 /** Everything the portal needs for one signed-in student. */
 export interface PortalSession {
   student: Student
+  /** The pass mark a final grade is compared with (`platform_settings`, OOC-41); null when it could not be read. */
+  passingGrade: number | null
   enrollments: Enrollment[]
   requests: StudentRequest[]
   procedures: ProcedureCatalogItem[]

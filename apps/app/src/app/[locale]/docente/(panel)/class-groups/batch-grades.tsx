@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { BoIcon } from '@/components/backoffice/icons'
+import { readGradeDraft, writeGradeDraft, type GradeDraftRow } from '@/lib/docente/grade-outbox'
 import { DA_MARK, parseGrade, type GradeSheetRow } from './grade-sheet'
 
 /** What the batch posts for one student — only the cells that were filled. */
@@ -21,10 +22,7 @@ export interface BatchEntry {
   grade: number | 'da'
 }
 
-interface RowDraft {
-  grade: string
-  da: boolean
-}
+type RowDraft = GradeDraftRow
 
 const EMPTY: RowDraft = { grade: '', da: false }
 
@@ -34,13 +32,20 @@ const EMPTY: RowDraft = { grade: '', da: false }
  * one-grade dialog — empty cells are skipped, a posted grade is final, DA only
  * while no exam grade exists — and the review step repeats every value before
  * anything is written.
+ *
+ * What is typed is kept on the device as it is typed (OOC-38): a phone that
+ * reloads, or a teacher who closes the dialog by mistake, finds the cells as
+ * they were. The parent remounts it on every open (`key`), which is when the
+ * draft is read back; it is cleared once the batch is posted.
  */
 export function BatchGrades({
+  classGroupId,
   open,
   onOpenChange,
   students,
   onPost,
 }: {
+  classGroupId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Students whose final-exam grade is still open. */
@@ -49,13 +54,17 @@ export function BatchGrades({
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
-  const [rows, setRows] = useState<Record<string, RowDraft>>({})
+  const [rows, setRows] = useState<Record<string, RowDraft>>(() =>
+    typeof window === 'undefined' ? {} : readGradeDraft(classGroupId),
+  )
   const [reviewing, setReviewing] = useState(false)
 
   const rowOf = (id: string) => rows[id] ?? EMPTY
 
   function update(id: string, next: Partial<RowDraft>) {
-    setRows((current) => ({ ...current, [id]: { ...rowOf(id), ...next } }))
+    const updated = { ...rows, [id]: { ...rowOf(id), ...next } }
+    setRows(updated)
+    writeGradeDraft(classGroupId, updated)
   }
 
   const invalid = (row: RowDraft) =>
@@ -70,14 +79,16 @@ export function BatchGrades({
 
   const anyInvalid = students.some((student) => invalid(rowOf(student.enrollmentId)))
 
+  /* Closing keeps the draft: only posting it clears it. */
   function close() {
     onOpenChange(false)
     setReviewing(false)
-    setRows({})
   }
 
   function confirm() {
     onPost(entries)
+    writeGradeDraft(classGroupId, {})
+    setRows({})
     close()
   }
 
