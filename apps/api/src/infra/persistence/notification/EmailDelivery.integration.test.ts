@@ -12,6 +12,7 @@ import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/Driz
 import { DrizzlePlanPriceLookup } from "@/infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { DrizzleEmailResendRepository } from "./DrizzleEmailResendRepository.js";
 import { EmailDeliveryQuery } from "./EmailDeliveryQuery.js";
+import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
 
 /**
  * The undelivered e-mails screen (OOC-90) against a real, migrated Postgres:
@@ -112,20 +113,21 @@ async function seed(tx: Db): Promise<{ enrollmentRow: string; paymentRow: string
     phone: "+51987654322",
   });
 
+  const { actorId, receiptUploadId } = await seedManualReceipt(tx, "staff-integration");
   const { enrollment, payment } = await new CreateManualEnrollmentUseCase(
     new DrizzleEnrollmentRepository(tx),
     new DrizzlePlanPriceLookup(tx),
     new DrizzleEnrollmentEmailContextLookup(tx),
     new DrizzleAuditLogRepository(tx),
   ).run({
-    actorId: "staff-integration",
+    actorId,
     studentId: STUDENT,
     planId: PLAN,
     classGroupId: CLASS_GROUP,
     method: "yape",
     methodDetail: null,
     operationNumber: "00099111",
-    receiptAttached: true,
+    receiptUploadId,
   });
 
   const [enrollmentRow] = await tx

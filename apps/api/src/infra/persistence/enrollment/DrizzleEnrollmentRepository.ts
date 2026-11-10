@@ -1,6 +1,7 @@
 import {
   ClassGroupFullError,
   Enrollment,
+  ReceiptNotReadyError,
   Payment,
   type EmailNotification,
   type EnrollmentOrigin,
@@ -9,8 +10,8 @@ import {
   type PaymentStatus,
   type SeatStatus,
 } from "@ooc/domain";
-import { classGroups, enrollments, payments, waitlistEntries } from "@ooc/db";
-import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
+import { classGroups, enrollments, payments, receiptUploads, waitlistEntries } from "@ooc/db";
+import { and, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
@@ -22,10 +23,31 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
     enrollment: Enrollment;
     payment: Payment;
     notifications: EmailNotification[];
+    receipt: { receiptUploadId: string; uploadedBy: string };
   }): Promise<{ enrollment: Enrollment; payment: Payment }> {
     const { enrollment, payment } = params;
 
     return this.db.transaction(async (tx) => {
+      // The receipt is mandatory (OOC-146): this account's own upload,
+      // confirmed, and not yet paying for anything. Locked first, so two
+      // submits with the same file never both attach it — and checked before
+      // the seat is taken, so a refusal costs nothing to undo.
+      const [receipt] = await tx
+        .select({ id: receiptUploads.id })
+        .from(receiptUploads)
+        .where(
+          and(
+            eq(receiptUploads.id, params.receipt.receiptUploadId),
+            eq(receiptUploads.uploadedBy, params.receipt.uploadedBy),
+            inArray(receiptUploads.status, ["uploaded", "processed"]),
+            isNull(receiptUploads.paymentId),
+          ),
+        )
+        .for("update");
+      if (!receipt) {
+        throw new ReceiptNotReadyError();
+      }
+
       // Staff typing an operation number that already paid for someone else
       // is refused the same way the checkout is (OOC-22) — before the seat
       // is taken, so a refusal costs nothing to undo.
@@ -93,6 +115,13 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
       if (!paymentRow) {
         throw new Error("Insert into payments returned no row");
       }
+
+      // Filled the moment the payment exists, as the checkout does: from
+      // here the relay offers the file to the OCR ladder.
+      await tx
+        .update(receiptUploads)
+        .set({ paymentId: paymentRow.id, updatedAt: sql`now()` })
+        .where(eq(receiptUploads.id, receipt.id));
 
       // A seat taken from the waitlist closes the student's place in the
       // queue in the same transaction (OOC-35) — the queue never shows

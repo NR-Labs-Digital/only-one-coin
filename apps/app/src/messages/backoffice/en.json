@@ -596,7 +596,7 @@
       "rejected": "Rejected"
     },
     "payment_status": {
-      "pending": "Pending",
+      "pending": "In review",
       "under_review": "In review",
       "approved": "Approved",
       "rejected": "Rejected"
@@ -680,11 +680,8 @@
       "no_receipt_warning": "Approving without a receipt: confirm the deposit on the bank statement first.",
       "refused_receipt_warning": "This receipt's file was refused: there is no image to review. Confirm the deposit on the bank statement before approving.",
       "uploading_receipt_warning": "The receipt is still being processed: the image and the antifraud signals may show up later. If you approve now, confirm the deposit on the bank statement first.",
-      "declared_title": "What the student declared",
       "signals_title": "Antifraud screening signals",
       "signals_none": "The antifraud screening found nothing.",
-      "reading_title": "AI reading",
-      "reading_intro": "What the AI read on the receipt. The confidence is the model's own report.",
       "reading_not_read": "The AI has not read this receipt yet.",
       "reading_failed": "The AI could not read this receipt: {reason}. Check it by hand.",
       "reading_failure_provider_unavailable": "the AI service did not respond",
@@ -728,7 +725,13 @@
       "reread_not_rereadable": "This payment has no processed receipt to read again.",
       "reread_error": "The new reading could not be requested. Try again; if it keeps failing, tell the technical team.",
       "reread_note": "The AI reads the same image again. The payment’s status does not change: the decision is still yours.",
-      "procedure_note": "This payment is for a procedure: deciding it does not change the student's seat."
+      "procedure_note": "This payment is for a procedure: deciding it does not change the student's seat.",
+      "compare_title": "Receipt against what was expected",
+      "compare_col_expected": "Expected",
+      "compare_col_read": "Read on the receipt",
+      "compare_match": "Matches",
+      "compare_differs": "Does not match",
+      "compare_empty": "—"
     },
     "rejection_reason": {
       "amount_mismatch": "The amount does not match",
@@ -832,15 +835,17 @@
       "field_operation": "Operation number",
       "operation_placeholder": "e.g. 00993412",
       "attach_receipt": "Receipt image",
-      "receipt_attach": "Attach receipt",
-      "receipt_attached": "Receipt attached",
-      "notice_pending": "The seat is reserved and the payment stays open. Once the receipt arrives it joins the same review queue as every other one.",
-      "notice_under_review": "The seat is reserved and the receipt joins the review queue. No payment is ever approved from this screen.",
+      "notice_under_review": "The seat is reserved and the receipt goes through the same reading and review queue as the public form's. No payment is ever approved from this screen.",
       "create": "Create the enrollment",
       "cancel": "Cancel",
       "submit_error": "Could not create the enrollment. Try again.",
       "operation_number_used": "That operation number already paid for another enrollment with the same payment method. Check the receipt.",
-      "missing_fields": "Fill in the required fields to create the enrollment."
+      "missing_fields": "Fill in the required fields to create the enrollment.",
+      "receipt_pick": "Choose receipt image",
+      "receipt_remove": "Remove receipt",
+      "receipt_error_type": "Use a photo or screenshot in JPG, PNG or HEIC.",
+      "receipt_error_size": "The image is over 10 MB. Send a screenshot or a lighter photo.",
+      "receipt_upload_error": "Could not upload the receipt. Check the connection and try again."
     },
     "seat_status": {
       "reserved": "Reserved",
@@ -2380,6 +2385,12 @@
     "payment_origin": {
       "enrollment": "Enrollment",
       "enrollment_certificate": "Enrollment certificate"
+    },
+    "student_actions": {
+      "whatsapp": "Message {name} on WhatsApp",
+      "whatsapp_short": "WhatsApp",
+      "file": "Open {name}'s file",
+      "file_short": "File"
     }
   }
 }

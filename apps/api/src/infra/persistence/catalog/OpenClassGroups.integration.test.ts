@@ -10,6 +10,7 @@ import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/Driz
 import { DrizzleSeatHoldRepository } from "@/infra/persistence/enrollment/DrizzleSeatHoldRepository.js";
 import { GetPublicCatalogQuery } from "./GetPublicCatalogQuery.js";
 import { ListOpenClassGroupsQuery } from "./ListOpenClassGroupsQuery.js";
+import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
 
 /**
  * What "on sale" means (OOC-35), checked where it is written: a draft, a
@@ -202,11 +203,11 @@ describe("class groups on sale", () => {
         methodDetail: null,
         amountCents: 9900,
         operationNumber: "OPENCGDRAFT0001",
-        receiptAttached: false,
       });
+      const { receipt } = await seedManualReceipt(tx, "usr_open_cg_draft");
 
       await expect(
-        new DrizzleEnrollmentRepository(tx).createWithPayment({ enrollment, payment, notifications: [] }),
+        new DrizzleEnrollmentRepository(tx).createWithPayment({ enrollment, payment, notifications: [], receipt }),
       ).rejects.toBeInstanceOf(ClassGroupFullError);
     });
   });

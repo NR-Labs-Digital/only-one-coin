@@ -206,21 +206,26 @@ export function PaymentsView({
             count={activeFilters}
             panelClassName="flex-col gap-3"
           >
-            <FilterRow label={t('payments.filter_status')}>
-              <Chip
-                active={query.status === null}
-                onClick={() => navigate({ status: null })}
-                label={t('payments.filter_all')}
-              />
-              {statusesOf(query.state).map((value) => (
+            {/* The open tab is one state on screen (OOC-146), so it has no
+                status row: two chips with the same name would be a choice
+                the reader cannot make. */}
+            {statusesOf(query.state).length > 0 && (
+              <FilterRow label={t('payments.filter_status')}>
                 <Chip
-                  key={value}
-                  active={query.status === value}
-                  onClick={() => navigate({ status: value })}
-                  label={t(`payment_status.${value}`)}
+                  active={query.status === null}
+                  onClick={() => navigate({ status: null })}
+                  label={t('payments.filter_all')}
                 />
-              ))}
-            </FilterRow>
+                {statusesOf(query.state).map((value) => (
+                  <Chip
+                    key={value}
+                    active={query.status === value}
+                    onClick={() => navigate({ status: value })}
+                    label={t(`payment_status.${value}`)}
+                  />
+                ))}
+              </FilterRow>
+            )}
             <FilterRow label={t('payments.filter_method')}>
               <Chip
                 active={query.method === null}

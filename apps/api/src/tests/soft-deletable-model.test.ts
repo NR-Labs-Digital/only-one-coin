@@ -36,7 +36,6 @@ const A_PAYMENT = {
   methodDetail: null,
   amountCents: 5000,
   operationNumber: "00123456",
-  receiptAttached: false,
 };
 
 describe("BaseModel", () => {

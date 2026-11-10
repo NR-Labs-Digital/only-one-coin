@@ -1073,6 +1073,9 @@ export interface PaymentReviewItem {
   enrollmentId: string
   studentId: string
   studentName: string
+  /** The file's mobile number, for the WhatsApp shortcut (OOC-146) — `null`
+   * for a role the API does not send it to. */
+  studentPhone: string | null
   courseName: string
   classGroupName: string
   planName: string
@@ -1209,8 +1212,9 @@ export interface NewEnrollmentInput {
   /** Only when `method` is `other`: what the operator wrote it was. */
   methodDetail: string | null
   operationNumber: string
-  /** Whether the staff member attached the receipt image while filling this in. */
-  receiptAttached: boolean
+  /** The receipt this staff account uploaded and confirmed — mandatory since
+   * OOC-146 (`lib/backoffice/manual-receipt-upload.ts`). */
+  receiptUploadId: string
 }
 
 /* -------------------------------------------------------------------------- */

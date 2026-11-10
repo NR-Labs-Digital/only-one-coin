@@ -344,6 +344,13 @@
       "when": 1794065278029,
       "tag": "0048_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794261977170,
+      "tag": "0049_receipt_upload_staff_owner",
+      "breakpoints": true
     }
   ]
 }

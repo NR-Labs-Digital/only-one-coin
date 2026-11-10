@@ -1003,11 +1003,14 @@ export const receiptUploads = pgTable(
   "receipt_uploads",
   {
     id: uuidPk(),
-    // Whose receipt this is before there is a payment: the checkout's hold, or
-    // the procedure request of a signed-in student (OOC-83) — exactly one,
+    // Whose receipt this is before there is a payment: the checkout's hold,
+    // the procedure request of a signed-in student (OOC-83), or the staff
+    // account opening a manual enrollment (OOC-146) — exactly one,
     // receipt_uploads_owner_check.
     seatHoldId: uuid("seat_hold_id").references(() => seatHolds.id, { onDelete: "restrict" }),
     procedureRequestId: uuid("procedure_request_id").references(() => procedureRequests.id, { onDelete: "restrict" }),
+    // FK to "user" written by hand in the migration, as for decided_by (0027).
+    uploadedBy: text("uploaded_by"),
     paymentId: uuid("payment_id").references(() => payments.id, { onDelete: "restrict" }),
     objectKey: text("object_key").notNull(),
     status: text("status").notNull().default("pending"),
@@ -1043,7 +1046,10 @@ export const receiptUploads = pgTable(
   },
   (table) => [
     uniqueIndex("receipt_uploads_object_key_uidx").on(table.objectKey),
-    check("receipt_uploads_owner_check", sql`num_nonnulls("seat_hold_id", "procedure_request_id") = 1`),
+    check(
+      "receipt_uploads_owner_check",
+      sql`num_nonnulls("seat_hold_id", "procedure_request_id", "uploaded_by") = 1`,
+    ),
     index("receipt_uploads_procedure_request_id_idx")
       .on(table.procedureRequestId)
       .where(sql`${table.procedureRequestId} is not null`),
