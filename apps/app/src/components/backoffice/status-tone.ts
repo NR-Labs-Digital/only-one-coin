@@ -3,8 +3,6 @@ import type {
   AuditAction,
   CertificationExamStatus,
   ClassGroupStatus,
-  DocumentStatus,
-  EmailDeliveryStatus,
   GradeStatus,
   EnrollmentStatus,
   PaymentStatus,
@@ -55,12 +53,6 @@ export const seatTone: Record<SeatStatus, Tone> = {
   released: 'neutral',
 }
 
-export const documentTone: Record<DocumentStatus, Tone> = {
-  available: 'success',
-  pending: 'warning',
-  locked: 'neutral',
-}
-
 /** The receipt traffic light (OOC-21) in its own colours. Green still waits
  *  for a person — it only says amount, number and method match. */
 export const verdictTone: Record<ReceiptVerdict, Tone> = {
@@ -98,14 +90,6 @@ export const auditTone: Record<AuditAction, Tone> = {
   payment_approved: 'success',
   payment_rejected: 'danger',
   receipt_viewed: 'neutral',
-}
-
-/** Outbox state of the e-mail that carries a document (CLAUDE.md §5). */
-export const deliveryTone: Record<EmailDeliveryStatus, Tone> = {
-  not_sent: 'neutral',
-  queued: 'info',
-  sent: 'success',
-  failed: 'danger',
 }
 
 export const classGroupTone: Record<ClassGroupStatus, Tone> = {

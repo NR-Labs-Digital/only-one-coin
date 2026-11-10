@@ -64,15 +64,6 @@
       "approved": "Aprovado",
       "rejected": "Recusado"
     },
-    "document_status": {
-      "available": "Disponível",
-      "pending": "Em processamento",
-      "locked": "Indisponível"
-    },
-    "document_type": {
-      "enrollment_certificate": "Comprovante de matrícula",
-      "certificate": "Certificado de conclusão"
-    },
     "billing_mode": {
       "package": "Pacote completo",
       "monthly": "Mensal (por módulo)"
@@ -283,11 +274,7 @@
       "submitted_body": "Estamos validando seu pagamento. Você receberá um e-mail com a confirmação e sua nova matrícula aparecerá no portal."
     },
     "documents": {
-      "title": "Documentos",
-      "empty_title": "Você ainda não tem documentos",
-      "empty_body": "Seus comprovantes e certificados aparecerão aqui quando estiverem prontos.",
-      "issued_on": "Emitido em {date}",
-      "mine_title": "Meus documentos"
+      "title": "Documentos"
     },
     "profile": {
       "title": "Meu perfil",

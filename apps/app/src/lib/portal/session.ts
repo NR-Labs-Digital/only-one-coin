@@ -35,9 +35,10 @@ export const getStudentSession = cache(async (): Promise<StudentIdentity> => {
  * memoized per request, so the layout and the page share one call. Same
  * guard as `getStudentSession`: any non-OK answer is back to the login.
  *
- * What has no backend yet arrives empty, never as sample data: documents
- * (OOC-33), notices and continuation offers. The screens already have an empty
- * state for each.
+ * What has no backend yet arrives empty, never as sample data: notices and
+ * continuation offers — the screens already have an empty state for each.
+ * Issued documents (OOC-33) are not here: they will join the student's
+ * document list (`GET /portal/attachments`, OOC-148).
  */
 export const getPortalView = cache(async (): Promise<PortalSession> => {
   const response = await apiFetch('/api/v1/portal/overview')
@@ -49,7 +50,6 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
     student: overview.student,
     passingGrade: overview.passingGrade,
     enrollments,
-    documents: [],
     requests: overview.requests.map(toRequest),
     procedures: overview.procedures.map(toProcedure),
     offers: [],

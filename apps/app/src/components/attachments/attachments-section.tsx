@@ -17,6 +17,7 @@ import {
   type AttachmentFailure,
   type AttachmentItem,
   type AttachmentList,
+  type AttachmentSource,
 } from '@/lib/attachments/types'
 
 /** What the type list says in the rules line: brand-free, short. */
@@ -30,10 +31,20 @@ const TYPE_LABELS: Record<string, string> = {
 
 type Notice = { tone: 'ok' | 'error'; key: string; values?: Record<string, string> }
 
+/** Which origin the list shows. `all` is the default; the other two are the
+ * two sides that send files (OOC-148). */
+type OriginFilter = 'all' | AttachmentSource
+
+const ORIGIN_FILTERS: readonly OriginFilter[] = ['all', 'backoffice', 'portal']
+
 /**
- * Files attached to a student (OOC-143) — the same list in the panel's student
- * file and in the student's own portal: sent from either side, with who sent
- * it. Never an issued document, and the notice saying so always shows.
+ * The student's documents (OOC-143, unified in OOC-148) — one list, the same in
+ * the panel's student file and in the student's own portal. Every row carries a
+ * label saying who sent it: the team (from the panel) or the student (from the
+ * portal), worded for whoever is reading. A filter narrows the list to one side.
+ * Still never an issued document — the notice saying so always shows; the
+ * constancia and the certificate join this list with their own label when they
+ * exist (OOC-33).
  *
  * Presentation only on top of `lib/attachments/client`: every write goes
  * through the API, and the file straight to the bucket.
@@ -64,6 +75,7 @@ export function AttachmentsSection({
   const [busy, setBusy] = useState(false)
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [origin, setOrigin] = useState<OriginFilter>('all')
 
   const limits = list?.limits ?? null
   const failureNotice = (failure: AttachmentFailure): Notice => ({
@@ -130,6 +142,11 @@ export function AttachmentsSection({
     setNotice({ tone: 'ok', key: 'removed', values: { name: item.originalName } })
     await refresh()
   }
+
+  const items = list?.items ?? []
+  const countOf = (filter: OriginFilter) =>
+    filter === 'all' ? items.length : items.filter((item) => item.source === filter).length
+  const shown = origin === 'all' ? items : items.filter((item) => item.source === origin)
 
   const rules = limits
     ? t('rules', {
@@ -231,72 +248,117 @@ export function AttachmentsSection({
         <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {t('load_error')}
         </p>
-      ) : list.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center">
           <p className="text-sm font-semibold text-ink">{t(`empty_${variant}_title`)}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t(`empty_${variant}_body`)}</p>
         </div>
       ) : (
-        <ul className="divide-y divide-line">
-          {list.items.map((item) => (
-            <li key={item.id} className="flex flex-col gap-2 py-3 first:pt-0">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <span className="flex min-w-0 flex-col leading-tight">
-                  <span className="text-sm font-semibold text-ink">{t(`category.${item.category}`)}</span>
-                  <span className="truncate text-xs text-muted-foreground">{item.originalName}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {t('meta', {
-                      size: formatFileSize(item.sizeBytes, locale),
-                      source: t(`source.${item.source}`),
-                      date: formatDate(item.uploadedAt, locale),
-                    })}
-                    {item.uploadedByName && ` · ${t('by', { name: item.uploadedByName })}`}
-                  </span>
-                </span>
-                <span className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void download(item)}
-                    className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
-                  >
-                    {t('download')}
-                  </button>
-                  {canRemove && confirmingRemove !== item.id && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingRemove(item.id)}
-                      className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:border-red-200 hover:text-red-700"
-                    >
-                      {t('remove')}
-                    </button>
+        <>
+          <div role="group" aria-label={t('filter.label')} className="flex flex-wrap gap-2">
+            {ORIGIN_FILTERS.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                aria-pressed={origin === filter}
+                onClick={() => setOrigin(filter)}
+                className={
+                  origin === filter
+                    ? 'inline-flex min-h-tap items-center gap-1.5 rounded-full bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white'
+                    : 'inline-flex min-h-tap items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-sky hover:text-brand-blue'
+                }
+              >
+                {t(`filter.${variant}.${filter}`)}
+                <span className="tabular-nums opacity-80">{countOf(filter)}</span>
+              </button>
+            ))}
+          </div>
+
+          {shown.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-xs text-muted-foreground">
+              {t(`empty_filtered.${variant}.${origin}`)}
+            </p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {shown.map((item) => (
+                <li key={item.id} className="flex flex-col gap-2 py-3 first:pt-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <span className="flex min-w-0 flex-1 items-start gap-3">
+                      <span
+                        aria-hidden
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-sky text-[0.625rem] font-bold tracking-wide text-brand-blue"
+                      >
+                        {TYPE_LABELS[item.mimeType] ?? '—'}
+                      </span>
+                      <span className="flex min-w-0 flex-col gap-1 leading-tight">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-ink">{t(`category.${item.category}`)}</span>
+                          <span
+                            className={
+                              item.source === 'backoffice'
+                                ? 'rounded-full bg-sky px-2 py-0.5 text-[0.6875rem] font-semibold text-brand-blue-deep'
+                                : 'rounded-full bg-amber-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-amber-800'
+                            }
+                          >
+                            {t(`origin.${variant}.${item.source}`)}
+                          </span>
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">{item.originalName}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t('meta', {
+                            size: formatFileSize(item.sizeBytes, locale),
+                            date: formatDate(item.uploadedAt, locale),
+                          })}
+                          {item.uploadedByName && ` · ${t('by', { name: item.uploadedByName })}`}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void download(item)}
+                        className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
+                      >
+                        {t('download')}
+                      </button>
+                      {canRemove && confirmingRemove !== item.id && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingRemove(item.id)}
+                          className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:border-red-200 hover:text-red-700"
+                        >
+                          {t('remove')}
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  {confirmingRemove === item.id && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                      <span className="text-xs text-red-800">{t('remove_question', { name: item.originalName })}</span>
+                      <span className="ml-auto flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void remove(item)}
+                          disabled={busy}
+                          className="min-h-tap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {t('remove_confirm')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingRemove(null)}
+                          className="min-h-tap rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </span>
+                    </div>
                   )}
-                </span>
-              </div>
-              {confirmingRemove === item.id && (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                  <span className="text-xs text-red-800">{t('remove_question', { name: item.originalName })}</span>
-                  <span className="ml-auto flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void remove(item)}
-                      disabled={busy}
-                      className="min-h-tap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
-                    >
-                      {t('remove_confirm')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingRemove(null)}
-                      className="min-h-tap rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground"
-                    >
-                      {t('cancel')}
-                    </button>
-                  </span>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       <p className="text-xs text-muted-foreground">{t('hint')}</p>

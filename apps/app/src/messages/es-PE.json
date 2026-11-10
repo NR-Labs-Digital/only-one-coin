@@ -176,13 +176,13 @@
     "owner_description": "Tu cuenta ve funciones que están apagadas para todos los demás."
   },
   "attachments": {
-    "title_staff": "Archivos del alumno",
-    "title_portal": "Mis archivos",
-    "empty_staff_title": "Sin archivos",
-    "empty_staff_body": "Aquí aparecen los archivos que sube el alumno desde su portal y los que adjunta el equipo.",
-    "empty_portal_title": "Todavía no enviaste archivos",
-    "empty_portal_body": "Aquí puedes enviar tu documento de identidad, el consentimiento de tu apoderado u otro archivo que te pida la coordinación.",
-    "load_error": "No pudimos cargar los archivos. Recarga la página para intentarlo de nuevo.",
+    "title_staff": "Documentos del alumno",
+    "title_portal": "Mis documentos",
+    "empty_staff_title": "Sin documentos",
+    "empty_staff_body": "Aquí aparecen los documentos que sube el alumno desde su portal y los que adjunta el equipo.",
+    "empty_portal_title": "Todavía no tienes documentos",
+    "empty_portal_body": "Aquí puedes enviar tu documento de identidad, el consentimiento de tu apoderado u otro archivo que te pida la coordinación. Lo que el equipo adjunte a tu ficha también aparece aquí.",
+    "load_error": "No pudimos cargar los documentos. Recarga la página para intentarlo de nuevo.",
     "attach": "Adjuntar archivo",
     "category_label": "Tipo de archivo",
     "file_label": "Archivo",
@@ -198,24 +198,55 @@
     "remove_confirm": "Sí, quitar",
     "remove_failed": "No pudimos quitar el archivo. Inténtalo de nuevo.",
     "removed": "«{name}» se quitó de la lista.",
-    "meta": "{size} · {source} · {date}",
+    "meta": "{size} · {date}",
     "by": "por {name}",
-    "hint": "Archivos adjuntos, no documentos de la institución: no llevan código de verificación.",
+    "hint": "Documentos adjuntos, no emitidos por la institución: no llevan código de verificación.",
     "category": {
       "national_id": "Documento de identidad",
       "guardian_consent": "Consentimiento del apoderado",
       "receipt": "Comprobante",
       "other": "Otro"
     },
-    "source": {
-      "portal": "Subido por el alumno",
-      "backoffice": "Subido por el equipo"
-    },
     "error": {
       "unsupported_type": "Este tipo de archivo no se acepta. Envía un PDF o una foto (JPG, PNG o HEIC).",
       "too_large": "El archivo está vacío o pesa más de {size}.",
       "upload_failed": "El archivo no llegó. Revisa tu conexión e inténtalo de nuevo.",
       "generic": "No pudimos enviar el archivo. Inténtalo de nuevo."
+    },
+    "origin": {
+      "staff": {
+        "portal": "Enviado por el alumno",
+        "backoffice": "Enviado por el equipo"
+      },
+      "portal": {
+        "portal": "Enviado por ti",
+        "backoffice": "Enviado por la coordinación"
+      }
+    },
+    "filter": {
+      "label": "Filtrar por origen",
+      "staff": {
+        "all": "Todos",
+        "backoffice": "Del equipo",
+        "portal": "Del alumno"
+      },
+      "portal": {
+        "all": "Todos",
+        "backoffice": "De la coordinación",
+        "portal": "Enviados por ti"
+      }
+    },
+    "empty_filtered": {
+      "staff": {
+        "all": "Sin documentos.",
+        "backoffice": "El equipo todavía no adjuntó documentos a esta ficha.",
+        "portal": "El alumno todavía no envió documentos desde su portal."
+      },
+      "portal": {
+        "all": "Todavía no tienes documentos.",
+        "backoffice": "La coordinación todavía no adjuntó documentos a tu ficha.",
+        "portal": "Todavía no enviaste documentos."
+      }
     }
   }
 }
