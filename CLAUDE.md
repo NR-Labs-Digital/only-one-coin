@@ -189,6 +189,8 @@ Hoje existem `domain/`, `queue/`, `notifications/`, `ocr/`, `templates/` e `db/`
 
 Seletor de idioma visível na interface. Roteamento: `es-PE` sem prefixo, `/en` e `/pt` prefixados.
 
+**O idioma escolhido no perfil fica na conta (OOC-150, 11/11/2026).** Perfil do aluno e *Cuenta* do painel e do docente gravam a escolha em `"user"."preferredLocale"` (`PUT /me/locale`, toda conta logada), e o login de cada porta abre no idioma salvo, em qualquer aparelho. Enquanto a pessoa navega, quem decide é o locale da rota — link compartilhado abre no idioma do link. **Os e-mails não leem a preferência:** continuam em `es-PE` (ou no idioma do formulário, no checkout). Mecanismo em `apps/api/CLAUDE.md`, "Idioma da conta".
+
 ### Regra dura de i18n
 
 **Zero string de UI dentro de `.ts` / `.tsx` / `.astro`.** Todo texto visível sai do arquivo de locale, nos três idiomas. Inclui mensagem de erro de API e corpo de e-mail. Lint quebra o build.
