@@ -107,7 +107,10 @@ export const listOwnClassGroupStudents = cache(
   },
 )
 
-/** One final grade already posted (OOC-38): the exam's, or DA in its place. Final. */
+/**
+ * One final grade as it counts (OOC-38): the exam's, or DA in its place. Final
+ * for the teacher; only the academic supervision corrects it (OOC-102).
+ */
 export interface TeachingGrade {
   enrollmentId: string
   /** 0–20, decimals allowed; null on a DA. */
@@ -115,6 +118,8 @@ export interface TeachingGrade {
   didNotSit: boolean
   /** ISO 8601 UTC. */
   recordedAt: string
+  /** When the academic supervision last corrected it (OOC-102); null = as posted. */
+  correctedAt: string | null
 }
 
 /** The grades posted in one of the teacher's class groups; null when the read failed. */

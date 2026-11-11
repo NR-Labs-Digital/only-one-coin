@@ -56,6 +56,7 @@ Idempotentes. Build de produção recusa rodar. `seed:enrollments` e `seed:load`
 - [`docs/OCR-AVALIACAO.md`](docs/OCR-AVALIACAO.md) — como medir a OCR em comprovantes reais.
 - [`docs/DOCUMENTOS-E-CERTIFICADOS.md`](docs/DOCUMENTOS-E-CERTIFICADOS.md) — constancia e certificado.
 - [`docs/INFRAESTRUTURA.md`](docs/INFRAESTRUTURA.md) — pesquisa de mercado que baseou a hospedagem.
+- [`docs/RESTAURAR-BACKUP.md`](docs/RESTAURAR-BACKUP.md) — passo a passo para restaurar um backup do banco (`scripts/restore-backup.sh`), a repetir por trimestre.
 - [`docs/FRONTEND-CONSOLIDACAO.md`](docs/FRONTEND-CONSOLIDACAO.md) — avaliação em aberto: unificar `landing` + `app`.
 - [`docs/OPEN-FINANCE-PERU.md`](docs/OPEN-FINANCE-PERU.md) — pesquisa: Open Finance no Peru.
 - [`docs/superpowers/specs/`](docs/superpowers/specs/) — desenhos das features grandes (catálogo, Pagos, semáforo, auth do aluno, verificação do e-mail no checkout).

@@ -4,7 +4,7 @@ import { listPendingTeacherClassGroups } from '@/lib/backoffice/catalog'
 
 /**
  * The Académico section's tabs: class groups, the ones still waiting for a
- * teacher (OOC-97), courses and the language list the courses are filed under
+ * teacher (OOC-97), the teachers' calendar (OOC-99), courses and the language list the courses are filed under
  * (OOC-128). One copy, so the pages never disagree on the strip.
  *
  * The pending tab carries its count on every page of the section — it is a
@@ -23,6 +23,7 @@ export async function AcademicTabs() {
           label: t('class_groups.pending_tab'),
           count: pending?.length,
         },
+        { href: '/backoffice/teacher-calendar', label: t('teacher_calendar.tab') },
         { href: '/backoffice/courses', label: t('courses.title') },
         { href: '/backoffice/languages', label: t('languages.title') },
       ]}

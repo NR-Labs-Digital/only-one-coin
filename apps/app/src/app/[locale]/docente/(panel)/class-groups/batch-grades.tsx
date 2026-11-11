@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { BoIcon } from '@/components/backoffice/icons'
 import { readGradeDraft, writeGradeDraft, type GradeDraftRow } from '@/lib/docente/grade-outbox'
-import { DA_MARK, parseGrade, type GradeSheetRow } from './grade-sheet'
+import { DA_MARK, parseGrade, type GradeSheetRow } from '@/lib/grade-sheet'
 
 /** What the batch posts for one student — only the cells that were filled. */
 export interface BatchEntry {

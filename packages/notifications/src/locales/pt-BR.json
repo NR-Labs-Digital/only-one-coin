@@ -139,6 +139,23 @@
         "{studentName} não fez o exame final de {courseName}, então o módulo ficou registrado como DA (reprovado por não fazer o exame).",
         "Você pode ver o resultado no portal do aluno."
       ]
+    },
+    "grade_corrected": {
+      "subject": "Nota corrigida de {courseName}: {grade}",
+      "preheader": "A coordenação acadêmica corrigiu a nota do exame final.",
+      "paragraphs": [
+        "A coordenação acadêmica corrigiu a nota final de {studentName} em {courseName}. A nota que vale agora é {grade}, na escala de 0 a 20.",
+        "A nota mínima para aprovação é {passingGrade}.",
+        "Você pode ver a nota corrigida no portal do aluno."
+      ]
+    },
+    "grade_corrected_did_not_sit": {
+      "subject": "Resultado corrigido de {courseName}: não fez o exame final",
+      "preheader": "A coordenação acadêmica corrigiu o resultado do módulo.",
+      "paragraphs": [
+        "A coordenação acadêmica corrigiu o resultado de {studentName} em {courseName}: o módulo ficou registrado como DA (reprovado por não fazer o exame).",
+        "Você pode ver o resultado no portal do aluno."
+      ]
     }
   }
 }

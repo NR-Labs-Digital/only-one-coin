@@ -100,6 +100,16 @@ describe('postGrades', () => {
     await expect(postGrades('g1', [{ enrollmentId: 'e1', grade: 14 }])).resolves.toBe(expected)
   })
 
+  it('reads a posting that finished the module as finished (OOC-102)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ recorded: 1, alreadyRecorded: 0, finished: true }), { status: 200 }),
+      ),
+    )
+    await expect(postGrades('g1', [{ enrollmentId: 'e1', grade: 14 }])).resolves.toBe('finished')
+  })
+
   it('reads a network failure as offline', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     await expect(postGrades('g1', [{ enrollmentId: 'e1', grade: 14 }])).resolves.toBe('offline')

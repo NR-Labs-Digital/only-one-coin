@@ -3,7 +3,7 @@ import {
   classGroups,
   courses,
   enrollments,
-  grades,
+  currentGrades,
   payments,
   platformSettings,
   planPrices,
@@ -141,9 +141,9 @@ export class StudentPortalQuery {
         planName: plans.name,
         planPriceId: planPrices.id,
         planPriceCents: planPrices.amountCents,
-        gradeScore: grades.score,
-        gradeDidNotSit: grades.didNotSit,
-        gradeRecordedAt: grades.createdAt,
+        gradeScore: currentGrades.score,
+        gradeDidNotSit: currentGrades.didNotSit,
+        gradeRecordedAt: currentGrades.recordedAt,
       })
       .from(enrollments)
       // A retired course or class group still labels the enrollment that
@@ -153,8 +153,12 @@ export class StudentPortalQuery {
       .innerJoin(academicPeriods, eq(academicPeriods.id, classGroups.academicPeriodId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
       .innerJoin(plans, eq(plans.id, planPrices.planId))
-      // The grade of this seat in this class group (OOC-38) — one at most.
-      .leftJoin(grades, and(eq(grades.enrollmentId, enrollments.id), eq(grades.classGroupId, enrollments.classGroupId)))
+      // The grade that counts for this seat in this class group — the posted
+      // one or its last correction (OOC-38, OOC-102), one at most.
+      .leftJoin(
+        currentGrades,
+        and(eq(currentGrades.enrollmentId, enrollments.id), eq(currentGrades.classGroupId, enrollments.classGroupId)),
+      )
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));
 

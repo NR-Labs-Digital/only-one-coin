@@ -140,6 +140,9 @@ export const AUDIT_ACTIONS = {
   // A teacher posting final grades (OOC-38): the target is the class group;
   // the seats travel in metadata, the grades themselves never do.
   "teaching.grades_recorded": { key: "grades_recorded", entity: "class_group", subject: "target" },
+  // The supervision correcting a posted grade (OOC-102): the seat and the
+  // correction travel in metadata; the grades and the reason never do.
+  "teaching.grade_corrected": { key: "grade_corrected", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },
   "catalog.course.updated": { key: "course_updated", entity: "course", subject: "target" },

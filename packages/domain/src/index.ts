@@ -68,18 +68,31 @@ export {
   MIN_GRADE,
   isValidScore,
   sameGrade,
+  MAX_CORRECTION_REASON_LENGTH,
+  type CorrectGradeOutcome,
   type GradeEntry,
+  type GradeHistoryEntry,
   type GradeValue,
+  type GradeWithHistory,
   type IGradeRepository,
   type RecordedGrade,
   type RecordGradesResult,
 } from "./teaching/Grade.js";
+export { GRADING_OPEN, postGrades } from "./teaching/gradePosting.js";
+export {
+  ListClassGroupGradesUseCase,
+  RecordClassGroupGradesUseCase,
+  CorrectClassGroupGradeUseCase,
+  type ClassGroupGradeSheet,
+  type RecordClassGroupGradesInput,
+  type CorrectClassGroupGradeInput,
+} from "./teaching/ClassGroupGradesUseCases.js";
 export {
   ListOwnClassGroupGradesUseCase,
   RecordOwnClassGroupGradesUseCase,
   type RecordOwnClassGroupGradesInput,
 } from "./teaching/OwnClassGroupGradesUseCases.js";
-export { gradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
+export { gradeEmails, correctedGradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
 export {
   Guardian,
   GuardianPropsSchema,

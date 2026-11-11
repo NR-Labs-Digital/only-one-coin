@@ -14,7 +14,7 @@ import {
   weekdayOf,
   type AgendaEvent,
   type AgendaClassGroup,
-} from '@/lib/docente/agenda'
+} from '@/lib/agenda'
 import {
   formatDate,
   formatMonthYear,
@@ -27,11 +27,15 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { ClassLinks } from '@/components/backoffice/class-links'
 
 /**
- * The teacher's agenda, the way a calendar app reads: a week as a grid of
+ * A class agenda, the way a calendar app reads: a week as a grid of
  * hours, a month as a wall calendar. Every class is a class group's weekly
  * slot landed on a date between its first and last day — derived, never
  * stored, so the agenda cannot disagree with the class groups. Each block is
  * as long as its slot.
+ *
+ * Two screens draw it: the teacher's own agenda (`/docente/agenda`) and
+ * coordination's teacher calendar (`/backoffice/teacher-calendar`, OOC-99),
+ * which also names the teacher on every class.
  */
 
 const VIEWS = ['week', 'month'] as const
@@ -53,11 +57,14 @@ function eventKey(event: AgendaEvent): string {
   return `${event.group.id}:${event.day}:${event.startTime}`
 }
 
-export function TeacherAgenda({
+export function ClassAgenda({
   groups,
   today,
   nowMinutes,
   classLinks,
+  classGroupBasePath,
+  showTeacher = false,
+  emptyText,
 }: {
   groups: AgendaClassGroup[]
   /** Today in Lima, `YYYY-MM-DD` — from the server, so both renders agree. */
@@ -66,6 +73,12 @@ export function TeacherAgenda({
   nowMinutes: number
   /** `teacher.class_links`: the class group's Classroom door (OOC-98). */
   classLinks: boolean
+  /** Where a class group opens: the teacher's portal or the backoffice. */
+  classGroupBasePath: '/docente/class-groups' | '/backoffice/class-groups'
+  /** Names the teacher on each class — the backoffice calendar, never the teacher's own. */
+  showTeacher?: boolean
+  /** Said under the grid when no class group has a date to draw. */
+  emptyText: string
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -150,6 +163,7 @@ export function TeacherAgenda({
           groups={groups}
           today={today}
           nowMinutes={nowMinutes}
+          showTeacher={showTeacher}
           selectedKey={selected ? eventKey(selected) : null}
           onSelect={setSelected}
         />
@@ -177,6 +191,12 @@ export function TeacherAgenda({
               <p className="text-xs tabular-nums text-muted-foreground">
                 {`${selected.group.code} · ${selected.group.academicPeriodName}`}
               </p>
+              {showTeacher && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-ink">
+                  <BoIcon name="teachers" size={14} />
+                  {selected.group.teacherName}
+                </p>
+              )}
             </div>
             <span className="flex items-center gap-2">
               <StatusBadge
@@ -196,7 +216,7 @@ export function TeacherAgenda({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {classLinks && <ClassLinks classroomUrl={selected.group.classroomUrl} />}
             <Link
-              href={`/docente/class-groups/${selected.group.id}`}
+              href={`${classGroupBasePath}/${selected.group.id}`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-blue transition hover:text-brand-blue-deep"
             >
               {t('agenda.open_class_group')}
@@ -209,7 +229,7 @@ export function TeacherAgenda({
       {groups.length === 0 && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <BoIcon name="clock" size={15} />
-          {t('agenda.empty')}
+          {emptyText}
         </p>
       )}
     </div>
@@ -244,6 +264,7 @@ function WeekView({
   groups,
   today,
   nowMinutes,
+  showTeacher,
   selectedKey,
   onSelect,
 }: {
@@ -251,6 +272,7 @@ function WeekView({
   groups: AgendaClassGroup[]
   today: string
   nowMinutes: number
+  showTeacher: boolean
   selectedKey: string | null
   onSelect: (event: AgendaEvent) => void
 }) {
@@ -314,6 +336,9 @@ function WeekView({
                   <span className="truncate tabular-nums opacity-80">
                     {`${event.startTime} · ${event.group.code}`}
                   </span>
+                  {showTeacher && (
+                    <span className="truncate opacity-80">{event.group.teacherName}</span>
+                  )}
                 </button>
               )
             })}

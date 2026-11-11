@@ -1,11 +1,11 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
-import { listOwnClassGroups } from '@/lib/docente/teaching'
-import { agendaClassGroup, type AgendaClassGroup } from '@/lib/docente/agenda'
+import { isTeaching, listOwnClassGroups } from '@/lib/docente/teaching'
+import { agendaClassGroup, type AgendaClassGroup } from '@/lib/agenda'
 import { isoToLimaDateTime } from '@/lib/backoffice/lima-date'
 import { toMinutes } from '@/lib/backoffice/availability'
 import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
-import { TeacherAgenda } from './teacher-agenda'
+import { ClassAgenda } from '@/components/agenda/class-agenda'
 
 /**
  * Agenda — the teacher's classes on a calendar, week and month. Built from
@@ -35,23 +35,26 @@ export default async function TeacherAgendaPage({
           title={t('teacher_home.load_error_title')}
           body={t('teacher_home.load_error_body')}
         />
-      ) : classGroups.length === 0 ? (
-        /* Nothing to teach: the same state as the home, not an empty
-           calendar (OOC-101). `agenda.empty` stays for the teacher whose
-           class groups have no dates yet to draw. */
+      ) : !classGroups.some(isTeaching) ? (
+        /* Nothing active — a finished class group no longer counts (OOC-102):
+           the same state as the home, not a calendar of past classes
+           (OOC-101). `agenda.empty` stays for the teacher whose class groups
+           have no dates yet to draw. */
         <EmptyState
           icon="courses"
           title={t('teacher_home.no_active_title')}
           body={t('teacher_home.no_active_body')}
         />
       ) : (
-        <TeacherAgenda
+        <ClassAgenda
           groups={classGroups
             .map(agendaClassGroup)
             .filter((group): group is AgendaClassGroup => group !== null)}
           today={now.slice(0, 10)}
           nowMinutes={toMinutes(now.slice(11, 16))}
           classLinks={flags['teacher.class_links']}
+          classGroupBasePath="/docente/class-groups"
+          emptyText={t('agenda.empty')}
         />
       )}
     </div>

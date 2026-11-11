@@ -1,8 +1,23 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, auditLog, classGroups, courses, enrollments, grades, outbox, planPrices, plans, students } from "@ooc/db";
+import {
+  academicPeriods,
+  auditLog,
+  classGroups,
+  courses,
+  currentGrades,
+  enrollments,
+  gradeCorrections,
+  grades,
+  outbox,
+  planPrices,
+  plans,
+  students,
+} from "@ooc/db";
 import {
   CatalogClassGroupNotFoundError,
+  CorrectClassGroupGradeUseCase,
   GetOwnClassGroupUseCase,
+  ListClassGroupGradesUseCase,
   GetTeachingSummaryUseCase,
   ListOwnClassGroupStudentsUseCase,
   ListOwnClassGroupsUseCase,
@@ -369,13 +384,17 @@ describe("final grades (OOC-38)", () => {
       const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
       const entry = { enrollmentId: lucia!.enrollmentId, value: { kind: "score" as const, score: 13.75 } };
 
+      // Lucía is the class group's only confirmed seat: her grade completes
+      // the sheet and finishes the module (OOC-102).
       await expect(record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [entry] })).resolves.toEqual({
         recorded: 1,
         alreadyRecorded: 0,
+        finished: true,
       });
       await expect(record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [entry] })).resolves.toEqual({
         recorded: 0,
         alreadyRecorded: 1,
+        finished: false,
       });
 
       const posted = await list.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
@@ -447,6 +466,148 @@ describe("final grades (OOC-38)", () => {
           entries: [{ enrollmentId: marco!.enrollmentId, value: { kind: "score", score: 20 } }],
         }),
       ).rejects.toMatchObject({ status: 422, reason: "teaching.grade_unknown_enrollment" });
+    });
+  });
+});
+
+describe("finishing the module and correcting grades (OOC-102)", () => {
+  const SUPERVISOR = "usr_ooc102_supervisor";
+
+  function supervision(tx: Db) {
+    const teachers = new DrizzleTeacherRepository(tx);
+    const reader = new DrizzleTeachingReader(tx, new ClassGroupRosterQuery(tx));
+    const get = new GetOwnClassGroupUseCase(teachers, reader);
+    const repository = new DrizzleGradeRepository(tx);
+    const settings = new DrizzlePlatformSettingsRepository(tx);
+    return {
+      repository,
+      roster: new ListOwnClassGroupStudentsUseCase(get, reader),
+      record: new RecordOwnClassGroupGradesUseCase(get, reader, repository, settings),
+      sheet: new ListClassGroupGradesUseCase(reader, repository),
+      correct: new CorrectClassGroupGradeUseCase(reader, repository, settings),
+    };
+  }
+
+  async function withSupervisor(tx: Db) {
+    await tx.execute(
+      sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
+          values (${SUPERVISOR}, 'Lucía Supervisora', 'ooc102.sup@test.local', true, 'academic_supervisor', now(), now())`,
+    );
+  }
+
+  it("moves the class group to finished, with its audit entry, when the last seat is graded", async () => {
+    await seeded(async (tx) => {
+      const { roster, record } = supervision(tx);
+      const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      await record.run({
+        userId: A_ACCOUNT,
+        classGroupId: A_RUNNING,
+        entries: [{ enrollmentId: lucia!.enrollmentId, value: { kind: "did_not_sit" } }],
+      });
+
+      const [group] = await tx.select({ status: classGroups.status }).from(classGroups).where(eq(classGroups.id, A_RUNNING));
+      expect(group!.status).toBe("finished");
+      const moved = await tx
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "catalog.class_group.status_changed"), eq(auditLog.targetId, A_RUNNING)));
+      expect(moved).toHaveLength(1);
+      expect(moved[0]).toMatchObject({
+        actorId: A_ACCOUNT,
+        metadata: { from: "in_progress", to: "finished", cause: "grades_completed" },
+      });
+    });
+  });
+
+  it("corrects a grade twice: the posted row stays, the line grows, and every reader sees the last one", async () => {
+    await seeded(async (tx) => {
+      await withSupervisor(tx);
+      const { roster, record, sheet, correct, repository } = supervision(tx);
+      const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      const enrollmentId = lucia!.enrollmentId;
+      const posted = { enrollmentId, value: { kind: "score" as const, score: 11 } };
+      await record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [posted] });
+
+      const first = await correct.run({
+        actorId: SUPERVISOR,
+        classGroupId: A_RUNNING,
+        enrollmentId,
+        value: { kind: "score", score: 14.5 },
+        reason: "Error de digitación",
+      });
+      const second = await correct.run({
+        actorId: SUPERVISOR,
+        classGroupId: A_RUNNING,
+        enrollmentId,
+        value: { kind: "did_not_sit" },
+        reason: "No rindió: la nota era de otro alumno",
+      });
+
+      // The posted grade never changed.
+      const [row] = await tx.select().from(grades).where(eq(grades.enrollmentId, enrollmentId));
+      expect(row).toMatchObject({ score: 11, didNotSit: false, recordedBy: A_ACCOUNT });
+
+      // A straight line: the second replaces the first.
+      const line = await tx.select().from(gradeCorrections).where(eq(gradeCorrections.gradeId, row!.id));
+      expect(line.find((link) => link.id === second.correctionId)?.replacesId).toBe(first.correctionId);
+      expect(line.find((link) => link.id === first.correctionId)?.replacesId).toBeNull();
+
+      // The teacher's sheet and the supervision read the last one.
+      expect(await repository.listForClassGroup(A_RUNNING)).toEqual([
+        expect.objectContaining({ enrollmentId, value: { kind: "did_not_sit" }, correctedAt: expect.any(Date) }),
+      ]);
+      const read = await sheet.run({ classGroupId: A_RUNNING });
+      expect(read.seats[0]!.grade!.history.map((step) => [step.value, step.byName, step.reason])).toEqual([
+        [{ kind: "score", score: 11 }, "Ana Docente", null],
+        [{ kind: "score", score: 14.5 }, "Lucía Supervisora", "Error de digitación"],
+        [{ kind: "did_not_sit" }, "Lucía Supervisora", "No rindió: la nota era de otro alumno"],
+      ]);
+
+      // The teacher's sheet resending what it posted is still a retry, not a conflict.
+      await expect(record.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, entries: [posted] })).resolves.toMatchObject({
+        recorded: 0,
+        alreadyRecorded: 1,
+      });
+
+      // One e-mail per correction, the audit without grades or reason.
+      const mails = await tx
+        .select({ templateKey: outbox.templateKey, vars: outbox.vars })
+        .from(outbox)
+        .where(sql`${outbox.dedupeKey} like 'grade_corrected%'`);
+      expect(mails.map((mail) => mail.templateKey).sort()).toEqual(["grade_corrected", "grade_corrected_did_not_sit"]);
+      const audits = await tx
+        .select({ metadata: auditLog.metadata })
+        .from(auditLog)
+        .where(eq(auditLog.action, "teaching.grade_corrected"));
+      expect(audits).toHaveLength(2);
+      expect(JSON.stringify(audits)).not.toContain("digitación");
+      expect(JSON.stringify(audits)).not.toContain("14.5");
+    });
+  });
+
+  it("lets the database refuse a second correction replacing the same one", async () => {
+    await seeded(async (tx) => {
+      await withSupervisor(tx);
+      const { roster, record } = supervision(tx);
+      const [lucia] = await roster.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      await record.run({
+        userId: A_ACCOUNT,
+        classGroupId: A_RUNNING,
+        entries: [{ enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 11 } }],
+      });
+      const [row] = await tx.select({ id: grades.id }).from(grades).where(eq(grades.enrollmentId, lucia!.enrollmentId));
+      const link = { gradeId: row!.id, score: 12, didNotSit: false, reason: "uno", correctedBy: SUPERVISOR };
+      await tx.insert(gradeCorrections).values(link);
+
+      // Two "first corrections" of the same grade: the partial unique index says no.
+      await expect(
+        (tx as unknown as { transaction: Db["transaction"] }).transaction(async (sp) => {
+          await sp.insert(gradeCorrections).values({ ...link, reason: "dos" });
+        }),
+      ).rejects.toMatchObject({ cause: expect.objectContaining({ code: "23505" }) });
+
+      const [current] = await tx.select().from(currentGrades).where(eq(currentGrades.gradeId, row!.id));
+      expect(current).toMatchObject({ score: 12, didNotSit: false });
     });
   });
 });

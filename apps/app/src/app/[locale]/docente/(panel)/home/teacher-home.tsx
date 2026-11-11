@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import type { StaffUser } from '@/lib/backoffice/types'
-import { getTeachingSummary, listOwnClassGroups } from '@/lib/docente/teaching'
+import { getTeachingSummary, isTeaching, listOwnClassGroups } from '@/lib/docente/teaching'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
 import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDateRange, type Locale } from '@/lib/format'
@@ -60,9 +60,14 @@ export async function TeacherHome({
     )
   }
 
-  /* Nothing to teach — no class group allocated, or every one closed. Said
-     once, in place of the figures and the table (OOC-101). */
-  if (classGroups.length === 0) {
+  /* Active is enrolling or running (OOC-102): a finished class group no
+     longer counts. Nothing active — none allocated, every one closed, or only
+     finished ones — is the portal with no active courses (OOC-101), said once
+     in place of the figures and the table. A finished one stays reachable
+     from "My class groups", where its grades may still be due. */
+  const active = classGroups.filter(isTeaching)
+  const finished = classGroups.length - active.length
+  if (active.length === 0) {
     return (
       <div className="flex flex-col gap-6">
         {greeting}
@@ -71,6 +76,17 @@ export async function TeacherHome({
           title={t('teacher_home.no_active_title')}
           body={t('teacher_home.no_active_body')}
         />
+        {finished > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {t('teacher_home.finished_waiting', { count: finished })}{' '}
+            <Link
+              href="/docente/class-groups"
+              className="font-semibold text-brand-blue transition hover:text-brand-blue-deep"
+            >
+              {t('teacher_home.finished_waiting_link')}
+            </Link>
+          </p>
+        )}
       </div>
     )
   }
@@ -126,7 +142,7 @@ export async function TeacherHome({
               </tr>
             </thead>
             <tbody>
-              {classGroups.map((group) => (
+              {active.map((group) => (
                 <tr key={group.id}>
                   <td className={`${tdClass} whitespace-nowrap`}>
                     <Link

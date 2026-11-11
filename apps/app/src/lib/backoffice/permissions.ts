@@ -145,6 +145,24 @@ export function canEditTeachers(role: StaffRole): boolean {
 }
 
 /**
+ * Who reads a class group's grades in the backoffice (OOC-102): the academic
+ * supervision and management, and the analyst, who reads and never writes.
+ * Mirrors GRADE_READ_ROLES in apps/api.
+ */
+export function canReadGrades(role: StaffRole): boolean {
+  return isManagement(role) || role === 'academic_supervisor' || role === 'analyst'
+}
+
+/**
+ * Who posts a missing grade and corrects a posted one (OOC-102, decision of
+ * 10/11/2026). The readers minus the analyst. Mirrors GRADE_WRITE_ROLES in
+ * apps/api.
+ */
+export function canEditGrades(role: StaffRole): boolean {
+  return isManagement(role) || role === 'academic_supervisor'
+}
+
+/**
  * Who downloads a recorded contract — the roster's readers, analyst included;
  * the teacher does not, even on their own file. Mirrors `TEACHER_READ_ROLES`
  * on `GET /teachers/:id/contracts/:id/document` (generated, OOC-124) and
