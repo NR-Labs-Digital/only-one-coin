@@ -160,6 +160,17 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("grades"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A correction is history too: the next one replaces it (OOC-102).
+  it("refuses UPDATE on grade_corrections", async () => {
+    expect(await answerTo(`update grade_corrections set reason = reason where id = '${NO_SUCH_ID}'`)).toBe(
+      DENIED_BY_GRANT,
+    );
+  });
+
+  it("refuses DELETE on grade_corrections", async () => {
+    expect(await answerTo(deleteFrom("grade_corrections"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("refuses TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_GRANT);
   });
@@ -272,6 +283,17 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on grades", async () => {
     expect(await answerTo(deleteFrom("grades"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // A correction is history too: the next one replaces it (OOC-102).
+  it("refuses UPDATE on grade_corrections", async () => {
+    expect(await answerTo(`update grade_corrections set reason = reason where id = '${NO_SUCH_ID}'`)).toBe(
+      DENIED_BY_TRIGGER,
+    );
+  });
+
+  it("refuses DELETE on grade_corrections", async () => {
+    expect(await answerTo(deleteFrom("grade_corrections"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

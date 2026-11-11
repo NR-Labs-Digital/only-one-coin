@@ -11,6 +11,7 @@ import {
   numeric,
   pgSequence,
   pgTable,
+  pgView,
   text,
   time,
   timestamp,
@@ -1258,6 +1259,56 @@ export const grades = pgTable(
     ),
   ],
 );
+
+// A correction of a posted grade (OOC-102, decision of 10/11/2026): the
+// academic supervision fixes a grade with a reason, and the grade row itself
+// never changes — `grades` stays append-only. Each correction names the one it
+// replaces, so the history of a grade is a straight line: one first
+// correction per grade, one successor per correction (partial unique indexes,
+// 0052). The grade that counts is the line's last link — `current_grades`.
+// Append-only, both layers (REVOKE + trigger, 0052).
+export const gradeCorrections = pgTable(
+  "grade_corrections",
+  {
+    id: uuidPk(),
+    gradeId: uuid("grade_id")
+      .notNull()
+      .references(() => grades.id, { onDelete: "restrict" }),
+    replacesId: uuid("replaces_id").references((): AnyPgColumn => gradeCorrections.id, { onDelete: "restrict" }),
+    score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
+    didNotSit: boolean("did_not_sit").notNull().default(false),
+    reason: text("reason").notNull(),
+    // Better Auth's "user" is not modelled here; FK written by hand in 0052.
+    correctedBy: text("corrected_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("grade_corrections_first_uidx").on(table.gradeId).where(sql`${table.replacesId} is null`),
+    uniqueIndex("grade_corrections_replaces_uidx").on(table.replacesId).where(sql`${table.replacesId} is not null`),
+    check(
+      "grade_corrections_value_check",
+      sql`(${table.didNotSit} and ${table.score} is null) or (not ${table.didNotSit} and ${table.score} between 0 and 20)`,
+    ),
+    check("grade_corrections_reason_check", sql`length(btrim(${table.reason})) between 1 and 500`),
+  ],
+);
+
+// The grade that counts for each graded seat (OOC-102): the last correction
+// when there is one, the posted grade otherwise. A view written by hand in
+// 0052, so every reader — the teacher's sheet, the backoffice and the
+// student's portal — agrees on which one that is.
+export const currentGrades = pgView("current_grades", {
+  gradeId: uuid("grade_id").notNull(),
+  enrollmentId: uuid("enrollment_id").notNull(),
+  classGroupId: uuid("class_group_id").notNull(),
+  score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
+  didNotSit: boolean("did_not_sit").notNull(),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+  recordedBy: text("recorded_by").notNull(),
+  correctionId: uuid("correction_id"),
+  correctedAt: timestamp("corrected_at", { withTimezone: true }),
+  correctedBy: text("corrected_by"),
+}).existing();
 
 // Append-only history of staff/role events (CLAUDE.md §8, "toda mudança de
 // cargo → audit_log append-only"). No update/delete grant is set up for ANY
