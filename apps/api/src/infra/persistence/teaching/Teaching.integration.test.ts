@@ -143,7 +143,8 @@ function groupRow(
     code,
     teacherId,
     teacherName: "",
-    classroomUrl: `https://classroom.google.com/c/${code}`,
+    classroomUrl: module === null ? `https://classroom.google.com/c/${code}` : null,
+    classroomLinks: module === null ? {} : { [String(module)]: `https://classroom.google.com/c/${code}` },
     module,
     startsOn: dated ? new Date(now - 7 * DAY) : null,
     endsOn: dated ? new Date(now + 40 * DAY) : null,
@@ -261,15 +262,14 @@ describe("docente portal scope (OOC-82)", () => {
     });
   });
 
-  it("reads the own class group's Classroom link (OOC-98)", async () => {
+  it("reads the own class group's Classroom link, per module (OOC-144)", async () => {
     await seeded(async (tx) => {
       const { get, list } = portal(tx);
+      const link = [{ module: 2, url: "https://classroom.google.com/c/OOC82-A1" }];
 
-      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({
-        classroomUrl: "https://classroom.google.com/c/OOC82-A1",
-      });
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({ classroomLinks: link });
       const listed = await list.run({ userId: A_ACCOUNT });
-      expect(listed.find((group) => group.id === A_RUNNING)?.classroomUrl).toBe("https://classroom.google.com/c/OOC82-A1");
+      expect(listed.find((group) => group.id === A_RUNNING)?.classroomLinks).toEqual(link);
     });
   });
 

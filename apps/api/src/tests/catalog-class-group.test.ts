@@ -17,6 +17,8 @@ import {
   Teacher,
   UpdateClassGroupUseCase,
   classGroupCodeOf,
+  classroomLinksOf,
+  isMissingClassroom,
   materialOfModule,
   type CreateClassGroupDTO,
   type CreateTeacherDTO,
@@ -316,18 +318,24 @@ describe("Allocating a teacher (OOC-80)", () => {
   });
 });
 
-describe("The class group's Classroom link (OOC-98)", () => {
+describe("The class group's Classroom links, one per module (OOC-144)", () => {
   const LINK = "https://classroom.google.com/c/abc";
+  const LINK2 = "https://classroom.google.com/c/def";
   const update = () => new UpdateClassGroupUseCase(courses, groups, teachers, auditLog);
+  const create = () => new CreateClassGroupUseCase(courses, periods, groups, teachers, auditLog);
 
-  it("stores the link normalized", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: "  https://CLASSROOM.google.com/c/abc " }), CODE);
-    expect(group.classroomUrl).toBe(LINK);
+  it("stores each link normalized, keyed by its module", () => {
+    const group = ClassGroup.create(
+      draftOf({ module: 2, classroomLinks: [{ module: 2, url: "  https://CLASSROOM.google.com/c/abc " }] }),
+      CODE,
+    );
+    expect(group.classroomLinks).toEqual({ "2": LINK });
+    expect(group.classroomUrl).toBeNull();
   });
 
   it("treats a blank link as none", () => {
-    expect(ClassGroup.create(draftOf({ classroomUrl: "   " }), CODE).classroomUrl).toBeNull();
-    expect(ClassGroup.create(draftOf(), CODE).classroomUrl).toBeNull();
+    expect(ClassGroup.create(draftOf({ classroomLinks: [{ module: 1, url: "   " }] }), CODE).classroomLinks).toEqual({});
+    expect(ClassGroup.create(draftOf(), CODE).classroomLinks).toEqual({});
   });
 
   it.each([
@@ -337,32 +345,50 @@ describe("The class group's Classroom link (OOC-98)", () => {
     "javascript:alert(1)",
     "not a link",
   ])("refuses %s", (bad) => {
-    expect(() => ClassGroup.create(draftOf({ classroomUrl: bad }), CODE)).toThrow(ClassroomUrlInvalidError);
+    expect(() => ClassGroup.create(draftOf({ classroomLinks: [{ module: 1, url: bad }] }), CODE)).toThrow(
+      ClassroomUrlInvalidError,
+    );
   });
 
-  it("reports the change, and null clears it", () => {
-    const group = ClassGroup.create(draftOf(), CODE);
-    expect(group.update({ classroomUrl: LINK })).toEqual(["classroomUrl"]);
-    expect(group.update({ classroomUrl: ` ${LINK} ` })).toEqual([]);
-    expect(group.update({ classroomUrl: null })).toEqual(["classroomUrl"]);
-    expect(group.classroomUrl).toBeNull();
+  it("reports the change once, touches only the modules named, and null clears one", () => {
+    const group = ClassGroup.create(draftOf({ fullCourse: true, classroomLinks: [{ module: 1, url: LINK }] }), CODE);
+    expect(group.update({ classroomLinks: [{ module: 2, url: LINK2 }] })).toEqual(["classroomLinks"]);
+    expect(group.classroomLinks).toEqual({ "1": LINK, "2": LINK2 });
+    expect(group.update({ classroomLinks: [{ module: 2, url: ` ${LINK2} ` }] })).toEqual([]);
+    expect(group.update({ classroomLinks: [{ module: 1, url: null }] })).toEqual(["classroomLinks"]);
+    expect(group.classroomLinks).toEqual({ "2": LINK2 });
   });
 
-  it("leaves the link alone when the patch does not carry it", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }), CODE);
+  it("leaves the links alone when the patch does not carry them", () => {
+    const group = ClassGroup.create(draftOf({ module: 1, classroomLinks: [{ module: 1, url: LINK }] }), CODE);
     group.update({ capacity: 31 });
-    expect(group.classroomUrl).toBe(LINK);
+    expect(group.classroomLinks).toEqual({ "1": LINK });
   });
 
-  it("reads back a stored link it would refuse today", () => {
-    const group = ClassGroup.create(draftOf(), CODE);
-    const stored = new ClassGroup({ ...group, classroomUrl: "https://example.com/x" });
-    expect(stored.classroomUrl).toBe("https://example.com/x");
+  it("keeps a module's link when the class group moves to the next module", () => {
+    const group = ClassGroup.create(draftOf({ module: 1, classroomLinks: [{ module: 1, url: LINK }] }), CODE);
+    group.update({ module: 2, classroomLinks: [{ module: 2, url: LINK2 }] });
+    expect(group.classroomLinks).toEqual({ "1": LINK, "2": LINK2 });
+    expect(classroomLinksOf(group, 4)).toEqual([{ module: 2, url: LINK2 }]);
   });
 
-  it("does not carry the link into a duplicated period", () => {
-    const group = ClassGroup.create(draftOf({ classroomUrl: LINK }), CODE);
-    expect(ClassGroup.copyInto(group, period.id, "A-00002").classroomUrl).toBeNull();
+  it("does not carry the links into a duplicated period", () => {
+    const group = ClassGroup.create(draftOf({ module: 1, classroomLinks: [{ module: 1, url: LINK }] }), CODE);
+    expect(ClassGroup.copyInto(group, period.id, "A-00002").classroomLinks).toEqual({});
+  });
+
+  it("refuses a link for a module the course does not have, and still lets one be cleared", async () => {
+    await expect(
+      create().run({ actorId: ACTOR, classGroup: draftOf({ classroomLinks: [{ module: 5, url: LINK }] }), publish: false }),
+    ).rejects.toBeInstanceOf(ClassGroupModuleOutOfRangeError);
+
+    const group = await groups.create(ClassGroup.create(draftOf(), CODE));
+    await expect(
+      update().run({ actorId: ACTOR, id: group.id, patch: { classroomLinks: [{ module: 5, url: LINK }] } }),
+    ).rejects.toBeInstanceOf(ClassGroupModuleOutOfRangeError);
+    await expect(
+      update().run({ actorId: ACTOR, id: group.id, patch: { classroomLinks: [{ module: 5, url: null }] } }),
+    ).resolves.toBeDefined();
   });
 
   it("never rewrites the code", () => {
@@ -372,11 +398,45 @@ describe("The class group's Classroom link (OOC-98)", () => {
   });
 
   it("audits the field name, never the link", async () => {
-    const group = await groups.create(ClassGroup.create(draftOf(), CODE));
-    await update().run({ actorId: ACTOR, id: group.id, patch: { classroomUrl: LINK } });
+    const group = await groups.create(ClassGroup.create(draftOf({ module: 1 }), CODE));
+    await update().run({ actorId: ACTOR, id: group.id, patch: { classroomLinks: [{ module: 1, url: LINK }] } });
     const entry = auditLog.appended.at(-1)!;
-    expect(entry.metadata).toMatchObject({ fields: ["classroomUrl"] });
+    expect(entry.metadata).toMatchObject({ fields: ["classroomLinks"] });
     expect(JSON.stringify(entry)).not.toContain("classroom.google.com");
+  });
+});
+
+describe("classroomLinksOf / isMissingClassroom (OOC-144)", () => {
+  const LINK = "https://classroom.google.com/c/abc";
+  const base = { module: null, fullCourse: false, classroomLinks: {}, classroomUrl: null };
+
+  it("answers the link of the one module the class group teaches, not the others it kept", () => {
+    const group = { ...base, module: 2, classroomLinks: { "1": "https://classroom.google.com/c/old", "2": LINK } };
+    expect(classroomLinksOf(group, 4)).toEqual([{ module: 2, url: LINK }]);
+    expect(isMissingClassroom(group, 4)).toBe(false);
+  });
+
+  it("answers every module's link on a full course, in order, and warns while one is missing", () => {
+    const group = { ...base, fullCourse: true, classroomLinks: { "3": LINK, "1": LINK } };
+    expect(classroomLinksOf(group, 3)).toEqual([
+      { module: 1, url: LINK },
+      { module: 3, url: LINK },
+    ]);
+    expect(isMissingClassroom(group, 3)).toBe(true);
+    expect(isMissingClassroom({ ...group, classroomLinks: { "1": LINK, "2": LINK, "3": LINK } }, 3)).toBe(false);
+  });
+
+  it("falls back to the link pasted before OOC-144 while no module is set", () => {
+    expect(classroomLinksOf({ ...base, classroomUrl: LINK }, 4)).toEqual([{ module: null, url: LINK }]);
+    expect(isMissingClassroom({ ...base, classroomUrl: LINK }, 4)).toBe(false);
+    expect(classroomLinksOf(base, 4)).toEqual([]);
+    expect(isMissingClassroom(base, 4)).toBe(true);
+  });
+
+  it("ignores the old single link once a module is set", () => {
+    const group = { ...base, module: 1, classroomUrl: LINK };
+    expect(classroomLinksOf(group, 4)).toEqual([]);
+    expect(isMissingClassroom(group, 4)).toBe(true);
   });
 });
 

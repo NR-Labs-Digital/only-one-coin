@@ -1,5 +1,5 @@
 import { academicPeriods, classGroups, courses, waitlistEntries } from "@ooc/db";
-import type { ClassGroupStatus, WeeklySlot } from "@ooc/domain";
+import { classroomLinksOf, isMissingClassroom, type ClassGroupStatus, type ClassroomLink, type WeeklySlot } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { linkedTeacherName } from "./classGroupTeacherName.js";
@@ -24,8 +24,17 @@ export interface ClassGroupItem {
    * coordination while the class group waits for a real allocation.
    */
   legacyTeacherName: string;
-  /** The Google Classroom coordination pasted (OOC-98); null = nobody yet. */
+  /**
+   * The one link pasted before OOC-144 — read-only, shown only while no module
+   * is set, so the form can carry it onto the module coordination picks.
+   */
   classroomUrl: string | null;
+  /** Every module's stored Classroom (OOC-144), module number → link — what the form edits. */
+  classroomLinksByModule: Record<string, string>;
+  /** The links of the modules it teaches, in order (`classroomLinksOf`) — what the calendar opens. */
+  classroomLinks: ClassroomLink[];
+  /** Some module it teaches has no Classroom yet — the "Sin Classroom" warning (`isMissingClassroom`). */
+  classroomMissing: boolean;
   /** Which of the course's modules it teaches (OOC-100), 1-based; null = not set. */
   module: number | null;
   fullCourse: boolean;
@@ -108,6 +117,7 @@ export class ListClassGroupsQuery {
         courseName: courses.name,
         language: courses.language,
         courseDeletedAt: courses.deletedAt,
+        courseModules: courses.modules,
         periodName: academicPeriods.name,
         teacherName: linkedTeacherName,
         waitlistCount,
@@ -127,7 +137,7 @@ export class ListClassGroupsQuery {
           asc(classGroups.id),
         ));
 
-    return rows.map(({ row, courseName, language, courseDeletedAt, periodName, teacherName, waitlistCount: waiting }) => ({
+    return rows.map(({ row, courseName, language, courseDeletedAt, courseModules, periodName, teacherName, waitlistCount: waiting }) => ({
       id: row.id,
       code: row.code,
       courseId: row.courseId,
@@ -140,6 +150,9 @@ export class ListClassGroupsQuery {
       teacherName,
       legacyTeacherName: row.teacherName,
       classroomUrl: row.classroomUrl,
+      classroomLinksByModule: row.classroomLinks,
+      classroomLinks: classroomLinksOf(row, courseModules),
+      classroomMissing: isMissingClassroom(row, courseModules),
       module: row.module,
       fullCourse: row.fullCourse,
       slots: row.slots as WeeklySlot[],

@@ -1,5 +1,6 @@
 import { academicPeriods, classGroups, courses, enrollments } from "@ooc/db";
 import {
+  classroomLinksOf,
   materialOfModule,
   type ClassGroupStatus,
   type ITeachingReader,
@@ -66,6 +67,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
         courseName: courses.name,
         language: courses.language,
         moduleMaterials: courses.moduleMaterials,
+        courseModules: courses.modules,
         periodName: academicPeriods.name,
       })
       .from(classGroups)
@@ -74,7 +76,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       .where(where)
       .orderBy(asc(courses.language), asc(courses.name), asc(classGroups.code), asc(classGroups.id));
 
-    return rows.map(({ row, courseName, language, moduleMaterials, periodName }) => ({
+    return rows.map(({ row, courseName, language, moduleMaterials, courseModules, periodName }) => ({
       id: row.id,
       teacherId: row.teacherId,
       code: row.code,
@@ -87,7 +89,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       capacity: row.capacity,
       seatsTaken: row.seatsTaken,
       status: row.status as ClassGroupStatus,
-      classroomUrl: row.classroomUrl,
+      classroomLinks: classroomLinksOf(row, courseModules),
       module: row.module,
       moduleMaterialUrl: materialOfModule(moduleMaterials, row.module),
       fullCourse: row.fullCourse,

@@ -66,7 +66,7 @@ function group(status: TeachingClassGroup["status"]): TeachingClassGroup {
     seatsTaken: 2,
     status,
     retired: false,
-    classroomUrl: null,
+    classroomLinks: [],
     module: 1,
     moduleMaterialUrl: null,
     fullCourse: false,

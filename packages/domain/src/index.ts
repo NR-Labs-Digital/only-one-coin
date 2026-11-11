@@ -588,6 +588,11 @@ export {
 } from "./catalog/AcademicPeriod.js";
 export {
   assertModuleOfCourse,
+  assertClassroomLinksOfCourse,
+  classroomLinksOf,
+  isMissingClassroom,
+  taughtModules,
+  ClassroomLinkPatchSchema,
   ClassGroup,
   ClassGroupPropsSchema,
   ClassGroupStatusSchema,
@@ -601,6 +606,9 @@ export {
   WeeklySlotSchema,
   type ClassGroupProps,
   type ClassGroupStatus,
+  type ClassroomLink,
+  type ClassroomLinkPatch,
+  type ClassroomLinks,
   type CreateClassGroupDTO,
   type UpdateClassGroupDTO,
   type WeeklySlot,

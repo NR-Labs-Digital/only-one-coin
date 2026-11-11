@@ -1,6 +1,6 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
-import { assertModuleOfCourse, type ClassGroup, type UpdateClassGroupDTO } from "./ClassGroup.js";
+import { assertClassroomLinksOfCourse, assertModuleOfCourse, type ClassGroup, type UpdateClassGroupDTO } from "./ClassGroup.js";
 import { CatalogClassGroupNotFoundError, CourseNotFoundError } from "./errors.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
@@ -53,6 +53,13 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
       const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
       if (!course) throw new CourseNotFoundError();
       assertModuleOfCourse(moduleNumber, course.modules);
+    }
+
+    // A Classroom link is set for one of the course's modules (OOC-144).
+    if (input.patch.classroomLinks?.length) {
+      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
+      if (!course) throw new CourseNotFoundError();
+      assertClassroomLinksOfCourse(input.patch.classroomLinks, course.modules);
     }
 
     // A new allocation, or the same teacher carried onto another course,

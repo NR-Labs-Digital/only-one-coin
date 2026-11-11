@@ -13,6 +13,7 @@ import {
   seatHolds,
   students,
 } from "@ooc/db";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -211,12 +212,36 @@ describe("StudentPortalQuery.overview", () => {
     ]);
   });
 
-  it("hands the Classroom link only to a confirmed seat (OOC-98)", async () => {
+  it("hands the Classroom links only to a confirmed seat (OOC-98, OOC-144)", async () => {
     const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
 
-    // Same class group, same link: the seat decides, never the screen.
-    expect(byId.get(ON_OLD_FILE)!.classGroup.classroomUrl).toBe("https://classroom.google.com/c/portal");
-    expect(byId.get(ON_NEW_FILE)!.classGroup.classroomUrl).toBeNull();
+    // Same class group, same link: the seat decides, never the screen. No
+    // module set yet, so it is the one link pasted before OOC-144.
+    expect(byId.get(ON_OLD_FILE)!.classGroup.classroomLinks).toEqual([
+      { module: null, url: "https://classroom.google.com/c/portal" },
+    ]);
+    expect(byId.get(ON_NEW_FILE)!.classGroup.classroomLinks).toEqual([]);
+  });
+
+  it("hands the link of every module a full-course class group teaches, in order (OOC-144)", async () => {
+    await db.update(courses).set({ modules: 2 }).where(eq(courses.id, COURSE));
+    await db
+      .update(classGroups)
+      .set({
+        fullCourse: true,
+        classroomLinks: { "2": "https://classroom.google.com/c/m2", "1": "https://classroom.google.com/c/m1" },
+      })
+      .where(eq(classGroups.id, GROUP));
+    try {
+      const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
+      expect(byId.get(ON_OLD_FILE)!.classGroup.classroomLinks).toEqual([
+        { module: 1, url: "https://classroom.google.com/c/m1" },
+        { module: 2, url: "https://classroom.google.com/c/m2" },
+      ]);
+    } finally {
+      await db.update(classGroups).set({ fullCourse: false, classroomLinks: {} }).where(eq(classGroups.id, GROUP));
+      await db.update(courses).set({ modules: 1 }).where(eq(courses.id, COURSE));
+    }
   });
 });
 
