@@ -2366,6 +2366,13 @@
       "whatsapp_short": "WhatsApp",
       "file": "Abrir a ficha de {name}",
       "file_short": "Ficha"
+    },
+    "teacher_calendar": {
+      "tab": "Calendário",
+      "intro": "As aulas de cada docente, no horário das turmas, entre a data de início e a de fim. Só aparecem as turmas com docente atribuído.",
+      "filter_teacher": "Docente",
+      "filter_all": "Todos os docentes",
+      "empty": "Nenhuma turma com docente atribuído e datas para mostrar no calendário."
     }
   }
 }

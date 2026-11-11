@@ -2366,6 +2366,13 @@
       "whatsapp_short": "WhatsApp",
       "file": "Open {name}'s file",
       "file_short": "File"
+    },
+    "teacher_calendar": {
+      "tab": "Calendar",
+      "intro": "Each teacher's classes, at their class groups' times, between the start and end dates. Only class groups with a teacher assigned appear.",
+      "filter_teacher": "Teacher",
+      "filter_all": "All teachers",
+      "empty": "No class group with a teacher assigned and dates to show on the calendar."
     }
   }
 }

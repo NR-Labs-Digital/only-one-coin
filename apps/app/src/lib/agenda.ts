@@ -1,10 +1,12 @@
 import type { Weekday, WeeklySlotItem } from '@/lib/backoffice/types'
 import { toMinutes } from '@/lib/backoffice/availability'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
-import type { TeachingClassGroup } from './teaching'
+import type { ClassGroupItem, ClassGroupStatus } from '@/lib/backoffice/types'
+import type { TeachingClassGroup } from '@/lib/docente/teaching'
 
 /**
- * Calendar arithmetic for the teacher's agenda. Every date here is a calendar
+ * Calendar arithmetic for the class agendas — the teacher's own (`/docente/agenda`)
+ * and coordination's teacher calendar (`/backoffice/teacher-calendar`, OOC-99). Every date here is a calendar
  * day in Lima as `YYYY-MM-DD` — the shape `AgendaClassGroup.startDate` carries —
  * and the math runs in UTC on purpose: a date-only value has no timezone, and
  * converting it would shift it a day (`lib/format.ts`, `formatDate`).
@@ -72,7 +74,10 @@ export interface AgendaClassGroup {
   courseName: string
   code: string
   academicPeriodName: string
-  status: TeachingClassGroup['status']
+  status: ClassGroupStatus
+  /** Who teaches it — only the backoffice calendar reads these; null/empty in the teacher's own. */
+  teacherId: string | null
+  teacherName: string
   slots: WeeklySlotItem[]
   /** The class group's Google Classroom (OOC-98); null = not pasted yet. */
   classroomUrl: string | null
@@ -88,6 +93,31 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
     code: group.code,
     academicPeriodName: group.academicPeriodName,
     status: group.status,
+    teacherId: null,
+    teacherName: '',
+    slots: group.slots,
+    classroomUrl: group.classroomUrl,
+    startDate: isoToLimaDate(group.startsOn),
+    endDate: isoToLimaDate(group.endsOn),
+  }
+}
+
+/**
+ * A catalog class group on coordination's calendar (OOC-99): only one with a
+ * teacher from the roster and both dates — the calendar is the teachers'
+ * week, so a class group nobody teaches has nobody's slot to fill. Retired
+ * ones are off the catalog and off the calendar.
+ */
+export function agendaCatalogClassGroup(group: ClassGroupItem): AgendaClassGroup | null {
+  if (!group.active || group.teacherId === null || !group.startsOn || !group.endsOn) return null
+  return {
+    id: group.id,
+    courseName: group.courseName,
+    code: group.code,
+    academicPeriodName: group.academicPeriodName,
+    status: group.status,
+    teacherId: group.teacherId,
+    teacherName: group.teacherName,
     slots: group.slots,
     classroomUrl: group.classroomUrl,
     startDate: isoToLimaDate(group.startsOn),
