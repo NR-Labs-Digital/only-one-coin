@@ -31,7 +31,7 @@ function as(role: Role) {
   vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
 }
 
-function put(payload: unknown) {
+function put(payload: Record<string, unknown>) {
   return app.inject({ method: "PUT", url: "/api/v1/me/locale", cookies: { [SESSION_COOKIE_NAME]: "token" }, payload });
 }
 
