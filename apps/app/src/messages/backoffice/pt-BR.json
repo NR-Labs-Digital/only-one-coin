@@ -357,7 +357,8 @@
         "procedure_price_created": "Preço de trâmite alterado",
         "attachment_uploaded": "Arquivo anexado",
         "attachment_downloaded": "Arquivo baixado",
-        "attachment_removed": "Arquivo removido"
+        "attachment_removed": "Arquivo removido",
+        "grade_corrected": "Nota corrigida"
       },
       "field": {
         "first_name": "Nome",
@@ -850,7 +851,9 @@
       "staff_mfa_code": "Código de acesso ao painel",
       "procedure_payment_under_review": "Pagamento de trâmite em revisão",
       "procedure_payment_approved": "Pagamento de trâmite aprovado",
-      "procedure_payment_rejected": "Pagamento de trâmite rejeitado"
+      "procedure_payment_rejected": "Pagamento de trâmite rejeitado",
+      "grade_corrected": "Nota final corrigida",
+      "grade_corrected_did_not_sit": "Resultado corrigido para DA"
     },
     "email_trigger": {
       "enrollment_received": "Ao receber os dados da matrícula, depois que o aluno preenche o formulário.",
@@ -870,7 +873,9 @@
       "staff_mfa_code": "A cada entrada no painel com verificação em duas etapas, e ao ativá-la.",
       "procedure_payment_under_review": "Quando o comprovante de um trâmite passa para revisão manual.",
       "procedure_payment_approved": "Quando o pagamento de um trâmite é aprovado.",
-      "procedure_payment_rejected": "Quando a revisão rejeita o comprovante de um trâmite."
+      "procedure_payment_rejected": "Quando a revisão rejeita o comprovante de um trâmite.",
+      "grade_corrected": "A supervisão acadêmica corrige uma nota lançada",
+      "grade_corrected_did_not_sit": "A supervisão acadêmica corrige uma nota lançada para DA"
     },
     "email_audience": {
       "student": "Aluno",
@@ -891,7 +896,9 @@
       "enrollment_certificate_issued": "se ele solicitar",
       "procedure_payment_under_review": "se for um trâmite e for para revisão",
       "procedure_payment_approved": "se for um trâmite",
-      "procedure_payment_rejected": "se for um trâmite e for rejeitado"
+      "procedure_payment_rejected": "se for um trâmite e for rejeitado",
+      "grade_corrected": "Só se uma nota lançada for corrigida",
+      "grade_corrected_did_not_sit": "Só se a nota for corrigida para DA (não fez o exame final)"
     },
     "email_delivery_reason": {
       "provider_unavailable": "O provedor não respondeu",
@@ -1716,7 +1723,9 @@
       "no_active_title": "Você não tem cursos ativos",
       "no_active_body": "Quando a coordenação te atribuir uma turma, ela aparece aqui. Turmas encerradas saem do portal.",
       "load_error_title": "Não conseguimos carregar suas turmas",
-      "load_error_body": "Tente de novo em alguns minutos. Se continuar, avise a coordenação."
+      "load_error_body": "Tente de novo em alguns minutos. Se continuar, avise a coordenação.",
+      "finished_waiting": "{count, plural, one {Você tem uma turma finalizada.} other {Você tem # turmas finalizadas.}} Elas ficam em Minhas turmas até a coordenação fechá-las, caso falte alguma nota.",
+      "finished_waiting_link": "Ver minhas turmas"
     },
     "team": {
       "title": "Equipe",
@@ -2373,6 +2382,61 @@
       "filter_teacher": "Docente",
       "filter_all": "Todos os docentes",
       "empty": "Nenhuma turma com docente atribuído e datas para mostrar no calendário."
+    },
+    "class_group_grades": {
+      "title": "Notas",
+      "intro": "Nota do exame final de cada aluno com vaga confirmada. Aprova a partir de {min}.",
+      "load_error": "Não foi possível carregar as notas. Recarregue a página.",
+      "empty": "Esta turma ainda não tem alunos com vaga confirmada.",
+      "col_student": "Aluno",
+      "col_grade": "Nota final",
+      "col_status": "Resultado",
+      "col_actions": "Ações",
+      "not_posted": "Sem nota",
+      "corrected_badge": "Corrigida",
+      "post": "Lançar nota",
+      "correct": "Corrigir",
+      "history_show": "Ver histórico",
+      "history_hide": "Ocultar histórico",
+      "history_posted": "Lançada por {name} · {date}",
+      "history_corrected": "Corrigida por {name} · {date}",
+      "history_unknown_name": "uma conta sem nome",
+      "history_reason": "Motivo: {reason}",
+      "dialog_post_title": "Lançar nota de {name}",
+      "dialog_correct_title": "Corrigir nota de {name}",
+      "dialog_post_body": "A nota lançada não muda depois. Se houver erro, ela é corrigida com um motivo.",
+      "dialog_correct_body": "A nota anterior fica no histórico. A correção não pode ser desfeita, só corrigida de novo.",
+      "current_value": "Nota atual: {value}",
+      "field_grade": "Nota (0 a 20)",
+      "field_da": "Não fez o exame final (DA)",
+      "field_reason": "Motivo da correção",
+      "field_reason_hint": "Fica no histórico da nota. Até 500 caracteres.",
+      "confirm_post": "Lançar",
+      "confirm_correct": "Salvar correção",
+      "cancel": "Cancelar",
+      "saving": "Salvando…",
+      "close": "Fechar",
+      "email_notice": "O aluno, e o responsável se for menor, recebe a nota por e-mail.",
+      "posting_closed": "As notas são lançadas quando a turma está em andamento ou finalizada.",
+      "saved_post": "Nota lançada.",
+      "saved_correct": "Nota corrigida.",
+      "finished_notice": "Com esta nota todos os alunos ficaram com nota e a turma passou para Finalizada.",
+      "invalid_grade": "Digite uma nota de 0 a 20, com até duas casas decimais, ou marque que não fez o exame.",
+      "reason_required": "Escreva o motivo da correção (até 500 caracteres).",
+      "read_only": "Somente leitura: seu cargo vê as notas, mas não lança nem corrige.",
+      "errors": {
+        "grading_closed": "Esta turma não está aberta para notas.",
+        "grade_already_recorded": "Esta nota já foi lançada com outro valor. Recarregue a página e, se estiver errada, corrija.",
+        "grade_not_recorded": "Este aluno ainda não tem nota lançada. Lance a nota em vez de corrigir.",
+        "grade_correction_unchanged": "A nota já tem esse valor.",
+        "grade_corrected_concurrently": "Outra pessoa corrigiu esta nota ao mesmo tempo. Recarregue a página e confira antes de corrigir.",
+        "grade_correction_reason_required": "Escreva o motivo da correção (até 500 caracteres).",
+        "grade_out_of_range": "A nota vai de 0 a 20, com até duas casas decimais.",
+        "grade_unknown_enrollment": "Este aluno não tem mais vaga confirmada na turma. Recarregue a página.",
+        "generic": "Não foi possível salvar. Tente de novo."
+      },
+      "teacher_corrected": "Corrigida pela coordenação",
+      "teacher_finished": "Com estas notas todos os alunos ficaram com nota e a turma passou para Finalizada."
     }
   }
 }

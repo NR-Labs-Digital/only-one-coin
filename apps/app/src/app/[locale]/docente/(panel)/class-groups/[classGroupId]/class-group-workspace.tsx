@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ClassResources } from '../class-resources'
-import { DA_MARK, gradeSheet, isDa, parseGrade, type GradeSheetRow } from '../grade-sheet'
+import { DA_MARK, gradeSheet, isDa, parseGrade, type GradeSheetRow } from '@/lib/grade-sheet'
 import { BatchGrades, type BatchEntry } from '../batch-grades'
 import { ClassGroupFacts } from '../class-group-facts'
 import { ClassNotices } from '../class-notices'
@@ -126,7 +126,7 @@ export function ClassGroupWorkspace({
     writePendingGrades(group.id, [])
     setPending([])
     setSync('idle')
-    if (result === 'posted') {
+    if (result === 'posted' || result === 'finished') {
       const now = new Date().toISOString()
       setAcknowledged((current) => [
         ...current,
@@ -135,11 +135,16 @@ export function ClassGroupWorkspace({
           grade: entry.grade === 'da' ? null : entry.grade,
           didNotSit: entry.grade === 'da',
           recordedAt: now,
+          correctedAt: null,
         })),
       ])
       setNotice(null)
       setPosted(
-        queue.length === 1 ? t('class_list.posted_toast') : t('class_list.batch_posted', { count: queue.length }),
+        result === 'finished'
+          ? t('class_group_grades.teacher_finished')
+          : queue.length === 1
+            ? t('class_list.posted_toast')
+            : t('class_list.batch_posted', { count: queue.length }),
       )
     } else {
       setNotice(result === 'conflict' ? t('class_group.grades_conflict') : t('class_group.grades_refused'))
@@ -404,6 +409,12 @@ export function ClassGroupWorkspace({
                           />
                         ) : (
                           <span className="text-muted-foreground">—</span>
+                        )}
+                        {/* The supervision corrected it (OOC-102): the value shown is the correction's. */}
+                        {row.corrected && (
+                          <span className="rounded-full bg-sky px-2 py-0.5 text-[11px] font-semibold text-brand-blue-deep">
+                            {t('class_group_grades.teacher_corrected')}
+                          </span>
                         )}
                         {/* Confirmed here, not yet acknowledged by the API. */}
                         {row.sync === 'pending' && (

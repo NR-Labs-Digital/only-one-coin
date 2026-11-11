@@ -3,7 +3,8 @@ import type { PendingGrade } from '@/lib/docente/grade-outbox'
 import type { TeachingGrade, TeachingStudent } from '@/lib/docente/teaching'
 
 /**
- * The grade sheet's rules, shared by the one-grade dialog and the batch one:
+ * The grade sheet's rules, shared by the teacher's one-grade dialog, the batch
+ * one and the supervision's grade card in the backoffice (OOC-102):
  * what a typed grade is, what DA is, and what a final grade means. No UI copy
  * here (CLAUDE.md §4).
  */
@@ -24,6 +25,8 @@ export interface GradeSheetRow {
    * nothing yet.
    */
   sync: 'posted' | 'pending' | null
+  /** The academic supervision corrected the posted grade (OOC-102). */
+  corrected: boolean
 }
 
 /**
@@ -40,8 +43,12 @@ export function gradeSheet(
   const postedBy = new Map(posted.map((grade) => [grade.enrollmentId, grade]))
   const pendingBy = new Map(pending.map((entry) => [entry.enrollmentId, entry]))
   return students.map((student) => {
-    const base = { enrollmentId: student.enrollmentId, fullName: student.studentName }
     const grade = postedBy.get(student.enrollmentId)
+    const base = {
+      enrollmentId: student.enrollmentId,
+      fullName: student.studentName,
+      corrected: Boolean(grade?.correctedAt),
+    }
     if (grade) {
       if (grade.didNotSit || grade.grade === null) {
         return { ...base, finalGrade: null, gradeStatus: 'auto_failed', sync: 'posted' }

@@ -15,7 +15,10 @@ import {
   canBrowseCatalog,
   canCreateClassGroup,
   canCreateEnrollment,
+  canEditGrades,
+  canReadGrades,
 } from '@/lib/backoffice/permissions'
+import { getClassGroupGradeSheet } from '@/lib/backoffice/grades'
 import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
@@ -31,6 +34,7 @@ import { ClassGroupActions } from './class-group-actions'
 import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
 import { RosterCard } from './roster-card'
+import { GradesCard } from './grades-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 type Translate = Awaited<ReturnType<typeof getTranslations<'bo'>>>
@@ -60,17 +64,21 @@ export default async function ClassGroupDetailPage({
   if (!group) notFound()
 
   const canManage = canCreateClassGroup(staff.role)
+  /* The grade sheet is the supervision's (OOC-102). Who cannot read it never
+     asks — the card is not there, as with the waitlist. */
+  const readsGrades = canReadGrades(staff.role)
 
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [roster, waitlist, courses, teachers, settings] = await Promise.all([
+  const [roster, waitlist, courses, teachers, settings, gradeSheet] = await Promise.all([
     // Every catalog reader gets the roster; which columns is the API's call.
     getClassGroupRoster(group.id),
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
     canManage ? listTeacherOptions() : Promise.resolve(null),
     getPlatformSettings(),
+    readsGrades ? getClassGroupGradeSheet(group.id) : Promise.resolve(null),
   ])
   const schedule = slotsLabel(group.slots, t)
 
@@ -181,6 +189,17 @@ export default async function ClassGroupDetailPage({
       />
 
       <RosterCard roster={roster} />
+
+      {readsGrades && (
+        <GradesCard
+          classGroupId={group.id}
+          status={group.status}
+          seats={gradeSheet}
+          // The pass mark is the backoffice's (OOC-41) — never a fallback number.
+          passingGrade={settings?.passingGrade ?? null}
+          canEdit={canEditGrades(staff.role)}
+        />
+      )}
 
       {showWaitlist && (
         <WaitlistCard

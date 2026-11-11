@@ -357,7 +357,8 @@
         "procedure_price_created": "Procedure price changed",
         "attachment_uploaded": "File attached",
         "attachment_downloaded": "File downloaded",
-        "attachment_removed": "File removed"
+        "attachment_removed": "File removed",
+        "grade_corrected": "Grade corrected"
       },
       "field": {
         "first_name": "First name",
@@ -850,7 +851,9 @@
       "staff_mfa_code": "Panel access code",
       "procedure_payment_under_review": "Procedure payment under review",
       "procedure_payment_approved": "Procedure payment approved",
-      "procedure_payment_rejected": "Procedure payment rejected"
+      "procedure_payment_rejected": "Procedure payment rejected",
+      "grade_corrected": "Final grade corrected",
+      "grade_corrected_did_not_sit": "Result corrected to DA"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -870,7 +873,9 @@
       "staff_mfa_code": "Every sign-in to the panel with two-step verification, and when turning it on.",
       "procedure_payment_under_review": "When a procedure's receipt goes to manual review.",
       "procedure_payment_approved": "When a procedure's payment is approved.",
-      "procedure_payment_rejected": "When the review rejects a procedure's receipt."
+      "procedure_payment_rejected": "When the review rejects a procedure's receipt.",
+      "grade_corrected": "The academic supervision corrects a posted grade",
+      "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA"
     },
     "email_audience": {
       "student": "Student",
@@ -891,7 +896,9 @@
       "enrollment_certificate_issued": "if they request it",
       "procedure_payment_under_review": "if it is a procedure and goes to review",
       "procedure_payment_approved": "if it is a procedure",
-      "procedure_payment_rejected": "if it is a procedure and is rejected"
+      "procedure_payment_rejected": "if it is a procedure and is rejected",
+      "grade_corrected": "Only if a posted grade is corrected",
+      "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)"
     },
     "email_delivery_reason": {
       "provider_unavailable": "The provider did not answer",
@@ -1716,7 +1723,9 @@
       "no_active_title": "You have no active courses",
       "no_active_body": "When coordination assigns you a class group, it shows up here. Closed class groups leave the portal.",
       "load_error_title": "We could not load your class groups",
-      "load_error_body": "Try again in a few minutes. If it keeps happening, let coordination know."
+      "load_error_body": "Try again in a few minutes. If it keeps happening, let coordination know.",
+      "finished_waiting": "{count, plural, one {You have one finished class group.} other {You have # finished class groups.}} They stay in My class groups until coordination closes them, in case a grade is missing.",
+      "finished_waiting_link": "See my class groups"
     },
     "team": {
       "title": "Team",
@@ -2373,6 +2382,61 @@
       "filter_teacher": "Teacher",
       "filter_all": "All teachers",
       "empty": "No class group with a teacher assigned and dates to show on the calendar."
+    },
+    "class_group_grades": {
+      "title": "Grades",
+      "intro": "The final exam grade of each student with a confirmed seat. Passing from {min}.",
+      "load_error": "The grades could not be loaded. Reload the page.",
+      "empty": "This class group has no students with a confirmed seat yet.",
+      "col_student": "Student",
+      "col_grade": "Final grade",
+      "col_status": "Result",
+      "col_actions": "Actions",
+      "not_posted": "No grade",
+      "corrected_badge": "Corrected",
+      "post": "Post grade",
+      "correct": "Correct",
+      "history_show": "Show history",
+      "history_hide": "Hide history",
+      "history_posted": "Posted by {name} · {date}",
+      "history_corrected": "Corrected by {name} · {date}",
+      "history_unknown_name": "an account with no name",
+      "history_reason": "Reason: {reason}",
+      "dialog_post_title": "Post the grade of {name}",
+      "dialog_correct_title": "Correct the grade of {name}",
+      "dialog_post_body": "A posted grade does not change afterwards. If it is wrong, it is corrected with a reason.",
+      "dialog_correct_body": "The previous grade stays in the history. A correction cannot be undone, only corrected again.",
+      "current_value": "Current grade: {value}",
+      "field_grade": "Grade (0 to 20)",
+      "field_da": "Did not take the final exam (DA)",
+      "field_reason": "Reason for the correction",
+      "field_reason_hint": "It stays in the grade's history. Up to 500 characters.",
+      "confirm_post": "Post",
+      "confirm_correct": "Save correction",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "close": "Close",
+      "email_notice": "The student, and a minor's guardian, get the grade by e-mail.",
+      "posting_closed": "Grades are posted while the class group is in progress or finished.",
+      "saved_post": "Grade posted.",
+      "saved_correct": "Grade corrected.",
+      "finished_notice": "With this grade every student is graded, and the class group moved to Finished.",
+      "invalid_grade": "Type a grade from 0 to 20, with up to two decimals, or mark that the exam was not taken.",
+      "reason_required": "Write the reason for the correction (up to 500 characters).",
+      "read_only": "Read only: your role sees the grades but does not post or correct them.",
+      "errors": {
+        "grading_closed": "This class group is not open for grades.",
+        "grade_already_recorded": "This grade was already posted with another value. Reload the page and, if it is wrong, correct it.",
+        "grade_not_recorded": "This student has no posted grade yet. Post the grade instead of correcting it.",
+        "grade_correction_unchanged": "The grade already has that value.",
+        "grade_corrected_concurrently": "Someone else corrected this grade at the same moment. Reload the page and check before correcting.",
+        "grade_correction_reason_required": "Write the reason for the correction (up to 500 characters).",
+        "grade_out_of_range": "A grade goes from 0 to 20, with up to two decimals.",
+        "grade_unknown_enrollment": "This student no longer has a confirmed seat in the class group. Reload the page.",
+        "generic": "It could not be saved. Try again."
+      },
+      "teacher_corrected": "Corrected by coordination",
+      "teacher_finished": "With these grades every student is graded, and the class group moved to Finished."
     }
   }
 }

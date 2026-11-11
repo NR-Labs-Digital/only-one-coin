@@ -97,9 +97,11 @@ export function writeGradeDraft(classGroupId: string, rows: Record<string, Grade
  * - `offline` — the request did not get an answer worth trusting (no network,
  *   5xx, 429): keep them and try again.
  * - `conflict` — a seat already has a different grade (the screen was stale).
+ * - `finished` — posted, and it was the last grade of the sheet: the API
+ *   moved the class group to finished (OOC-102).
  * - `refused` — the API said no for good (closed class group, unknown seat).
  */
-export type PostGradesResult = 'posted' | 'offline' | 'conflict' | 'refused'
+export type PostGradesResult = 'posted' | 'finished' | 'offline' | 'conflict' | 'refused'
 
 export async function postGrades(
   classGroupId: string,
@@ -114,7 +116,11 @@ export async function postGrades(
         body: JSON.stringify({ entries }),
       },
     )
-    if (response.ok) return 'posted'
+    if (response.ok) {
+      // The batch that grades the last seat finishes the module (OOC-102).
+      const body = (await response.json().catch(() => null)) as { finished?: unknown } | null
+      return body?.finished === true ? 'finished' : 'posted'
+    }
     if (response.status === 409) return 'conflict'
     if (response.status === 429 || response.status >= 500) return 'offline'
     return 'refused'

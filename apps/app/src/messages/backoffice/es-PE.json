@@ -357,7 +357,8 @@
         "procedure_price_created": "Precio de trámite cambiado",
         "attachment_uploaded": "Archivo adjuntado",
         "attachment_downloaded": "Archivo descargado",
-        "attachment_removed": "Archivo quitado"
+        "attachment_removed": "Archivo quitado",
+        "grade_corrected": "Nota corregida"
       },
       "field": {
         "first_name": "Nombre",
@@ -850,7 +851,9 @@
       "staff_mfa_code": "Código de acceso al panel",
       "procedure_payment_under_review": "Pago de trámite en revisión",
       "procedure_payment_approved": "Pago de trámite aprobado",
-      "procedure_payment_rejected": "Pago de trámite rechazado"
+      "procedure_payment_rejected": "Pago de trámite rechazado",
+      "grade_corrected": "Nota final corregida",
+      "grade_corrected_did_not_sit": "Resultado corregido a DA"
     },
     "email_trigger": {
       "enrollment_received": "Al recibir los datos de matrícula, después de que el alumno llena el formulario.",
@@ -870,7 +873,9 @@
       "staff_mfa_code": "En cada ingreso al panel con verificación en dos pasos, y al activarla.",
       "procedure_payment_under_review": "Cuando el comprobante de un trámite pasa a revisión manual.",
       "procedure_payment_approved": "Cuando el pago de un trámite queda aprobado.",
-      "procedure_payment_rejected": "Cuando la revisión rechaza el comprobante de un trámite."
+      "procedure_payment_rejected": "Cuando la revisión rechaza el comprobante de un trámite.",
+      "grade_corrected": "La supervisión académica corrige una nota registrada",
+      "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA"
     },
     "email_audience": {
       "student": "Alumno",
@@ -891,7 +896,9 @@
       "enrollment_certificate_issued": "si la solicita",
       "procedure_payment_under_review": "si es un trámite y va a revisión",
       "procedure_payment_approved": "si es un trámite",
-      "procedure_payment_rejected": "si es un trámite y se rechaza"
+      "procedure_payment_rejected": "si es un trámite y se rechaza",
+      "grade_corrected": "Solo si una nota registrada se corrige",
+      "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)"
     },
     "email_delivery_reason": {
       "provider_unavailable": "El proveedor no respondió",
@@ -1716,7 +1723,9 @@
       "no_active_title": "No tienes cursos activos",
       "no_active_body": "Cuando coordinación te asigne un aula, aparece aquí. Las aulas cerradas salen del portal.",
       "load_error_title": "No pudimos cargar tus aulas",
-      "load_error_body": "Vuelve a intentarlo en unos minutos. Si sigue igual, avisa a coordinación."
+      "load_error_body": "Vuelve a intentarlo en unos minutos. Si sigue igual, avisa a coordinación.",
+      "finished_waiting": "{count, plural, one {Tienes un aula finalizada.} other {Tienes # aulas finalizadas.}} Siguen en Mis aulas hasta que coordinación las cierre, por si falta alguna nota.",
+      "finished_waiting_link": "Ver mis aulas"
     },
     "team": {
       "title": "Equipo",
@@ -2373,6 +2382,61 @@
       "filter_teacher": "Docente",
       "filter_all": "Todos los docentes",
       "empty": "Ningún aula con docente asignado y fechas para mostrar en el calendario."
+    },
+    "class_group_grades": {
+      "title": "Notas",
+      "intro": "Nota del examen final de cada alumno con vacante confirmada. Aprueba desde {min}.",
+      "load_error": "No se pudieron cargar las notas. Recarga la página.",
+      "empty": "Esta aula todavía no tiene alumnos con vacante confirmada.",
+      "col_student": "Alumno",
+      "col_grade": "Nota final",
+      "col_status": "Resultado",
+      "col_actions": "Acciones",
+      "not_posted": "Sin nota",
+      "corrected_badge": "Corregida",
+      "post": "Registrar nota",
+      "correct": "Corregir",
+      "history_show": "Ver historial",
+      "history_hide": "Ocultar historial",
+      "history_posted": "Registrada por {name} · {date}",
+      "history_corrected": "Corregida por {name} · {date}",
+      "history_unknown_name": "una cuenta sin nombre",
+      "history_reason": "Motivo: {reason}",
+      "dialog_post_title": "Registrar nota de {name}",
+      "dialog_correct_title": "Corregir nota de {name}",
+      "dialog_post_body": "La nota registrada no se cambia después. Si hay un error, se corrige con un motivo.",
+      "dialog_correct_body": "La nota anterior queda en el historial. La corrección no se puede deshacer, solo corregir de nuevo.",
+      "current_value": "Nota actual: {value}",
+      "field_grade": "Nota (0 a 20)",
+      "field_da": "No rindió el examen final (DA)",
+      "field_reason": "Motivo de la corrección",
+      "field_reason_hint": "Queda en el historial de la nota. Hasta 500 caracteres.",
+      "confirm_post": "Registrar",
+      "confirm_correct": "Guardar corrección",
+      "cancel": "Cancelar",
+      "saving": "Guardando…",
+      "close": "Cerrar",
+      "email_notice": "El alumno, y el apoderado si es menor, recibe la nota por correo.",
+      "posting_closed": "Las notas se registran cuando el aula está en curso o finalizada.",
+      "saved_post": "Nota registrada.",
+      "saved_correct": "Nota corregida.",
+      "finished_notice": "Con esta nota todos los alumnos quedaron calificados y el aula pasó a Finalizada.",
+      "invalid_grade": "Escribe una nota de 0 a 20, con hasta dos decimales, o marca que no rindió.",
+      "reason_required": "Escribe el motivo de la corrección (hasta 500 caracteres).",
+      "read_only": "Solo lectura: tu cargo ve las notas, pero no las registra ni las corrige.",
+      "errors": {
+        "grading_closed": "Esta aula no está abierta para notas.",
+        "grade_already_recorded": "Esta nota ya fue registrada con otro valor. Recarga la página y, si está mal, corrígela.",
+        "grade_not_recorded": "Este alumno todavía no tiene nota registrada. Registra la nota en lugar de corregirla.",
+        "grade_correction_unchanged": "La nota ya tiene ese valor.",
+        "grade_corrected_concurrently": "Otra persona corrigió esta nota al mismo tiempo. Recarga la página y revisa antes de corregir.",
+        "grade_correction_reason_required": "Escribe el motivo de la corrección (hasta 500 caracteres).",
+        "grade_out_of_range": "La nota va de 0 a 20, con hasta dos decimales.",
+        "grade_unknown_enrollment": "Este alumno ya no tiene vacante confirmada en el aula. Recarga la página.",
+        "generic": "No se pudo guardar. Intenta de nuevo."
+      },
+      "teacher_corrected": "Corregida por la coordinación",
+      "teacher_finished": "Con estas notas todos los alumnos quedaron calificados y el aula pasó a Finalizada."
     }
   }
 }
