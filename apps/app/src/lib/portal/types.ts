@@ -1,3 +1,5 @@
+import type { ClassroomLink } from '@/lib/backoffice/class-links'
+
 /**
  * Domain shapes for the student portal UI, filled from `GET /portal/overview`
  * by `lib/portal/session.ts` (OOC-32). Same names and enums as the database
@@ -172,11 +174,13 @@ export interface ClassGroup {
   startDate: string | null
   endDate: string | null
   /**
-   * The class group's Google Classroom, where the Meet lives — an external
-   * link only, no video hosting in-platform (CLAUDE.md §2). The API sends it
-   * only on a confirmed seat (OOC-98); null otherwise.
+   * The class group's Google Classrooms, where the Meet lives — one per module
+   * it teaches, in module order (OOC-144). External links only, no video
+   * hosting in-platform (CLAUDE.md §2). The API sends them only on a
+   * confirmed seat (OOC-98); empty otherwise. `module` is null only for the
+   * single link of a class group with no module set.
    */
-  classroomUrl: string | null
+  classroomLinks: ClassroomLink[]
 }
 
 export interface CourseMaterial {
@@ -388,7 +392,8 @@ export interface NextClassOccurrence {
   teacherName: string
   /** ISO UTC of the next session start. */
   startsAt: string
-  classroomUrl: string | null
+  /** The class group's quick links (OOC-144) — the hero card opens the one, or sends to the course when there are several. */
+  classroomLinks: ClassroomLink[]
   /** The same cadeado the enrollment carries, so the hero card can honor it. */
   classAccessLock: ClassAccessLock
 }

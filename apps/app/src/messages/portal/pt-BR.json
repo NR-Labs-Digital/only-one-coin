@@ -48,6 +48,7 @@
       "none_title": "Você não tem aulas agendadas",
       "none_body": "Quando sua matrícula estiver ativa, sua próxima sessão aparecerá aqui.",
       "join": "Entrar na aula",
+      "choose_module": "Escolher módulo",
       "no_link_yet": "O link será publicado antes da aula",
       "locked": "Acesso pausado — regularizar pagamento"
     },
@@ -135,9 +136,13 @@
       "mode_label": "Modalidade",
       "min_age_label": "Idade mínima",
       "min_age_value": "{age} anos",
-      "schedule_title": "Horário e acesso à aula",
+      "schedule_title": "Horário",
       "teacher_title": "Docente",
       "join_class": "Entrar na aula",
+      "quick_links_title": "Acessos rápidos",
+      "classroom_module": "Classroom · Módulo {module}",
+      "close": "Fechar",
+      "modal_description": "Detalhe da sua matrícula em {course}",
       "meeting_pending": "O link da aula será publicado antes do início.",
       "locked": {
         "monthly_payment_due": "Seu acesso à aula está pausado porque o módulo atual ainda não tem pagamento aprovado. Envie seu comprovante e reativamos assim que for validado. Não é uma dívida: não há juros nem multa.",

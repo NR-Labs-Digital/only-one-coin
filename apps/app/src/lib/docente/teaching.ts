@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { apiFetch } from '@/lib/backoffice/api-client'
 import { toLanguage } from '@/lib/backoffice/teachers'
 import type { ClassGroupStatus, CourseLanguage, WeeklySlotItem } from '@/lib/backoffice/types'
+import type { ClassroomLink } from '@/lib/backoffice/class-links'
 
 /**
  * The docente portal's reads (OOC-82), `apps/api` `/teaching/*`. Every one is
@@ -28,8 +29,8 @@ export interface TeachingClassGroup {
   capacity: number
   seatsTaken: number
   status: ClassGroupStatus
-  /** The Google Classroom coordination pasted with the teacher (OOC-98); null = not yet. */
-  classroomUrl: string | null
+  /** One Classroom per module it teaches (OOC-144), in order; empty = coordination has not pasted one yet. */
+  classroomLinks: ClassroomLink[]
   /** Which of the course's modules it teaches (OOC-100); null = coordination has not set it. */
   module: number | null
   /** That module's material, from the course (OOC-100); null = nothing to open. */

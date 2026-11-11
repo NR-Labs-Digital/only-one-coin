@@ -384,6 +384,7 @@
         "modules": "Modules",
         "module_materials": "Module materials",
         "classroom_url": "Classroom link",
+        "classroom_links": "Classroom links per module",
         "module": "Module",
         "total_hours": "Total hours",
         "certificate_rule": "Certificate rule",
@@ -1140,8 +1141,11 @@
       "teacher_outside_availability": "The schedule falls outside the availability the teacher declared. You can save anyway.",
       "teacher_schedule_clash": "The teacher already has a class group at the same time in this period: {codes}. You can save anyway.",
       "teacher_unassigned": "No teacher",
-      "field_classroom": "Classroom link",
+      "field_classroom": "Classroom per module",
       "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_needs_module": "Pick the class group's module to paste its Classroom: each module has its own.",
+      "classroom_legacy_hint": "Current link, with no module: {url}. It moves to the module you pick.",
+      "classroom_module_label": "Module {number} Classroom",
       "classroom_invalid": "Paste an https://classroom.google.com/… link",
       "classroom_missing": "No Classroom",
       "filter_unassigned": "Only class groups without a teacher",
@@ -2109,7 +2113,8 @@
       "procedure_price_created": "Procedure price changed"
     },
     "class_links": {
-      "classroom": "Open Classroom"
+      "classroom": "Open Classroom",
+      "classroom_module": "Classroom · Module {module}"
     },
     "grade_report": {
       "download": "Download report",
@@ -2343,8 +2348,8 @@
       "period_form_how": "Pick the campaign this class group is sold in. If it does not exist yet, pick “+ New period” at the end of the list and fill it in right here.",
       "teacher_what": "Who teaches the class group. Only active teachers who teach the course's language are listed.",
       "teacher_how": "Not listed? Add the language on their file, under Teachers. If you do not know yet, leave it empty: it does not stop the class group from opening.",
-      "classroom_what": "This class group's Google Classroom link. The teacher sees it on their portal, and a student with a confirmed seat on theirs.",
-      "classroom_how": "Copy the link from Classroom and paste it here. You can do it later.",
+      "classroom_what": "One Google Classroom per module this class group teaches. The teacher sees it on their portal, and a student with a confirmed seat on theirs.",
+      "classroom_how": "Copy the link from Classroom and paste it under the module. A full-course class group has one per module. You can do it later.",
       "capacity_what": "How many students fit in this class group. Seats belong to each class group: 30 seats are 30 students in one group, with its teacher and its schedule.",
       "capacity_how_create": "More than one group? Raise the Number of class groups: seats can be the same for all or different for each.",
       "capacity_how_edit": "It cannot go below the seats already taken. To open another group, use New class group on the list.",

@@ -384,6 +384,7 @@
         "modules": "Módulos",
         "module_materials": "Material dos módulos",
         "classroom_url": "Link do Classroom",
+        "classroom_links": "Links do Classroom por módulo",
         "module": "Módulo",
         "total_hours": "Horas totais",
         "certificate_rule": "Regra do certificado",
@@ -1140,8 +1141,11 @@
       "teacher_outside_availability": "O horário está fora da disponibilidade que o docente declarou. Dá para salvar mesmo assim.",
       "teacher_schedule_clash": "O docente já tem turma no mesmo horário neste período: {codes}. Dá para salvar mesmo assim.",
       "teacher_unassigned": "Sem docente",
-      "field_classroom": "Link do Classroom",
+      "field_classroom": "Classroom por módulo",
       "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_needs_module": "Escolha o módulo da turma para colar o Classroom: cada módulo tem o seu.",
+      "classroom_legacy_hint": "Link atual, sem módulo: {url}. Passa para o módulo que você escolher.",
+      "classroom_module_label": "Classroom do módulo {number}",
       "classroom_invalid": "Cole um link https://classroom.google.com/…",
       "classroom_missing": "Sem Classroom",
       "filter_unassigned": "Só turmas sem docente",
@@ -2109,7 +2113,8 @@
       "procedure_price_created": "Preço de trâmite alterado"
     },
     "class_links": {
-      "classroom": "Abrir Classroom"
+      "classroom": "Abrir Classroom",
+      "classroom_module": "Classroom · Módulo {module}"
     },
     "grade_report": {
       "download": "Baixar relatório",
@@ -2343,8 +2348,8 @@
       "period_form_how": "Escolha a campanha em que esta turma é vendida. Se ainda não existe, escolha «+ Novo período» no fim da lista e preencha aqui mesmo.",
       "teacher_what": "Quem dá a turma. Só aparecem os docentes ativos que ensinam o idioma do curso.",
       "teacher_how": "Não aparece? Adicione o idioma na ficha, em Docentes. Se ainda não sabe, deixe vazio: não impede abrir a turma.",
-      "classroom_what": "O link do Google Classroom desta turma. O docente vê no portal dele, e o aluno com vaga confirmada no dele.",
-      "classroom_how": "Copie o link no Classroom e cole aqui. Pode fazer depois.",
+      "classroom_what": "Um Google Classroom por módulo que esta turma dá. O docente vê no portal dele, e o aluno com vaga confirmada no dele.",
+      "classroom_how": "Copie o link no Classroom e cole no módulo. Se a turma dá o curso completo, há um por módulo. Pode fazer depois.",
       "capacity_what": "Quantos alunos entram nesta turma. As vagas são de cada turma: 30 vagas são 30 alunos em um mesmo grupo, com seu docente e seu horário.",
       "capacity_how_create": "Mais de um grupo? Aumente a Quantidade de turmas: as vagas podem ser as mesmas para todas ou diferentes em cada uma.",
       "capacity_how_edit": "Não pode ficar abaixo das vagas já ocupadas. Para abrir outro grupo, use Nova turma na lista.",

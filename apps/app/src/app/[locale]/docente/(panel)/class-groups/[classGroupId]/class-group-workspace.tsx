@@ -275,7 +275,7 @@ export function ClassGroupWorkspace({
         {tools.classLinks && (
           <aside className="border-t border-line bg-sky-soft/60 px-5 py-4 @4xl/page:border-l @4xl/page:border-t-0">
             <ClassResources
-              classroomUrl={group.classroomUrl}
+              classroomLinks={group.classroomLinks}
               module={group.module}
               moduleMaterialsUrl={group.moduleMaterialUrl}
               courseMaterialUrls={group.courseMaterialUrls}

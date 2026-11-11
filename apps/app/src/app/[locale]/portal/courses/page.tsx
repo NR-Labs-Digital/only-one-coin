@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getPortalView } from '@/lib/portal/session'
+import { getFeatureFlags } from '@/lib/feature-flags/server'
 import { formatDateNumeric } from '@/lib/portal/format'
 import type { Locale } from '@/lib/portal/types'
 import {
@@ -12,6 +13,8 @@ import {
 } from '@/components/portal/ui'
 import { enrollmentTone } from '@/components/portal/status-tone'
 import { Icon } from '@/components/portal/icons'
+import { EnrollmentDetail } from '@/components/portal/enrollment-detail'
+import { EnrollmentModal } from '@/components/portal/enrollment-modal'
 
 /**
  * Course list, one row per enrollment. Every row says the same four things in
@@ -27,18 +30,28 @@ import { Icon } from '@/components/portal/icons'
  *
  * The row is `flex-wrap`, never a breakpoint grid: it breaks when the column it
  * got is actually too narrow, which is the only thing it can see (CLAUDE.md §5).
+ *
+ * A row opens the enrollment in a modal over the list (OOC-144), addressed by
+ * `?enrollment=<id>`. The id is looked up among the student's own enrollments
+ * only — one that is not theirs opens nothing (CLAUDE.md §8).
  */
 export default async function CoursesPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ enrollment?: string | string[] }>
 }) {
   const { locale: raw } = await params
   const locale = raw as Locale
   setRequestLocale(raw)
   const t = await getTranslations('portal')
 
-  const { enrollments } = await getPortalView()
+  const { enrollments, passingGrade } = await getPortalView()
+  const { enrollment: requested } = await searchParams
+  const opened =
+    typeof requested === 'string' ? (enrollments.find((e) => e.id === requested) ?? null) : null
+  const flags = opened ? await getFeatureFlags('portal') : null
 
   return (
     <div>
@@ -70,7 +83,8 @@ export default async function CoursesPage({
               return (
                 <li key={e.id}>
                   <Link
-                    href={`/portal/courses/${e.id}`}
+                    href={`/portal/courses?enrollment=${e.id}`}
+                    scroll={false}
                     className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 transition hover:bg-sky-soft"
                   >
                     <div className="min-w-0 flex-1 basis-72">
@@ -139,6 +153,17 @@ export default async function CoursesPage({
             })}
           </ul>
         </Card>
+      )}
+
+      {opened && flags && (
+        <EnrollmentModal courseName={opened.course.name}>
+          <EnrollmentDetail
+            enrollment={opened}
+            locale={locale}
+            passingGrade={passingGrade}
+            paymentsEnabled={flags['portal.payments']}
+          />
+        </EnrollmentModal>
       )}
     </div>
   )
