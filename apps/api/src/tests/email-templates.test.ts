@@ -37,6 +37,14 @@ const SAMPLE_VARS: EmailTemplateVars = {
     passingGrade: 14,
   },
   grade_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  grade_corrected: {
+    recipientName: "Rosa",
+    studentName: "Rosa Quispe",
+    courseName: "Inglés Básico",
+    grade: 14.25,
+    passingGrade: 14,
+  },
+  grade_corrected_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   portal_credentials: {
     recipientName: "Rosa",
     loginEmail: "rosa.quispe@gmail.com",
@@ -164,5 +172,13 @@ describe("grade_posted (OOC-38)", () => {
     expect(renderEmail(sample("grade_posted", "pt-BR")).text).toContain("13,5");
     expect(renderEmail(sample("grade_posted", "en")).subject).toBe("Final grade for Inglés Básico: 13.5");
     expect(renderEmail(sample("grade_posted", "es-PE")).text).toContain("14");
+  });
+});
+
+describe("grade_corrected (OOC-102)", () => {
+  it("says the grade was corrected and gives the new one in the reader's convention", () => {
+    expect(renderEmail(sample("grade_corrected", "en")).subject).toBe("Corrected grade for Inglés Básico: 14.25");
+    expect(renderEmail(sample("grade_corrected", "pt-BR")).text).toContain("14,25");
+    expect(renderEmail(sample("grade_corrected", "es-PE")).text).toContain("corrigió");
   });
 });

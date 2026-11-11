@@ -139,6 +139,23 @@
         "{studentName} did not take the final exam of {courseName}, so the module was recorded as DA (failed for not taking the exam).",
         "You can see the result in the student portal."
       ]
+    },
+    "grade_corrected": {
+      "subject": "Corrected grade for {courseName}: {grade}",
+      "preheader": "The academic coordination corrected the final exam grade.",
+      "paragraphs": [
+        "The academic coordination corrected {studentName}'s final grade in {courseName}. The grade that counts now is {grade}, on the 0 to 20 scale.",
+        "The passing grade is {passingGrade}.",
+        "You can see the corrected grade in the student portal."
+      ]
+    },
+    "grade_corrected_did_not_sit": {
+      "subject": "Corrected result for {courseName}: final exam not taken",
+      "preheader": "The academic coordination corrected the module's result.",
+      "paragraphs": [
+        "The academic coordination corrected {studentName}'s result in {courseName}: the module was recorded as DA (failed for not taking the exam).",
+        "You can see the result in the student portal."
+      ]
     }
   }
 }

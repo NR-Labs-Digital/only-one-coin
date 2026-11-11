@@ -15,15 +15,40 @@ export interface GradeEntry {
   value: GradeValue;
 }
 
-/** A grade already posted — final, never edited. */
+/**
+ * A seat's grade as it counts today: the posted one, or its last correction
+ * (OOC-102). The posted row itself never changes — a correction is a row of
+ * its own, and `value` is whichever is the latest.
+ */
 export interface RecordedGrade {
   enrollmentId: string;
   value: GradeValue;
+  /** When the grade was first posted. */
   recordedAt: Date;
+  /** When the last correction was made; null = never corrected. */
+  correctedAt: Date | null;
+}
+
+/** One link of a grade's history, oldest first: the posting, then each correction. */
+export interface GradeHistoryEntry {
+  value: GradeValue;
+  at: Date;
+  /** The account's name; null when the account no longer has one to show. */
+  byName: string | null;
+  /** Why it was corrected; null on the posting itself. */
+  reason: string | null;
+}
+
+/** A seat's grade with its whole history — what the supervision reads (OOC-102). */
+export interface GradeWithHistory extends RecordedGrade {
+  history: GradeHistoryEntry[];
 }
 
 export const MIN_GRADE = 0;
 export const MAX_GRADE = 20;
+
+/** How long a correction's reason may be — the same bound as the database CHECK (0052). */
+export const MAX_CORRECTION_REASON_LENGTH = 500;
 
 /** Within 0–20 and at most two decimal places — what the sheet accepts. */
 export function isValidScore(score: number): boolean {
@@ -41,24 +66,62 @@ export interface RecordGradesResult {
   recorded: number;
   /** Grades that were already posted with the same value — a retry after a lost connection. */
   alreadyRecorded: number;
+  /**
+   * The batch left every confirmed seat graded and moved the class group from
+   * in progress to finished (OOC-102). False when it was already finished, or
+   * seats are still missing a grade.
+   */
+  finished: boolean;
 }
 
+export type CorrectGradeOutcome =
+  | { kind: "corrected"; correctionId: string }
+  /** The seat has no posted grade to correct. */
+  | { kind: "not_graded" }
+  /** The grade already is that value — nothing to correct. */
+  | { kind: "same_value" }
+  /** Somebody corrected the same grade at the same moment; this one was not written. */
+  | { kind: "concurrent" };
+
 export interface IGradeRepository {
+  /** The grade that counts per graded seat (`current_grades`). */
   listForClassGroup(classGroupId: string): Promise<RecordedGrade[]>;
+  /** The same, each with its history and who did each step. */
+  listWithHistory(classGroupId: string): Promise<GradeWithHistory[]>;
   /** The people and course behind these seats of the class group, for the grade e-mails. */
   emailFacts(classGroupId: string, enrollmentIds: string[]): Promise<GradeEmailFacts[]>;
   /**
    * Posts the entries in one transaction: an entry whose seat already has the
-   * same grade is skipped, and one whose seat has a different grade refuses
-   * the whole batch — `conflicts` lists those seats and nothing is written.
-   * The audit entry and the e-mails of the seats actually written go in the
-   * same transaction — a retry that writes nothing e-mails nobody.
+   * same **posted** grade is skipped (a correction since does not turn a
+   * retry into a conflict), and one whose seat has a different posted grade
+   * refuses the whole batch — `conflicts` lists those seats and nothing is
+   * written. The audit entry and the e-mails of the seats actually written go
+   * in the same transaction — a retry that writes nothing e-mails nobody.
+   *
+   * When something was written and every seat of `seatIds` now has a grade,
+   * an in-progress class group moves to finished in the same transaction,
+   * with `finishAudit`'s entry.
    */
   record(params: {
     classGroupId: string;
     recordedBy: string;
     entries: GradeEntry[];
+    seatIds: string[];
     audit: (recorded: GradeEntry[]) => AuditLogEntry;
+    finishAudit: () => AuditLogEntry;
     emails: (recorded: GradeEntry[]) => EmailNotification[];
   }): Promise<RecordGradesResult | { conflicts: string[] }>;
+  /**
+   * Appends a correction to the seat's posted grade, replacing its latest
+   * correction, with the audit entry and the e-mails in the same transaction.
+   */
+  correct(params: {
+    classGroupId: string;
+    enrollmentId: string;
+    value: GradeValue;
+    reason: string;
+    correctedBy: string;
+    audit: (correctionId: string) => AuditLogEntry;
+    emails: (correctionId: string) => EmailNotification[];
+  }): Promise<CorrectGradeOutcome>;
 }

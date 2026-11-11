@@ -55,3 +55,44 @@ export function gradeEmails(
     };
   });
 }
+
+/**
+ * "Your final grade was corrected" (OOC-102) — sent when the academic
+ * supervision corrects a posted grade: the new grade and the pass mark, or DA.
+ * Same recipients as the grade e-mail. Keyed by the correction, so a second
+ * correction of the same grade is a second e-mail, and a retry of the same
+ * one is not.
+ */
+export function correctedGradeEmails(
+  facts: GradeEmailFacts,
+  correctionId: string,
+  value: GradeValue,
+  passingGrade: number,
+  locale: Locale,
+): EmailNotification[] {
+  const studentName = `${facts.student.firstName} ${facts.student.lastName}`;
+
+  return enrollmentRecipients(facts).map((recipient): EmailNotification => {
+    const base = { to: recipient.to, locale };
+    if (value.kind === "did_not_sit") {
+      return {
+        ...base,
+        templateKey: "grade_corrected_did_not_sit",
+        vars: { recipientName: recipient.name, studentName, courseName: facts.courseName },
+        dedupeKey: `grade_corrected_did_not_sit:${correctionId}:${recipient.kind}`,
+      };
+    }
+    return {
+      ...base,
+      templateKey: "grade_corrected",
+      vars: {
+        recipientName: recipient.name,
+        studentName,
+        courseName: facts.courseName,
+        grade: value.score,
+        passingGrade,
+      },
+      dedupeKey: `grade_corrected:${correctionId}:${recipient.kind}`,
+    };
+  });
+}

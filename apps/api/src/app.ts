@@ -31,6 +31,11 @@ import {
   listOwnClassGroupGradesRoute,
   recordOwnClassGroupGradesRoute,
 } from "@/http/teaching/OwnClassGroupGradesRoutes.js";
+import {
+  correctClassGroupGradeRoute,
+  listClassGroupGradesRoute,
+  recordClassGroupGradesRoute,
+} from "@/http/teaching/ClassGroupGradesRoutes.js";
 import { getTeachingSummaryRoute } from "@/http/teaching/GetTeachingSummaryRoute.js";
 import { registerTeacherRoute } from "@/http/teacher/RegisterTeacherRoute.js";
 import { updateTeacherRoute } from "@/http/teacher/UpdateTeacherRoute.js";
@@ -231,6 +236,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupStudentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupGradesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(recordOwnClassGroupGradesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listClassGroupGradesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(recordClassGroupGradesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(correctClassGroupGradeRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getTeachingSummaryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(requestManualReceiptUploadRoute);

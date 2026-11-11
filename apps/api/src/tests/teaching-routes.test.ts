@@ -62,6 +62,10 @@ const NOT_A_TEACHERS: [string, string][] = [
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`],
   ["PATCH", `/api/v1/catalog/class-groups/${ID}`],
   ["POST", `/api/v1/catalog/class-groups/${ID}/status`],
+  // The supervision's grades (OOC-102): a teacher posts only through /teaching.
+  ["GET", `/api/v1/catalog/class-groups/${ID}/grades`],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/grades`],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/grades/${ID}/correction`],
   ["GET", "/api/v1/catalog/courses"],
   ["GET", "/api/v1/catalog/periods"],
   ["GET", "/api/v1/teachers"],

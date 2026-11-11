@@ -39,6 +39,9 @@ import {
   ResendFailedEmailUseCase,
   ListOwnClassGroupGradesUseCase,
   RecordOwnClassGroupGradesUseCase,
+  ListClassGroupGradesUseCase,
+  RecordClassGroupGradesUseCase,
+  CorrectClassGroupGradeUseCase,
   SendEmailProofUseCase,
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
@@ -296,6 +299,10 @@ export interface AppUseCases {
     listOwnClassGroupGrades: ListOwnClassGroupGradesUseCase;
     recordOwnClassGroupGrades: RecordOwnClassGroupGradesUseCase;
     summary: GetTeachingSummaryUseCase;
+    /** The academic supervision's side of the grades, any class group (OOC-102). */
+    listClassGroupGrades: ListClassGroupGradesUseCase;
+    recordClassGroupGrades: RecordClassGroupGradesUseCase;
+    correctClassGroupGrade: CorrectClassGroupGradeUseCase;
   };
   student: {
     register: RegisterStudentUseCase;
@@ -884,6 +891,17 @@ function buildContainer(): AppContainer {
           platformSettingsRepository,
         ),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
+        listClassGroupGrades: new ListClassGroupGradesUseCase(teachingReader, gradeRepository),
+        recordClassGroupGrades: new RecordClassGroupGradesUseCase(
+          teachingReader,
+          gradeRepository,
+          platformSettingsRepository,
+        ),
+        correctClassGroupGrade: new CorrectClassGroupGradeUseCase(
+          teachingReader,
+          gradeRepository,
+          platformSettingsRepository,
+        ),
       },
       student: {
         register: registerStudent,

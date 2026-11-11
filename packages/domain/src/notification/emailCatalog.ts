@@ -67,6 +67,10 @@ export const EMAIL_CATALOG = {
      final exam was not sat. Sent the moment it is posted — it is final then. */
   grade_posted: { audience: "student", stage: "grades", conditional: false, emitted: true },
   grade_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
+  /* The academic supervision corrected a posted grade (OOC-102): the new
+     grade, or DA. Sent with the correction. */
+  grade_corrected: { audience: "student", stage: "grades", conditional: true, emitted: true },
+  grade_corrected_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
   enrollment_certificate_issued: { audience: "student", stage: "documents", conditional: true, emitted: false },
   certificate_issued: { audience: "student", stage: "documents", conditional: false, emitted: false },
 

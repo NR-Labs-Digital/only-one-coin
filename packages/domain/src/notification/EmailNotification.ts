@@ -78,6 +78,20 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** The supervision corrected a posted grade (OOC-102): the new grade, and the pass mark of the day. */
+  grade_corrected: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    grade: number;
+    passingGrade: number;
+  };
+  /** The supervision corrected a posted grade to DA (OOC-102). */
+  grade_corrected_did_not_sit: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;
