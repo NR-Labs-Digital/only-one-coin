@@ -262,6 +262,13 @@ export const classGroups = pgTable(
     // read by its teacher and its confirmed students. Null until somebody
     // pastes it; the host rule lives in the domain, like module materials.
     classroomUrl: text("classroom_url"),
+    // One Classroom per module the class group teaches (OOC-144): module
+    // number (as text, JSON keys are text) → link. Replaces `classroom_url`,
+    // which stays read only for class groups with no module set until the
+    // contract step (CLAUDE.md §7). Keys and the host rule are the domain's.
+    // A module the group no longer teaches keeps its link: progression
+    // (OOC-85) moves the group on, the old Classroom is still that module's.
+    classroomLinks: jsonb("classroom_links").$type<Record<string, string>>().notNull().default({}),
     // Which of the course's modules the class group teaches, 1-based
     // (OOC-100) — what picks the module material its teacher opens. Null on
     // every row written before the column. The upper bound (the course's
@@ -299,6 +306,7 @@ export const classGroups = pgTable(
     check("class_groups_capacity_check", sql`${table.capacity} > 0`),
     check("class_groups_module_check", sql`${table.module} is null or ${table.module} > 0`),
     check("class_groups_full_course_check", sql`not ${table.fullCourse} or ${table.module} is null`),
+    check("class_groups_classroom_links_check", sql`jsonb_typeof(${table.classroomLinks}) = 'object'`),
     check(
       "class_groups_seats_taken_check",
       sql`${table.seatsTaken} >= 0 and ${table.seatsTaken} <= ${table.capacity}`,

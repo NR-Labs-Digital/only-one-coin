@@ -379,6 +379,13 @@
       "when": 1794450000000,
       "tag": "0053_user_preferred_locale",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794450060000,
+      "tag": "0054_class_group_classroom_links",
+      "breakpoints": true
     }
   ]
 }
