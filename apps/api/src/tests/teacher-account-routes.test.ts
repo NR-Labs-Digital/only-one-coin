@@ -41,6 +41,7 @@ afterEach(() => {
 function signIn(role: Role): void {
   const user: AuthenticatedUser = { id: "usr_79", email: "ana@example.com", name: "Ana Quispe", role, twoFactorEnabled: true };
   vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
+  vi.spyOn(container.identity.userPreferenceRepository, "findPreferredLocale").mockResolvedValue(null);
 }
 
 function teacherFile(): Teacher {

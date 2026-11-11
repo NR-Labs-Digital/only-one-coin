@@ -125,6 +125,7 @@ import { leaveWaitlistRoute } from "@/http/catalog/LeaveWaitlistRoute.js";
 import { getCurrentStaffRoute } from "@/http/identity/GetCurrentStaffRoute.js";
 import { getOwnPasswordRoute } from "@/http/identity/GetOwnPasswordRoute.js";
 import { changeOwnPasswordRoute } from "@/http/identity/ChangeOwnPasswordRoute.js";
+import { setOwnPreferredLocaleRoute } from "@/http/identity/SetOwnPreferredLocaleRoute.js";
 import { getOwnMfaRoute } from "@/http/identity/GetOwnMfaRoute.js";
 import { startOwnMfaEnrollmentRoute } from "@/http/identity/StartOwnMfaEnrollmentRoute.js";
 import { confirmOwnMfaEnrollmentRoute } from "@/http/identity/ConfirmOwnMfaEnrollmentRoute.js";
@@ -308,6 +309,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getCurrentStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnPasswordRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(changeOwnPasswordRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(setOwnPreferredLocaleRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnMfaRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(startOwnMfaEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(confirmOwnMfaEnrollmentRoute);
