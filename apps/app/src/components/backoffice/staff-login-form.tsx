@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { RecoveryCodes } from '@/components/backoffice/recovery-codes'
+import { fetchPreferredLocale } from '@/lib/preferred-locale'
 import {
   EMAIL_LOCALE,
   confirmEnrollment,
@@ -130,6 +131,14 @@ export function StaffLoginForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /** Into the panel, in the language chosen on the account page (OOC-150) —
+   * or this page's, when none is saved. Every way the sign-in ends goes
+   * through here: password alone, e-mailed code, recovery code, MFA setup. */
+  async function enter() {
+    const saved = await fetchPreferredLocale('staff')
+    router.push(homeHref, saved ? { locale: saved } : undefined)
+  }
+
   function resetCodeState() {
     setCodeError(null)
     setCodeSent(false)
@@ -206,7 +215,7 @@ export function StaffLoginForm({
       return
     }
 
-    router.push(homeHref)
+    await enter()
   }
 
   async function submitCode(
@@ -418,7 +427,7 @@ export function StaffLoginForm({
         <RecoveryCodes
           codes={recoveryCodes}
           doneLabel={t('mfa_setup_done')}
-          onDone={() => router.push(homeHref)}
+          onDone={() => void enter()}
         />
       </div>
     )
@@ -464,7 +473,7 @@ export function StaffLoginForm({
   if (step === 'mfa_recovery') {
     return (
       <form
-        onSubmit={(event) => void submitCode(event, verifyRecoveryCode, () => router.push(homeHref))}
+        onSubmit={(event) => void submitCode(event, verifyRecoveryCode, () => void enter())}
         className={cardClass}
         noValidate
       >
@@ -519,7 +528,7 @@ export function StaffLoginForm({
   if (step === 'mfa') {
     return (
       <form
-        onSubmit={(event) => void submitCode(event, verifySignInCode, () => router.push(homeHref))}
+        onSubmit={(event) => void submitCode(event, verifySignInCode, () => void enter())}
         className={cardClass}
         noValidate
       >

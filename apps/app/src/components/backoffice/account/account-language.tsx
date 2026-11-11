@@ -6,6 +6,7 @@ import { usePathname, useRouter } from '@/i18n/navigation'
 import { routing } from '@/i18n/routing'
 import { Card, SectionTitle } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { savePreferredLocale } from '@/lib/preferred-locale'
 
 /**
  * The language the panel speaks in. Same switch as the globe in the header,
@@ -14,7 +15,9 @@ import { BoIcon } from '@/components/backoffice/icons'
  * with no code change — the list comes from the routing config.
  *
  * It changes the route locale, so it takes effect at once and survives a
- * shared link. Persisting it on the user's row is part of wiring `apps/api`.
+ * shared link, and saves the choice on the account (OOC-150) so the next
+ * sign-in, on any device, opens in it. The save never holds the switch up: if
+ * it fails, only the next sign-in falls back to the old language.
  */
 export function AccountLanguage() {
   const t = useTranslations('bo')
@@ -40,6 +43,7 @@ export function AccountLanguage() {
                 disabled={pending}
                 onClick={() => {
                   if (active) return
+                  void savePreferredLocale(code)
                   startTransition(() => {
                     router.replace(pathname, { locale: code })
                   })

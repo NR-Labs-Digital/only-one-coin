@@ -7,6 +7,7 @@ import { routing } from '@/i18n/routing'
 import { Card, SectionTitle } from '@/components/portal/ui'
 import { Icon } from '@/components/portal/icons'
 import { Flag } from '@/components/portal/flag'
+import { savePreferredLocale } from '@/lib/preferred-locale'
 
 /**
  * O que o aluno escolhe sobre o próprio portal. Hoje é só o idioma; o cartão
@@ -24,8 +25,9 @@ import { Flag } from '@/components/portal/flag'
  * tocar em código — a lista vem da configuração de rotas.
  *
  * Trocar o idioma troca o locale da rota, então vale na hora e sobrevive a um
- * link compartilhado. Guardar a escolha na linha do aluno entra junto com o
- * wiring de `apps/api`.
+ * link compartilhado — e grava a escolha na conta (OOC-150), para o próximo
+ * login, em qualquer aparelho, abrir nela. A gravação não segura a troca: se
+ * falhar, só o próximo login volta ao idioma antigo.
  */
 export function ProfilePreferences() {
   const t = useTranslations('portal')
@@ -64,6 +66,7 @@ export function ProfilePreferences() {
               disabled={pending}
               onClick={() => {
                 if (active) return
+                void savePreferredLocale(code)
                 startTransition(() => {
                   router.replace(pathname, { locale: code })
                 })
