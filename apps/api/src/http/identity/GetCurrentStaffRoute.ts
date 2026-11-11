@@ -1,3 +1,4 @@
+import { LocaleSchema } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { splitName } from "@/infra/identity/splitName.js";
@@ -22,6 +23,8 @@ const GetCurrentStaffResponseSchema = z.object({
   email: z.string(),
   role: StaffRoleSchema,
   teacherId: z.string().uuid().nullable(),
+  /** The language chosen on the account page (OOC-150); null until one is. */
+  preferredLocale: LocaleSchema.nullable(),
 });
 
 // The signed-in staff member's own identity, read from the session Better
@@ -57,7 +60,10 @@ export const getCurrentStaffRoute = RouteBuilder.get("/me")
     // non-public handler runs — narrowed here only so TypeScript knows it.
     const user = request.currentUser!;
     const { firstName, lastName } = splitName(user.name);
-    const teacher = user.role === "teacher" ? await container.repositories.teacher.findByUserId(user.id) : null;
+    const [teacher, preferredLocale] = await Promise.all([
+      user.role === "teacher" ? container.repositories.teacher.findByUserId(user.id) : null,
+      container.identity.userPreferenceRepository.findPreferredLocale(user.id),
+    ]);
 
     reply.status(200).send({
       id: user.id,
@@ -66,5 +72,6 @@ export const getCurrentStaffRoute = RouteBuilder.get("/me")
       email: user.email,
       role: user.role as z.infer<typeof StaffRoleSchema>,
       teacherId: teacher?.id ?? null,
+      preferredLocale,
     });
   });

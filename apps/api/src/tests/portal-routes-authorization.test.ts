@@ -68,6 +68,7 @@ describe("portal routes refuse undeclared roles", () => {
   it("answers a student account with no file behind it with 403", async () => {
     as("student");
     vi.spyOn(container.repositories.portalAccess, "findIdentity").mockResolvedValue(null);
+    vi.spyOn(container.identity.userPreferenceRepository, "findPreferredLocale").mockResolvedValue(null);
     const response = await app.inject({ method: "GET", url: "/api/v1/portal/me", cookies: { [SESSION_COOKIE_NAME]: "token" } });
     expect(response.statusCode).toBe(403);
   });
@@ -75,9 +76,11 @@ describe("portal routes refuse undeclared roles", () => {
   it("gives a student their own identity", async () => {
     as("student");
     vi.spyOn(container.repositories.portalAccess, "findIdentity").mockResolvedValue({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com" });
+    const preference = vi.spyOn(container.identity.userPreferenceRepository, "findPreferredLocale").mockResolvedValue("pt-BR");
     const response = await app.inject({ method: "GET", url: "/api/v1/portal/me", cookies: { [SESSION_COOKIE_NAME]: "token" } });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com" });
+    expect(response.json()).toEqual({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com", preferredLocale: "pt-BR" });
+    expect(preference).toHaveBeenCalledWith("u1");
   });
 
   it("answers /portal/overview with 403 for a student account with no file behind it", async () => {

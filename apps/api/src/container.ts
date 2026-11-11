@@ -125,6 +125,7 @@ import {
   type ITeacherRepository,
   type ITeachingReader,
   type IUserRoleRepository,
+  type IUserPreferenceRepository,
 } from "@ooc/domain";
 import { loadConfig, type Config } from "./config.js";
 import { createLogger } from "./infra/logger.js";
@@ -152,6 +153,7 @@ import { DrizzleStaffInviteRepository } from "./infra/identity/DrizzleStaffInvit
 import { DrizzleStaffPasswordResetRepository } from "./infra/identity/DrizzleStaffPasswordResetRepository.js";
 import { DrizzleStaffUserLookup } from "./infra/identity/DrizzleStaffUserLookup.js";
 import { DrizzleUserRoleRepository } from "./infra/identity/DrizzleUserRoleRepository.js";
+import { DrizzleUserPreferenceRepository } from "./infra/identity/DrizzleUserPreferenceRepository.js";
 import { createDb, type Db } from "./infra/db/client.js";
 import { DrizzlePortalAccessRepository } from "./infra/persistence/portal/DrizzlePortalAccessRepository.js";
 import { DrizzleStudentRepository } from "./infra/persistence/student/DrizzleStudentRepository.js";
@@ -445,6 +447,8 @@ export interface AppIdentity {
   currentSession: ICurrentSessionPort;
   freshAuthVerifier: IFreshAuthVerifier;
   userRoleRepository: IUserRoleRepository;
+  /** The account's own language (OOC-150), read and written by the session's id. */
+  userPreferenceRepository: IUserPreferenceRepository;
   auditLogRepository: IAuditLogRepository;
   staffAccessRepository: IStaffAccessRepository;
   staffAccountProvisioner: IStaffAccountProvisioner;
@@ -543,6 +547,7 @@ function buildContainer(): AppContainer {
   const platformSettingsRepository = new DrizzlePlatformSettingsRepository(db);
   const documentTemplateRepository = new DrizzleDocumentTemplateRepository(db);
   const userRoleRepository = new DrizzleUserRoleRepository(db);
+  const userPreferenceRepository = new DrizzleUserPreferenceRepository(db);
   const auditLogRepository = new DrizzleAuditLogRepository(db);
   const staffInviteRepository = new DrizzleStaffInviteRepository(db);
   const staffAccessRepository = new DrizzleStaffAccessRepository(db);
@@ -813,6 +818,7 @@ function buildContainer(): AppContainer {
       currentSession,
       freshAuthVerifier,
       userRoleRepository,
+      userPreferenceRepository,
       auditLogRepository,
       staffAccessRepository,
       staffAccountProvisioner,

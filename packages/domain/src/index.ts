@@ -353,6 +353,7 @@ export {
 export type { StudentPasswordIssue } from "./identity/StudentPasswordPolicy.js";
 export type { ICurrentSessionPort } from "./identity/ports/ICurrentSessionPort.js";
 export type { IUserRoleRepository } from "./identity/ports/IUserRoleRepository.js";
+export type { IUserPreferenceRepository } from "./identity/ports/IUserPreferenceRepository.js";
 export type { IAuditLogRepository, AuditLogEntry } from "./identity/ports/IAuditLogRepository.js";
 export type { IFreshAuthVerifier } from "./identity/ports/IFreshAuthVerifier.js";
 export type {

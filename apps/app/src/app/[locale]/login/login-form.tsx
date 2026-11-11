@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { signInStudent, type NationalIdType, type SignInMethod } from '@/lib/portal/auth-client'
+import { fetchPreferredLocale } from '@/lib/preferred-locale'
 import { EyeIcon, EyeOffIcon, LockIcon } from './icons'
 import { IdentifierFields, adornClass, fieldClass } from './identifier-fields'
 
@@ -44,7 +45,10 @@ export function LoginForm() {
       setFailure({ errorId: result.errorId })
       return
     }
-    router.push('/portal')
+    // The language chosen on the profile (OOC-150) opens the portal; none
+    // saved, it stays in the language of this page.
+    const saved = await fetchPreferredLocale('student')
+    router.push('/portal', saved ? { locale: saved } : undefined)
     router.refresh()
   }
 
