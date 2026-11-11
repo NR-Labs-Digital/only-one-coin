@@ -134,8 +134,9 @@ export function ClassGroupTableRow({
           {!row.courseActive && (
             <StatusBadge tone="warning" label={t('class_groups.course_off_catalog')} />
           )}
-          {/* Selling or running without a Classroom: a finding, not a block (OOC-98). */}
-          {!row.classroomUrl && (row.status === 'enrolling' || row.status === 'in_progress') && (
+          {/* Selling or running with a module still missing its Classroom: a
+              finding, not a block (OOC-98, per module since OOC-144). */}
+          {row.classroomMissing && (row.status === 'enrolling' || row.status === 'in_progress') && (
             <StatusBadge tone="warning" label={t('class_groups.classroom_missing')} />
           )}
         </span>

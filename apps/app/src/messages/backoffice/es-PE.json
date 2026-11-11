@@ -384,6 +384,7 @@
         "modules": "Módulos",
         "module_materials": "Material de los módulos",
         "classroom_url": "Enlace del Classroom",
+        "classroom_links": "Enlaces del Classroom por módulo",
         "module": "Módulo",
         "total_hours": "Horas totales",
         "certificate_rule": "Regla del certificado",
@@ -1140,8 +1141,11 @@
       "teacher_outside_availability": "El horario está fuera de la disponibilidad que declaró el docente. Puedes guardar igual.",
       "teacher_schedule_clash": "El docente ya tiene un aula a la misma hora en este período: {codes}. Puedes guardar igual.",
       "teacher_unassigned": "Sin docente",
-      "field_classroom": "Enlace del Classroom",
+      "field_classroom": "Classroom por módulo",
       "classroom_placeholder": "https://classroom.google.com/…",
+      "classroom_needs_module": "Elige el módulo del aula para pegar su Classroom: cada módulo tiene el suyo.",
+      "classroom_legacy_hint": "Enlace actual, sin módulo: {url}. Pasa al módulo que elijas.",
+      "classroom_module_label": "Classroom del módulo {number}",
       "classroom_invalid": "Pega un enlace https://classroom.google.com/…",
       "classroom_missing": "Sin Classroom",
       "filter_unassigned": "Solo aulas sin docente",
@@ -2109,7 +2113,8 @@
       "procedure_price_created": "Precio de trámite cambiado"
     },
     "class_links": {
-      "classroom": "Abrir Classroom"
+      "classroom": "Abrir Classroom",
+      "classroom_module": "Classroom · Módulo {module}"
     },
     "grade_report": {
       "download": "Descargar reporte",
@@ -2343,8 +2348,8 @@
       "period_form_how": "Elige la campaña en la que se vende esta aula. Si todavía no existe, elige «+ Nuevo período» al final de la lista y complétalo aquí mismo.",
       "teacher_what": "Quién dicta el aula. Solo aparecen los docentes activos que enseñan el idioma del curso.",
       "teacher_how": "¿No aparece? Agrega el idioma en su ficha, en Docentes. Si aún no lo sabes, déjalo vacío: no impide abrir el aula.",
-      "classroom_what": "El enlace del Google Classroom de esta aula. Lo ve el docente en su portal, y el alumno con vacante confirmada en el suyo.",
-      "classroom_how": "Copia el enlace desde Classroom y pégalo aquí. Puedes hacerlo después.",
+      "classroom_what": "Un Google Classroom por módulo que da esta aula. Lo ve el docente en su portal, y el alumno con vacante confirmada en el suyo.",
+      "classroom_how": "Copia el enlace desde Classroom y pégalo en el módulo. Si el aula da el curso completo, hay uno por módulo. Puedes hacerlo después.",
       "capacity_what": "Cuántos alumnos entran en esta aula. Las vacantes son de cada aula: 30 vacantes son 30 alumnos en un mismo grupo, con su docente y su horario.",
       "capacity_how_create": "¿Más de un grupo? Sube la Cantidad de aulas: las vacantes pueden ser las mismas para todas o distintas en cada una.",
       "capacity_how_edit": "No puede quedar por debajo de las vacantes ya ocupadas. Para abrir otro grupo, usa Nueva aula en la lista.",

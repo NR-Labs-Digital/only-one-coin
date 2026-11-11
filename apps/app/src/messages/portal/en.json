@@ -48,6 +48,7 @@
       "none_title": "You have no scheduled classes",
       "none_body": "Once your enrollment is active, your next session will show up here.",
       "join": "Join the class",
+      "choose_module": "Choose module",
       "no_link_yet": "The link will be posted before class",
       "locked": "Access paused — settle payment"
     },
@@ -135,9 +136,13 @@
       "mode_label": "Mode",
       "min_age_label": "Minimum age",
       "min_age_value": "{age} years",
-      "schedule_title": "Schedule and class access",
+      "schedule_title": "Schedule",
       "teacher_title": "Teacher",
       "join_class": "Join the class",
+      "quick_links_title": "Quick links",
+      "classroom_module": "Classroom · Module {module}",
+      "close": "Close",
+      "modal_description": "Details of your enrollment in {course}",
       "meeting_pending": "The class link will be posted before it starts.",
       "locked": {
         "monthly_payment_due": "Your class access is paused because the current module has no approved payment yet. Upload your receipt and we'll restore it as soon as it's validated. It's not a debt: no interest, no late fees.",

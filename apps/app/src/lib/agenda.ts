@@ -3,6 +3,7 @@ import { toMinutes } from '@/lib/backoffice/availability'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
 import type { ClassGroupItem, ClassGroupStatus } from '@/lib/backoffice/types'
 import type { TeachingClassGroup } from '@/lib/docente/teaching'
+import type { ClassroomLink } from '@/lib/backoffice/class-links'
 
 /**
  * Calendar arithmetic for the class agendas — the teacher's own (`/docente/agenda`)
@@ -79,8 +80,8 @@ export interface AgendaClassGroup {
   teacherId: string | null
   teacherName: string
   slots: WeeklySlotItem[]
-  /** The class group's Google Classroom (OOC-98); null = not pasted yet. */
-  classroomUrl: string | null
+  /** One Classroom per module it teaches (OOC-144); empty = none pasted yet. */
+  classroomLinks: ClassroomLink[]
   startDate: string
   endDate: string
 }
@@ -96,7 +97,7 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
     teacherId: null,
     teacherName: '',
     slots: group.slots,
-    classroomUrl: group.classroomUrl,
+    classroomLinks: group.classroomLinks,
     startDate: isoToLimaDate(group.startsOn),
     endDate: isoToLimaDate(group.endsOn),
   }
@@ -119,7 +120,7 @@ export function agendaCatalogClassGroup(group: ClassGroupItem): AgendaClassGroup
     teacherId: group.teacherId,
     teacherName: group.teacherName,
     slots: group.slots,
-    classroomUrl: group.classroomUrl,
+    classroomLinks: group.classroomLinks,
     startDate: isoToLimaDate(group.startsOn),
     endDate: isoToLimaDate(group.endsOn),
   }

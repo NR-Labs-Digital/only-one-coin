@@ -189,10 +189,35 @@ export function ClassGroupForm({
   )
   const fullCourse = moduleText === FULL_COURSE
   const moduleNumber = moduleText === '' || fullCourse ? null : Number(moduleText)
-  /** Pasted with the teacher, never required to allocate one (OOC-98). */
-  const [classroomDraft, setClassroomDraft] = useState(initial?.classroomUrl ?? '')
-  const classroomUrl = classroomUrlOf(classroomDraft)
-  const classroomInvalid = classroomUrl === 'invalid'
+  /**
+   * One Classroom per module the class group teaches (OOC-144), pasted with
+   * the teacher, never required to allocate one (OOC-98). What is typed, by
+   * module number; a module not typed yet starts from what is stored.
+   */
+  const [classroomDrafts, setClassroomDrafts] = useState<Record<string, string>>(
+    initial?.classroomLinksByModule ?? {},
+  )
+  /** The one link pasted before OOC-144, on a class group with no module set: it moves onto the module picked. */
+  const legacyClassroom =
+    initial && initial.module === null && !initial.fullCourse ? (initial.classroomUrl ?? '') : ''
+  const courseModules = catalog.find((item) => item.id === courseId)?.modules ?? 0
+  /** The modules this class group teaches — one Classroom field each. */
+  const classroomModules = fullCourse
+    ? Array.from({ length: courseModules }, (_, index) => index + 1)
+    : moduleNumber === null
+      ? []
+      : [moduleNumber]
+  const classroomEntries = classroomModules.map((module) => {
+    const draft = classroomDrafts[String(module)] ?? legacyClassroom
+    return { module, draft, value: classroomUrlOf(draft) }
+  })
+  const classroomInvalid = classroomEntries.some((entry) => entry.value === 'invalid')
+  /** Only the modules whose link moved against what was loaded — modules not named keep theirs. */
+  const classroomPatch = classroomEntries.flatMap(({ module, value }) =>
+    value === 'invalid' || value === (initial?.classroomLinksByModule[String(module)] ?? null)
+      ? []
+      : [{ module, url: value }],
+  )
   const [weekdays, setWeekdays] = useState<Weekday[]>(loaded.weekdays)
   const [startTime, setStartTime] = useState(loaded.startTime)
   const [endTime, setEndTime] = useState(loaded.endTime)
@@ -279,7 +304,7 @@ export function ClassGroupForm({
     if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
     if (fullCourse !== initial.fullCourse) patch.fullCourse = fullCourse
     if (moduleNumber !== initial.module) patch.module = moduleNumber
-    if (!classroomInvalid && classroomUrl !== (initial.classroomUrl ?? null)) patch.classroomUrl = classroomUrl
+    if (!classroomInvalid && classroomPatch.length > 0) patch.classroomLinks = classroomPatch
     if (scheduleTouched) patch.slots = slots
     if (capacity !== initial.capacity) patch.capacity = capacity
     if (startsOn !== loaded.startsOn) patch.startsOn = dateOrNull(startsOn)
@@ -321,7 +346,8 @@ export function ClassGroupForm({
           teacherId: severalGroups ? null : teacherId || null,
           module: moduleNumber,
           fullCourse,
-          classroomUrl: severalGroups || classroomInvalid ? null : classroomUrl,
+          classroomLinks:
+            severalGroups || classroomInvalid ? [] : classroomPatch.filter((entry) => entry.url !== null),
           slots,
           capacity: capacities[index],
           startsOn: dateOrNull(startsOn),
@@ -431,7 +457,6 @@ export function ClassGroupForm({
       })
     : null
 
-  const courseModules = catalog.find((item) => item.id === courseId)?.modules ?? 0
   /** One option per module of the course — plus a stored one past it, so an edit never hides what is there. */
   const moduleOptions = Array.from({ length: courseModules }, (_, index) => index + 1)
   if (moduleNumber !== null && moduleNumber > courseModules) moduleOptions.push(moduleNumber)
@@ -622,30 +647,55 @@ export function ClassGroupForm({
 
   /* Right under the teacher: allocating and handing over the class's
      Classroom are one step for coordination (OOC-98) — optional, so a
-     teacher can still be allocated before the Classroom exists. */
+     teacher can still be allocated before the Classroom exists. One field per
+     module the class group teaches (OOC-144); with no module set there is
+     nothing to key a link by, so the field asks for the module first. */
   const classroomField = (
     <HelpField
       label={t('class_groups.field_classroom')}
       what={t('help.classroom_what')}
       how={t('help.classroom_how')}
     >
-      {(id) => (
-        <>
-          <input
-            id={id}
-            type="url"
-            inputMode="url"
-            value={classroomDraft}
-            onChange={(event) => setClassroomDraft(event.target.value)}
-            placeholder={t('class_groups.classroom_placeholder')}
-            aria-invalid={classroomInvalid}
-            className={fieldClass}
-          />
-          {classroomInvalid && (
-            <span className="text-xs text-red-700">{t('class_groups.classroom_invalid')}</span>
-          )}
-        </>
-      )}
+      {(id) =>
+        classroomEntries.length === 0 ? (
+          <span id={id} className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {t('class_groups.classroom_needs_module')}
+            {legacyClassroom !== '' && (
+              <span className="break-all">
+                {t('class_groups.classroom_legacy_hint', { url: legacyClassroom })}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="flex flex-col gap-2">
+            {classroomEntries.map(({ module, draft, value }, index) => (
+              <span key={module} className="flex flex-col gap-1">
+                {classroomEntries.length > 1 && (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('class_groups.module_option', { number: module })}
+                  </span>
+                )}
+                <input
+                  id={index === 0 ? id : undefined}
+                  type="url"
+                  inputMode="url"
+                  value={draft}
+                  onChange={(event) =>
+                    setClassroomDrafts((current) => ({ ...current, [String(module)]: event.target.value }))
+                  }
+                  placeholder={t('class_groups.classroom_placeholder')}
+                  aria-label={t('class_groups.classroom_module_label', { number: module })}
+                  aria-invalid={value === 'invalid'}
+                  className={fieldClass}
+                />
+                {value === 'invalid' && (
+                  <span className="text-xs text-red-700">{t('class_groups.classroom_invalid')}</span>
+                )}
+              </span>
+            ))}
+          </span>
+        )
+      }
     </HelpField>
   )
 
@@ -1032,8 +1082,15 @@ export function ClassGroupForm({
       t('class_groups.field_classroom'),
       severalGroups
         ? t('class_groups.review_assigned_later')
-        : classroomUrl && classroomUrl !== 'invalid'
-          ? classroomUrl
+        : classroomEntries.some((entry) => entry.value !== null && entry.value !== 'invalid')
+          ? classroomEntries
+              .filter((entry) => entry.value !== null && entry.value !== 'invalid')
+              .map((entry) =>
+                classroomEntries.length > 1
+                  ? `${t('class_groups.module_option', { number: entry.module })}: ${entry.value}`
+                  : entry.value,
+              )
+              .join(' · ')
           : t('class_groups.classroom_missing'),
     ],
   ]

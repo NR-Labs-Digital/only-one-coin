@@ -237,26 +237,34 @@ describe("class group catalog", { timeout: 30_000 }, () => {
     });
   });
 
-  it("stores, serves and clears the Classroom link (OOC-98)", async () => {
+  it("stores, serves and clears the Classroom link of each module (OOC-144)", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
       const groups = new DrizzleClassGroupRepository(tx);
+      const link = "https://classroom.google.com/c/abc";
       const created = await groups.create(
         ClassGroup.create({
           courseId: C1,
           academicPeriodId: PERIOD_A,
-          classroomUrl: "https://classroom.google.com/c/abc",
+          module: 1,
+          classroomLinks: [{ module: 1, url: link }],
           slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }],
           capacity: 20,
         }, "CGCAT-NEW"),
       );
-      expect((await groups.findById(created.id))?.classroomUrl).toBe("https://classroom.google.com/c/abc");
+      expect((await groups.findById(created.id))?.classroomLinks).toEqual({ "1": link });
       const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });
-      expect(listed?.classroomUrl).toBe("https://classroom.google.com/c/abc");
+      expect(listed).toMatchObject({
+        classroomLinksByModule: { "1": link },
+        classroomLinks: [{ module: 1, url: link }],
+        classroomMissing: false,
+      });
 
-      created.update({ classroomUrl: null });
+      created.update({ classroomLinks: [{ module: 1, url: null }] });
       await groups.update(created);
-      expect((await groups.findById(created.id))?.classroomUrl).toBeNull();
+      expect((await groups.findById(created.id))?.classroomLinks).toEqual({});
+      const [cleared] = await new ListClassGroupsQuery(tx).run({ id: created.id });
+      expect(cleared).toMatchObject({ classroomLinks: [], classroomMissing: true });
     });
   });
 

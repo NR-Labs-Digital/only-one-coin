@@ -1,6 +1,6 @@
 import { ClassGroupStatusSchema, type TeachingClassGroup } from "@ooc/domain";
 import { z } from "zod";
-import { WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
+import { ClassroomLinkSchema, WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
 
 /**
  * A class group as the docente portal reads it. `teacherId` stays behind: it
@@ -19,8 +19,8 @@ export const TeachingClassGroupSchema = z.object({
   capacity: z.number().int(),
   seatsTaken: z.number().int(),
   status: ClassGroupStatusSchema,
-  /** The class group's Google Classroom (OOC-98); null = coordination has not pasted it yet. */
-  classroomUrl: z.string().nullable(),
+  /** One Classroom per module it teaches (OOC-144), in order; empty = coordination has not pasted one yet. */
+  classroomLinks: z.array(ClassroomLinkSchema),
   /** Which of the course's modules it teaches (OOC-100); null = coordination has not set it. */
   module: z.number().int().nullable(),
   /** That module's material, from the course (OOC-100); null = nothing to open. */
@@ -44,7 +44,7 @@ export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<
     capacity: group.capacity,
     seatsTaken: group.seatsTaken,
     status: group.status,
-    classroomUrl: group.classroomUrl,
+    classroomLinks: group.classroomLinks,
     module: group.module,
     moduleMaterialUrl: group.moduleMaterialUrl,
     fullCourse: group.fullCourse,

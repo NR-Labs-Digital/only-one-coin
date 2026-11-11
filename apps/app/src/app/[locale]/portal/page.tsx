@@ -109,9 +109,9 @@ export default async function DashboardPage({
                     {t('next_class.locked')}
                   </span>
                 )
-              ) : nextClass.classroomUrl ? (
+              ) : nextClass.classroomLinks.length === 1 ? (
                 <a
-                  href={nextClass.classroomUrl}
+                  href={nextClass.classroomLinks[0]!.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-blue-deep shadow-card transition hover:bg-brand-yellow hover:text-ink"
@@ -119,6 +119,16 @@ export default async function DashboardPage({
                   <Icon name="video" size={18} />
                   {t('next_class.join')}
                 </a>
+              ) : nextClass.classroomLinks.length > 1 ? (
+                /* One Classroom per module (a full-course class group, OOC-144):
+                   the course's modal lists them, labelled by module. */
+                <Link
+                  href={`/portal/courses?enrollment=${nextClass.enrollmentId}`}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-blue-deep shadow-card transition hover:bg-brand-yellow hover:text-ink"
+                >
+                  <Icon name="video" size={18} />
+                  {t('next_class.choose_module')}
+                </Link>
               ) : (
                 <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/85">
                   <Icon name="clock" size={16} />
@@ -201,7 +211,7 @@ export default async function DashboardPage({
                   flag governs is whether there is a detail screen behind it. */}
               {flags['portal.courses'] && (
                 <Link
-                  href={`/portal/courses/${e.id}`}
+                  href={`/portal/courses?enrollment=${e.id}`}
                   className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-brand-blue transition hover:text-brand-blue-deep"
                 >
                   {t('common.view_detail')}

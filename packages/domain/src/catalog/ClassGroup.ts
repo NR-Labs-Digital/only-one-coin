@@ -68,6 +68,91 @@ export function normalizeClassroomUrl(raw: string | null): string | null {
 }
 
 /**
+ * One Google Classroom per module the class group teaches (OOC-144): module
+ * number → link. JSON keys are text, so the number is too. Replaces the one
+ * link per class group of OOC-98 (`classroomUrl`), which only a class group
+ * with no module set still reads. A module the group no longer teaches keeps
+ * its link — progression (OOC-85) moves the group on, and that Classroom is
+ * still that module's.
+ */
+export type ClassroomLinks = Record<string, string>;
+
+/** One module's link to set, or to clear with `url: null`. */
+export const ClassroomLinkPatchSchema = z.object({
+  module: z.number().int().positive(),
+  url: z.string().max(2048).nullable(),
+});
+export type ClassroomLinkPatch = z.infer<typeof ClassroomLinkPatchSchema>;
+
+/** A quick link as teacher and student read it. `module` is null only for the legacy link of a class group with no module set. */
+export interface ClassroomLink {
+  module: number | null;
+  url: string;
+}
+
+type ClassroomSource = {
+  module: number | null;
+  fullCourse: boolean;
+  classroomLinks: ClassroomLinks;
+  classroomUrl: string | null;
+};
+
+/** The modules a class group teaches: its one, every module of the course on a full course, none while unset. */
+export function taughtModules(group: Pick<ClassroomSource, "module" | "fullCourse">, courseModules: number): number[] {
+  if (group.fullCourse) return Array.from({ length: courseModules }, (_, i) => i + 1);
+  return group.module === null ? [] : [group.module];
+}
+
+/**
+ * The Classroom links of the modules the class group teaches, in module order
+ * — what its teacher and its confirmed students open. A class group with no
+ * module set has nothing to key a link by, so it falls back to the one link
+ * pasted before OOC-144 (`classroomUrl`), with no module.
+ */
+export function classroomLinksOf(group: ClassroomSource, courseModules: number): ClassroomLink[] {
+  if (!group.fullCourse && group.module === null) {
+    return group.classroomUrl ? [{ module: null, url: group.classroomUrl }] : [];
+  }
+  return taughtModules(group, courseModules).flatMap((module) => {
+    const url = group.classroomLinks[String(module)];
+    return url ? [{ module, url }] : [];
+  });
+}
+
+/** Some module it teaches still has no Classroom — the list's "Sin Classroom" warning. Warns, never blocks. */
+export function isMissingClassroom(group: ClassroomSource, courseModules: number): boolean {
+  if (!group.fullCourse && group.module === null) return group.classroomUrl === null;
+  return taughtModules(group, courseModules).some((module) => !group.classroomLinks[String(module)]);
+}
+
+/**
+ * A link can only be set for one of the course's modules. Clearing one is
+ * always allowed — a course cut to fewer modules must still let coordination
+ * tidy up the links of the modules it lost.
+ */
+export function assertClassroomLinksOfCourse(patches: ClassroomLinkPatch[] | undefined, courseModules: number): void {
+  if (patches?.some((patch) => patch.url !== null && patch.url.trim() !== "" && patch.module > courseModules)) {
+    throw new ClassGroupModuleOutOfRangeError();
+  }
+}
+
+/** The links with the patches applied, each link normalized; a blank one clears its module. */
+function applyClassroomLinks(current: ClassroomLinks, patches: ClassroomLinkPatch[]): ClassroomLinks {
+  const next: ClassroomLinks = { ...current };
+  for (const patch of patches) {
+    const url = normalizeClassroomUrl(patch.url);
+    if (url) next[String(patch.module)] = url;
+    else delete next[String(patch.module)];
+  }
+  return next;
+}
+
+function sameLinks(a: ClassroomLinks, b: ClassroomLinks): boolean {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+}
+
+/**
  * The module a class group teaches is one of its course's (OOC-100). Checked
  * by the usecases, which hold the course: the class group alone does not know
  * how many modules there are. Null — no module set — always passes.
@@ -88,8 +173,13 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
    * it only stays as a hint on the class groups still waiting for a link.
    */
   legacyTeacherName: z.string(),
-  /** Null until somebody pastes it. Not re-checked here: a row read back never throws. */
+  /**
+   * The one link pasted before OOC-144. Read-only: nothing writes it any more,
+   * and only a class group with no module set still shows it (`classroomLinksOf`).
+   */
   classroomUrl: z.string().nullable(),
+  /** One Classroom per module (OOC-144). Not re-checked here: a row read back never throws. */
+  classroomLinks: z.record(z.string(), z.string()),
   /**
    * Which of the course's modules this class group teaches, 1-based (OOC-100)
    * — what picks the module material its teacher opens. Null on every class
@@ -116,7 +206,8 @@ export const CreateClassGroupSchema = z.object({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
   teacherId: z.string().uuid().nullable().optional(),
-  classroomUrl: z.string().nullable().optional(),
+  /** Per-module links to set or clear (OOC-144); modules not named keep theirs. */
+  classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
   module: z.number().int().positive().nullable().optional(),
   /** Wins over `module`: the whole course is not one of its modules. */
   fullCourse: z.boolean().optional(),
@@ -141,7 +232,8 @@ export class ClassGroup extends SoftDeletableModel {
   public readonly code: string;
   public teacherId: string | null;
   public legacyTeacherName: string;
-  public classroomUrl: string | null;
+  public readonly classroomUrl: string | null;
+  public classroomLinks: ClassroomLinks;
   public module: number | null;
   public fullCourse: boolean;
   public slots: WeeklySlot[];
@@ -163,6 +255,7 @@ export class ClassGroup extends SoftDeletableModel {
     this.teacherId = props.teacherId;
     this.legacyTeacherName = props.legacyTeacherName;
     this.classroomUrl = props.classroomUrl;
+    this.classroomLinks = props.classroomLinks;
     this.module = props.module;
     this.fullCourse = props.fullCourse;
     this.slots = props.slots;
@@ -189,7 +282,8 @@ export class ClassGroup extends SoftDeletableModel {
         code,
         teacherId: valid.teacherId ?? null,
         legacyTeacherName: "",
-        classroomUrl: normalizeClassroomUrl(valid.classroomUrl ?? null),
+        classroomUrl: null,
+        classroomLinks: applyClassroomLinks({}, valid.classroomLinks ?? []),
         module: valid.fullCourse ? null : (valid.module ?? null),
         fullCourse: valid.fullCourse ?? false,
         startsOn: valid.startsOn ?? null,
@@ -207,9 +301,9 @@ export class ClassGroup extends SoftDeletableModel {
 
   /**
    * Period duplication (OOC-35): same course, module, schedule, teacher and capacity;
-   * no dates, no window, no seats, no Classroom link, a draft — and a pointer
+   * no dates, no window, no seats, no Classroom links, a draft — and a pointer
    * back. Nothing that belongs to the old period's students comes along: their
-   * Classroom is not the new group's (OOC-98). The copy is a new class group,
+   * Classrooms are not the new group's (OOC-98, OOC-144). The copy is a new class group,
    * so it gets a code of its own — the same code in two periods would name two
    * groups.
    */
@@ -223,6 +317,7 @@ export class ClassGroup extends SoftDeletableModel {
         teacherId: source.teacherId,
         legacyTeacherName: source.legacyTeacherName,
         classroomUrl: null,
+        classroomLinks: {},
         module: source.module,
         fullCourse: source.fullCourse,
         slots: source.slots,
@@ -259,11 +354,11 @@ export class ClassGroup extends SoftDeletableModel {
       changed.push("teacherId");
     }
 
-    if (valid.classroomUrl !== undefined) {
-      const next = normalizeClassroomUrl(valid.classroomUrl);
-      if (next !== this.classroomUrl) {
-        this.classroomUrl = next;
-        changed.push("classroomUrl");
+    if (valid.classroomLinks !== undefined) {
+      const next = applyClassroomLinks(this.classroomLinks, valid.classroomLinks);
+      if (!sameLinks(next, this.classroomLinks)) {
+        this.classroomLinks = next;
+        changed.push("classroomLinks");
       }
     }
 

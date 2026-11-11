@@ -3,7 +3,7 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
+import { ClassroomLinkSchema, WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
 import type { PortalPaymentRow } from "@/infra/persistence/portal/StudentPortalQuery.js";
 
 const NationalIdTypeSchema = z.enum(["DNI", "CE", "passport"]);
@@ -40,8 +40,8 @@ const PortalEnrollmentSchema = z.object({
     slots: z.array(WeeklySlotSchema),
     startsOn: z.string().nullable(),
     endsOn: z.string().nullable(),
-    /** The Google Classroom (OOC-98) — null unless the seat is confirmed. */
-    classroomUrl: z.string().nullable(),
+    /** One Classroom per module the class group teaches (OOC-144) — empty unless the seat is confirmed. */
+    classroomLinks: z.array(ClassroomLinkSchema),
   }),
   academicPeriodName: z.string(),
   plan: z.object({ name: z.string(), priceId: z.string().uuid(), priceCents: z.number().int(), currency: z.literal("PEN") }),
@@ -195,7 +195,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
           slots: z.array(WeeklySlotSchema).catch([]).parse(enrollment.classGroup.slots),
           startsOn: toIso(enrollment.classGroup.startsOn),
           endsOn: toIso(enrollment.classGroup.endsOn),
-          classroomUrl: enrollment.classGroup.classroomUrl,
+          classroomLinks: enrollment.classGroup.classroomLinks,
         },
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },

@@ -39,7 +39,28 @@ export function parseClassLink(raw: string, kind: ClassLinkKind): string | null 
 }
 
 /**
- * What the class group form sends for its Classroom field (OOC-98): the link
+ * One Classroom quick link (OOC-144): one per module the class group teaches.
+ * `module` is null only for the single link pasted before OOC-144 on a class
+ * group with no module set.
+ */
+export interface ClassroomLink {
+  module: number | null
+  url: string
+}
+
+/**
+ * The links that pass the host check, normalized — what may become an `href`.
+ * A link that is not the Google host it claims to be is dropped, never drawn.
+ */
+export function safeClassroomLinks(links: readonly ClassroomLink[]): ClassroomLink[] {
+  return links.flatMap((link) => {
+    const url = parseClassLink(link.url, 'classroom')
+    return url ? [{ module: link.module, url }] : []
+  })
+}
+
+/**
+ * What the class group form sends for a Classroom field (OOC-98, one per module since OOC-144): the link
  * normalized, `null` when the field is empty — which clears a link already
  * set — or `'invalid'` while what is typed is not a Classroom link. The API
  * checks the same host again (`normalizeClassroomUrl` in `@ooc/domain`).

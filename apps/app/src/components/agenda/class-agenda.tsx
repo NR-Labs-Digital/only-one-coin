@@ -214,7 +214,7 @@ export function ClassAgenda({
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {classLinks && <ClassLinks classroomUrl={selected.group.classroomUrl} />}
+            {classLinks && <ClassLinks classroomLinks={selected.group.classroomLinks} />}
             <Link
               href={`${classGroupBasePath}/${selected.group.id}`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-blue transition hover:text-brand-blue-deep"

@@ -1,5 +1,14 @@
-import { CertificateRuleSchema, ClassGroupStatusSchema, LandingCourseKeySchema, WeeklySlotSchema as ValidWeeklySlotSchema } from "@ooc/domain";
+import {
+  CertificateRuleSchema,
+  ClassGroupStatusSchema,
+  ClassroomLinkPatchSchema,
+  LandingCourseKeySchema,
+  WeeklySlotSchema as ValidWeeklySlotSchema,
+} from "@ooc/domain";
 import { z } from "zod";
+
+/** A Classroom quick link (OOC-144): `module` is null only for the old single link of a class group with no module set. */
+export const ClassroomLinkSchema = z.object({ module: z.number().int().positive().nullable(), url: z.string() });
 
 export const IdParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -77,7 +86,14 @@ export const ClassGroupItemSchema = z.object({
   teacherId: z.string().uuid().nullable(),
   teacherName: z.string(),
   legacyTeacherName: z.string(),
+  /** The one link pasted before OOC-144 — read-only, for a class group with no module set. */
   classroomUrl: z.string().nullable(),
+  /** Every module's stored Classroom (OOC-144), module number → link — what the form edits. */
+  classroomLinksByModule: z.record(z.string(), z.string()),
+  /** The links of the modules it teaches, in order. */
+  classroomLinks: z.array(ClassroomLinkSchema),
+  /** Some module it teaches has no Classroom yet. */
+  classroomMissing: z.boolean(),
   module: z.number().int().nullable(),
   fullCourse: z.boolean(),
   slots: z.array(WeeklySlotSchema),
@@ -115,8 +131,12 @@ export const CreateClassGroupBodySchema = z.object({
   academicPeriodId: z.string().uuid(),
   /** From the roster (OOC-80); null on edit takes the allocation away. */
   teacherId: z.string().uuid().nullable().optional(),
-  /** The Google Classroom (OOC-98); the domain checks the host. Null or blank clears it. */
-  classroomUrl: z.string().max(2048).nullable().optional(),
+  /**
+   * One Classroom per module (OOC-144): each entry sets that module's link, a
+   * null or blank url clears it, modules not named keep theirs. The domain
+   * checks the host and that the module is one of the course's.
+   */
+  classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
   /** Which of the course's modules it teaches (OOC-100); the domain checks the upper bound. Null clears it. */
   module: z.number().int().positive().nullable().optional(),
   /** Teaches every module of the course (OOC-130); wins over `module`. */

@@ -13,7 +13,13 @@ import {
   receiptUploads,
   students,
 } from "@ooc/db";
-import { PROCEDURE_KINDS, type ProcedureKind, type ProcedureRequestStatus } from "@ooc/domain";
+import {
+  classroomLinksOf,
+  PROCEDURE_KINDS,
+  type ClassroomLink,
+  type ProcedureKind,
+  type ProcedureRequestStatus,
+} from "@ooc/domain";
 import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
@@ -49,8 +55,8 @@ export interface PortalEnrollmentRow {
     slots: unknown;
     startsOn: Date | null;
     endsOn: Date | null;
-    /** Only on a confirmed seat (OOC-98); null otherwise. */
-    classroomUrl: string | null;
+    /** One Classroom per module the class group teaches (OOC-144), in order — only on a confirmed seat; empty otherwise. */
+    classroomLinks: ClassroomLink[];
   };
   academicPeriodName: string;
   plan: { name: string; priceId: string; priceCents: number };
@@ -137,6 +143,10 @@ export class StudentPortalQuery {
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,
         classroomUrl: classGroups.classroomUrl,
+        classroomLinks: classGroups.classroomLinks,
+        classGroupModule: classGroups.module,
+        classGroupFullCourse: classGroups.fullCourse,
+        courseModules: courses.modules,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
         planPriceId: planPrices.id,
@@ -212,8 +222,19 @@ export class StudentPortalQuery {
             startsOn: row.startsOn,
             endsOn: row.endsOn,
             // The door to the class opens with the money confirmed (OOC-55):
-            // a reserved or released seat never sees the link (OOC-98).
-            classroomUrl: row.seatStatus === "confirmed" ? row.classroomUrl : null,
+            // a reserved or released seat never sees a link (OOC-98, OOC-144).
+            classroomLinks:
+              row.seatStatus === "confirmed"
+                ? classroomLinksOf(
+                    {
+                      module: row.classGroupModule,
+                      fullCourse: row.classGroupFullCourse,
+                      classroomLinks: row.classroomLinks,
+                      classroomUrl: row.classroomUrl,
+                    },
+                    row.courseModules,
+                  )
+                : [],
           },
           academicPeriodName: row.academicPeriodName,
           plan: { name: row.planName, priceId: row.planPriceId, priceCents: row.planPriceCents },

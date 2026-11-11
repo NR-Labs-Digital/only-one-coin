@@ -2,31 +2,48 @@
 
 import { useTranslations } from 'next-intl'
 import { BoIcon, type BoIconName } from '@/components/backoffice/icons'
-import { parseClassLink } from '@/lib/backoffice/class-links'
+import { safeClassroomLinks, type ClassroomLink } from '@/lib/backoffice/class-links'
 
 /**
  * Where the teacher goes to give the class: the group's Classroom, where the
- * Meet lives, as an external link (OOC-98). Nothing is embedded or integrated
- * — the platform only carries the address coordination pasted (CLAUDE.md §2).
+ * Meet lives, as an external link — one per module the class group teaches
+ * (OOC-98, OOC-144). Nothing is embedded or integrated — the platform only
+ * carries the addresses coordination pasted (CLAUDE.md §2).
  *
- * The button is always there; a link not set yet leaves it greyed out rather
- * than gone, so the teacher sees what is missing at a glance.
+ * With no link yet the button is still there, greyed out rather than gone, so
+ * the teacher sees what is missing at a glance. A link labelled by module
+ * says which module's Classroom it is; the old single link carries no module.
  */
 export function ClassLinks({
-  classroomUrl,
+  classroomLinks,
   className = '',
 }: {
-  classroomUrl: string | null
+  classroomLinks: readonly ClassroomLink[]
   className?: string
 }) {
   const t = useTranslations('bo')
   /* Whatever the row carries is re-checked before it becomes an `href`: a
      link that is not the Google host it claims to be is treated as missing. */
-  const href = classroomUrl ? parseClassLink(classroomUrl, 'classroom') || null : null
+  const links = safeClassroomLinks(classroomLinks)
 
   return (
     <span className={`flex flex-wrap items-center gap-2 ${className}`}>
-      <ExternalButton href={href} icon="courses" label={t('class_links.classroom')} />
+      {links.length === 0 ? (
+        <ExternalButton href={null} icon="courses" label={t('class_links.classroom')} />
+      ) : (
+        links.map((link) => (
+          <ExternalButton
+            key={link.module ?? 'legacy'}
+            href={link.url}
+            icon="courses"
+            label={
+              link.module === null
+                ? t('class_links.classroom')
+                : t('class_links.classroom_module', { module: link.module })
+            }
+          />
+        ))
+      )}
     </span>
   )
 }

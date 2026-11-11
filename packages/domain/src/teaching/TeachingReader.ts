@@ -1,4 +1,4 @@
-import type { ClassGroupStatus, WeeklySlot } from "../catalog/ClassGroup.js";
+import type { ClassGroupStatus, ClassroomLink, WeeklySlot } from "../catalog/ClassGroup.js";
 
 /**
  * A class group as its teacher reads it in the docente portal: what it is,
@@ -22,8 +22,8 @@ export interface TeachingClassGroup {
   capacity: number;
   seatsTaken: number;
   status: ClassGroupStatus;
-  /** The Google Classroom coordination pasted (OOC-98); null = nobody yet. */
-  classroomUrl: string | null;
+  /** One Classroom per module it teaches (OOC-144, `classroomLinksOf`), in module order; empty = nobody pasted one yet. */
+  classroomLinks: ClassroomLink[];
   /** Which of the course's modules it teaches (OOC-100), 1-based; null = coordination has not set it. */
   module: number | null;
   /**

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { parseClassLink } from '@/lib/backoffice/class-links'
+import { parseClassLink, type ClassroomLink } from '@/lib/backoffice/class-links'
 import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
 
 /**
@@ -20,12 +20,12 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  * checked against the Google host it claims before it becomes an `href`.
  */
 export function ClassResources({
-  classroomUrl,
+  classroomLinks,
   module,
   moduleMaterialsUrl,
   courseMaterialUrls,
 }: {
-  classroomUrl: string | null
+  classroomLinks: ClassroomLink[]
   module: number | null
   moduleMaterialsUrl: string | null
   courseMaterialUrls: string[]
@@ -39,7 +39,7 @@ export function ClassResources({
         {t('class_resources.title')}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <ClassLinks classroomUrl={classroomUrl} />
+        <ClassLinks classroomLinks={classroomLinks} />
         {materialsUrl && (
           <ExternalButton
             href={materialsUrl}

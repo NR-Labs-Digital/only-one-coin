@@ -271,6 +271,7 @@ export const AUDIT_FIELDS = {
   code: "code",
   teacherId: "teacher",
   classroomUrl: "classroom_url",
+  classroomLinks: "classroom_links",
   module: "module",
   fullCourse: "full_course",
   slots: "schedule",

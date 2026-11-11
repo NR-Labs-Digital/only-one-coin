@@ -10,6 +10,7 @@
 
 import type { EmailAudience, EmailCatalogKey, EmailStage } from '@ooc/domain/email-catalog'
 import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
+import type { ClassroomLink } from '@/lib/backoffice/class-links'
 import type {
   DocumentStatus,
   DocumentType,
@@ -487,10 +488,16 @@ export interface ClassGroupItem {
    */
   legacyTeacherName: string
   /**
-   * The Google Classroom coordination pastes with the teacher (OOC-98) — the
-   * same link the teacher and the confirmed students open. Null = not yet.
+   * The one Classroom pasted before OOC-144. Read-only: the API only shows it
+   * while no module is set, and the form carries it onto the module picked.
    */
   classroomUrl: string | null
+  /** Every module's stored Classroom (OOC-144), module number → link — what the form edits. */
+  classroomLinksByModule: Record<string, string>
+  /** The links of the modules it teaches, in order — the same quick links teacher and student open. */
+  classroomLinks: ClassroomLink[]
+  /** Some module it teaches has no Classroom yet — the "Sin Classroom" warning. */
+  classroomMissing: boolean
   /**
    * Which of the course's modules it teaches, 1-based (OOC-100) — what picks
    * the material its teacher opens. Null = not set yet.
