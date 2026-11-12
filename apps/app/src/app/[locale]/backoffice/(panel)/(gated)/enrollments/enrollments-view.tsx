@@ -171,14 +171,12 @@ export function EnrollmentsView({
           tone="info"
           label={t('enrollments.metric_total')}
           value={String(metrics.total)}
-          hint={t('enrollments.metric_total_hint', { period: metrics.periodName })}
         />
         <StatCard
           icon="check"
           tone="success"
           label={t('enrollments.metric_active')}
           value={String(metrics.active)}
-          hint={t('enrollments.metric_active_hint')}
         />
       </AutoGrid>
 

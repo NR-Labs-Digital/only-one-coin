@@ -158,16 +158,19 @@ export function Field({
   )
 }
 
+/**
+ * A headline figure: the name and the number, nothing under it (OOC-151). A
+ * line of fine print under each card was read as part of the figure — and
+ * where it named a period the number did not count, it said something false.
+ */
 export function StatCard({
   label,
   value,
-  hint,
   icon,
   tone = 'info',
 }: {
   label: string
   value: string
-  hint?: string
   icon: BoIconName
   tone?: Tone
 }) {
@@ -188,7 +191,6 @@ export function StatCard({
           <p className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
             {value}
           </p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
         </div>
         <span
           className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${iconTone[tone]}`}

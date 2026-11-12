@@ -39,16 +39,11 @@ const AUDIENCE_FILTERS: AudienceFilter[] = ['all', 'external', 'internal']
  * The list only ever reads. Reading the template it renders happens on the
  * e-mail's own page, where the whole message fits.
  *
- * Delivered and bounced are the provider's to report, and its webhook does not
- * exist yet: the figure says "unavailable", never a zero that reads as "none".
+ * Delivered and bounced are the provider's to report, and this screen does not
+ * read its webhook yet: the figure says "unavailable", never a zero that reads
+ * as "none".
  */
-export function EmailsView({
-  flows,
-  windowDays,
-}: {
-  flows: EmailFlow[]
-  windowDays: number
-}) {
+export function EmailsView({ flows }: { flows: EmailFlow[] }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -110,13 +105,11 @@ export function EmailsView({
           icon="email"
           label={t('emails.stat_sent')}
           value={formatNumber(total('sent'), locale)}
-          hint={t('emails.stat_sent_hint', { days: windowDays })}
         />
         <StatCard
           icon="check"
           label={t('emails.stat_delivered')}
           value={t('emails.metric_unavailable')}
-          hint={t('emails.metric_unavailable_hint')}
         />
         {/* The only number here somebody can act on: it names people who
             never received an e-mail, so it opens the list of them. */}
@@ -129,7 +122,6 @@ export function EmailsView({
             tone={failed > 0 ? 'danger' : 'neutral'}
             label={t('emails.stat_failed')}
             value={formatNumber(failed, locale)}
-            hint={t('emails.stat_failed_hint', { days: windowDays })}
           />
         </Link>
         <StatCard
@@ -137,7 +129,6 @@ export function EmailsView({
           tone="neutral"
           label={t('emails.stat_blocked')}
           value={formatNumber(blocked, locale)}
-          hint={t('emails.stat_blocked_hint')}
         />
       </AutoGrid>
 

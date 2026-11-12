@@ -12,7 +12,6 @@ import { Link } from '@/i18n/navigation'
 import {
   getDashboardSummary,
   getReviewQueueHead,
-  oldestWaitHours,
   seatOccupancy,
   seatsUnderPressure,
 } from '@/lib/backoffice/dashboard'
@@ -25,7 +24,6 @@ import {
   formatDate,
   formatDateTime,
   formatMoney,
-  formatSignedNumber,
   type Locale,
 } from '@/lib/format'
 import {
@@ -80,14 +78,13 @@ export default async function BackofficeHomePage({
   ])
 
   const preview = queue?.items.slice(0, 5) ?? []
-  const oldestHours = queue ? oldestWaitHours(queue) : null
   const occupancy = classGroups ? seatOccupancy(classGroups) : null
   const seats = classGroups ? seatsUnderPressure(classGroups) : []
 
+  // The name and the number, nothing under them (OOC-151).
   const stats: {
     label: string
     value: string
-    hint?: string
     icon: LucideIcon
     accent: string
   }[] = []
@@ -96,9 +93,6 @@ export default async function BackofficeHomePage({
     stats.push({
       label: t('dashboard.metric_enrollments_today'),
       value: String(summary.enrollmentsToday),
-      hint: t('dashboard.metric_delta', {
-        value: formatSignedNumber(summary.enrollmentsToday - summary.enrollmentsYesterday, locale),
-      }),
       icon: ClipboardList,
       accent: 'bg-sky text-brand-blue',
     })
@@ -107,8 +101,6 @@ export default async function BackofficeHomePage({
     stats.push({
       label: t('dashboard.metric_pending_review'),
       value: String(queue.total),
-      // Nothing waiting has no age: the line goes, as on the Payments header.
-      hint: oldestHours === null ? undefined : t('dashboard.metric_oldest', { hours: oldestHours }),
       icon: AlertTriangle,
       accent: 'bg-amber-50 text-amber-600',
     })
@@ -117,9 +109,6 @@ export default async function BackofficeHomePage({
     stats.push({
       label: t('dashboard.metric_active_students'),
       value: String(summary.activeStudents),
-      hint: t('dashboard.metric_delta', {
-        value: formatSignedNumber(summary.activeStudents - summary.activeStudentsYesterday, locale),
-      }),
       icon: Users,
       accent: 'bg-emerald-50 text-emerald-600',
     })
@@ -128,10 +117,6 @@ export default async function BackofficeHomePage({
     stats.push({
       label: t('dashboard.metric_seats'),
       value: `${occupancy.capacity === 0 ? 0 : Math.round((occupancy.taken / occupancy.capacity) * 100)}%`,
-      hint: t('dashboard.metric_seats_hint', {
-        taken: occupancy.taken,
-        capacity: occupancy.capacity,
-      }),
       icon: Armchair,
       accent: 'bg-cream text-brand-yellow-deep',
     })
@@ -148,7 +133,7 @@ export default async function BackofficeHomePage({
       {/* Headline numbers — only the ones this cargo's reads produced. */}
       {stats.length > 0 && (
       <AutoGrid as="section" min="15rem" gap="gap-3">
-        {stats.map(({ label, value, hint, icon: Icon, accent }) => (
+        {stats.map(({ label, value, icon: Icon, accent }) => (
           <Card key={label} className="gap-0 py-4">
             <CardContent className="flex items-start justify-between gap-3 px-4">
               <div className="min-w-0">
@@ -158,7 +143,6 @@ export default async function BackofficeHomePage({
                 <p className="mt-1.5 text-3xl font-semibold tracking-tight text-foreground">
                   {value}
                 </p>
-                {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
               </div>
               <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${accent}`}>
                 <Icon className="size-4.5" />

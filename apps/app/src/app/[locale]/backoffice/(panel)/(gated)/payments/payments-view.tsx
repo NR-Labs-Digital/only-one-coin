@@ -130,40 +130,31 @@ export function PaymentsView({
   return (
     <div className="flex flex-col gap-4">
       <AutoGrid as="section" min="15rem" gap="gap-3">
-        {/* The age of the oldest open payment is the hint only when something
-            is open — "oldest waiting 0 h" over an empty queue is a number
-            that means nothing. */}
+        {/* In review counts every period, like the Open tab; the three
+            decided figures count the current period (OOC-151). */}
         <StatCard
           icon="alert"
           tone="warning"
           label={t('payments.metric_in_review')}
           value={String(metrics.inReview)}
-          hint={
-            metrics.oldestOpenHours === null
-              ? undefined
-              : t('payments.metric_oldest_hint', { hours: metrics.oldestOpenHours })
-          }
         />
         <StatCard
           icon="check"
           tone="success"
           label={t('payments.metric_approved')}
           value={String(metrics.approved)}
-          hint={t('payments.metric_approved_hint', { period: metrics.periodName })}
         />
         <StatCard
           icon="payments"
           tone="info"
           label={t('payments.metric_collected')}
           value={formatMoney(metrics.collectedCents, 'PEN', locale)}
-          hint={t('payments.metric_collected_hint')}
         />
         <StatCard
           icon="close"
           tone="danger"
           label={t('payments.metric_rejected')}
           value={String(metrics.rejected)}
-          hint={t('payments.metric_rejected_hint')}
         />
       </AutoGrid>
 

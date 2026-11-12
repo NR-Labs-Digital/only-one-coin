@@ -64,10 +64,3 @@ export function seatsUnderPressure(groups: ClassGroupItem[]): ClassGroupItem[] {
     )
     .slice(0, SEAT_WATCH_SIZE)
 }
-
-/** Whole hours the oldest open payment has been waiting; `null` on an empty queue. */
-export function oldestWaitHours(queue: PaymentReviewQueue, now: Date = new Date()): number | null {
-  const oldest = queue.items[0]
-  if (!oldest) return null
-  return Math.max(0, Math.floor((now.getTime() - new Date(oldest.submittedAt).getTime()) / 3_600_000))
-}
