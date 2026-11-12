@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CheckoutDraft, HoldOutcome, PublicCatalog, SeatHold, StepId } from './types'
 import { STEP_ORDER } from './types'
-import { emptyDraft, hasSeat, sameOfferGroups } from './checkout'
+import { emptyDraft, sameOfferGroups } from './checkout'
 
 /**
  * Where a half-filled checkout survives a reload. `sessionStorage`, not
@@ -293,13 +293,9 @@ export function useCheckout(
   const startHold = useCallback(
     async (classGroupId: string): Promise<HoldOutcome> => {
       // The reader picked a schedule, not a class group (OOC-140): any group
-      // of the same offer is the seat they asked for. The chosen one first,
-      // then the others in fill order.
+      // of the same offer is the seat they asked for, and which one it lands
+      // in is the server's call — it fills them in code order (OOC-145).
       const offer = sameOfferGroups(catalog, classGroupId)
-      const chosen = offer.find((group) => group.id === classGroupId)
-      const candidates = (chosen ? [chosen, ...offer.filter((g) => g !== chosen)] : []).filter(
-        hasSeat,
-      )
 
       const current = holdRef.current
       if (
@@ -312,7 +308,9 @@ export function useCheckout(
         return 'held'
       }
 
-      if (candidates.length === 0) {
+      // The catalog on screen can be minutes old, so a schedule it shows as
+      // full is still asked for: the server has the last word.
+      if (offer.length === 0) {
         setHoldError('full')
         return 'full'
       }
@@ -328,47 +326,43 @@ export function useCheckout(
       setHolding(true)
       setHoldError(null)
       try {
-        for (const candidate of candidates) {
-          const response = await fetch('/api/v1/seat-holds', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ classGroupId: candidate.id, origin: sourceRef.current }),
-          })
+        const response = await fetch('/api/v1/seat-holds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ classGroupId, origin: sourceRef.current }),
+        })
 
-          if (!response.ok) {
-            const reason = await reasonOf(response)
-            // Full, or no longer on offer: this class group cannot be had. The
-            // catalog on screen can be minutes old, so the next group of the
-            // same schedule gets asked before the reader is told to pick again.
-            if (
-              reason === 'enrollment.class_group_full' ||
-              reason === 'enrollment.class_group_not_found'
-            ) {
-              continue
-            }
-            setHoldError('failed')
-            return 'failed'
+        if (!response.ok) {
+          const reason = await reasonOf(response)
+          // Every group of this schedule is full, or none is on offer any
+          // more: the reader picks again.
+          if (
+            reason === 'enrollment.class_group_full' ||
+            reason === 'enrollment.class_group_not_found'
+          ) {
+            setHoldError('full')
+            return 'full'
           }
-
-          const body = (await response.json()) as {
-            holdId: string
-            classGroupId: string
-            secondsLeft: number
-          }
-          setHold({
-            id: body.holdId,
-            classGroupId: body.classGroupId,
-            expiresAt: new Date(Date.now() + body.secondsLeft * 1000).toISOString(),
-          })
-          // The seat may have landed in a sibling of the group the draft named;
-          // the submit has to name the group the hold is in.
-          settleOnGroup(body.classGroupId)
-          setHoldExpired(false)
-          setNow(Date.now())
-          return 'held'
+          setHoldError('failed')
+          return 'failed'
         }
-        setHoldError('full')
-        return 'full'
+
+        const body = (await response.json()) as {
+          holdId: string
+          classGroupId: string
+          secondsLeft: number
+        }
+        setHold({
+          id: body.holdId,
+          classGroupId: body.classGroupId,
+          expiresAt: new Date(Date.now() + body.secondsLeft * 1000).toISOString(),
+        })
+        // The seat may have landed in a sibling of the group the draft named;
+        // the submit has to name the group the hold is in.
+        settleOnGroup(body.classGroupId)
+        setHoldExpired(false)
+        setNow(Date.now())
+        return 'held'
       } catch {
         setHoldError('failed')
         return 'failed'
