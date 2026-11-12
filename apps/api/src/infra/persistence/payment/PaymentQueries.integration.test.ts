@@ -694,7 +694,7 @@ describe("ListPaymentsQuery", () => {
     });
   });
 
-  it("counts the header figures over the current period", async () => {
+  it("counts the decided figures over the current period", async () => {
     await rolledBack(async (tx) => {
       // Make the suite's period the most recent one already started, so the
       // metrics read this period and nothing else in the database.
@@ -706,14 +706,34 @@ describe("ListPaymentsQuery", () => {
 
       const { metrics } = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD });
 
-      expect(metrics).toEqual({
+      // What is open counts every period, so rows already in the database
+      // count too; the decided figures read this period alone.
+      expect(metrics).toMatchObject({
         periodName: PERIOD_NAME,
-        inReview: 2,
-        oldestOpenHours: 0,
         approved: 1,
         collectedCents: 15000,
         rejected: 1,
       });
+      expect(metrics.inReview).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("counts what is open in every period — the same number as the open tab (OOC-151)", async () => {
+    await rolledBack(async (tx) => {
+      // The suite's period starts in the future: it is not the current one,
+      // and its open payments still wait for a person.
+      await tx
+        .update(academicPeriods)
+        .set({ startsOn: sql`now() + interval '30 days'`, endsOn: sql`now() + interval '60 days'` })
+        .where(eq(academicPeriods.id, PERIOD));
+      const query = new ListPaymentsQuery(tx as unknown as Db);
+      const before = (await query.run({ state: "open" })).metrics.inReview;
+      await seedPayments(tx);
+
+      const ledger = await query.run({ state: "open" });
+
+      expect(ledger.metrics.inReview - before).toBe(2);
+      expect(ledger.metrics.inReview).toBe(ledger.counts.open);
     });
   });
 });

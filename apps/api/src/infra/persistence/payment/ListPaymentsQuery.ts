@@ -269,9 +269,14 @@ export class ListPaymentsQuery {
   }
 
   /**
-   * The header figures, counted by Postgres over the current period: the
-   * most recent one already started and not retired, the same rule as the
-   * enrollment ledger's header. No current period means nothing to count.
+   * The header figures, counted by Postgres (OOC-151):
+   *
+   * - What is open (`inReview`, its oldest) counts in every period — an open
+   *   payment waits for a person whichever period it is in, and the figure
+   *   has to match the Open tab and the home's queue.
+   * - What was decided (approved, collected, rejected) counts in the current
+   *   period: the most recent one already started and not retired, the same
+   *   rule as the enrollment ledger's header. No current period, no figure.
    */
   private async metrics(): Promise<PaymentListMetrics> {
     const [period] = await this.db
@@ -281,33 +286,30 @@ export class ListPaymentsQuery {
       .orderBy(desc(academicPeriods.startsOn))
       .limit(1);
 
-    if (!period) {
-      return { periodName: "", inReview: 0, oldestOpenHours: null, approved: 0, collectedCents: 0, rejected: 0 };
-    }
-
     const open = inArray(payments.status, OPEN_STATUSES);
+    const inPeriod = period ? eq(classGroups.academicPeriodId, period.id) : sql`false`;
     const [totals] = await this.db
       .select({
         inReview: sql<number>`count(*) filter (where ${open})`.mapWith(Number),
         // Raw aggregate, not mapped through the column: the driver may hand
         // back a string, so it is parsed below either way.
         oldestOpenAt: sql<Date | string | null>`min(${payments.createdAt}) filter (where ${open})`,
-        approved: sql<number>`count(*) filter (where ${payments.status} = 'approved')`.mapWith(Number),
-        collectedCents: sql<number>`coalesce(sum(${payments.amountCents}) filter (where ${payments.status} = 'approved'), 0)`.mapWith(
+        approved: sql<number>`count(*) filter (where ${payments.status} = 'approved' and ${inPeriod})`.mapWith(Number),
+        collectedCents: sql<number>`coalesce(sum(${payments.amountCents}) filter (where ${payments.status} = 'approved' and ${inPeriod}), 0)`.mapWith(
           Number,
         ),
-        rejected: sql<number>`count(*) filter (where ${payments.status} = 'rejected')`.mapWith(Number),
+        rejected: sql<number>`count(*) filter (where ${payments.status} = 'rejected' and ${inPeriod})`.mapWith(Number),
       })
       .from(payments)
       .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
       .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
-      .where(and(isNull(enrollments.deletedAt), eq(classGroups.academicPeriodId, period.id)));
+      .where(isNull(enrollments.deletedAt));
 
     const oldestOpenAt = totals?.oldestOpenAt ?? null;
 
     return {
-      periodName: period.name,
+      periodName: period?.name ?? "",
       inReview: totals?.inReview ?? 0,
       oldestOpenHours:
         oldestOpenAt === null ? null : Math.floor((Date.now() - new Date(oldestOpenAt).getTime()) / 3_600_000),

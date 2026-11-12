@@ -393,35 +393,36 @@ export class ListEnrollmentsQuery {
    * JS over `items` would make every number quietly mean "of this page",
    * which is the kind of figure somebody reports upward.
    */
+  /**
+   * The header figures (OOC-151), never narrowed by the reader's filters:
+   *
+   * - `total`: confirmed seats in the current period — the most recent one
+   *   already started and not retired, the same rule as the Payments header.
+   *   No current period means nothing to count.
+   * - `active`: confirmed seats whose class group is enrolling or in progress,
+   *   in any period — the same "current" as the Vigentes tab and the Students
+   *   directory (OOC-113). A finished class group is not studying any more,
+   *   and a monthly student with the next module in review is still studying.
+   */
   private async metrics(): Promise<EnrollmentListMetrics> {
-    const latestPaymentStatus = this.db
-      .selectDistinctOn([payments.enrollmentId], {
-        enrollmentId: payments.enrollmentId,
-        status: payments.status,
-      })
-      .from(payments)
-      .orderBy(payments.enrollmentId, desc(payments.createdAt))
-      .as("latest_payment_status");
-
-    const [totals] = await this.db
-      .select({
-        total: sql<number>`count(*)`.mapWith(Number),
-        active:
-          sql<number>`count(*) filter (where ${enrollments.seatStatus} = 'confirmed' and ${latestPaymentStatus.status} = 'approved')`.mapWith(
-            Number,
-          ),
-      })
-      .from(enrollments)
-      .leftJoin(latestPaymentStatus, eq(latestPaymentStatus.enrollmentId, enrollments.id))
-      .where(and(isNull(enrollments.deletedAt), eq(enrollments.seatStatus, "confirmed")));
-
-    // The period the institution is in: the most recent one already started.
     const [period] = await this.db
-      .select({ name: academicPeriods.name })
+      .select({ id: academicPeriods.id, name: academicPeriods.name })
       .from(academicPeriods)
       .where(and(sql`${academicPeriods.startsOn} <= now()`, isNull(academicPeriods.deletedAt)))
       .orderBy(desc(academicPeriods.startsOn))
       .limit(1);
+
+    const inPeriod = period ? eq(classGroups.academicPeriodId, period.id) : sql`false`;
+    const [totals] = await this.db
+      .select({
+        total: sql<number>`count(*) filter (where ${inPeriod})`.mapWith(Number),
+        active: sql<number>`count(*) filter (where ${inArray(classGroups.status, CURRENT_CLASS_GROUP_STATUSES)})`.mapWith(
+          Number,
+        ),
+      })
+      .from(enrollments)
+      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      .where(and(isNull(enrollments.deletedAt), eq(enrollments.seatStatus, "confirmed")));
 
     return {
       periodName: period?.name ?? "",

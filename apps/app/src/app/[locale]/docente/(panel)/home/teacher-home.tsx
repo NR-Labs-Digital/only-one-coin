@@ -100,13 +100,11 @@ export async function TeacherHome({
           icon="courses"
           label={t('teacher_home.metric_class_groups')}
           value={String(summary.teaching)}
-          hint={t('teacher_home.metric_class_groups_hint', { total: summary.inPortal })}
         />
         <StatCard
           icon="students"
           label={t('teacher_home.metric_students')}
           value={String(summary.students)}
-          hint={t('teacher_home.metric_students_hint')}
           tone="success"
         />
       </AutoGrid>

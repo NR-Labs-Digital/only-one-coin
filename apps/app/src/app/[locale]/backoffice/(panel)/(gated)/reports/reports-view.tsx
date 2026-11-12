@@ -420,17 +420,12 @@ export function ReportsView({
           tone="info"
           label={t('reports.metric_enrollments')}
           value={String(totals.enrollments)}
-          hint={t('reports.metric_enrollments_hint', {
-            active: totals.active,
-            reserved: totals.reserved,
-          })}
         />
         <StatCard
           icon="payments"
           tone="success"
           label={t('reports.metric_collected')}
           value={money(totals.collectedCents)}
-          hint={t('reports.metric_collected_hint')}
         />
         {/* Owed, not lost: a rejected receipt is a no, and it is not in here. */}
         <StatCard
@@ -438,18 +433,12 @@ export function ReportsView({
           tone="warning"
           label={t('reports.metric_pending')}
           value={money(totals.pendingCents)}
-          hint={t('reports.metric_pending_hint', { count: totals.pendingCount })}
         />
         <StatCard
           icon="seat"
           tone="neutral"
           label={t('reports.metric_occupancy')}
           value={totalOccupancy === null ? '—' : `${totalOccupancy}%`}
-          hint={t('reports.metric_occupancy_hint', {
-            taken: totals.seatsTaken,
-            capacity: totals.capacity,
-            groups: totals.classGroups,
-          })}
         />
       </AutoGrid>
 

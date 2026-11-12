@@ -92,7 +92,7 @@ export default async function EmailsPage({
         </Link>
       )}
       {catalog ? (
-        <EmailsView flows={catalog.flows} windowDays={catalog.windowDays} />
+        <EmailsView flows={catalog.flows} />
       ) : (
         /* A failed read says so — a table of zeros would read as a quiet month. */
         <EmptyState

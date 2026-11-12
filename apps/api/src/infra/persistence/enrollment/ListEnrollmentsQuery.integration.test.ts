@@ -324,3 +324,42 @@ describe("tabs (OOC-115)", () => {
     expect(current.counts).toEqual({ current: visibleOn("A").length, ended: 0, all: VISIBLE.length });
   });
 });
+
+describe("header figures (OOC-151)", () => {
+  const visibleOn = (group: "A" | "B") => VISIBLE.filter((i) => (i % 2 === 0) === (group === "A"));
+
+  it("counts the confirmed seats of the current period, not of every period", async () => {
+    // Make the suite's period the most recent one already started.
+    await db
+      .update(academicPeriods)
+      .set({ startsOn: new Date(Date.now() - 60_000), endsOn: new Date(Date.now() + 30 * 86_400_000) })
+      .where(eq(academicPeriods.id, PERIOD));
+
+    const { metrics } = await query.run({ academicPeriodId: PERIOD });
+
+    expect(metrics.total).toBe(VISIBLE.length);
+  });
+
+  it("an active enrollment is a current one — a finished class group stops counting", async () => {
+    await db.update(classGroups).set({ status: "in_progress" }).where(eq(classGroups.id, GROUP_B));
+    const before = (await query.run({ academicPeriodId: PERIOD })).metrics.active;
+
+    await db.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_B));
+    const after = await query.run({ academicPeriodId: PERIOD, state: "current" });
+
+    expect(before - after.metrics.active).toBe(visibleOn("B").length);
+  });
+
+  it("a confirmed seat whose next payment is still in review is still active", async () => {
+    // Half of the visible rows have their latest payment under review; all of
+    // them count, because the seat is what says who is studying.
+    await db.update(classGroups).set({ status: "in_progress" }).where(eq(classGroups.id, GROUP_B));
+    const before = (await query.run({ academicPeriodId: PERIOD })).metrics.active;
+
+    await db.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_A));
+    await db.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_B));
+    const after = (await query.run({ academicPeriodId: PERIOD })).metrics.active;
+
+    expect(before - after).toBe(VISIBLE.length);
+  });
+});
