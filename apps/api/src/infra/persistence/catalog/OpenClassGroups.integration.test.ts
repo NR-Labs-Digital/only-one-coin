@@ -149,15 +149,22 @@ describe("class groups on sale", () => {
   it("a class group outside its enrollment window never takes a seat either", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
+      // Same course, period, dates and week as ON_SALE: one schedule. Naming
+      // the closed one still sells the schedule — through ON_SALE (OOC-145).
       const holds = new DrizzleSeatHoldRepository(tx);
       for (const outside of [WINDOW_CLOSED, WINDOW_NOT_OPEN]) {
         const result = await holds.claim({ classGroupId: outside, origin: "web", holdMinutes: 15 });
-        expect(result.kind).toBe("not_found");
+        expect(result.kind === "held" ? result.hold.classGroupId : result.kind).toBe(ON_SALE);
 
         const [row] = await tx.select({ seatsTaken: classGroups.seatsTaken }).from(classGroups).where(eq(classGroups.id, outside));
         expect(row?.seatsTaken).toBe(0);
       }
-      expect((await holds.claim({ classGroupId: ON_SALE, origin: "web", holdMinutes: 15 })).kind).toBe("held");
+
+      // With ON_SALE gone from the sale, nothing of the schedule is left.
+      await tx.update(classGroups).set({ status: "in_progress" }).where(eq(classGroups.id, ON_SALE));
+      for (const outside of [WINDOW_CLOSED, WINDOW_NOT_OPEN]) {
+        expect((await holds.claim({ classGroupId: outside, origin: "web", holdMinutes: 15 })).kind).toBe("not_found");
+      }
     });
   });
 

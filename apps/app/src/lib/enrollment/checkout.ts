@@ -14,6 +14,7 @@ import {
   PersonNameField,
   PhoneField,
 } from '@ooc/domain/fields'
+import { byClassGroupFillOrder, classGroupOfferKey } from '@ooc/domain/class-group-offer'
 import { ageFrom } from '@/lib/format'
 import { splitPhone } from '@/lib/geo'
 import type {
@@ -26,7 +27,6 @@ import type {
   PaymentDraft,
   PublicCatalog,
   StudentDraft,
-  Weekday,
 } from './types'
 
 /* -------------------------------------------------------------------------- */
@@ -206,36 +206,22 @@ export function groupsOnStartDate(
   )
 }
 
-const WEEKDAY_ORDER: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-
 /**
- * What makes two class groups the same offer to the person enrolling: same
- * course, same dates, same week. The code, the teacher and the Classroom are
- * the institution's business — none of them is something the reader chooses.
+ * What makes two class groups the same offer to the person enrolling, and the
+ * order their seats are taken in — one definition, shared with the API's seat
+ * claim (`@ooc/domain/class-group-offer`, OOC-145), so the card on screen and
+ * the group the server fills are always the same set.
  */
 function offerKey(group: CatalogClassGroup): string {
-  const week = [...group.slots]
-    .sort(
-      (a, b) =>
-        WEEKDAY_ORDER.indexOf(a.weekday) - WEEKDAY_ORDER.indexOf(b.weekday) ||
-        a.startTime.localeCompare(b.startTime),
-    )
-    .map((slot) => `${slot.weekday}@${slot.startTime}-${slot.endTime}`)
-    .join('|')
-  return `${group.courseId}#${group.startDate}#${group.endDate}#${week}`
+  return classGroupOfferKey({
+    courseId: group.courseId,
+    startsOn: group.startDate,
+    endsOn: group.endDate,
+    slots: group.slots,
+  })
 }
 
-/**
- * The order class groups of one schedule are filled in: by code, which is the
- * order they were opened in (`A-` + a sequence, OOC-?/27-10-2026). The first
- * fills up before the next one takes anybody — coordination opens five groups
- * of thirty, and five groups of six each is not what it asked for.
- */
-function byFillOrder(a: CatalogClassGroup, b: CatalogClassGroup): number {
-  return (
-    a.code.localeCompare(b.code, undefined, { numeric: true }) || a.id.localeCompare(b.id)
-  )
-}
+const byFillOrder = byClassGroupFillOrder
 
 /**
  * One schedule as the reader sees it (OOC-140). Coordination opens several

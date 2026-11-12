@@ -36,7 +36,20 @@ const PERIOD = "018f2b5c-5000-7000-8000-000000000001";
 const COURSE = "018f2b5c-5000-7000-8000-000000000002";
 const GROUP = "018f2b5c-5000-7000-8000-000000000003";
 const CLOSED_GROUP = "018f2b5c-5000-7000-8000-000000000004";
-const GROUPS = [GROUP, CLOSED_GROUP];
+// Siblings of GROUP for the fill-order tests (OOC-145), inserted by those tests only.
+const SIBLING_FIRST = "018f2b5c-5000-7000-8000-000000000005";
+const SIBLING_LAST = "018f2b5c-5000-7000-8000-000000000006";
+const OTHER_WEEK = "018f2b5c-5000-7000-8000-000000000007";
+const GROUPS = [GROUP, CLOSED_GROUP, SIBLING_FIRST, SIBLING_LAST, OTHER_WEEK];
+
+const MON_WED = [
+  { weekday: "mon", startTime: "19:00", endTime: "20:30" },
+  { weekday: "wed", startTime: "19:00", endTime: "20:30" },
+];
+const TUE_THU = [
+  { weekday: "tue", startTime: "19:00", endTime: "20:30" },
+  { weekday: "thu", startTime: "19:00", endTime: "20:30" },
+];
 
 let pool: pg.Pool;
 let db: Db;
@@ -65,8 +78,9 @@ beforeEach(async () => {
     .values({ id: COURSE, name: "Curso (seat hold integration)", language: "Lengua de prueba", minAge: 12 });
   await db.insert(classGroups).values(
     [
-      { id: GROUP, status: "enrolling" },
-      { id: CLOSED_GROUP, status: "closed" },
+      { id: GROUP, status: "enrolling" as const, code: "A-00010", slots: MON_WED },
+      // Another week: not a sibling of GROUP, so it answers for itself.
+      { id: CLOSED_GROUP, status: "closed" as const, code: "A-00020", slots: TUE_THU },
     ].map((group) => ({
       ...group,
       courseId: COURSE,
@@ -149,6 +163,76 @@ describe("DrizzleSeatHoldRepository.claim", () => {
     expect(results.filter((result) => result.kind === "held")).toHaveLength(2);
     expect(results.filter((result) => result.kind === "full")).toHaveLength(4);
     expect(await seatsTaken()).toBe(2);
+  });
+});
+
+describe("DrizzleSeatHoldRepository.claim — one schedule, several class groups (OOC-145)", () => {
+  /** Another class group of the same course and dates as GROUP. */
+  async function addGroup(
+    id: string,
+    values: { code: string; capacity?: number; slots?: typeof MON_WED; status?: "enrolling" | "in_progress" },
+  ): Promise<void> {
+    await db.insert(classGroups).values({
+      id,
+      courseId: COURSE,
+      academicPeriodId: PERIOD,
+      schedule: "Lun/Mié 19:00",
+      startsOn: new Date("2026-03-02T00:00:00.000Z"),
+      endsOn: new Date("2026-06-30T00:00:00.000Z"),
+      capacity: values.capacity ?? 2,
+      code: values.code,
+      // Same week in another order: the offer compares the week, not the list.
+      slots: values.slots ?? [...MON_WED].reverse(),
+      status: values.status ?? "enrolling",
+    });
+  }
+
+  function heldIn(result: Awaited<ReturnType<typeof claim>>): string | null {
+    return result.kind === "held" ? result.hold.classGroupId : null;
+  }
+
+  it("fills the groups of a schedule in code order, whichever one is named", async () => {
+    await addGroup(SIBLING_FIRST, { code: "A-00002", capacity: 1 });
+    await addGroup(SIBLING_LAST, { code: "A-00011" });
+    await addGroup(OTHER_WEEK, { code: "A-00001", slots: TUE_THU });
+
+    expect(heldIn(await claim("web", SIBLING_LAST))).toBe(SIBLING_FIRST);
+    expect(heldIn(await claim("web", SIBLING_LAST))).toBe(GROUP);
+    expect(heldIn(await claim("web", SIBLING_FIRST))).toBe(GROUP);
+    expect(heldIn(await claim("web", GROUP))).toBe(SIBLING_LAST);
+
+    // A-00001 comes first by code, but it is another week: never touched.
+    expect(await seatsTaken(OTHER_WEEK)).toBe(0);
+  });
+
+  it("answers full only once every group of the schedule is full", async () => {
+    await addGroup(SIBLING_FIRST, { code: "A-00002", capacity: 1 });
+
+    for (let i = 0; i < 3; i++) expect((await claim()).kind).toBe("held");
+
+    expect((await claim()).kind).toBe("full");
+    expect(await seatsTaken(GROUP)).toBe(2);
+    expect(await seatsTaken(SIBLING_FIRST)).toBe(1);
+  });
+
+  it("a named group no longer on sale still sells its schedule", async () => {
+    await addGroup(SIBLING_FIRST, { code: "A-00002", status: "in_progress" });
+
+    expect(heldIn(await claim("web", SIBLING_FIRST))).toBe(GROUP);
+    expect(await seatsTaken(SIBLING_FIRST)).toBe(0);
+  });
+
+  it("never sells more seats than the schedule has, however many claims arrive at once", async () => {
+    await addGroup(SIBLING_FIRST, { code: "A-00002", capacity: 1 });
+    await addGroup(SIBLING_LAST, { code: "A-00011", capacity: 1 });
+
+    const results = await Promise.all(Array.from({ length: 6 }, () => claim()));
+
+    expect(results.filter((result) => result.kind === "held")).toHaveLength(4);
+    expect(results.filter((result) => result.kind === "full")).toHaveLength(2);
+    expect(await seatsTaken(SIBLING_FIRST)).toBe(1);
+    expect(await seatsTaken(GROUP)).toBe(2);
+    expect(await seatsTaken(SIBLING_LAST)).toBe(1);
   });
 });
 
