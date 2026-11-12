@@ -572,6 +572,7 @@ export {
   LanguageInUseError,
 } from "./catalog/errors.js";
 export { languageKey, sameLanguage } from "./catalog/courseLanguage.js";
+export { classGroupOfferKey, byClassGroupFillOrder, type OfferFields, type OfferSlot } from "./catalog/classGroupOffer.js";
 export { Language, LanguagePropsSchema, type LanguageProps } from "./catalog/Language.js";
 export type { ILanguageRepository } from "./catalog/ports/ILanguageRepository.js";
 export { CreateLanguageUseCase, type CreateLanguageInput } from "./catalog/CreateLanguageUseCase.js";

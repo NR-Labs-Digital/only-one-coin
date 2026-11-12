@@ -30,6 +30,8 @@ As regras de campo da ficha (normalização, formato do documento por tipo, celu
 
 `src/identity/auditCatalog.ts` (subpath `@ooc/domain/audit-catalog`, OOC-122) é o terceiro, mesma regra do anterior — sem dependência e sem import relativo: o vocabulário da bitácora geral (ação gravada → chave de tela, entidade e onde a entrada guarda o id do registro; nomes de campo → chave de rótulo). As colunas de `platform_settings` estão repetidas ali como lista literal, e o teste do catálogo em `apps/api` as amarra a `PLATFORM_SETTING_COLUMNS`.
 
+`src/catalog/classGroupOffer.ts` (subpath `@ooc/domain/class-group-offer`, OOC-145) é o quarto, mesma regra — sem dependência e sem import relativo: o que faz duas turmas serem o mesmo horário para quem se matricula (`classGroupOfferKey`) e a ordem em que enchem (`byClassGroupFillOrder`). O cartão do checkout e o pedido de vaga da API leem daqui.
+
 Dois schemas por entidade, de propósito: `StudentPropsSchema`/`GuardianPropsSchema` são o que **carrega** do banco (frouxo — linha antiga e import legado ainda precisam abrir); `CreateStudentSchema`/`CreateGuardianSchema` são o que um registro **novo** precisa cumprir (normaliza, depois checa). `create()` recusa com `InvalidFieldsError` — campo + código, nunca frase.
 
 ---
