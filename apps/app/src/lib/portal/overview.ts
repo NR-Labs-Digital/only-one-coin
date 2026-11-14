@@ -74,8 +74,9 @@ interface ApiProcedureRequest {
 }
 
 export interface OverviewResponse {
-  profileId: string
-  profiles: PortalProfile[]
+  /** Optional until every API in the air answers it (OOC-147). */
+  profileId?: string
+  profiles?: PortalProfile[]
   student: Student
   enrollments: ApiEnrollment[]
   /** `platform_settings.passing_grade` (OOC-41); null when the API could not read it. */

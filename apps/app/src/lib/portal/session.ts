@@ -52,8 +52,11 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
 
   const enrollments = overview.enrollments.map(toEnrollment)
   return {
-    profileId: overview.profileId,
-    profiles: overview.profiles,
+    // An API from before OOC-147 sends neither: the app and the API do not
+    // deploy at the same instant, and a portal that waits for the other half
+    // must still render — one profile, no switcher.
+    profileId: overview.profileId ?? '',
+    profiles: overview.profiles ?? [],
     student: overview.student,
     passingGrade: overview.passingGrade,
     enrollments,
