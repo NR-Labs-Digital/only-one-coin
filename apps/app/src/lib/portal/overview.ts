@@ -6,6 +6,7 @@ import type {
   ProcedureCatalogItem,
   StudentRequest,
   PaymentStatus,
+  PortalProfile,
   SeatStatus,
   Student,
   WeeklySlot,
@@ -73,6 +74,8 @@ interface ApiProcedureRequest {
 }
 
 export interface OverviewResponse {
+  profileId: string
+  profiles: PortalProfile[]
   student: Student
   enrollments: ApiEnrollment[]
   /** `platform_settings.passing_grade` (OOC-41); null when the API could not read it. */
