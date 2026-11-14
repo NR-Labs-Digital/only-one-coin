@@ -12,6 +12,7 @@ import { auditLog, enrollments, payments, procedurePrices, procedureRequests, re
 import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { assertOperationNumberUnused } from "@/infra/persistence/enrollment/operationNumberGuard.js";
+import { reachesStudent } from "@/infra/persistence/portal/reachableStudents.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -34,7 +35,7 @@ export class DrizzleProcedureRepository implements IProcedureRepository {
       .where(
         and(
           eq(enrollments.id, params.enrollmentId),
-          eq(students.userId, params.userId),
+          reachesStudent(params.userId),
           eq(enrollments.seatStatus, "confirmed"),
           isNull(enrollments.deletedAt),
           isNull(students.deletedAt),
@@ -50,7 +51,7 @@ export class DrizzleProcedureRepository implements IProcedureRepository {
       .from(procedureRequests)
       .innerJoin(students, eq(students.id, procedureRequests.studentId))
       .leftJoin(payments, eq(payments.procedureRequestId, procedureRequests.id))
-      .where(and(eq(procedureRequests.id, params.requestId), eq(students.userId, params.userId), isNull(students.deletedAt)))
+      .where(and(eq(procedureRequests.id, params.requestId), reachesStudent(params.userId)))
       .limit(1);
     return row ? toRef(row) : null;
   }

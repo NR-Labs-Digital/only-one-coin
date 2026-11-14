@@ -3,8 +3,10 @@ import type { IAttachmentOwners } from "./AttachmentPorts.js";
 import { AttachmentOwnerForbiddenError, AttachmentOwnerNotFoundError } from "./errors.js";
 
 /**
- * Who reaches whose files. A student reaches only their own file, resolved from
- * the session's account — whatever owner the request named is ignored. Staff
+ * Who reaches whose files. A student reaches only the files behind the
+ * session's account — whatever owner the request named is ignored; a list and
+ * an upload are about the chosen profile (OOC-147), any file of the account
+ * opens. Staff
  * reach an owner type when their cargo is in the policy. A null scope id is
  * not an id (CLAUDE.md §8): an account with no file behind it reaches nothing.
  */
@@ -15,20 +17,20 @@ export class AttachmentAccess {
   ) {}
 
   /**
-   * The owners a list reads: for a student, every file linked to the account
+   * The owners a list reads: for a student, every file of the chosen profile
    * (the same as the portal overview); for staff, the one asked for.
    */
   async ownersFor(actor: AttachmentActor, requested: AttachmentOwner | null): Promise<AttachmentOwner[]> {
     if (actor.role === "student") {
-      const ids = await this.owners.studentsOfAccount(actor.userId);
+      const ids = await this.owners.studentsOfProfile(actor.userId, actor.profileId ?? null);
       if (ids.length === 0) throw new AttachmentOwnerNotFoundError();
       return ids.map((id) => ({ type: "student", id }));
     }
     return [await this.staffOwner(actor, requested)];
   }
 
-  /** The owner a new upload hangs off: for a student, the newest file linked
-   * to the account — the identity `/portal/me` shows. */
+  /** The owner a new upload hangs off: for a student, the chosen profile's
+   * newest file — the identity `/portal/me` shows. */
   async ownerFor(actor: AttachmentActor, requested: AttachmentOwner | null): Promise<AttachmentOwner> {
     const [first] = await this.ownersFor(actor, requested);
     if (!first) throw new AttachmentOwnerNotFoundError();

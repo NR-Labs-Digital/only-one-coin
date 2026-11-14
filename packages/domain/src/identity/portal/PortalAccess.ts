@@ -33,10 +33,22 @@ export interface PortalAccount {
   hasPassword: boolean;
 }
 
+/** One person the account reaches (OOC-147): the student themself, or each
+ * child of a guardian. `id` is the person's newest file. */
+export interface PortalProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+/** The profile the portal is showing, and every profile the account has —
+ * more than one only for a guardian with several children. */
 export interface PortalIdentity {
   firstName: string;
   lastName: string;
   email: string;
+  profileId: string;
+  profiles: PortalProfile[];
 }
 
 export interface PortalAccessToken {

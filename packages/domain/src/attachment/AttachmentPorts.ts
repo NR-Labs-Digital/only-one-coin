@@ -76,4 +76,8 @@ export interface IAttachmentOwners {
    * one while duplicates are not consolidated (`students.user_id` is not
    * unique); empty when there is none. */
   studentsOfAccount(userId: string): Promise<string[]>;
+  /** The files of one person behind the account (OOC-147): the profile
+   * `profileId` names among the account's own, or the newest one — a guardian
+   * lists and sends per child. Empty when the account has no file. */
+  studentsOfProfile(userId: string, profileId: string | null): Promise<string[]>;
 }

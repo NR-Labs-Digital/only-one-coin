@@ -75,12 +75,40 @@ describe("portal routes refuse undeclared roles", () => {
 
   it("gives a student their own identity", async () => {
     as("student");
-    vi.spyOn(container.repositories.portalAccess, "findIdentity").mockResolvedValue({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com" });
+    const profiles = [{ id: "0192f0a0-0000-7000-8000-000000000001", firstName: "Ana", lastName: "Quispe" }];
+    const identity = vi
+      .spyOn(container.repositories.portalAccess, "findIdentity")
+      .mockResolvedValue({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com", profileId: profiles[0]!.id, profiles });
     const preference = vi.spyOn(container.identity.userPreferenceRepository, "findPreferredLocale").mockResolvedValue("pt-BR");
     const response = await app.inject({ method: "GET", url: "/api/v1/portal/me", cookies: { [SESSION_COOKIE_NAME]: "token" } });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ firstName: "Ana", lastName: "Quispe", email: "ana@gmail.com", preferredLocale: "pt-BR" });
+    expect(response.json()).toEqual({
+      firstName: "Ana",
+      lastName: "Quispe",
+      email: "ana@gmail.com",
+      profileId: profiles[0]!.id,
+      profiles,
+      preferredLocale: "pt-BR",
+    });
     expect(preference).toHaveBeenCalledWith("u1");
+    expect(identity).toHaveBeenCalledWith("u1", null);
+  });
+
+  it("passes the profile the client names on, for the repository to check against the account", async () => {
+    as("student");
+    const identity = vi.spyOn(container.repositories.portalAccess, "findIdentity").mockResolvedValue(null);
+    vi.spyOn(container.identity.userPreferenceRepository, "findPreferredLocale").mockResolvedValue(null);
+    const profile = "0192f0a0-0000-7000-8000-000000000002";
+    await app.inject({ method: "GET", url: `/api/v1/portal/me?profile=${profile}`, cookies: { [SESSION_COOKIE_NAME]: "token" } });
+    expect(identity).toHaveBeenCalledWith("u1", profile);
+  });
+
+  it("reads a malformed profile as no profile, not as a 400", async () => {
+    as("student");
+    const overview = vi.spyOn(container.queries.studentPortal, "overview").mockResolvedValue(null);
+    const response = await app.inject({ method: "GET", url: "/api/v1/portal/overview?profile=not-a-uuid", cookies: { [SESSION_COOKIE_NAME]: "token" } });
+    expect(response.statusCode).toBe(403);
+    expect(overview).toHaveBeenCalledWith("u1", null);
   });
 
   it("answers /portal/overview with 403 for a student account with no file behind it", async () => {
@@ -94,7 +122,7 @@ describe("portal routes refuse undeclared roles", () => {
     as("student");
     const overview = vi.spyOn(container.queries.studentPortal, "overview").mockResolvedValue(null);
     await app.inject({ method: "GET", url: "/api/v1/portal/overview?userId=someone-else", cookies: { [SESSION_COOKIE_NAME]: "token" } });
-    expect(overview).toHaveBeenCalledWith("u1");
+    expect(overview).toHaveBeenCalledWith("u1", null);
   });
 
   it("answers someone else's receipt like a missing one, without minting a URL", async () => {

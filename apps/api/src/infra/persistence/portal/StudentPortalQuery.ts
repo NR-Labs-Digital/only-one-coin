@@ -26,6 +26,8 @@ import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enroll
 import type { GetStudentQuery, StudentDetailRow } from "../student/GetStudentQuery.js";
 import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
+import { pickProfile, profilesOfAccount } from "./accountProfiles.js";
+import { reachesStudent } from "./reachableStudents.js";
 
 export interface PortalPaymentRow {
   id: string;
@@ -90,6 +92,9 @@ export interface PortalProcedureRequestRow {
 }
 
 export interface PortalOverview {
+  /** The profile shown, and every profile of the account (OOC-147). */
+  profileId: string;
+  profiles: { id: string; firstName: string; lastName: string }[];
   student: StudentDetailRow;
   /** `platform_settings.passing_grade` (OOC-41): the screen compares the grade with it, never with a constant. */
   passingGrade: number | null;
@@ -99,14 +104,16 @@ export interface PortalOverview {
 }
 
 /**
- * What the signed-in student sees of themself (OOC-32), scoped by the account
- * id the session carries — never by an id from the client (CLAUDE.md §8).
+ * What the signed-in account sees of one of its profiles (OOC-32, OOC-147),
+ * scoped by the account id the session carries — never by an id from the
+ * client (CLAUDE.md §8). The profile the client names only picks among the
+ * account's own (`pickProfile`).
  *
- * `students.user_id` is not unique: two files of the same person (the same
- * document, still not consolidated — CLAUDE.md §1) point at one account. The
- * identity is the newest file, as `GET /portal/me` reads it; the enrollments
- * are every file's, because a payment approved on the older file is still the
- * person's course.
+ * `students.user_id` is not unique: a guardian's children, and two files of
+ * the same person (the same document, still not consolidated — CLAUDE.md §1),
+ * point at one account. The identity is the profile's newest file; the
+ * enrollments are every file of that person, because a payment approved on
+ * the older file is still the person's course.
  */
 export class StudentPortalQuery {
   constructor(
@@ -114,18 +121,15 @@ export class StudentPortalQuery {
     private readonly getStudent: GetStudentQuery,
   ) {}
 
-  async overview(userId: string): Promise<PortalOverview | null> {
-    const files = await this.db
-      .select({ id: students.id })
-      .from(students)
-      .where(and(eq(students.userId, userId), isNull(students.deletedAt)))
-      .orderBy(desc(students.createdAt));
-    if (files.length === 0) return null;
+  async overview(userId: string, requestedProfileId: string | null = null): Promise<PortalOverview | null> {
+    const profiles = await profilesOfAccount(this.db, userId);
+    const profile = pickProfile(profiles, requestedProfileId);
+    if (!profile) return null;
 
-    const student = await this.getStudent.run(files[0]!.id);
+    const student = await this.getStudent.run(profile.id);
     if (!student) return null;
 
-    const fileIds = files.map((file) => file.id);
+    const fileIds = profile.fileIds;
     const rows = await this.db
       .select({
         id: enrollments.id,
@@ -193,6 +197,8 @@ export class StudentPortalQuery {
     }));
 
     return {
+      profileId: profile.id,
+      profiles: profiles.map(({ id, firstName, lastName }) => ({ id, firstName, lastName })),
       student,
       passingGrade: settings[0]?.passingGrade ?? null,
       procedures,
@@ -253,8 +259,8 @@ export class StudentPortalQuery {
   }
 
   /**
-   * Whether the payment hangs off an enrollment of a file linked to this
-   * account. The receipt route answers 404 otherwise — the same answer as a
+   * Whether the payment hangs off an enrollment of a file this account
+   * reaches — any profile, the guardian's children included (OOC-147). The receipt route answers 404 otherwise — the same answer as a
    * payment that does not exist, so an id from someone else reveals nothing.
    */
   async ownsPayment(userId: string, paymentId: string): Promise<boolean> {
@@ -267,8 +273,7 @@ export class StudentPortalQuery {
       .where(
         and(
           eq(payments.id, paymentId),
-          eq(students.userId, userId),
-          isNull(students.deletedAt),
+          reachesStudent(userId),
           isNull(enrollments.deletedAt),
         ),
       )

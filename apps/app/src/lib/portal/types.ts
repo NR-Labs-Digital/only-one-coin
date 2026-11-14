@@ -373,7 +373,17 @@ export interface ContinuationOffer {
 }
 
 /** Everything the portal needs for one signed-in student. */
+/** One person the account reaches (OOC-147): the student, or each child of a guardian. */
+export interface PortalProfile {
+  id: string
+  firstName: string
+  lastName: string
+}
+
 export interface PortalSession {
+  /** The profile shown, and every profile of the account — two or more only for a guardian. */
+  profileId: string
+  profiles: PortalProfile[]
   student: Student
   /** The pass mark a final grade is compared with (`platform_settings`, OOC-41); null when it could not be read. */
   passingGrade: number | null

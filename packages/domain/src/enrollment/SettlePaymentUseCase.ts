@@ -3,6 +3,7 @@ import { paymentApprovedEmails, paymentRejectedEmails } from "../notification/en
 import { procedurePaymentApprovedEmails, procedurePaymentRejectedEmails } from "../notification/procedureEmails.js";
 import { newPortalToken, type PortalAccessOutcome } from "../identity/portal/PortalAccess.js";
 import { portalCredentialsEmail } from "../identity/portal/portalEmails.js";
+import { guardianProvisioning } from "../identity/portal/guardianAccess.js";
 import type { IPortalLinkBuilder, PortalAccountProvisioning } from "../identity/portal/ports.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { SeatStatus } from "./Enrollment.js";
@@ -88,6 +89,8 @@ export class SettlePaymentUseCase extends BaseUseCase<SettlePaymentInput, Settle
           notify: (account, tokenId) => [
             portalCredentialsEmail(account, this.portalLinkBuilder.access(activation.token, DEFAULT_LOCALE), tokenId, DEFAULT_LOCALE),
           ],
+          // A minor's guardian gets their own account too (OOC-147).
+          guardian: guardianProvisioning(this.portalLinkBuilder, now),
         }
       : null;
 
