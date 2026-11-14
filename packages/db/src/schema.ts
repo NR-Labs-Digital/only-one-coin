@@ -1405,6 +1405,35 @@ export const portalAccessTokens = pgTable(
   ],
 );
 
+// A guardian's door to a child's file (OOC-147). The child keeps their own
+// account (`students.user_id`, the Gmail); this row lets the guardian's
+// account reach the same file as one more profile. Written at approval time
+// for a minor with a guardian on file.
+//
+// The row alone grants nothing: the API reaches the file only while the
+// file's live guardian still has the same e-mail as this account
+// (`reachableStudentIdsSql`). Changing or removing the guardian on the file
+// cuts the access with no write here — which is why there is no `deleted_at`
+// and nothing ever deletes a row.
+//
+// `user_id` is Better Auth's "user".id (text); its FK is hand-written in the
+// migration, as in 0022.
+export const guardianPortalLinks = pgTable(
+  "guardian_portal_links",
+  {
+    id: uuidPk(),
+    userId: text("user_id").notNull(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "restrict" }),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("guardian_portal_links_user_student_uidx").on(table.userId, table.studentId),
+    index("guardian_portal_links_student_id_idx").on(table.studentId),
+  ],
+);
+
 // The panel's own switchboard: which sections of the platform are on the air
 // (CLAUDE.md §5, "Feature flags"). One row per flag key declared in
 // `apps/app/src/lib/feature-flags/registry.ts` — and only for the flags
