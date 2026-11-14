@@ -201,6 +201,7 @@ export function ClassGroupsView({
         // Seats rolled up per language: the divider carries the number so a
         // folded language still says whether it is filling up.
         seatsTaken: entry.groups.reduce((sum, row) => sum + row.seatsTaken, 0),
+        seatsOver: entry.groups.reduce((sum, row) => sum + row.seatsOver, 0),
         capacity: entry.groups.reduce((sum, row) => sum + row.capacity, 0),
       }))
       .sort((a, b) => a.id.localeCompare(b.id))
@@ -505,6 +506,8 @@ export function ClassGroupsView({
                           </span>
                           <span className="ml-auto text-xs tabular-nums text-muted-foreground/70">
                             {`${entry.seatsTaken} / ${entry.capacity}`}
+                            {entry.seatsOver > 0 &&
+                              ` ${t('class_groups.seats_over', { count: entry.seatsOver })}`}
                           </span>
                         </button>
                       </td>

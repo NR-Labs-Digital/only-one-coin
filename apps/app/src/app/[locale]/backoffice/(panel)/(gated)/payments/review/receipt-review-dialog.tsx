@@ -398,6 +398,11 @@ export function ReceiptReviewDialog({
                   tone={payment.procedureKind ? 'info' : 'neutral'}
                   label={t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)}
                 />
+                {/* The seat is above the class group's capacity (OOC-155):
+                    seen before deciding, never a reason the screen decides. */}
+                {payment.overCapacity && (
+                  <StatusBadge tone="warning" label={t('payment_over_capacity.badge')} />
+                )}
                 <span className="ml-auto flex items-center gap-1">
                   <CaseStepButton
                     icon="chevron-left"

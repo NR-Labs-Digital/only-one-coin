@@ -787,12 +787,18 @@
       "field_paid_at": "Pagado el",
       "not_paid": "Sin pago acreditado",
       "frozen_price": "Precio congelado al matricularse ({id}). Corregir la tabla de precios no cambia esta matrícula.",
-      "manage_notice": "Mover, congelar o retirar al alumno es un trámite con costo y se registra desde el aula, no desde aquí.",
+      "manage_notice": "Congelar o retirar al alumno es un trámite con costo y se registra desde el aula, no desde aquí.",
       "open_student": "Ver la ficha del alumno",
       "open_class_group": "Abrir el aula",
-      "field_origin": "Canal"
+      "field_origin": "Canal",
+      "move": "Mover de aula"
     },
     "new_enrollment": {
+      "class_group_option_full": "{label} (llena)",
+      "seats_left_over": "{count} · +{over} por encima del cupo",
+      "over_capacity_title": "Esta aula está llena. ¿Matricular por encima del cupo?",
+      "over_capacity_body": "La matrícula queda por encima de la capacidad del aula y se registra en la bitácora con tu nombre.",
+      "class_group_full_error": "El aula se llenó mientras completabas el formulario. Confirma arriba para matricular por encima del cupo.",
       "title": "Nueva matrícula",
       "subtitle": "Para la venta que se cerró por WhatsApp y nunca pasó por el formulario. El camino normal es que el alumno se matricule en /enrollment.",
       "step_student": "Alumno",
@@ -1103,6 +1109,8 @@
       "field_capacity": "Vacantes",
       "create": "Crear aula",
       "seats_left": "{count, plural, one {queda #} other {quedan #}}",
+      "seats_over": "+{count}",
+      "seats_over_hint": "{count, plural, one {# matrícula por encima del cupo} other {# matrículas por encima del cupo}}",
       "expand_all": "Desplegar todo",
       "collapse_all": "Plegar todo",
       "page_prev": "Anteriores",
@@ -2369,6 +2377,9 @@
       "course_language_what": "El idioma del curso. Agrupa el curso en el formulario de matrícula y decide qué docentes se pueden asignar a sus aulas.",
       "course_level_what": "El nivel del curso, por ejemplo B2 o Básico. Aparece junto al nombre."
     },
+    "payment_over_capacity": {
+      "badge": "Sobrecupo"
+    },
     "payment_origin": {
       "enrollment": "Matrícula",
       "enrollment_certificate": "Constancia de matrícula"
@@ -2445,6 +2456,47 @@
       "web": "Web",
       "whatsapp": "WhatsApp · vendedor",
       "whatsapp_ai": "WhatsApp · asistente IA"
+    },
+    "move_enrollment": {
+      "close": "Cerrar",
+      "title": "Mover de aula",
+      "subtitle": "{student} · hoy en {from}",
+      "loading": "Cargando aulas…",
+      "load_error": "No pudimos cargar las aulas. Cierra e inténtalo de nuevo.",
+      "no_targets": "No hay otra aula en matrícula o en curso.",
+      "field_class_group": "Aula de destino",
+      "class_group_placeholder": "Elige un aula",
+      "class_group_option": "{code} · {course} — {schedule} · {period}",
+      "class_group_option_full": "{label} (llena)",
+      "seats": "{taken} / {capacity} vacantes ocupadas{over, plural, =0 {} other { · +# por encima del cupo}}",
+      "field_plan": "Plan del nuevo curso",
+      "plan_placeholder": "Elige un plan",
+      "no_plans": "Este curso no tiene un plan con precio vigente.",
+      "plan_notice": "El aula es de otro curso: la matrícula pasa a este plan. Lo que ya se pagó no cambia.",
+      "over_capacity_title": "Esta aula está llena. ¿Mover por encima del cupo?",
+      "over_capacity_body": "La matrícula queda por encima de la capacidad del aula y se registra en la bitácora con tu nombre.",
+      "field_reason": "Motivo",
+      "reason_placeholder": "Ej.: cambio de horario pedido por WhatsApp",
+      "money_notice": "Mover no cobra ni devuelve nada: el pago de la matrícula queda como está. Si hay diferencia de precio, se resuelve fuera de la plataforma.",
+      "cancel": "Cancelar",
+      "submit": "Mover matrícula",
+      "saving": "Moviendo…",
+      "moved": "Matrícula movida de aula.",
+      "moved_over_capacity": "Matrícula movida, por encima del cupo del aula.",
+      "error": {
+        "class_group_full": "El aula se llenó. Confirma para mover por encima del cupo.",
+        "move_seat_released": "La vacante de esta matrícula ya fue liberada.",
+        "move_graded": "Esta matrícula ya tiene nota en su aula y no se mueve.",
+        "move_same_class_group": "La matrícula ya está en esta aula.",
+        "move_target_unavailable": "Esa aula ya no está en matrícula ni en curso.",
+        "move_plan_required": "Elige el plan del nuevo curso.",
+        "move_plan_not_of_course": "Ese plan no es del curso del aula elegida.",
+        "move_plan_not_allowed": "En el mismo curso, el plan no cambia.",
+        "move_reason_required": "Escribe el motivo.",
+        "move_conflict": "La matrícula cambió mientras la movías. Cierra y vuelve a abrirla.",
+        "not_found": "La matrícula ya no existe.",
+        "failed": "No pudimos mover la matrícula. Inténtalo de nuevo."
+      }
     }
   }
 }

@@ -95,7 +95,7 @@ export default async function PendingClassGroupsPage({
  */
 function closedBecause(row: ClassGroupItem): 'full' | 'window_closed' | undefined {
   if (row.status === 'in_progress') return undefined
-  return row.seatsTaken >= row.capacity ? 'full' : 'window_closed'
+  return row.seatsTaken + row.seatsOver >= row.capacity ? 'full' : 'window_closed'
 }
 
 /** Folded by sales period, the one whose classes start first on top — the most overdue. */

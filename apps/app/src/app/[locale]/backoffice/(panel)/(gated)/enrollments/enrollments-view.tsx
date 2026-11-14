@@ -36,6 +36,7 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
+import { MoveEnrollmentDialog } from './move-enrollment-dialog'
 import { EnrollmentLinks } from './enrollment-links'
 import { NewEnrollmentForm, type StudentSearchResult } from './new-enrollment-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -75,11 +76,14 @@ export function EnrollmentsView({
   ledger,
   query,
   canCreate,
+  canMove,
   preselect = null,
 }: {
   ledger: EnrollmentLedger
   query: EnrollmentLedgerQuery
   canCreate: boolean
+  /** May move an enrollment to another class group (OOC-84). */
+  canMove: boolean
   /**
    * A link that arrives to open an enrollment (the class group's waitlist,
    * "enroll the first in line") — the form opens with these picked.
@@ -103,6 +107,7 @@ export function EnrollmentsView({
   const [toast, setToast] = useState<string | null>(null)
 
   const [detail, setDetail] = useState<EnrollmentRow | null>(null)
+  const [moving, setMoving] = useState<EnrollmentRow | null>(null)
 
   const pathname = usePathname()
   /**
@@ -478,6 +483,23 @@ export function EnrollmentsView({
       <EnrollmentDetailDialog
         enrollment={detail}
         onClose={() => setDetail(null)}
+        onMove={
+          canMove
+            ? (row) => {
+                setDetail(null)
+                setMoving(row)
+              }
+            : undefined
+        }
+      />
+      <MoveEnrollmentDialog
+        enrollment={moving}
+        onClose={() => setMoving(null)}
+        onMoved={({ overCapacity }) => {
+          setMoving(null)
+          setToast(t(overCapacity ? 'move_enrollment.moved_over_capacity' : 'move_enrollment.moved'))
+          router.refresh()
+        }}
       />
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>

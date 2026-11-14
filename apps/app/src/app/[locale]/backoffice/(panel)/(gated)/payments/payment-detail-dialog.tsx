@@ -82,6 +82,11 @@ export function PaymentDetailDialog({
                   tone={payment.procedureKind ? 'info' : 'neutral'}
                   label={t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)}
                 />
+                {/* The seat is above the class group's capacity (OOC-155):
+                    seen before deciding, never a reason the screen decides. */}
+                {payment.overCapacity && (
+                  <StatusBadge tone="warning" label={t('payment_over_capacity.badge')} />
+                )}
               </div>
             </DialogHeader>
 

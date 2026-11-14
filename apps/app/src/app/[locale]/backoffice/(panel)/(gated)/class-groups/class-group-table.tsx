@@ -102,17 +102,28 @@ export function ClassGroupTableRow({
           <span className="flex items-baseline justify-between gap-1">
             <span className="text-xs font-semibold tabular-nums text-ink">
               {`${row.seatsTaken} / ${row.capacity}`}
+              {/* Seats above capacity (OOC-155), apart from the regular
+                  count so "30 / 30" keeps meaning the class group's real
+                  size: "30 / 30 +2". */}
+              {row.seatsOver > 0 && (
+                <span
+                  className="ml-1 text-amber-700"
+                  title={t('class_groups.seats_over_hint', { count: row.seatsOver })}
+                >
+                  {t('class_groups.seats_over', { count: row.seatsOver })}
+                </span>
+              )}
             </span>
             <span className="text-[11px] tabular-nums text-muted-foreground">
               {t('class_groups.seats_left', {
-                count: Math.max(0, row.capacity - row.seatsTaken),
+                count: Math.max(0, row.capacity - row.seatsTaken - row.seatsOver),
               })}
             </span>
           </span>
           <Meter
-            value={row.seatsTaken}
+            value={Math.min(row.capacity, row.seatsTaken + row.seatsOver)}
             max={row.capacity}
-            tone={seatPressureTone(row.seatsTaken, row.capacity)}
+            tone={seatPressureTone(row.seatsTaken + row.seatsOver, row.capacity)}
           />
           {row.waitlistCount > 0 && (
             <span className="text-[11px] font-semibold tabular-nums text-amber-700">

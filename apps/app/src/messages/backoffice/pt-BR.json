@@ -787,12 +787,18 @@
       "field_paid_at": "Pago em",
       "not_paid": "Sem pagamento creditado",
       "frozen_price": "Preço congelado na matrícula ({id}). Corrigir a tabela de preços não muda esta matrícula.",
-      "manage_notice": "Mover, congelar ou retirar o aluno é um trâmite pago e se registra na turma, não aqui.",
+      "manage_notice": "Congelar ou retirar o aluno é um trâmite com custo e se registra pela turma, não por aqui.",
       "open_student": "Ver a ficha do aluno",
       "open_class_group": "Abrir a turma",
-      "field_origin": "Canal"
+      "field_origin": "Canal",
+      "move": "Mover de turma"
     },
     "new_enrollment": {
+      "class_group_option_full": "{label} (cheia)",
+      "seats_left_over": "{count} · +{over} acima do limite",
+      "over_capacity_title": "Esta turma está cheia. Matricular acima do limite?",
+      "over_capacity_body": "A matrícula fica acima da capacidade da turma e é registrada na bitácora com o seu nome.",
+      "class_group_full_error": "A turma encheu enquanto você preenchia o formulário. Confirme acima para matricular acima do limite.",
       "title": "Nova matrícula",
       "subtitle": "Para a venda que fechou pelo WhatsApp e nunca passou pelo formulário. O caminho normal é o aluno se matricular em /enrollment.",
       "step_student": "Aluno",
@@ -1103,6 +1109,8 @@
       "field_capacity": "Vagas",
       "create": "Criar turma",
       "seats_left": "{count, plural, one {resta #} other {restam #}}",
+      "seats_over": "+{count}",
+      "seats_over_hint": "{count, plural, one {# matrícula acima do limite} other {# matrículas acima do limite}}",
       "expand_all": "Abrir todas",
       "collapse_all": "Fechar todas",
       "page_prev": "Anteriores",
@@ -2369,6 +2377,9 @@
       "course_language_what": "O idioma do curso. Agrupa o curso no formulário de matrícula e decide quais docentes podem ser atribuídos às turmas dele.",
       "course_level_what": "O nível do curso, por exemplo B2 ou Básico. Aparece junto do nome."
     },
+    "payment_over_capacity": {
+      "badge": "Acima do limite"
+    },
     "payment_origin": {
       "enrollment": "Matrícula",
       "enrollment_certificate": "Constancia de matrícula"
@@ -2445,6 +2456,47 @@
       "web": "Web",
       "whatsapp": "WhatsApp · vendedor",
       "whatsapp_ai": "WhatsApp · assistente IA"
+    },
+    "move_enrollment": {
+      "close": "Fechar",
+      "title": "Mover de turma",
+      "subtitle": "{student} · hoje em {from}",
+      "loading": "Carregando turmas…",
+      "load_error": "Não conseguimos carregar as turmas. Feche e tente de novo.",
+      "no_targets": "Não há outra turma em matrícula ou em andamento.",
+      "field_class_group": "Turma de destino",
+      "class_group_placeholder": "Escolha uma turma",
+      "class_group_option": "{code} · {course} — {schedule} · {period}",
+      "class_group_option_full": "{label} (cheia)",
+      "seats": "{taken} / {capacity} vagas ocupadas{over, plural, =0 {} other { · +# acima do limite}}",
+      "field_plan": "Plano do novo curso",
+      "plan_placeholder": "Escolha um plano",
+      "no_plans": "Este curso não tem plano com preço vigente.",
+      "plan_notice": "A turma é de outro curso: a matrícula passa para este plano. O que já foi pago não muda.",
+      "over_capacity_title": "Esta turma está cheia. Mover acima do limite?",
+      "over_capacity_body": "A matrícula fica acima da capacidade da turma e é registrada na bitácora com o seu nome.",
+      "field_reason": "Motivo",
+      "reason_placeholder": "Ex.: troca de horário pedida pelo WhatsApp",
+      "money_notice": "Mover não cobra nem devolve nada: o pagamento da matrícula fica como está. Se houver diferença de preço, ela é resolvida fora da plataforma.",
+      "cancel": "Cancelar",
+      "submit": "Mover matrícula",
+      "saving": "Movendo…",
+      "moved": "Matrícula movida de turma.",
+      "moved_over_capacity": "Matrícula movida, acima do limite da turma.",
+      "error": {
+        "class_group_full": "A turma encheu. Confirme para mover acima do limite.",
+        "move_seat_released": "A vaga desta matrícula já foi liberada.",
+        "move_graded": "Esta matrícula já tem nota na turma e não pode ser movida.",
+        "move_same_class_group": "A matrícula já está nesta turma.",
+        "move_target_unavailable": "Essa turma não está mais em matrícula nem em andamento.",
+        "move_plan_required": "Escolha o plano do novo curso.",
+        "move_plan_not_of_course": "Esse plano não é do curso da turma escolhida.",
+        "move_plan_not_allowed": "No mesmo curso, o plano não muda.",
+        "move_reason_required": "Escreva o motivo.",
+        "move_conflict": "A matrícula mudou enquanto você a movia. Feche e abra de novo.",
+        "not_found": "A matrícula não existe mais.",
+        "failed": "Não conseguimos mover a matrícula. Tente de novo."
+      }
     }
   }
 }

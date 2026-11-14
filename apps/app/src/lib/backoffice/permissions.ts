@@ -70,9 +70,11 @@ export function canCreateClassGroup(role: StaffRole): boolean {
 }
 
 /**
- * Who may record an administrative procedure over an enrollment — moving,
- * freezing, withdrawing (`docs/REGRAS-NEGOCIO.md` §5). They all carry a fee and
- * touch a seat, so they belong to management and the enrollment side.
+ * Who may act on an enrollment's seat — moving it to another class group
+ * (OOC-84, a free staff tool, the same three the API declares on
+ * `POST /enrollments/:id/move`), and later freezing or withdrawing it
+ * (`docs/REGRAS-NEGOCIO.md` §5). They touch a seat, so they belong to
+ * management and the enrollment side.
  */
 export function canManageEnrollment(role: StaffRole): boolean {
   return isManagement(role) || role === 'enrollment_supervisor'

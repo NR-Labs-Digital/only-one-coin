@@ -72,6 +72,8 @@ interface OpenClassGroup {
   startsOn: string
   capacity: number
   seatsTaken: number
+  /** Seats already above capacity (OOC-155). */
+  seatsOver: number
   status: string
   planId: string
   planName: string
@@ -130,6 +132,11 @@ export function NewEnrollmentForm({
   const [openGroups, setOpenGroups] = useState<OpenClassGroup[]>([])
   const [groupsLoaded, setGroupsLoaded] = useState(false)
   const [classGroupId, setClassGroupId] = useState('')
+  // A full class group takes the seat only after an explicit "yes" (OOC-155).
+  // `fullOnServer` covers the list on screen being a moment old: the API
+  // said full for a group the picker still showed with room.
+  const [overCapacityConfirmed, setOverCapacityConfirmed] = useState(false)
+  const [fullOnServer, setFullOnServer] = useState(false)
 
   const [method, setMethod] = useState<PaymentMethod>('yape')
   const [methodDetail, setMethodDetail] = useState('')
@@ -146,7 +153,7 @@ export function NewEnrollmentForm({
   // A refused operation number is its own message: retrying the same number
   // gets the same answer, so "try again" would be the wrong advice (OOC-22).
   const [submitError, setSubmitError] = useState<
-    'failed' | 'operation_number_used' | 'receipt_upload_failed' | null
+    'failed' | 'operation_number_used' | 'receipt_upload_failed' | 'class_group_full' | null
   >(null)
 
   function pickReceipt(picked: File | null) {
@@ -228,6 +235,8 @@ export function NewEnrollmentForm({
   }, [studentQuery])
 
   const group = openGroups.find((item) => item.id === classGroupId) ?? null
+  const isFull = (item: OpenClassGroup) => item.seatsTaken + item.seatsOver >= item.capacity
+  const groupFull = group !== null && (isFull(group) || fullOnServer)
 
   /** The panel writes `slots`; only legacy seed rows still carry text alone. */
   const scheduleOf = (item: OpenClassGroup) =>
@@ -245,7 +254,8 @@ export function NewEnrollmentForm({
     group === null ||
     operationNumber.trim() === '' ||
     receiptFile === null ||
-    (detailNeeded && methodDetail.trim() === '')
+    (detailNeeded && methodDetail.trim() === '') ||
+    (groupFull && !overCapacityConfirmed)
   const ready = !missing && !pending
 
   async function submit() {
@@ -276,6 +286,7 @@ export function NewEnrollmentForm({
           methodDetail: method === 'other' ? methodDetail.trim() : null,
           operationNumber: operationNumber.trim(),
           receiptUploadId: uploadId,
+          allowOverCapacity: groupFull && overCapacityConfirmed,
         }),
       })
 
@@ -284,6 +295,13 @@ export function NewEnrollmentForm({
         // A receipt the API no longer takes (swept, or attached by a double
         // submit) is uploaded again on the next try.
         if (body?.reason === 'enrollment.receipt_not_ready') setReceiptUploadId(null)
+        // Filled up since the list was read: ask, never go over silently.
+        if (body?.reason === 'enrollment.class_group_full') {
+          setFullOnServer(true)
+          setOverCapacityConfirmed(false)
+          setSubmitError('class_group_full')
+          return
+        }
         setSubmitError(
           body?.reason === 'enrollment.operation_number_already_used' ? 'operation_number_used' : 'failed',
         )
@@ -420,7 +438,11 @@ export function NewEnrollmentForm({
               </span>
               <select
                 value={classGroupId}
-                onChange={(event) => setClassGroupId(event.target.value)}
+                onChange={(event) => {
+                  setClassGroupId(event.target.value)
+                  setOverCapacityConfirmed(false)
+                  setFullOnServer(false)
+                }}
                 required
                 aria-required="true"
                 className={fieldClass}
@@ -430,7 +452,11 @@ export function NewEnrollmentForm({
                 </option>
                 {openGroups.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {`${item.courseName} — ${scheduleOf(item)}`}
+                    {isFull(item)
+                      ? t('new_enrollment.class_group_option_full', {
+                          label: `${item.courseName} — ${scheduleOf(item)}`,
+                        })
+                      : `${item.courseName} — ${scheduleOf(item)}`}
                   </option>
                 ))}
               </select>
@@ -448,11 +474,35 @@ export function NewEnrollmentForm({
                 />
                 <Summary
                   label={t('new_enrollment.seats_left')}
-                  value={String(group.capacity - group.seatsTaken)}
+                  value={
+                    group.seatsOver > 0
+                      ? t('new_enrollment.seats_left_over', {
+                          count: Math.max(0, group.capacity - group.seatsTaken - group.seatsOver),
+                          over: group.seatsOver,
+                        })
+                      : String(Math.max(0, group.capacity - group.seatsTaken))
+                  }
                 />
               </dl>
             )}
           </AutoGrid>
+        )}
+
+        {/* Full: the seat goes above capacity only with an explicit yes
+            (OOC-155), and the trail records who said it. */}
+        {groupFull && (
+          <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+            <input
+              type="checkbox"
+              checked={overCapacityConfirmed}
+              onChange={(event) => setOverCapacityConfirmed(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0 accent-amber-600"
+            />
+            <span>
+              <span className="block font-semibold">{t('new_enrollment.over_capacity_title')}</span>
+              <span className="block text-xs">{t('new_enrollment.over_capacity_body')}</span>
+            </span>
+          </label>
         )}
 
         {/* The price, shown and not asked for. */}
@@ -624,7 +674,9 @@ export function NewEnrollmentForm({
               ? t('new_enrollment.operation_number_used')
               : submitError === 'receipt_upload_failed'
                 ? t('new_enrollment.receipt_upload_error')
-                : t('new_enrollment.submit_error')}
+                : submitError === 'class_group_full'
+                  ? t('new_enrollment.class_group_full_error')
+                  : t('new_enrollment.submit_error')}
           </span>
         )}
       </div>
