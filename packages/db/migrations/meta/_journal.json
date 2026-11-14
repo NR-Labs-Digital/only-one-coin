@@ -386,6 +386,13 @@
       "when": 1794450060000,
       "tag": "0054_class_group_classroom_links",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1794612648655,
+      "tag": "0055_enrollment_origin_whatsapp_ai",
+      "breakpoints": true
     }
   ]
 }

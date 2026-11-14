@@ -220,6 +220,7 @@ export {
   EmailVerificationTooManySendsError,
 } from "./enrollment/errors.js";
 export {
+  ENROLLMENT_ORIGINS,
   EnrollmentOriginSchema,
   EnrollmentOriginInputSchema,
   type EnrollmentOrigin,
