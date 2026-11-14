@@ -198,3 +198,37 @@ export class EmailVerificationAttemptsExhaustedError extends UnableToProcessEntr
     });
   }
 }
+
+/** No live enrollment with that id (OOC-84, move). */
+export class EnrollmentNotFoundError extends NotFoundError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "enrollment.not_found", message: "No enrollment with that id.", ...params });
+  }
+}
+
+/**
+ * Why an enrollment cannot be moved to the class group asked for (OOC-84).
+ * One error, one reason per case, so the screen says which.
+ */
+export type EnrollmentMoveRefusal =
+  | "seat_released"
+  | "graded"
+  | "same_class_group"
+  | "target_unavailable"
+  | "plan_required"
+  | "plan_not_of_course"
+  | "plan_not_allowed"
+  | "reason_required";
+
+export class EnrollmentMoveRefusedError extends UnableToProcessEntryError {
+  constructor(refusal: EnrollmentMoveRefusal, params?: { path?: string; cause?: unknown }) {
+    super({ reason: `enrollment.move_${refusal}`, message: `The enrollment cannot be moved: ${refusal}.`, ...params });
+  }
+}
+
+/** The enrollment changed under the move (another move, a rejection) — read it again. */
+export class EnrollmentMoveConflictError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "enrollment.move_conflict", message: "The enrollment changed while it was being moved.", ...params });
+  }
+}

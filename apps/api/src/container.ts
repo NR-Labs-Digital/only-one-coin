@@ -46,6 +46,7 @@ import {
   JoinWaitlistUseCase,
   LeaveWaitlistUseCase,
   CreateManualEnrollmentUseCase,
+  MoveEnrollmentUseCase,
   CreatePlanUseCase,
   CreateStaffInviteUseCase,
   CreateStaffPasswordResetUseCase,
@@ -159,6 +160,8 @@ import { DrizzlePortalAccessRepository } from "./infra/persistence/portal/Drizzl
 import { DrizzleStudentRepository } from "./infra/persistence/student/DrizzleStudentRepository.js";
 import { DrizzleGuardianRepository } from "./infra/persistence/student/DrizzleGuardianRepository.js";
 import { DrizzleEnrollmentRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
+import { DrizzleEnrollmentMoveRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentMoveRepository.js";
+import { ListMoveTargetsQuery } from "./infra/persistence/enrollment/ListMoveTargetsQuery.js";
 import { DrizzlePublicEnrollmentRepository } from "./infra/persistence/enrollment/DrizzlePublicEnrollmentRepository.js";
 import { DrizzlePlanPriceLookup } from "./infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { DrizzleEmailVerificationRepository } from "./infra/persistence/enrollment/DrizzleEmailVerificationRepository.js";
@@ -313,6 +316,7 @@ export interface AppUseCases {
   };
   enrollment: {
     createManual: CreateManualEnrollmentUseCase;
+    move: MoveEnrollmentUseCase;
     submitPublic: SubmitPublicEnrollmentUseCase;
     claimSeatHold: ClaimSeatHoldUseCase;
     releaseSeatHold: ReleaseSeatHoldUseCase;
@@ -427,6 +431,7 @@ export interface AppQueries {
   listTeacherOptions: ListTeacherOptionsQuery;
   listInvitableTeachers: ListInvitableTeachersQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
+  listMoveTargets: ListMoveTargetsQuery;
   getPublicCatalog: GetPublicCatalogQuery;
   listCourses: ListCoursesQuery;
   listLanguages: ListLanguagesQuery;
@@ -597,6 +602,11 @@ function buildContainer(): AppContainer {
   const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
+  const moveEnrollment = new MoveEnrollmentUseCase(
+    new DrizzleEnrollmentMoveRepository(db),
+    planPriceLookup,
+    auditLogRepository,
+  );
   const createManualEnrollment = new CreateManualEnrollmentUseCase(
     enrollmentRepository,
     planPriceLookup,
@@ -784,6 +794,7 @@ function buildContainer(): AppContainer {
   const dashboardSummary = new DashboardSummaryQuery(db);
   const paymentReceiptImage = new PaymentReceiptImageQuery(db, receiptObjectStore);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
+  const listMoveTargets = new ListMoveTargetsQuery(db);
   const getPublicCatalog = new GetPublicCatalogQuery(db);
   const listCourses = new ListCoursesQuery(db);
   const listLanguages = new ListLanguagesQuery(db);
@@ -916,6 +927,7 @@ function buildContainer(): AppContainer {
       },
       enrollment: {
         createManual: createManualEnrollment,
+        move: moveEnrollment,
         submitPublic: submitPublicEnrollment,
         claimSeatHold,
         releaseSeatHold,
@@ -1006,6 +1018,7 @@ function buildContainer(): AppContainer {
       dashboardSummary,
       paymentReceiptImage,
       listOpenClassGroups,
+      listMoveTargets,
       getPublicCatalog,
       listCourses,
       listLanguages,
