@@ -58,7 +58,26 @@ const MAX_CAMPAIGN_LENGTH = 120
  * chose.
  */
 export function resolveSource(raw: string | undefined): EnrollmentSource {
-  return raw === 'whatsapp' ? 'whatsapp' : 'web'
+  return raw === 'whatsapp' || raw === 'whatsapp_ai' ? raw : 'web'
+}
+
+/**
+ * The query string the WhatsApp AI assistant's short link (`/enrollment/wa`,
+ * OOC-139) lands on: whatever the link carried — course, class group,
+ * `utm_*` — with the channel forced to `whatsapp_ai`. A `src` on the short
+ * link itself is overwritten, never trusted: the path is what says who sent
+ * it.
+ */
+export function whatsappAiArrivalQuery(
+  params: Record<string, string | string[] | undefined>,
+): Record<string, string> {
+  const query: Record<string, string> = {}
+  for (const [key, value] of Object.entries(params)) {
+    const first = Array.isArray(value) ? value[0] : value
+    if (first !== undefined) query[key] = first
+  }
+  query[QUERY_KEYS.source] = 'whatsapp_ai'
+  return query
 }
 
 /**

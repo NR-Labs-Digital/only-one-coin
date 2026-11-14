@@ -112,6 +112,10 @@ export function EnrollmentDetailDialog({
                     value={enrollment.academicPeriodName}
                   />
                   <DataRow
+                    label={t('enrollment_detail.field_origin')}
+                    value={t(`enrollment_origin.${enrollment.origin}`)}
+                  />
+                  <DataRow
                     label={t('enrollment_detail.field_progress')}
                     value={
                       enrollment.progressPct === null

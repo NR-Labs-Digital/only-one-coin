@@ -646,8 +646,9 @@ export const enrollments = pgTable(
     // first checkout access and carried to submit; the manual-enrollment path
     // (CreateManualEnrollmentUseCase) and the legacy import both count as
     // 'whatsapp', since both originate from a WhatsApp sale closed outside the
-    // platform. Default 'web' only so the column lands additively on existing
-    // rows written before this column existed.
+    // platform. 'whatsapp_ai' is the WhatsApp AI assistant's link (OOC-139).
+    // Default 'web' only so the column lands additively on existing rows
+    // written before this column existed.
     origin: text("origin").notNull().default("web"),
     ...softDeletable(),
   },
@@ -656,7 +657,7 @@ export const enrollments = pgTable(
       "enrollments_seat_status_check",
       sql`"seat_status" in ('reserved', 'confirmed', 'released')`,
     ),
-    check("enrollments_origin_check", sql`"origin" in ('whatsapp', 'web')`),
+    check("enrollments_origin_check", sql`"origin" in ('whatsapp', 'whatsapp_ai', 'web')`),
     index("enrollments_student_id_idx").on(table.studentId),
     index("enrollments_class_group_id_idx").on(table.classGroupId),
     // A confirmed, live seat per class group — Enrollments' default list and
@@ -710,7 +711,7 @@ export const seatHolds = pgTable(
     ...timestamps(),
   },
   (table) => [
-    check("seat_holds_origin_check", sql`${table.origin} in ('whatsapp', 'web')`),
+    check("seat_holds_origin_check", sql`${table.origin} in ('whatsapp', 'whatsapp_ai', 'web')`),
     check(
       "seat_holds_status_check",
       sql`${table.status} in ('active', 'consumed', 'released', 'expired')`,

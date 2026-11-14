@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   fillTarget,
   resolvePrefill,
+  resolveSource,
+  whatsappAiArrivalQuery,
   sameOfferGroups,
   scheduleOptionsOnStartDate,
   startDatesOfCourse,
@@ -164,5 +166,27 @@ describe('resolvePrefill', () => {
     const catalog = catalogOf([group('g1', 'A-00001'), group('g2', 'A-00002')])
     const draft = resolvePrefill(catalog, { course: 'course-1', group: 'g2' })
     expect(draft.classGroupId).toBe('g2')
+  })
+})
+
+describe('resolveSource', () => {
+  it('keeps the known channels and turns anything else into web', () => {
+    expect(resolveSource('whatsapp')).toBe('whatsapp')
+    expect(resolveSource('whatsapp_ai')).toBe('whatsapp_ai')
+    expect(resolveSource('WhatsApp')).toBe('web')
+    expect(resolveSource('<script>')).toBe('web')
+    expect(resolveSource(undefined)).toBe('web')
+  })
+})
+
+describe('whatsappAiArrivalQuery (OOC-139)', () => {
+  it('forces the AI channel and keeps everything else the link carried', () => {
+    expect(
+      whatsappAiArrivalQuery({ course: 'english', group: ['g-1', 'g-2'], utm_campaign: 'bot' }),
+    ).toEqual({ course: 'english', group: 'g-1', utm_campaign: 'bot', src: 'whatsapp_ai' })
+  })
+
+  it('overwrites a src on the short link — the path says who sent it', () => {
+    expect(whatsappAiArrivalQuery({ src: 'whatsapp' })).toEqual({ src: 'whatsapp_ai' })
   })
 })

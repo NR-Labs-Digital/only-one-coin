@@ -1,6 +1,8 @@
 // Client-safe on purpose: the ledger screen (a client component) builds its
 // URLs with these, so nothing here may import the server-only `api-client`.
 
+import { ENROLLMENT_SOURCES, type EnrollmentSource } from '@/lib/enrollment/types'
+
 /**
  * What the reader narrowed the ledger to. Lives in the URL
  * (`/backoffice/enrollments?language=English&page=3`), so a filtered view survives
@@ -14,6 +16,8 @@ export interface EnrollmentLedgerQuery {
   language: string | null
   /** Academic period id. */
   period: string | null
+  /** The channel (OOC-139). */
+  origin: EnrollmentSource | null
   q: string
   sort: 'newest' | 'oldest'
 }
@@ -44,6 +48,7 @@ export function parseEnrollmentLedgerQuery(
   const language = first(params.language)?.trim()
   const period = first(params.period)
   const q = first(params.q)?.trim() ?? ''
+  const origin = ENROLLMENT_SOURCES.find((value) => value === first(params.origin)) ?? null
   const state = ENROLLMENT_LEDGER_STATES.find((value) => value === first(params.state)) ?? 'current'
 
   return {
@@ -51,6 +56,7 @@ export function parseEnrollmentLedgerQuery(
     state,
     language: language && language.length <= 100 ? language : null,
     period: period && UUID.test(period) ? period : null,
+    origin,
     q: q.length >= MIN_SEARCH_LENGTH && q.length <= 100 ? q : '',
     sort: first(params.sort) === 'oldest' ? 'oldest' : 'newest',
   }
@@ -63,6 +69,7 @@ export function enrollmentLedgerSearchParams(query: EnrollmentLedgerQuery): URLS
   if (query.state !== 'current') search.set('state', query.state)
   if (query.language) search.set('language', query.language)
   if (query.period) search.set('period', query.period)
+  if (query.origin) search.set('origin', query.origin)
   if (query.q) search.set('q', query.q)
   if (query.sort !== 'newest') search.set('sort', query.sort)
   return search

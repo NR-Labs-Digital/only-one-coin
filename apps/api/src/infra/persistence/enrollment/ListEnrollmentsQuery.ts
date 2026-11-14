@@ -1,3 +1,4 @@
+import { ENROLLMENT_ORIGINS, type EnrollmentOrigin } from "@ooc/domain";
 import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -45,6 +46,9 @@ export interface EnrollmentListRow {
   language: { id: string; name: string } | null;
   modality: "online";
   academicPeriodName: string;
+  /** The channel the enrollment came through (apps/api/CLAUDE.md, "Origem da
+   * matrícula"). */
+  origin: EnrollmentOrigin;
   /** So the "all" tab says which side each row is on. */
   classGroupStatus: ClassGroupListStatus;
   status: EnrollmentListStatus;
@@ -66,6 +70,9 @@ export interface EnrollmentListMetrics {
   periodName: string;
   total: number;
   active: number;
+  /** `total` split by channel (OOC-139) — the sales question "how many did
+   * each channel bring this ciclo". The three always add up to `total`. */
+  byOrigin: Record<EnrollmentOrigin, number>;
 }
 
 export type EnrollmentListSeatStatus = "reserved" | "confirmed" | "released";
@@ -82,6 +89,7 @@ export interface EnrollmentListFilters {
   /** `courses.language` — the label itself, there is no languages table. */
   language?: string;
   academicPeriodId?: string;
+  origin?: EnrollmentOrigin;
   /** Free text: tracking code, student, course, class group, teacher or
    * operation number. */
   q?: string;
@@ -206,6 +214,7 @@ export class ListEnrollmentsQuery {
         classGroupCode: classGroups.code,
         teacherName: classGroupTeacherName,
         academicPeriodName: academicPeriods.name,
+        origin: enrollments.origin,
         classGroupStatus: classGroups.status,
         planName: plans.name,
         planPriceId: planPrices.id,
@@ -294,6 +303,8 @@ export class ListEnrollmentsQuery {
         // rule allows, not a guess at missing data.
         modality: "online",
         academicPeriodName: row.academicPeriodName,
+        // Held to this union by enrollments_origin_check.
+        origin: row.origin as EnrollmentOrigin,
         // Held to this union by class_groups_status_check.
         classGroupStatus: row.classGroupStatus as ClassGroupListStatus,
         status: deriveStatus(row.seatStatus, paymentStatus),
@@ -351,6 +362,7 @@ export class ListEnrollmentsQuery {
 
     if (filters.language) conditions.push(eq(courses.language, filters.language));
     if (filters.academicPeriodId) conditions.push(eq(classGroups.academicPeriodId, filters.academicPeriodId));
+    if (filters.origin) conditions.push(eq(enrollments.origin, filters.origin));
 
     const q = filters.q?.trim();
     if (q) {
@@ -424,10 +436,35 @@ export class ListEnrollmentsQuery {
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .where(and(isNull(enrollments.deletedAt), eq(enrollments.seatStatus, "confirmed")));
 
+    // The period's total, split by channel — same rows as `total`, so the
+    // three add up to it.
+    const originRows = period
+      ? await this.db
+          .select({ origin: enrollments.origin, value: sql<number>`count(*)`.mapWith(Number) })
+          .from(enrollments)
+          .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+          .where(
+            and(
+              isNull(enrollments.deletedAt),
+              eq(enrollments.seatStatus, "confirmed"),
+              eq(classGroups.academicPeriodId, period.id),
+            ),
+          )
+          .groupBy(enrollments.origin)
+      : [];
+    const byOrigin = Object.fromEntries(ENROLLMENT_ORIGINS.map((origin) => [origin, 0])) as Record<
+      EnrollmentOrigin,
+      number
+    >;
+    for (const row of originRows) {
+      if ((ENROLLMENT_ORIGINS as readonly string[]).includes(row.origin)) byOrigin[row.origin as EnrollmentOrigin] = row.value;
+    }
+
     return {
       periodName: period?.name ?? "",
       total: totals?.total ?? 0,
       active: totals?.active ?? 0,
+      byOrigin,
     };
   }
 }

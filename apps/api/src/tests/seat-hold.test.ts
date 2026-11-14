@@ -154,6 +154,7 @@ const SUBMIT: SubmitPublicEnrollmentInput = {
 describe("origin as a closed union", () => {
   it("keeps the known channels and turns anything else into web", () => {
     expect(EnrollmentOriginInputSchema.parse("whatsapp")).toBe("whatsapp");
+    expect(EnrollmentOriginInputSchema.parse("whatsapp_ai")).toBe("whatsapp_ai");
     expect(EnrollmentOriginInputSchema.parse("web")).toBe("web");
     expect(EnrollmentOriginInputSchema.parse("WhatsApp")).toBe("web");
     expect(EnrollmentOriginInputSchema.parse("<script>")).toBe("web");

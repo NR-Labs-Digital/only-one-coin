@@ -32,7 +32,11 @@ export type GuardianRelationship = 'mother' | 'father' | 'legal_guardian'
  * event — because coordination has to answer "how much of this cycle came from
  * WhatsApp" inside the backoffice, and edge analytics dies to an ad blocker.
  */
-export type EnrollmentSource = 'whatsapp' | 'web'
+export type EnrollmentSource = 'whatsapp' | 'whatsapp_ai' | 'web'
+
+/** Every channel, in the order the backoffice lists them. Mirrors
+ * `ENROLLMENT_ORIGINS` in `packages/domain`. */
+export const ENROLLMENT_SOURCES: readonly EnrollmentSource[] = ['web', 'whatsapp', 'whatsapp_ai']
 
 /* -------------------------------------------------------------------------- */
 /* Public catalog — what the first step can offer                             */

@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware'
 import type { NextRequest } from 'next/server'
 import { routing } from './i18n/routing'
+import { BACKOFFICE_HOST } from './lib/hosts'
 
 const intlMiddleware = createMiddleware(routing)
 
@@ -9,7 +10,6 @@ const intlMiddleware = createMiddleware(routing)
 // portal. backoffice.onlyonecoin.edu.pe precisa cair sob /backoffice, e isso
 // tem que acontecer antes do next-intl resolver o locale — daí mexer no
 // pathname aqui, não depois da resposta do intlMiddleware.
-const BACKOFFICE_HOST = 'backoffice.onlyonecoin.edu.pe'
 const locales: readonly string[] = routing.locales
 
 function isAlreadyBackofficePath(pathname: string): boolean {

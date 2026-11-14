@@ -749,7 +749,17 @@
       "empty_current_title": "Ninguém estudando agora",
       "empty_current_body": "Aqui aparece cada aluno com vaga confirmada numa turma ainda em inscrição ou em andamento.",
       "empty_ended_title": "Ainda não há matrículas encerradas",
-      "empty_ended_body": "Quando uma turma termina ou é fechada, as matrículas dela passam pra cá. Nada é apagado."
+      "empty_ended_body": "Quando uma turma termina ou é fechada, as matrículas dela passam pra cá. Nada é apagado.",
+      "metric_by_origin": "Por canal",
+      "filter_origin": "Canal",
+      "col_origin": "Canal",
+      "links_button": "Links de matrícula",
+      "links_web": "Formulário web",
+      "links_whatsapp_ai": "WhatsApp · assistente IA",
+      "links_copy": "Copiar",
+      "links_copied": "Copiado",
+      "links_web_hint": "As matrículas por este link contam como Web.",
+      "links_whatsapp_ai_hint": "Para o assistente de IA do WhatsApp: as matrículas contam como WhatsApp · assistente IA."
     },
     "enrollment_detail": {
       "close": "Fechar a matrícula",
@@ -775,7 +785,8 @@
       "frozen_price": "Preço congelado na matrícula ({id}). Corrigir a tabela de preços não muda esta matrícula.",
       "manage_notice": "Mover, congelar ou retirar o aluno é um trâmite pago e se registra na turma, não aqui.",
       "open_student": "Ver a ficha do aluno",
-      "open_class_group": "Abrir a turma"
+      "open_class_group": "Abrir a turma",
+      "field_origin": "Canal"
     },
     "new_enrollment": {
       "title": "Nova matrícula",
@@ -2424,6 +2435,11 @@
       },
       "teacher_corrected": "Corrigida pela coordenação",
       "teacher_finished": "Com estas notas todos os alunos ficaram com nota e a turma passou para Finalizada."
+    },
+    "enrollment_origin": {
+      "web": "Web",
+      "whatsapp": "WhatsApp · vendedor",
+      "whatsapp_ai": "WhatsApp · assistente IA"
     }
   }
 }

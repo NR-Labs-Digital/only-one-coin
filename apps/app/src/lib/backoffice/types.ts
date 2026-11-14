@@ -11,6 +11,7 @@
 import type { EmailAudience, EmailCatalogKey, EmailStage } from '@ooc/domain/email-catalog'
 import type { LandingCourseKey } from '@ooc/domain/landing-course-keys'
 import type { ClassroomLink } from '@/lib/backoffice/class-links'
+import type { EnrollmentSource } from '@/lib/enrollment/types'
 import type {
   DocumentStatus,
   DocumentType,
@@ -1130,6 +1131,8 @@ export interface EnrollmentRow {
   language: CourseLanguage | null
   modality: ClassModality
   academicPeriodName: string
+  /** The channel the enrollment came through (OOC-139). */
+  origin: EnrollmentSource
   /** Which tab the row belongs to — shown as a column on the "all" tab. */
   classGroupStatus: ClassGroupStatus
   status: EnrollmentStatus
@@ -1161,6 +1164,8 @@ export interface EnrollmentMetrics {
   periodName: string
   total: number
   active: number
+  /** `total` split by channel (OOC-139); the three add up to it. */
+  byOrigin: Record<EnrollmentSource, number>
 }
 
 /** A plan as the enrollment form reads it: the price in force, never editable. */

@@ -36,8 +36,10 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
+import { EnrollmentLinks } from './enrollment-links'
 import { NewEnrollmentForm, type StudentSearchResult } from './new-enrollment-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { ENROLLMENT_SOURCES } from '@/lib/enrollment/types'
 
 
 /** What a link may preselect in the manual enrollment form — nothing priced. */
@@ -141,7 +143,7 @@ export function EnrollmentsView({
    * say which one it is on. */
   const showGroupStatus = query.state === 'all'
 
-  const activeFilters = [query.language, query.period].filter(
+  const activeFilters = [query.language, query.period, query.origin].filter(
     (value) => value !== null,
   ).length
   const narrowed = activeFilters > 0 || query.q !== ''
@@ -178,6 +180,21 @@ export function EnrollmentsView({
           label={t('enrollments.metric_active')}
           value={String(metrics.active)}
         />
+        {/* What each channel brought in the period (OOC-139) — the same rows
+            as the total, so the three add up to it. */}
+        <Card className="p-4">
+          <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t('enrollments.metric_by_origin')}
+          </p>
+          <dl className="mt-2 flex flex-col gap-1">
+            {ENROLLMENT_SOURCES.map((origin) => (
+              <div key={origin} className="flex items-baseline justify-between gap-3 text-sm">
+                <dt className="truncate text-muted-foreground">{t(`enrollment_origin.${origin}`)}</dt>
+                <dd className="font-semibold tabular-nums text-ink">{metrics.byOrigin[origin]}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
       </AutoGrid>
 
       {/* Toolbar */}
@@ -252,6 +269,21 @@ export function EnrollmentsView({
                 />
               ))}
             </FilterRow>
+            <FilterRow label={t('enrollments.filter_origin')}>
+              <Chip
+                active={query.origin === null}
+                onClick={() => navigate({ origin: null })}
+                label={t('enrollments.filter_all')}
+              />
+              {ENROLLMENT_SOURCES.map((origin) => (
+                <Chip
+                  key={origin}
+                  active={query.origin === origin}
+                  onClick={() => navigate({ origin })}
+                  label={t(`enrollment_origin.${origin}`)}
+                />
+              ))}
+            </FilterRow>
           </FiltersDropdown>
 
           <button
@@ -266,6 +298,8 @@ export function EnrollmentsView({
                 : 'enrollments.sort_oldest',
             )}
           </button>
+
+          <EnrollmentLinks />
 
           {canCreate && !creating && (
             <button
@@ -326,6 +360,7 @@ export function EnrollmentsView({
                 t('enrollments.col_status'),
                 t('enrollments.col_seat'),
                 t('enrollments.col_payment'),
+                t('enrollments.col_origin'),
                 t('enrollments.col_created'),
               ]}
             >
@@ -339,6 +374,7 @@ export function EnrollmentsView({
                   <th className={thClass}>{t('enrollments.col_status')}</th>
                   <th className={thClass}>{t('enrollments.col_seat')}</th>
                   <th className={thClass}>{t('enrollments.col_payment')}</th>
+                  <th className={thClass}>{t('enrollments.col_origin')}</th>
                   <th className={thClass}>{t('enrollments.col_created')}</th>
                 </tr>
               </thead>
@@ -402,6 +438,13 @@ export function EnrollmentsView({
                       <StatusBadge
                         tone={paymentTone[row.paymentStatus]}
                         label={t(`payment_status.${row.paymentStatus}`)}
+                      />
+                    </td>
+
+                    <td className={tdClass}>
+                      <StatusBadge
+                        tone="neutral"
+                        label={t(`enrollment_origin.${row.origin}`)}
                       />
                     </td>
 
