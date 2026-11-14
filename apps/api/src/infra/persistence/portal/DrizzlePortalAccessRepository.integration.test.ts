@@ -444,6 +444,47 @@ describe("provisionPortalAccount — the guardian's account too (OOC-147)", () =
   });
 });
 
+describe("a child with no address of their own (OOC-147)", () => {
+  // The file always carries an e-mail (students.email is NOT NULL, the
+  // checkout asks for a Gmail): a child with none is enrolled with the
+  // parent's address, as the student's and as the guardian's.
+  it("lets the parent reach every child through the one account at that address", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertStudent(tx, { firstName: "Lucia", nationalId: "70000001", email: GUARDIAN_EMAIL, birthDate: MINOR_BIRTH });
+      await insertGuardian(tx, lucia);
+      const mateo = await insertStudent(tx, { firstName: "Mateo", nationalId: "70000002", email: GUARDIAN_EMAIL, birthDate: MINOR_BIRTH });
+      await insertGuardian(tx, mateo);
+
+      expect(await provisionPortalAccount(tx, withGuardian(lucia))).toBe("created");
+      // The second child's own account cannot exist — the address is taken —
+      // so the approval reports the conflict, and the guardian link still lets
+      // the parent in.
+      expect(await provisionPortalAccount(tx, withGuardian(mateo))).toBe("email_conflict");
+
+      const parent = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      expect(await reachedFirstNames(tx, parent)).toEqual(["Lucia", "Mateo"]);
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+      const repo = new DrizzlePortalAccessRepository(tx as unknown as Db);
+      expect(await repo.findAccountByIdentifier({ method: "email", email: GUARDIAN_EMAIL })).toMatchObject({ userId: parent });
+    });
+  });
+
+  it("reaches them through the guardian's own address when the child's is a third one", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertStudent(tx, { firstName: "Lucia", nationalId: "70000001", email: "familia.quispe@gmail.com", birthDate: MINOR_BIRTH });
+      await insertGuardian(tx, lucia);
+      const mateo = await insertStudent(tx, { firstName: "Mateo", nationalId: "70000002", email: "familia.quispe@gmail.com", birthDate: MINOR_BIRTH });
+      await insertGuardian(tx, mateo);
+
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+
+      expect(await reachedFirstNames(tx, (await userIdByEmail(tx, GUARDIAN_EMAIL))!)).toEqual(["Lucia", "Mateo"]);
+      expect(await reachedFirstNames(tx, (await userIdByEmail(tx, "familia.quispe@gmail.com"))!)).toEqual(["Lucia"]);
+    });
+  });
+});
+
 describe("account profiles (OOC-147)", () => {
   it("is one profile per person: two children are two, a child's duplicate file is the same one", async () => {
     await rolledBack(async (tx) => {
