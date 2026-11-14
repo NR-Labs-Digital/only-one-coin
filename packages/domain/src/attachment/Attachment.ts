@@ -76,6 +76,9 @@ export interface AttachmentListItem {
 export interface AttachmentActor {
   userId: string;
   role: Role;
+  /** A student's chosen profile (OOC-147), unchecked — the owners port only
+   * picks among the account's own. Ignored for staff. */
+  profileId?: string | null;
 }
 
 /** Which staff cargos reach each kind of owner's files. The API owns the

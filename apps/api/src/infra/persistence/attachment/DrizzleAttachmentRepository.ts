@@ -15,6 +15,8 @@ import type {
 import { documents, students } from "@ooc/db";
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { pickProfile, profilesOfAccount } from "@/infra/persistence/portal/accountProfiles.js";
+import { reachesStudent } from "@/infra/persistence/portal/reachableStudents.js";
 
 /**
  * The `documents` table (OOC-143). Every status change is a conditional UPDATE
@@ -170,8 +172,12 @@ export class DrizzleAttachmentOwners implements IAttachmentOwners {
     const rows = await this.db
       .select({ id: students.id })
       .from(students)
-      .where(and(eq(students.userId, userId), isNull(students.deletedAt)))
+      .where(reachesStudent(userId))
       .orderBy(desc(students.createdAt));
     return rows.map((row) => row.id);
+  }
+
+  async studentsOfProfile(userId: string, profileId: string | null): Promise<string[]> {
+    return pickProfile(await profilesOfAccount(this.db, userId), profileId)?.fileIds ?? [];
   }
 }

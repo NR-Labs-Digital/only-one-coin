@@ -1,5 +1,18 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, auditLog, classGroups, courses, enrollments, outbox, planPrices, plans, portalAccessTokens, students } from "@ooc/db";
+import {
+  academicPeriods,
+  auditLog,
+  classGroups,
+  courses,
+  enrollments,
+  guardianPortalLinks,
+  guardians,
+  outbox,
+  planPrices,
+  plans,
+  portalAccessTokens,
+  students,
+} from "@ooc/db";
 import { newPortalToken, portalCredentialsEmail, type PortalAccountProvisioning } from "@ooc/domain";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -7,6 +20,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { insertPasswordlessUser, upsertCredentialPassword } from "@/infra/auth/credentialAccount.js";
+import { profilesOfAccount } from "./accountProfiles.js";
 import { DrizzlePortalAccessRepository } from "./DrizzlePortalAccessRepository.js";
 import { provisionPortalAccount } from "./provisionPortalAccount.js";
 
@@ -196,7 +210,13 @@ describe("DrizzlePortalAccessRepository", () => {
       const account = await repo.findAccountByStudent(studentId);
       await upsertCredentialPassword(tx, account!.userId, "first-pass-12");
       expect(await repo.accessState(studentId)).toBe("active");
-      expect(await repo.findIdentity(account!.userId)).toEqual({ firstName: "Ana", lastName: "Quispe", email: "ana.quispe@gmail.com" });
+      expect(await repo.findIdentity(account!.userId, null)).toEqual({
+        firstName: "Ana",
+        lastName: "Quispe",
+        email: "ana.quispe@gmail.com",
+        profileId: studentId,
+        profiles: [{ id: studentId, firstName: "Ana", lastName: "Quispe" }],
+      });
     });
   });
 
@@ -232,3 +252,248 @@ async function seedConfirmedEnrollment(tx: Tx, studentId: string): Promise<void>
     .returning({ id: classGroups.id });
   await tx.insert(enrollments).values({ studentId, classGroupId: group!.id, planPriceId: price!.id, seatStatus: "confirmed" });
 }
+
+const MINOR_BIRTH = new Date("2014-03-10T00:00:00.000Z");
+const ADULT_BIRTH = new Date("1990-03-10T00:00:00.000Z");
+const GUARDIAN_EMAIL = "rosa.mamani@hotmail.com";
+
+/** The approval's provisioning, with the guardian's half (OOC-147). */
+function withGuardian(studentId: string): PortalAccountProvisioning {
+  const guardianActivation = newPortalToken("activation");
+  return {
+    ...provisioning(studentId),
+    guardian: {
+      activation: guardianActivation,
+      notify: (account, tokenId) => [
+        portalCredentialsEmail(account, `https://student.test/access/${guardianActivation.token}`, tokenId, "es-PE"),
+      ],
+    },
+  };
+}
+
+async function insertGuardian(tx: Tx, studentId: string, email = GUARDIAN_EMAIL): Promise<void> {
+  await tx.insert(guardians).values({
+    studentId,
+    firstName: "Rosa",
+    lastName: "Mamani",
+    relationship: "mother",
+    nationalIdType: "DNI",
+    nationalId: "40404040",
+    email,
+    phone: "988888888",
+  });
+}
+
+async function insertChild(tx: Tx, firstName: string, nationalId: string, guardianEmail = GUARDIAN_EMAIL): Promise<string> {
+  const id = await insertStudent(tx, {
+    firstName,
+    nationalId,
+    email: `${firstName.toLowerCase()}.quispe@gmail.com`,
+    birthDate: MINOR_BIRTH,
+  });
+  await insertGuardian(tx, id, guardianEmail);
+  return id;
+}
+
+async function userIdByEmail(tx: Tx, email: string): Promise<string | null> {
+  const result = await tx.execute<{ id: string }>(sql`select "id" from "user" where "email" = ${email}`);
+  return result.rows[0]?.id ?? null;
+}
+
+async function mailsTo(tx: Tx, recipient: string): Promise<string[]> {
+  const rows = await tx.select({ templateKey: outbox.templateKey }).from(outbox).where(eq(outbox.recipient, recipient));
+  return rows.map((row) => row.templateKey);
+}
+
+async function reachedFirstNames(tx: Tx, userId: string): Promise<string[]> {
+  return (await profilesOfAccount(tx as unknown as Db, userId)).map((profile) => profile.firstName).sort();
+}
+
+describe("provisionPortalAccount — the guardian's account too (OOC-147)", () => {
+  it("opens two accounts for a minor: the child's in their Gmail, the guardian's in theirs", async () => {
+    await rolledBack(async (tx, repo) => {
+      const child = await insertChild(tx, "Lucia", "70000001");
+
+      expect(await provisionPortalAccount(tx, withGuardian(child))).toBe("created");
+
+      expect(await repo.findAccountByStudent(child)).toMatchObject({ email: "lucia.quispe@gmail.com", name: "Lucia Quispe" });
+      expect(await mailsTo(tx, "lucia.quispe@gmail.com")).toEqual(["portal_credentials"]);
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      expect(await reachedFirstNames(tx, guardianId)).toEqual(["Lucia"]);
+      expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(child))!.userId)).toEqual(["Lucia"]);
+      const audits = await tx.select().from(auditLog).where(eq(auditLog.targetId, child));
+      expect(audits.map((a) => a.action).sort()).toEqual(["portal_access.created", "portal_access.guardian_created"]);
+    });
+  });
+
+  it("joins a second child to the guardian's account, with no second e-mail to the guardian", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+
+      expect(await provisionPortalAccount(tx, withGuardian(mateo))).toBe("created");
+
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+      expect(await mailsTo(tx, "mateo.quispe@gmail.com")).toEqual(["portal_credentials"]);
+      expect(await reachedFirstNames(tx, (await userIdByEmail(tx, GUARDIAN_EMAIL))!)).toEqual(["Lucia", "Mateo"]);
+      const audits = await tx.select().from(auditLog).where(eq(auditLog.targetId, mateo));
+      expect(audits.map((a) => a.action)).toContain("portal_access.linked_guardian");
+    });
+  });
+
+  it("matches the guardian's address without regard to case", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      const mateo = await insertChild(tx, "Mateo", "70000002", "Rosa.Mamani@Hotmail.com");
+
+      await provisionPortalAccount(tx, withGuardian(mateo));
+
+      expect(await reachedFirstNames(tx, (await userIdByEmail(tx, GUARDIAN_EMAIL))!)).toEqual(["Lucia", "Mateo"]);
+    });
+  });
+
+  it("adds the child to a guardian who studies too", async () => {
+    await rolledBack(async (tx) => {
+      const mother = await insertStudent(tx, {
+        firstName: "Rosa",
+        lastName: "Mamani",
+        nationalId: "40404040",
+        email: GUARDIAN_EMAIL,
+        birthDate: ADULT_BIRTH,
+      });
+      await provisionPortalAccount(tx, provisioning(mother));
+      const child = await insertChild(tx, "Lucia", "70000001");
+
+      await provisionPortalAccount(tx, withGuardian(child));
+
+      expect(await reachedFirstNames(tx, (await userIdByEmail(tx, GUARDIAN_EMAIL))!)).toEqual(["Lucia", "Rosa"]);
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+    });
+  });
+
+  it("never lets a staff account behind the guardian's address in — the child still gets theirs", async () => {
+    await rolledBack(async (tx, repo) => {
+      const staffId = await insertPasswordlessUser(tx, { email: GUARDIAN_EMAIL, name: "Rosa Staff", role: "support" });
+      const child = await insertChild(tx, "Lucia", "70000001");
+
+      expect(await provisionPortalAccount(tx, withGuardian(child))).toBe("created");
+
+      expect(await repo.findAccountByStudent(child)).toMatchObject({ email: "lucia.quispe@gmail.com" });
+      expect(await reachedFirstNames(tx, staffId)).toEqual([]);
+      const audits = await tx.select().from(auditLog).where(eq(auditLog.targetId, child));
+      expect(audits.map((a) => a.action)).toContain("portal_access.guardian_conflict");
+    });
+  });
+
+  it("never lets a blocked account in", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      await tx.execute(sql`update "user" set "banned" = true where "id" = ${guardianId}`);
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+
+      await provisionPortalAccount(tx, withGuardian(mateo));
+
+      expect(await tx.select().from(guardianPortalLinks).where(eq(guardianPortalLinks.studentId, mateo))).toEqual([]);
+    });
+  });
+
+  it("opens nothing for the guardian of an adult, or when the guardian typed the child's own address", async () => {
+    await rolledBack(async (tx) => {
+      const adult = await insertStudent(tx, { birthDate: ADULT_BIRTH });
+      await insertGuardian(tx, adult);
+      await provisionPortalAccount(tx, withGuardian(adult));
+      expect(await userIdByEmail(tx, GUARDIAN_EMAIL)).toBeNull();
+
+      const child = await insertChild(tx, "Lucia", "70000001", "lucia.quispe@gmail.com");
+      await provisionPortalAccount(tx, withGuardian(child));
+      expect(await tx.select().from(guardianPortalLinks).where(eq(guardianPortalLinks.studentId, child))).toEqual([]);
+      expect(await mailsTo(tx, "lucia.quispe@gmail.com")).toEqual(["portal_credentials"]);
+    });
+  });
+
+  it("leaves a file that already had an account alone — a later approval adds no guardian", async () => {
+    await rolledBack(async (tx) => {
+      const child = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, provisioning(child));
+
+      expect(await provisionPortalAccount(tx, withGuardian(child))).toBe("already_linked");
+      expect(await userIdByEmail(tx, GUARDIAN_EMAIL)).toBeNull();
+    });
+  });
+
+  it("closes the guardian's door when the guardian's address on the file changes", async () => {
+    await rolledBack(async (tx, repo) => {
+      const child = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, withGuardian(child));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      expect(await repo.findAccountByIdentifier({ method: "email", email: GUARDIAN_EMAIL })).not.toBeNull();
+
+      await tx.update(guardians).set({ email: "otra.persona@hotmail.com" }).where(eq(guardians.studentId, child));
+
+      expect(await reachedFirstNames(tx, guardianId)).toEqual([]);
+      expect(await repo.findIdentity(guardianId, null)).toBeNull();
+      expect(await repo.findAccountByIdentifier({ method: "email", email: GUARDIAN_EMAIL })).toBeNull();
+      expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(child))!.userId)).toEqual(["Lucia"]);
+    });
+  });
+});
+
+describe("account profiles (OOC-147)", () => {
+  it("is one profile per person: two children are two, a child's duplicate file is the same one", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      const luciaAgain = await insertChild(tx, "Lucia", "70.000.001");
+      await tx.insert(guardianPortalLinks).values({ userId: guardianId, studentId: luciaAgain });
+
+      const profiles = await profilesOfAccount(tx as unknown as Db, guardianId);
+
+      expect(profiles).toHaveLength(2);
+      expect(new Set(profiles.find((profile) => profile.firstName === "Lucia")!.fileIds)).toEqual(new Set([lucia, luciaAgain]));
+      expect(profiles.find((profile) => profile.firstName === "Mateo")!.fileIds).toEqual([mateo]);
+    });
+  });
+
+  it("shows the profile asked for, and answers someone else's file like no profile at all", async () => {
+    await rolledBack(async (tx) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      const stranger = await insertStudent(tx, { firstName: "Pedro", nationalId: "80000001", email: "pedro@gmail.com", birthDate: ADULT_BIRTH });
+      await provisionPortalAccount(tx, provisioning(stranger));
+      const repo = new DrizzlePortalAccessRepository(tx as unknown as Db);
+
+      const asked = await repo.findIdentity(guardianId, lucia);
+      expect(asked).toMatchObject({ firstName: "Lucia", profileId: lucia });
+      expect(asked!.profiles.map((profile) => profile.firstName).sort()).toEqual(["Lucia", "Mateo"]);
+
+      const fallback = await repo.findIdentity(guardianId, null);
+      const foreign = await repo.findIdentity(guardianId, stranger);
+      expect(foreign).toEqual(fallback);
+      expect(foreign!.firstName).not.toBe("Pedro");
+    });
+  });
+
+  it("keeps the child's own account to the child: it never sees a sibling", async () => {
+    await rolledBack(async (tx, repo) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+
+      expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(lucia))!.userId)).toEqual(["Lucia"]);
+      expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(mateo))!.userId)).toEqual(["Mateo"]);
+    });
+  });
+});
