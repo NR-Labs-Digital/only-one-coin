@@ -227,9 +227,7 @@ describe("filters", () => {
 
   it("filters by channel, and every row says its own (OOC-139)", async () => {
     const all = await readAll();
-    const channelOf = new Map(
-      VISIBLE.map((i) => [`Alumno${i} Ledger`, originOf(i)] as const),
-    );
+    const channelOf = new Map<string, string>(VISIBLE.map((i) => [`Alumno${i} Ledger`, originOf(i)]));
     expect(all.rows.every((row) => row.origin === channelOf.get(row.studentName))).toBe(true);
 
     for (const origin of ORIGINS) {
