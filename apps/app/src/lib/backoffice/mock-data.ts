@@ -236,6 +236,7 @@ export function listEnrollments(): EnrollmentRow[] {
         language: group?.language ?? languageOf(item.courseName),
         modality: 'online',
         academicPeriodName: item.academicPeriodName,
+        origin: 'web',
         classGroupStatus: group?.status ?? 'enrolling',
         status: item.status,
         seatStatus: item.seatStatus,

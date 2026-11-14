@@ -749,7 +749,17 @@
       "empty_current_title": "Nobody studying right now",
       "empty_current_body": "Every student with a confirmed seat in a class group still enrolling or in progress shows up here.",
       "empty_ended_title": "No ended enrollments yet",
-      "empty_ended_body": "When a class group finishes or is closed, its enrollments move here. Nothing is deleted."
+      "empty_ended_body": "When a class group finishes or is closed, its enrollments move here. Nothing is deleted.",
+      "metric_by_origin": "By channel",
+      "filter_origin": "Channel",
+      "col_origin": "Channel",
+      "links_button": "Enrollment links",
+      "links_web": "Web form",
+      "links_whatsapp_ai": "WhatsApp · AI assistant",
+      "links_copy": "Copy",
+      "links_copied": "Copied",
+      "links_web_hint": "Enrollments through this link count as Web.",
+      "links_whatsapp_ai_hint": "For the WhatsApp AI assistant: enrollments count as WhatsApp · AI assistant."
     },
     "enrollment_detail": {
       "close": "Close the enrollment",
@@ -775,7 +785,8 @@
       "frozen_price": "Price frozen at enrollment ({id}). Correcting the price table does not change this enrollment.",
       "manage_notice": "Moving, freezing or withdrawing the student is a paid procedure, recorded from the class group and not from here.",
       "open_student": "Open the student file",
-      "open_class_group": "Open the class group"
+      "open_class_group": "Open the class group",
+      "field_origin": "Channel"
     },
     "new_enrollment": {
       "title": "New enrollment",
@@ -2424,6 +2435,11 @@
       },
       "teacher_corrected": "Corrected by coordination",
       "teacher_finished": "With these grades every student is graded, and the class group moved to Finished."
+    },
+    "enrollment_origin": {
+      "web": "Web",
+      "whatsapp": "WhatsApp · seller",
+      "whatsapp_ai": "WhatsApp · AI assistant"
     }
   }
 }

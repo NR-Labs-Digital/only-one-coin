@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { BoIcon } from './icons'
+import { BoIcon, type BoIconName } from './icons'
 
 /**
  * The filter set of a list, folded into the button that opens it.
@@ -18,12 +18,15 @@ import { BoIcon } from './icons'
 export function FiltersDropdown({
   label,
   count,
+  icon = 'filter',
   panelClassName = 'flex-wrap items-center gap-1.5',
   children,
 }: {
   label: string
   /** Filters currently narrowing the list — 0 hides the badge. */
   count: number
+  /** The trigger's icon — `filter` unless the panel holds something else. */
+  icon?: BoIconName
   /**
    * How the caller's own controls sit inside the panel — a wrap of chips, a
    * column of labelled rows, a line of selects. The panel owns the box, never
@@ -71,7 +74,7 @@ export function FiltersDropdown({
             : 'border-line bg-white text-muted-foreground hover:text-ink'
         }`}
       >
-        <BoIcon name="filter" size={16} />
+        <BoIcon name={icon} size={16} />
         {label}
         {count > 0 && (
           <span className="rounded-full bg-brand-blue px-1.5 text-xs text-white">
