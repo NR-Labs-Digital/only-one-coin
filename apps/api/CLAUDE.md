@@ -232,7 +232,7 @@ Os dois prazos são **configuráveis no backoffice** (`/backoffice/settings`), n
 
 ## Origem da matrícula (atribuição de canal)
 
-Toda matrícula grava **de onde veio** — hoje `whatsapp` (link mandado pelo vendedor depois da venda fechada) ou `web` (a pessoa chegou sozinha pela landing). É campo do domínio, não analytics: fica na própria `enrollments`, não só no PostHog, porque a coordenação precisa responder "quantas matrículas o zap trouxe neste ciclo" dentro do backoffice, e porque analytics de borda se perde com bloqueador de anúncio.
+Toda matrícula grava **de onde veio** — `whatsapp` (link mandado pelo vendedor depois da venda fechada), `whatsapp_ai` (link mandado pelo assistente de IA do WhatsApp, OOC-139, 13/11/2026) ou `web` (a pessoa chegou sozinha pela landing). União em `ENROLLMENT_ORIGINS` (`packages/domain/src/enrollment/EnrollmentOrigin.ts`), espelhada no CHECK de `enrollments` e `seat_holds` (`0055`) e em `ENROLLMENT_SOURCES` no app. É campo do domínio, não analytics: fica na própria `enrollments`, não só no PostHog, porque a coordenação precisa responder "quantas matrículas o zap trouxe neste ciclo" dentro do backoffice, e porque analytics de borda se perde com bloqueador de anúncio.
 
 - Mora na **matrícula**, não no aluno. A mesma pessoa pode voltar por outro canal no ciclo seguinte; um campo no aluno perderia o histórico.
 - Capturado no **primeiro acesso** ao checkout e carregado até o submit — se a pessoa recarregar ou sair pra pagar, a origem não se perde.
@@ -240,7 +240,9 @@ Toda matrícula grava **de onde veio** — hoje `whatsapp` (link mandado pelo ve
 - Os parâmetros de campanha (`utm_*`) andam junto, mas separados, para relatório — a origem é o dado de negócio, o `utm` é o detalhe da peça. **Ainda não gravados no servidor** (só no rascunho do navegador).
 - **Caminho da origem até a linha:** o navegador resolve `src` na chegada e manda com o claim do hold; o servidor guarda no `seat_holds.origin` e o submit copia **do hold** para `enrollments.origin` — o body do submit não tem campo de origem. Matrícula manual grava `whatsapp` (`Enrollment.createManual`).
 
-O link do WhatsApp é URL comum com `?course=&group=&src=whatsapp` — **prefill e atribuição, não token**: sem segredo, sem autenticação e sem preço embutido (o valor vem sempre do `plan_price` vigente, lido no servidor). Isso é o que o mantém compatível com `CLAUDE.md` §2, "sem links de matrícula tokenizados".
+- **Onde se lê (OOC-139):** `GET /enrollments` devolve `origin` por linha, aceita o filtro `?origin=` e traz `metrics.byOrigin` — o total do período atual (o mesmo `metrics.total`) dividido pelos três canais, ignorando os filtros da tela como o resto do cabeçalho. A tela de Matrículas mostra a coluna, o filtro e o card *Por canal*. Não há relatório por período passado nem por curso ainda.
+
+O link do vendedor é URL comum com `?course=&group=&src=whatsapp`; o do assistente de IA é **`/enrollment/wa`** (aceita os mesmos `course`, `group` e `utm_*`), uma página do app que redireciona para `/enrollment` com `src=whatsapp_ai` — caminho curto para o prompt do bot, e um `src` que venha nele é sobrescrito, porque quem diz o canal é o caminho. Os dois são **prefill e atribuição, não token**: sem segredo, sem autenticação e sem preço embutido (o valor vem sempre do `plan_price` vigente, lido no servidor). Isso é o que o mantém compatível com `CLAUDE.md` §2, "sem links de matrícula tokenizados".
 
 ## Notificações
 

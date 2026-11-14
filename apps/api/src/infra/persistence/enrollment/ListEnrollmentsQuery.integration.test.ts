@@ -52,6 +52,11 @@ const COMBOS: { seat: "reserved" | "confirmed" | "released"; payment: string | n
 
 const ENROLLMENT_COUNT = 40;
 
+/** The channel of row `i` — every third, so each channel lands on both seat
+ * combos and both class groups. */
+const ORIGINS = ["web", "whatsapp", "whatsapp_ai"] as const;
+const originOf = (i: number) => ORIGINS[i % ORIGINS.length]!;
+
 const isVisible = (i: number) => COMBOS[i % COMBOS.length]!.seat === "confirmed";
 const VISIBLE = Array.from({ length: ENROLLMENT_COUNT }, (_, i) => i).filter(isVisible);
 
@@ -140,6 +145,7 @@ async function seedLedger(): Promise<void> {
         classGroupId: i % 2 === 0 ? GROUP_A : GROUP_B,
         planPriceId: PLAN_PRICE,
         seatStatus: COMBOS[i % COMBOS.length]!.seat,
+        origin: originOf(i),
         // One minute apart, so "newest first" has a single right answer.
         createdAt: new Date(Date.UTC(2026, 2, 1, 12, i)),
       })),
@@ -217,6 +223,20 @@ describe("filters", () => {
 
     expect(filtered.total).toBe(VISIBLE.filter((i) => i % 2 === 1).length);
     expect(filtered.rows.every((row) => row.language?.name === LANGUAGE_B)).toBe(true);
+  });
+
+  it("filters by channel, and every row says its own (OOC-139)", async () => {
+    const all = await readAll();
+    const channelOf = new Map(
+      VISIBLE.map((i) => [`Alumno${i} Ledger`, originOf(i)] as const),
+    );
+    expect(all.rows.every((row) => row.origin === channelOf.get(row.studentName))).toBe(true);
+
+    for (const origin of ORIGINS) {
+      const filtered = await readAll({ origin });
+      expect(filtered.total).toBe(VISIBLE.filter((i) => originOf(i) === origin).length);
+      expect(filtered.rows.every((row) => row.origin === origin)).toBe(true);
+    }
   });
 
   it("offers every language and period in the catalog, not only the ones on the page", async () => {
@@ -338,6 +358,20 @@ describe("header figures (OOC-151)", () => {
     const { metrics } = await query.run({ academicPeriodId: PERIOD });
 
     expect(metrics.total).toBe(VISIBLE.length);
+  });
+
+  it("splits the period's total by channel, ignoring the reader's filters (OOC-139)", async () => {
+    await db
+      .update(academicPeriods)
+      .set({ startsOn: new Date(Date.now() - 60_000), endsOn: new Date(Date.now() + 30 * 86_400_000) })
+      .where(eq(academicPeriods.id, PERIOD));
+
+    const { metrics } = await query.run({ academicPeriodId: PERIOD, origin: "web" });
+
+    for (const origin of ORIGINS) {
+      expect(metrics.byOrigin[origin]).toBe(VISIBLE.filter((i) => originOf(i) === origin).length);
+    }
+    expect(metrics.byOrigin.web + metrics.byOrigin.whatsapp + metrics.byOrigin.whatsapp_ai).toBe(metrics.total);
   });
 
   it("an active enrollment is a current one — a finished class group stops counting", async () => {

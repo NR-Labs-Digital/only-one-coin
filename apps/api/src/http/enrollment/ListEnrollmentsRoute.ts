@@ -2,6 +2,7 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
+import { EnrollmentOriginSchema } from "@ooc/domain";
 
 const EnrollmentStatusSchema = z.enum(["under_review", "active", "completed", "rejected"]);
 const SeatStatusSchema = z.enum(["reserved", "confirmed", "released"]);
@@ -14,6 +15,7 @@ const ListEnrollmentsQuerySchema = z.object({
   state: z.enum(["current", "ended", "all"]).default("current"),
   language: z.string().trim().min(1).max(100).optional(),
   period: z.string().uuid().optional(),
+  origin: EnrollmentOriginSchema.optional(),
   q: z.string().trim().min(2).max(100).optional(),
   sort: z.enum(["newest", "oldest"]).default("newest"),
 });
@@ -30,6 +32,7 @@ const EnrollmentListRowSchema = z.object({
   language: z.object({ id: z.string(), name: z.string() }).nullable(),
   modality: z.literal("online"),
   academicPeriodName: z.string(),
+  origin: EnrollmentOriginSchema,
   classGroupStatus: z.enum(["draft", "enrolling", "in_progress", "finished", "closed"]),
   status: EnrollmentStatusSchema,
   seatStatus: SeatStatusSchema,
@@ -57,6 +60,7 @@ const EnrollmentListResponseSchema = z.object({
     periodName: z.string(),
     total: z.number().int(),
     active: z.number().int(),
+    byOrigin: z.object({ web: z.number().int(), whatsapp: z.number().int(), whatsapp_ai: z.number().int() }),
   }),
   filterOptions: z.object({
     languages: z.array(z.string()),
@@ -83,12 +87,13 @@ export const listEnrollmentsRoute = RouteBuilder.get("/enrollments")
   .response(200, EnrollmentListResponseSchema)
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { page, state, language, period, q, sort } = request.query;
+    const { page, state, language, period, origin, q, sort } = request.query;
     const result = await container.queries.listEnrollments.run({
       page,
       state: state === "all" ? undefined : state,
       language,
       academicPeriodId: period,
+      origin,
       q,
       sort,
     });
