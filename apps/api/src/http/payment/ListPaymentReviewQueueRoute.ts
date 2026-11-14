@@ -55,6 +55,7 @@ const ItemSchema = z.object({
   methodDetail: z.string().nullable(),
   operationNumber: z.string().nullable(),
   expectedAmountCents: z.number().int(),
+  overCapacity: z.boolean(),
   currency: z.literal("PEN"),
   receipt: z.enum(["missing", "uploading", "ready", "refused"]),
   fraudSignals: z.array(z.enum(RECEIPT_FRAUD_SIGNAL_KINDS)),

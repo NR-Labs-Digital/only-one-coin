@@ -68,6 +68,10 @@ export interface PaymentListRow {
    * froze when it was requested — the value the payment is checked against (no
    * discounts, ever: CLAUDE.md §1). */
   expectedAmountCents: number;
+  /** The seat this payment is for sits above the class group's capacity
+   * (OOC-155) — the reviewer sees it before deciding. Always false for a
+   * procedure's payment, which pays for no seat. */
+  overCapacity: boolean;
   currency: "PEN";
   submittedAt: Date;
   /** `payments.decided_at` (OOC-112), not `payments.updated_at`: the row's
@@ -159,6 +163,7 @@ export class ListPaymentsQuery {
         lastName: students.lastName,
         courseName: courses.name,
         expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
+        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and ${enrollments.overCapacity}`,
         decidedAt: payments.decidedAt,
         // "user" is Better Auth's table, not modelled in the Drizzle schema —
         // raw SQL, as in DrizzleStaffUserLookup. A payment decided outside the
@@ -230,6 +235,7 @@ export class ListPaymentsQuery {
         operationNumber: row.operationNumber,
         amountCents: row.amountCents,
         expectedAmountCents: row.expectedAmountCents,
+        overCapacity: row.overCapacity,
         currency: "PEN",
         submittedAt: row.createdAt,
         decidedAt: row.decidedAt,

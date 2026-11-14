@@ -106,6 +106,10 @@ export interface PaymentReviewItem {
   methodDetail: string | null;
   operationNumber: string | null;
   expectedAmountCents: number;
+  /** The seat this payment is for sits above the class group's capacity
+   * (OOC-155) — the reviewer sees it before deciding. Always false for a
+   * procedure's payment, which pays for no seat. */
+  overCapacity: boolean;
   currency: "PEN";
   receipt: ReviewReceiptState;
   /** Only the kind of each signal: the detail carries ids of another
@@ -352,6 +356,7 @@ export class ListPaymentReviewQueueQuery {
         classGroupSchedule: classGroups.schedule,
         planName: plans.name,
         expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
+        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and ${enrollments.overCapacity}`,
         uploadStatus: latestUpload.status,
         fraudSignals: latestUpload.fraudSignals,
         validationVerdict: latestUpload.validationVerdict,
@@ -447,6 +452,7 @@ export class ListPaymentReviewQueueQuery {
         methodDetail: row.methodDetail,
         operationNumber: row.operationNumber,
         expectedAmountCents: row.expectedAmountCents,
+        overCapacity: row.overCapacity,
         currency: "PEN",
         receipt: receiptState(row.uploadStatus),
         fraudSignals: signalKinds(row.fraudSignals),
