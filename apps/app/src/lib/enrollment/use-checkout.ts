@@ -261,25 +261,26 @@ export function useCheckout(
   }, [hold, now])
 
   /**
-   * Ran out. The seat is going back to the class group — the server's sweep
-   * does that, on its own clock; nothing is sent from here, so the hold is
-   * counted as `expired` rather than `released` — and the attempt ends here.
+   * The server says the hold is no longer a reservation — the checkout let go
+   * of it, or nothing of the schedule is on sale any more — and the attempt
+   * ends here.
    *
-   * Everything typed is discarded rather than kept warm for a retry. That is a
-   * deliberate trade: a half-filled form sitting in a shared browser is a
-   * document number and a birth date left on a machine in a cabina, and the
-   * checkout has no session to tie it to anybody. Starting over costs a couple
-   * of minutes; the other way costs somebody else's data.
+   * The countdown reaching zero does **not** end it any more (OOC-155, owner's
+   * decision of 14/11/2026): somebody who left to pay and came back late has
+   * already paid, and the server seats an expired hold on submit — in a
+   * regular seat if the schedule still has one, above capacity if not. Only
+   * the server's refusal is terminal.
+   *
+   * Everything typed is discarded then rather than kept warm for a retry: a
+   * half-filled form sitting in a shared browser is a document number and a
+   * birth date left on a machine in a cabina, and the checkout has no session
+   * to tie it to anybody.
    */
   const expireHold = useCallback(() => {
     setHoldExpired(true)
     setHold(null)
     clearStored(DRAFT_KEY)
   }, [setHold])
-
-  useEffect(() => {
-    if (holdSecondsLeft === 0) expireHold()
-  }, [holdSecondsLeft, expireHold])
 
   /** Points the draft at the class group the seat is actually held in. */
   const settleOnGroup = useCallback((classGroupId: string) => {

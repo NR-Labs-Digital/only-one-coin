@@ -197,6 +197,8 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   enrollmentClosesAt: z.coerce.date().nullable(),
   capacity: z.number().int().positive(),
   seatsTaken: z.number().int().nonnegative(),
+  /** Seats held above capacity (OOC-155). Optional so readers that predate it read 0. */
+  seatsOver: z.number().int().nonnegative().optional(),
   status: ClassGroupStatusSchema,
   sourceClassGroupId: z.string().uuid().nullable(),
 });
@@ -244,6 +246,8 @@ export class ClassGroup extends SoftDeletableModel {
   public capacity: number;
   /** Read-only here: only the atomic seat UPDATE in apps/api ever moves it (apps/api CLAUDE.md, Vagas). */
   public readonly seatsTaken: number;
+  /** Same: only the atomic seat UPDATEs move it (OOC-155). */
+  public readonly seatsOver: number;
   public status: ClassGroupStatus;
   public readonly sourceClassGroupId: string | null;
 
@@ -265,6 +269,7 @@ export class ClassGroup extends SoftDeletableModel {
     this.enrollmentClosesAt = props.enrollmentClosesAt;
     this.capacity = props.capacity;
     this.seatsTaken = props.seatsTaken;
+    this.seatsOver = props.seatsOver ?? 0;
     this.status = props.status;
     this.sourceClassGroupId = props.sourceClassGroupId;
   }
@@ -334,7 +339,9 @@ export class ClassGroup extends SoftDeletableModel {
   }
 
   get isFull(): boolean {
-    return this.seatsTaken >= this.capacity;
+    // A seat above capacity is still a seat (OOC-155): 30/30 +2 that got one
+    // regular seat back is still full.
+    return this.seatsTaken + this.seatsOver >= this.capacity;
   }
 
   update(patch: UpdateClassGroupDTO): Editable[] {
@@ -342,7 +349,7 @@ export class ClassGroup extends SoftDeletableModel {
     const changed: Editable[] = [];
 
     if (valid.courseId !== undefined && valid.courseId !== this.courseId) {
-      if (this.status !== "draft" || this.seatsTaken > 0) throw new ClassGroupCourseLockedError();
+      if (this.status !== "draft" || this.seatsTaken + this.seatsOver > 0) throw new ClassGroupCourseLockedError();
       this.courseId = valid.courseId;
       changed.push("courseId");
     }

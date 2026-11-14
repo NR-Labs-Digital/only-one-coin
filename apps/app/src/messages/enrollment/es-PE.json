@@ -110,7 +110,8 @@
       "active": "Tu vacante está reservada mientras pagas",
       "remaining": "Quedan {minutes} minutos y {seconds} segundos de reserva",
       "full": "Ese horario se acaba de llenar. Elige otro horario u otra fecha.",
-      "failed": "No pudimos reservar tu vacante. Revisa tu conexión e inténtalo de nuevo."
+      "failed": "No pudimos reservar tu vacante. Revisa tu conexión e inténtalo de nuevo.",
+      "ran_out": "Se acabó el tiempo de reserva, pero tu lugar en este horario sigue guardado. Si ya pagaste, termina y envía tu comprobante."
     },
     "expired": {
       "title": "Se acabó el tiempo",

@@ -1,43 +1,10 @@
-import {
-  byClassGroupFillOrder,
-  classGroupOfferKey,
-  type ClaimSeatHoldResult,
-  type EnrollmentOrigin,
-  type ISeatHoldRepository,
-  type OfferFields,
-  type OfferSlot,
-  type SeatHold,
-} from "@ooc/domain";
+import { type ClaimSeatHoldResult, type EnrollmentOrigin, type ISeatHoldRepository, type SeatHold } from "@ooc/domain";
 import { classGroups, seatHolds } from "@ooc/db";
-import { and, eq, lt, ne, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "@/infra/persistence/catalog/sellableClassGroup.js";
-
-type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
-
-/**
- * The offer fields of a class group row. `slots` is jsonb: a legacy row with
- * something other than a list of slots reads as no week at all, which only
- * ever matches another row just as empty.
- */
-function offerFields(row: { courseId: string; startsOn: Date | null; endsOn: Date | null; slots: unknown }): OfferFields {
-  const slots: OfferSlot[] = Array.isArray(row.slots)
-    ? row.slots.filter(
-        (slot): slot is OfferSlot =>
-          typeof slot === "object" &&
-          slot !== null &&
-          typeof (slot as OfferSlot).weekday === "string" &&
-          typeof (slot as OfferSlot).startTime === "string" &&
-          typeof (slot as OfferSlot).endTime === "string",
-      )
-    : [];
-  return {
-    courseId: row.courseId,
-    startsOn: row.startsOn?.toISOString() ?? "",
-    endsOn: row.endsOn?.toISOString() ?? "",
-    slots,
-  };
-}
+import { classGroupHasRoom } from "@/infra/persistence/catalog/seatCounters.js";
+import { offerOf } from "./classGroupOffer.js";
 
 /**
  * The checkout hold against the class group's seat counter. Every seat taken
@@ -62,7 +29,7 @@ export class DrizzleSeatHoldRepository implements ISeatHoldRepository {
       // names one group of the offer, and the seat goes to the first group of
       // that offer with room, in fill order (OOC-145). The siblings are worked
       // out here from the database, never taken from the client.
-      const candidates = await this.offerOf(tx, params.classGroupId);
+      const candidates = await offerOf(tx, params.classGroupId);
       if (candidates.length === 0) return { kind: "not_found" };
 
       let taken: string | null = null;
@@ -85,7 +52,8 @@ export class DrizzleSeatHoldRepository implements ISeatHoldRepository {
             and(
               eq(classGroups.id, candidateId),
               sellableClassGroup(),
-              lt(classGroups.seatsTaken, classGroups.capacity),
+              // Room counts the seats above capacity too (OOC-155).
+              classGroupHasRoom(),
               // A draft has no dates and is not on sale (OOC-35). Already
               // implied by sellableClassGroup() — spelled out so the rule
               // survives a change to it.
@@ -127,60 +95,6 @@ export class DrizzleSeatHoldRepository implements ISeatHoldRepository {
         },
       };
     });
-  }
-
-  /**
-   * The class groups of the same offer as `classGroupId` that are on sale,
-   * itself included, in fill order. Empty when the id names nothing, or
-   * nothing of its offer is on sale.
-   *
-   * The named group may itself be off sale (retired, window closed) while a
-   * sibling is still selling; the schedule the reader picked is still there.
-   * Course, period and dates narrow the read in SQL; the week is compared by
-   * `classGroupOfferKey`, the same function the checkout groups with.
-   */
-  private async offerOf(tx: Tx, classGroupId: string): Promise<string[]> {
-    const [named] = await tx
-      .select({
-        courseId: classGroups.courseId,
-        academicPeriodId: classGroups.academicPeriodId,
-        startsOn: classGroups.startsOn,
-        endsOn: classGroups.endsOn,
-        slots: classGroups.slots,
-      })
-      .from(classGroups)
-      .where(eq(classGroups.id, classGroupId))
-      .limit(1);
-    // A draft has no dates and is never on sale; nothing can be its sibling.
-    if (!named?.startsOn || !named.endsOn) return [];
-
-    const siblings = await tx
-      .select({
-        id: classGroups.id,
-        code: classGroups.code,
-        courseId: classGroups.courseId,
-        startsOn: classGroups.startsOn,
-        endsOn: classGroups.endsOn,
-        slots: classGroups.slots,
-      })
-      .from(classGroups)
-      .where(
-        and(
-          eq(classGroups.courseId, named.courseId),
-          // Siblings are opened together, in one period. A class group of
-          // another period at the same dates is a different sale.
-          eq(classGroups.academicPeriodId, named.academicPeriodId),
-          eq(classGroups.startsOn, named.startsOn),
-          eq(classGroups.endsOn, named.endsOn),
-          sellableClassGroup(),
-        ),
-      );
-
-    const key = classGroupOfferKey(offerFields(named));
-    return siblings
-      .filter((group) => classGroupOfferKey(offerFields(group)) === key)
-      .sort(byClassGroupFillOrder)
-      .map((group) => group.id);
   }
 
   async find(id: string): Promise<SeatHold | null> {

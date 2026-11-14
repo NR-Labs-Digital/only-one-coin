@@ -110,7 +110,8 @@
       "active": "Sua vaga está reservada enquanto você paga",
       "remaining": "Restam {minutes} minutos e {seconds} segundos de reserva",
       "full": "Esse horário acabou de lotar. Escolha outro horário ou outra data.",
-      "failed": "Não conseguimos reservar sua vaga. Verifique sua conexão e tente de novo."
+      "failed": "Não conseguimos reservar sua vaga. Verifique sua conexão e tente de novo.",
+      "ran_out": "O tempo da reserva acabou, mas seu lugar neste horário continua guardado. Se você já pagou, conclua e envie o comprovante."
     },
     "expired": {
       "title": "Tempo excedido",

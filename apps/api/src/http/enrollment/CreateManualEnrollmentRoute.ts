@@ -16,6 +16,10 @@ const CreateManualEnrollmentBodySchema = z
     // Mandatory since OOC-146: the receipt this same account uploaded and
     // confirmed through /enrollments/receipt-uploads.
     receiptUploadId: z.string().uuid(),
+    // The staff member confirmed enrolling above capacity (OOC-155). Absent
+    // or false, a full class group is 422 enrollment.class_group_full, as
+    // before; the screen asks and sends it on the second try.
+    allowOverCapacity: z.boolean().default(false),
   })
   .refine((body) => body.method !== "other" || body.methodDetail !== null, {
     message: "methodDetail is required when method is 'other'",
@@ -29,6 +33,7 @@ const CreateManualEnrollmentResponseSchema = z.object({
     classGroupId: z.string().uuid(),
     planPriceId: z.string().uuid(),
     seatStatus: z.enum(["reserved", "confirmed", "released"]),
+    overCapacity: z.boolean(),
   }),
   payment: z.object({
     id: z.string().uuid(),
@@ -49,7 +54,7 @@ export const createManualEnrollmentRoute = RouteBuilder.post("/enrollments")
     tags: ["Enrollments"],
     summary: "Open an enrollment from the backoffice over an existing student",
     description:
-      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready.",
+      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready. A full class group is 422 enrollment.class_group_full unless allowOverCapacity is true, in which case the seat is taken above capacity (OOC-155).",
   })
   .roles(...MANUAL_ENROLLMENT_ROLES)
   .body(CreateManualEnrollmentBodySchema)

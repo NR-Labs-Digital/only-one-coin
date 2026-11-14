@@ -103,6 +103,8 @@ export const ClassGroupItemSchema = z.object({
   enrollmentClosesAt: z.string().datetime().nullable(),
   capacity: z.number().int(),
   seatsTaken: z.number().int(),
+  // Seats held above capacity (OOC-155), the "+2" of "30/30 +2".
+  seatsOver: z.number().int(),
   status: ClassGroupStatusSchema,
   active: z.boolean(),
   waitlistCount: z.number().int(),

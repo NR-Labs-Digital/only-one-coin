@@ -12,7 +12,11 @@ import type { Payment } from "./Payment.js";
  *
  * Throws ClassGroupFullError (see errors.ts) when the atomic seat increment
  * finds no room — never validated ahead of time in application code
- * (CLAUDE.md §5, "nunca validar vaga na aplicação").
+ * (CLAUDE.md §5, "nunca validar vaga na aplicação"). With `allowOverCapacity`
+ * (OOC-155), a full class group takes the seat above capacity instead — one
+ * more in `seats_over`, and the returned enrollment says `overCapacity`. The
+ * regular seat is always tried first, so the flag never puts somebody above
+ * the limit while there is room.
  *
  * `notifications` land in the outbox inside the same transaction — the
  * e-mail about an enrollment exists exactly when the enrollment does.
@@ -32,6 +36,7 @@ export interface IEnrollmentRepository {
     payment: Payment;
     notifications: EmailNotification[];
     receipt: { receiptUploadId: string; uploadedBy: string };
+    allowOverCapacity?: boolean;
   }): Promise<{
     enrollment: Enrollment;
     payment: Payment;

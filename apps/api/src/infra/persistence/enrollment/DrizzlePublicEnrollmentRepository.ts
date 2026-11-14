@@ -29,10 +29,11 @@ import {
   seatHolds,
   students,
 } from "@ooc/db";
-import { and, eq, gt, inArray, isNull, lte, desc, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, desc, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
+import { seatForExpiredHold } from "./classGroupOffer.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -103,24 +104,32 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
 
       // The seat was taken when the hold was claimed (DrizzleSeatHoldRepository
       // .claim, the atomic `seats_taken + 1` of apps/api/CLAUDE.md). Here it
-      // only changes hands: the hold must still be alive on the database
-      // clock, and FOR UPDATE keeps the expiry sweep off it until this
-      // transaction ends — the sweep skips locked rows, so a submit that got
-      // here first is never undercut by a seat handed back underneath it.
-      const [liveHold] = await tx
-        .select({ id: seatHolds.id })
+      // only changes hands. FOR UPDATE keeps the expiry sweep off the hold
+      // until this transaction ends — the sweep skips locked rows, so a submit
+      // that got here first is never undercut by a seat handed back
+      // underneath it.
+      //
+      // A hold whose clock ran out still counts (OOC-155, owner's decision of
+      // 14/11/2026: any expired hold, no window): the person paid with the
+      // seat in hand. Still `active` (the sweep has not passed), its seat is
+      // still counted and simply changes hands. Already `expired`, its seat
+      // went back, so it is taken again — a regular one if the schedule has
+      // room, above capacity if not (seatForExpiredHold). A `released` hold
+      // was let go by the checkout itself (it picked another class group) and
+      // is not a reservation any more.
+      const [hold] = await tx
+        .select({ id: seatHolds.id, classGroupId: seatHolds.classGroupId, status: seatHolds.status })
         .from(seatHolds)
         .where(
           and(
             eq(seatHolds.id, params.seatHoldId),
             eq(seatHolds.classGroupId, params.enrollment.classGroupId),
-            eq(seatHolds.status, "active"),
-            gt(seatHolds.expiresAt, sql`now()`),
+            inArray(seatHolds.status, ["active", "expired"]),
           ),
         )
         .for("update");
 
-      if (!liveHold) {
+      if (!hold) {
         throw new SeatHoldExpiredError();
       }
 
@@ -150,6 +159,16 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
         method: params.payment.method,
         operationNumber: params.payment.operationNumber ?? "",
       });
+
+      // After every check that can refuse the submit, so a refusal never
+      // takes a seat it would have to give back.
+      const seat =
+        hold.status === "active"
+          ? { classGroupId: hold.classGroupId, overCapacity: false }
+          : await seatForExpiredHold(tx, hold.classGroupId);
+      if (!seat) {
+        throw new SeatHoldExpiredError();
+      }
 
       // One person, one record (CLAUDE.md §1): the document decides, not the
       // id the usecase proposed. A returning student re-typing their name with
@@ -290,10 +309,13 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
         .values({
           id: params.enrollment.id,
           studentId: studentRow.id,
-          classGroupId: params.enrollment.classGroupId,
+          // The class group the seat is actually on: a sibling of the hold's
+          // when an expired hold was seated again.
+          classGroupId: seat.classGroupId,
           planPriceId: params.enrollment.planPriceId,
           seatStatus: params.enrollment.seatStatus,
           origin: params.enrollment.origin,
+          overCapacity: seat.overCapacity,
         })
         .returning();
 
@@ -304,7 +326,7 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
       await tx
         .update(seatHolds)
         .set({ status: "consumed", enrollmentId: enrollmentRow.id, settledAt: sql`now()`, updatedAt: sql`now()` })
-        .where(eq(seatHolds.id, liveHold.id));
+        .where(eq(seatHolds.id, hold.id));
 
       const [paymentRow] = await tx
         .insert(payments)
@@ -358,6 +380,7 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
           planPriceId: enrollmentRow.planPriceId,
           seatStatus: enrollmentRow.seatStatus as SeatStatus,
           origin: enrollmentRow.origin as EnrollmentOrigin,
+          overCapacity: enrollmentRow.overCapacity,
         }),
         payment: new Payment({
           id: paymentRow.id,
@@ -424,6 +447,7 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
         planPriceId: enrollmentRow.planPriceId,
         seatStatus: enrollmentRow.seatStatus as SeatStatus,
         origin: enrollmentRow.origin as EnrollmentOrigin,
+        overCapacity: enrollmentRow.overCapacity,
       }),
       payment: new Payment({
         id: paymentRow.id,

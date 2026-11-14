@@ -8,12 +8,13 @@ import {
   type PaymentToSettle,
   type SeatStatus,
 } from "@ooc/domain";
-import { auditLog, classGroups, enrollments, payments, procedureRequests } from "@ooc/db";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { auditLog, enrollments, payments, procedureRequests } from "@ooc/db";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { provisionPortalAccount } from "@/infra/persistence/portal/provisionPortalAccount.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
+import { giveBackSeat } from "@/infra/persistence/catalog/seatCounters.js";
 
 const OPEN: PaymentStatus[] = ["pending", "under_review"];
 
@@ -122,20 +123,20 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
     return current;
   }
 
-  /** reserved → released, and the seat goes back to the class group in the same
-   * transaction. Any other seat is left as it is. */
-  private async releaseSeat(tx: Tx, params: { enrollmentId: string; classGroupId: string }): Promise<SeatStatus> {
+  /** reserved → released, and the seat goes back to the counter it came from
+   * (`seats_taken`, or `seats_over` above capacity — OOC-155) in the same
+   * transaction. The class group is the one the enrollment holds now, read
+   * from the row itself: a move may have changed it since anyone looked. Any
+   * other seat is left as it is. */
+  private async releaseSeat(tx: Tx, params: { enrollmentId: string }): Promise<SeatStatus> {
     const [released] = await tx
       .update(enrollments)
       .set({ seatStatus: "released", updatedAt: sql`now()` })
       .where(and(eq(enrollments.id, params.enrollmentId), eq(enrollments.seatStatus, "reserved")))
-      .returning({ id: enrollments.id });
+      .returning({ classGroupId: enrollments.classGroupId, overCapacity: enrollments.overCapacity });
     if (!released) return this.currentSeat(tx, params.enrollmentId);
 
-    await tx
-      .update(classGroups)
-      .set({ seatsTaken: sql`${classGroups.seatsTaken} - 1` })
-      .where(and(eq(classGroups.id, params.classGroupId), gt(classGroups.seatsTaken, 0)));
+    await giveBackSeat(tx, released);
     return "released";
   }
 
