@@ -103,6 +103,8 @@ const owners: IAttachmentOwners = {
   exists: async (owner) => [STUDENT_A, STUDENT_A_OLD, STUDENT_B].includes(owner.id),
   studentsOfAccount: async (userId) =>
     userId === "account-a" ? [STUDENT_A, STUDENT_A_OLD] : userId === "account-b" ? [STUDENT_B] : [],
+  studentsOfProfile: async (userId) =>
+    userId === "account-a" ? [STUDENT_A, STUDENT_A_OLD] : userId === "account-b" ? [STUDENT_B] : [],
 };
 
 const staff: AttachmentActor = { userId: "staff-1", role: "enrollment_supervisor" };

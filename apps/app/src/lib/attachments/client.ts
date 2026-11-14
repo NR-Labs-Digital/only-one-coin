@@ -1,3 +1,4 @@
+import { pathWithProfile, profileFromCookieString } from '@/lib/portal/profile-cookie'
 import type { AttachmentCategory, AttachmentFailure, AttachmentLimits, AttachmentList } from './types'
 
 // Client-safe: every call goes through the same-origin `/api/v1` proxy, and the
@@ -12,6 +13,11 @@ export type AttachmentScope =
 
 const baseOf = (scope: AttachmentScope) =>
   scope.kind === 'portal' ? '/api/v1/portal/attachments' : '/api/v1/attachments'
+
+/** The portal's list and upload are about the chosen profile (OOC-147) — which
+ * child of a guardian. Read off the cookie at call time, so a switch in
+ * another tab is not undone by a stale prop. */
+const portalProfile = () => (typeof document === 'undefined' ? null : profileFromCookieString(document.cookie))
 
 const REASONS: Record<string, AttachmentFailure> = {
   'attachment.unsupported_type': 'unsupported_type',
@@ -65,7 +71,8 @@ export async function uploadAttachment(params: {
 }): Promise<AttachmentUploadOutcome> {
   const base = baseOf(params.scope)
   try {
-    const target = await postJson(`${base}/uploads`, {
+    const uploads = params.scope.kind === 'portal' ? pathWithProfile(`${base}/uploads`, portalProfile()) : `${base}/uploads`
+    const target = await postJson(uploads, {
       ...(params.scope.kind === 'staff'
         ? { ownerType: params.scope.ownerType, ownerId: params.scope.ownerId }
         : {}),
@@ -99,12 +106,12 @@ export async function uploadAttachment(params: {
 
 /** The list again, after a change. Null when the API failed. */
 export async function fetchAttachments(scope: AttachmentScope): Promise<AttachmentList | null> {
-  const query =
+  const path =
     scope.kind === 'staff'
-      ? `?${new URLSearchParams({ ownerType: scope.ownerType, ownerId: scope.ownerId })}`
-      : ''
+      ? `${baseOf(scope)}?${new URLSearchParams({ ownerType: scope.ownerType, ownerId: scope.ownerId })}`
+      : pathWithProfile(baseOf(scope), portalProfile())
   try {
-    const response = await fetch(`${baseOf(scope)}${query}`)
+    const response = await fetch(path)
     if (!response.ok) return null
     return (await response.json()) as AttachmentList
   } catch {

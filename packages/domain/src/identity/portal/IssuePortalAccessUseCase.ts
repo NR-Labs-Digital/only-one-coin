@@ -4,6 +4,7 @@ import { UnableToProcessEntryError } from "../../shared/base/errors/UnableToProc
 import type { IAuditLogRepository } from "../ports/IAuditLogRepository.js";
 import { newPortalToken, type PortalAccessOutcome } from "./PortalAccess.js";
 import { portalCredentialsEmail, portalPasswordResetEmail } from "./portalEmails.js";
+import { guardianProvisioning } from "./guardianAccess.js";
 import type { IPortalAccessRepository, IPortalLinkBuilder } from "./ports.js";
 
 export type IssuePortalAccessOutcome = PortalAccessOutcome | "activation_resent" | "reset_sent";
@@ -49,6 +50,7 @@ export class IssuePortalAccessUseCase extends BaseUseCase<IssuePortalAccessInput
         notify: (created, tokenId) => [
           portalCredentialsEmail(created, this.links.access(activation.token, DEFAULT_LOCALE), tokenId, DEFAULT_LOCALE),
         ],
+        guardian: guardianProvisioning(this.links, now),
       });
       // A duplicate file just linked to an existing account: staff asked for
       // an e-mail, so it goes to that account below.

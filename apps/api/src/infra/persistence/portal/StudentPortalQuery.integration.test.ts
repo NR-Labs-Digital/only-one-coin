@@ -122,7 +122,8 @@ async function seed(): Promise<void> {
   });
 
   // Two files of the same person on one account (not consolidated yet,
-  // CLAUDE.md §1), and a stranger on another account.
+  // CLAUDE.md §1) — the same document, which is what makes them one person
+  // and one profile (OOC-147) — and a stranger on another account.
   await db.insert(students).values([
     { id: OLD_FILE, firstName: "Vieja", userId: USER, createdAt: at(0) },
     { id: NEW_FILE, firstName: "Nueva", userId: USER, createdAt: at(1) },
@@ -131,7 +132,7 @@ async function seed(): Promise<void> {
     ...row,
     lastName: "Portal",
     nationalIdType: "DNI",
-    nationalId: `PORTAL${i}`,
+    nationalId: row.id === STRANGER ? "PORTAL-OTHER" : "PORTAL-SAME",
     email: `portal.${i}@gmail.com`,
     phone: "+51900000000",
     birthDate: new Date("2012-01-01T00:00:00.000Z"),

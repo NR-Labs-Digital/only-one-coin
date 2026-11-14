@@ -3,6 +3,7 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
+import { PortalProfileQuerySchema, requestedProfile } from "./profileQuery.js";
 
 /**
  * Who is signed in to the portal — the first route only a student reaches.
@@ -13,12 +14,19 @@ import { container } from "@/container.js";
 export const getPortalMeRoute = RouteBuilder.get("/portal/me")
   .docs({ tags: ["Portal"], summary: "The signed-in student", description: "Backs the portal shell's guard." })
   .roles("student")
+  .query(PortalProfileQuerySchema)
   .response(
     200,
     z.object({
       firstName: z.string(),
       lastName: z.string(),
       email: z.string(),
+      /** The profile shown (OOC-147) — the one `?profile=` named among the
+       * account's own, or the newest. */
+      profileId: z.string().uuid(),
+      /** Every person the account reaches: one for a student, one per child
+       * for a guardian. The portal offers a switcher when there are two. */
+      profiles: z.array(z.object({ id: z.string().uuid(), firstName: z.string(), lastName: z.string() })),
       /** The language chosen on the portal profile (OOC-150); null until one is. */
       preferredLocale: LocaleSchema.nullable(),
     }),
@@ -27,7 +35,7 @@ export const getPortalMeRoute = RouteBuilder.get("/portal/me")
   .handler(async (request, reply) => {
     const userId = request.currentUser!.id;
     const [identity, preferredLocale] = await Promise.all([
-      container.repositories.portalAccess.findIdentity(userId),
+      container.repositories.portalAccess.findIdentity(userId, requestedProfile(request.query)),
       container.identity.userPreferenceRepository.findPreferredLocale(userId),
     ]);
     if (!identity) {

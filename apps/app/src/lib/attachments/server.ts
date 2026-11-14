@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/backoffice/api-client'
+import { withProfile } from '@/lib/portal/profile'
 import type { AttachmentList } from './types'
 
 /**
@@ -11,7 +12,7 @@ export async function getAttachments(
 ): Promise<AttachmentList | null> {
   const path =
     scope.kind === 'portal'
-      ? '/api/v1/portal/attachments'
+      ? await withProfile('/api/v1/portal/attachments')
       : `/api/v1/attachments?${new URLSearchParams({ ownerType: scope.ownerType, ownerId: scope.ownerId })}`
   try {
     const response = await apiFetch(path)

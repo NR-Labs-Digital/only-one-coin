@@ -10,10 +10,12 @@ import type {
   PortalIdentifier,
   PortalIdentity,
 } from "@ooc/domain";
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { provisionPortalAccount } from "./provisionPortalAccount.js";
+import { pickProfile, profilesOfAccount } from "./accountProfiles.js";
+import { reachableStudentIdsSql } from "./reachableStudents.js";
 
 type AccountRow = { id: string; email: string; name: string; has_password: boolean };
 
@@ -42,14 +44,23 @@ export class DrizzlePortalAccessRepository implements IPortalAccessRepository {
   async findAccountByIdentifier(identifier: PortalIdentifier): Promise<PortalAccount | null> {
     // The document expression must stay identical to index
     // `students_portal_national_id_idx` (0022), or the planner stops using it.
-    const fileMatches =
-      identifier.method === "email"
-        ? sql`u."email" = ${identifier.email}`
-        : sql`s."national_id_type" = ${identifier.nationalIdType} and ${sql.raw(`regexp_replace(upper(s."national_id"), '[[:space:].-]', '', 'g')`)} = ${identifier.nationalId}`;
+    if (identifier.method === "email") {
+      // By e-mail: the account itself, as long as it reaches a live file —
+      // its own, or a child's as the guardian (OOC-147).
+      const result = await this.db.execute<AccountRow>(
+        sql`select ${ACCOUNT_COLUMNS} from "user" u
+            where u."email" = ${identifier.email} and u."role" = 'student' and coalesce(u."banned", false) = false
+              and exists (select 1 from ${reachableStudentIdsSql(sql`u."id"`)} r)
+            limit 1`,
+      );
+      return result.rows[0] ? toAccount(result.rows[0]) : null;
+    }
+    // By document: the file's own account — the student's, never a guardian's.
     const result = await this.db.execute<AccountRow>(
       sql`select ${ACCOUNT_COLUMNS} from "user" u
           join "students" s on s."user_id" = u."id" and s."deleted_at" is null
-          where u."role" = 'student' and coalesce(u."banned", false) = false and ${fileMatches}
+          where u."role" = 'student' and coalesce(u."banned", false) = false
+            and s."national_id_type" = ${identifier.nationalIdType} and ${sql.raw(`regexp_replace(upper(s."national_id"), '[[:space:].-]', '', 'g')`)} = ${identifier.nationalId}
           limit 1`,
     );
     return result.rows[0] ? toAccount(result.rows[0]) : null;
@@ -122,14 +133,21 @@ export class DrizzlePortalAccessRepository implements IPortalAccessRepository {
     return moved.length > 0;
   }
 
-  async findIdentity(userId: string): Promise<PortalIdentity | null> {
+  async findIdentity(userId: string, requestedProfileId: string | null): Promise<PortalIdentity | null> {
+    const profiles = await profilesOfAccount(this.db, userId);
+    const profile = pickProfile(profiles, requestedProfileId);
+    if (!profile) return null;
     const [row] = await this.db
       .select({ firstName: students.firstName, lastName: students.lastName, email: students.email })
       .from(students)
-      .where(and(eq(students.userId, userId), isNull(students.deletedAt)))
-      .orderBy(desc(students.createdAt))
+      .where(eq(students.id, profile.id))
       .limit(1);
-    return row ?? null;
+    if (!row) return null;
+    return {
+      ...row,
+      profileId: profile.id,
+      profiles: profiles.map(({ id, firstName, lastName }) => ({ id, firstName, lastName })),
+    };
   }
 
   async accessState(studentId: string): Promise<PortalAccessState> {

@@ -5,6 +5,7 @@ import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { ClassroomLinkSchema, WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
 import type { PortalPaymentRow } from "@/infra/persistence/portal/StudentPortalQuery.js";
+import { PortalProfileQuerySchema, requestedProfile } from "./profileQuery.js";
 
 const NationalIdTypeSchema = z.enum(["DNI", "CE", "passport"]);
 
@@ -51,6 +52,10 @@ const PortalEnrollmentSchema = z.object({
 });
 
 const PortalOverviewSchema = z.object({
+  /** The profile shown (OOC-147): the one `?profile=` named among the account's own, or the newest. */
+  profileId: z.string().uuid(),
+  /** Every person the account reaches — one per child for a guardian. */
+  profiles: z.array(z.object({ id: z.string().uuid(), firstName: z.string(), lastName: z.string() })),
   student: z.object({
     firstName: z.string(),
     lastName: z.string(),
@@ -131,8 +136,9 @@ const toPortalPayment = (payment: PortalPaymentRow) => ({
 });
 
 /**
- * Everything the student portal shows about the signed-in student (OOC-32) —
- * their file, guardian, enrollments and every payment. Scoped by the session's
+ * Everything the student portal shows about one profile of the signed-in
+ * account (OOC-32; profiles OOC-147) — the file, guardian, enrollments and
+ * every payment. `?profile=` picks the profile among the account's own. Scoped by the session's
  * account, never by an id from the client (CLAUDE.md §8). Same 403 as
  * `GET /portal/me` for a student account no file points at.
  */
@@ -143,16 +149,19 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
     description: "Backs every screen of the student portal: file, guardian, enrollments, payments and paid procedures.",
   })
   .roles("student")
+  .query(PortalProfileQuerySchema)
   .response(200, PortalOverviewSchema)
   .response(403, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const overview = await container.queries.studentPortal.overview(request.currentUser!.id);
+    const overview = await container.queries.studentPortal.overview(request.currentUser!.id, requestedProfile(request.query));
     if (!overview) {
       throw new ForbiddenError({ reason: "portal.no_student_record", message: "No student file is linked to this account.", path: request.url });
     }
     const { student } = overview;
 
     reply.status(200).send({
+      profileId: overview.profileId,
+      profiles: overview.profiles,
       student: {
         firstName: student.firstName,
         lastName: student.lastName,

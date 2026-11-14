@@ -305,6 +305,11 @@
     "notifications": {
       "title": "Notificações",
       "empty": "Você não tem notificações."
+    },
+    "profile_switcher": {
+      "heading": "Perfis da sua conta",
+      "trigger_label": "Perfil de {name}. Trocar de perfil",
+      "current": "Perfil atual"
     }
   }
 }

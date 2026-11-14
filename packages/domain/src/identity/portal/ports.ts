@@ -9,6 +9,14 @@ import type {
   PortalIdentity,
 } from "./PortalAccess.js";
 
+/** The guardian's own door (OOC-147): its token and e-mail, used only when
+ * the account for the guardian's address has to be created. */
+export interface PortalGuardianProvisioning {
+  activation: NewPortalToken;
+  /** Built once the guardian's account exists, with the stored token's id. */
+  notify: (account: PortalAccount, tokenId: string) => EmailNotification[];
+}
+
 /** Creating the account for a student file — inside the payment settlement's
  * own transaction, or alone from the backoffice button. */
 export interface PortalAccountProvisioning {
@@ -18,6 +26,12 @@ export interface PortalAccountProvisioning {
   at: Date;
   /** Built once the account exists, with the stored token's id. */
   notify: (account: PortalAccount, tokenId: string) => EmailNotification[];
+  /**
+   * For a minor with a guardian on file, the guardian's account reaches the
+   * file too (OOC-147): created with this token if the guardian's address has
+   * no account yet, joined otherwise. Absent = the student's account only.
+   */
+  guardian?: PortalGuardianProvisioning;
 }
 
 export interface IssuePortalTokenRequest {
@@ -40,6 +54,11 @@ export interface IPortalAccessRepository {
    * - otherwise: "user" (role student, no password), `students.user_id`, the
    *   activation token, the outbox rows of `notify`, audit
    *   `portal_access.created` → `created`.
+   * Then, with `guardian`, for a minor with a live guardian whose address is
+   * not the student's account: the guardian's account (created, or the
+   * existing open `student` account behind that address) gets a
+   * `guardian_portal_links` row. Never fails the outcome above — a staff or
+   * blocked account behind the address is audited and skipped.
    */
   provision(request: PortalAccountProvisioning): Promise<PortalAccessOutcome>;
   findAccountByStudent(studentId: string): Promise<PortalAccount | null>;
@@ -54,8 +73,9 @@ export interface IPortalAccessRepository {
   /** Marks it used only if it is still unused and unexpired; `false` when it
    * was not (a second click, a race). */
   consumeToken(id: string): Promise<boolean>;
-  /** The newest live file linked to the account. */
-  findIdentity(userId: string): Promise<PortalIdentity | null>;
+  /** The profile `requestedProfileId` names among the account's own, or the
+   * newest one (OOC-147); null when no live file is linked to the account. */
+  findIdentity(userId: string, requestedProfileId: string | null): Promise<PortalIdentity | null>;
   accessState(studentId: string): Promise<PortalAccessState>;
 }
 

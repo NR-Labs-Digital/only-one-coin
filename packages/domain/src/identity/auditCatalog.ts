@@ -100,6 +100,12 @@ export const AUDIT_ACTIONS = {
   "portal_access.issued": { key: "portal_access_issued", entity: "student", subject: "target" },
   "student.email_marked_invalid": { key: "student_email_marked_invalid", entity: "student", subject: "target" },
   "portal_access.email_conflict": { key: "portal_access_email_conflict", entity: "student", subject: "target" },
+  // The guardian's account reaches a minor's file (OOC-147): created for the
+  // guardian, joined to the one they already had, or refused because the
+  // address belongs to a staff or blocked account.
+  "portal_access.guardian_created": { key: "portal_access_guardian_created", entity: "student", subject: "target" },
+  "portal_access.linked_guardian": { key: "portal_access_linked_guardian", entity: "student", subject: "target" },
+  "portal_access.guardian_conflict": { key: "portal_access_guardian_conflict", entity: "student", subject: "target" },
   "portal.password_set": { key: "portal_password_set", entity: "student", subject: "student_account" },
   "portal.password_reset_requested": {
     key: "portal_password_reset_requested",

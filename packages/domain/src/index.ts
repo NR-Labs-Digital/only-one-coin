@@ -724,6 +724,7 @@ export type {
   PortalAccount,
   PortalIdentifier,
   PortalIdentity,
+  PortalProfile,
 } from "./identity/portal/PortalAccess.js";
 export type {
   IPortalAccessRepository,
@@ -731,6 +732,7 @@ export type {
   IPortalPasswordSetter,
   IssuePortalTokenRequest,
   PortalAccountProvisioning,
+  PortalGuardianProvisioning,
 } from "./identity/portal/ports.js";
 export { portalCredentialsEmail, portalPasswordResetEmail } from "./identity/portal/portalEmails.js";
 export { ResolvePortalSignInEmailUseCase } from "./identity/portal/ResolvePortalSignInEmailUseCase.js";

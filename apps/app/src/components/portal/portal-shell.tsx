@@ -8,6 +8,8 @@ import { PortalTabBar } from './portal-tabbar'
 import { StudentMenu } from './student-menu'
 import { NotificationsBell, type NoticeItem } from './notifications-bell'
 import { Icon } from './icons'
+import { ProfileSwitcher } from './profile-switcher'
+import type { PortalProfile } from '@/lib/portal/types'
 
 /**
  * The portal chrome, client-side because it is stateful: a collapsible
@@ -69,6 +71,9 @@ export function PortalShell({
   monogram,
   notifications,
   logoutAction,
+  profiles,
+  currentProfileId,
+  selectProfileAction,
   children,
 }: {
   portalLabel: string
@@ -77,14 +82,23 @@ export function PortalShell({
   monogram: string
   notifications: NoticeItem[]
   logoutAction: () => Promise<void>
+  /** Every profile of the account (OOC-147); the switcher shows from two up. */
+  profiles: PortalProfile[]
+  currentProfileId: string
+  selectProfileAction: (formData: FormData) => Promise<void>
   children: ReactNode
 }) {
   const t = useTranslations('portal')
   const [collapsed, setCollapsed] = useState(false)
   const toggleLabel = collapsed ? t('nav.expand') : t('nav.collapse')
 
+  const profileSwitcher = (
+    <ProfileSwitcher profiles={profiles} currentProfileId={currentProfileId} selectAction={selectProfileAction} />
+  )
+
   const accountStrip = (
     <div className="flex items-center gap-2">
+      {profileSwitcher}
       <NotificationsBell notifications={notifications} align="end" />
       <StudentMenu
         name={studentName}
@@ -137,12 +151,17 @@ export function PortalShell({
         </div>
       </aside>
 
-      {/* Top bar — mobile / tablet. Só a marca e o sino: o menu, o perfil,
-          o idioma e a saída desceram para a barra de abas. */}
+      {/* Top bar — mobile / tablet. A marca, o perfil e o sino: o menu, o
+          idioma e a saída desceram para a barra de abas. De quem é o portal
+          agora (OOC-147) é coisa que se lê em toda tela, então fica no topo —
+          e só aparece para a conta com mais de um perfil. */}
       <div className="sticky top-0 z-30 border-b border-line bg-white/90 pt-safe-t backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <BrandMark portalLabel={portalLabel} />
-          <NotificationsBell notifications={notifications} align="end" />
+          <div className="flex min-w-0 items-center gap-2">
+            {profileSwitcher}
+            <NotificationsBell notifications={notifications} align="end" />
+          </div>
         </div>
       </div>
 
