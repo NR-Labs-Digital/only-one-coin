@@ -27,9 +27,20 @@ export interface PlatformSettings {
   certificateDeadlineBusinessDays: number;
   /** How early a teacher's contract starts warning. 45 is provisional. */
   contractAlertDays: number;
+  /**
+   * Advancing a student to the next module asks for the pass mark (OOC-156).
+   * Coordination may still advance below it, with a reason; off, any posted
+   * grade lets the student advance. On by default.
+   */
+  progressionRequiresPassingGrade: boolean;
 }
 
 export type PlatformSettingKey = keyof PlatformSettings;
+
+/** The on/off settings; every other one is a whole number with bounds. */
+export const PLATFORM_FLAG_KEYS = ["progressionRequiresPassingGrade"] as const;
+export type PlatformFlagKey = (typeof PLATFORM_FLAG_KEYS)[number];
+export type PlatformNumberKey = Exclude<PlatformSettingKey, PlatformFlagKey>;
 
 /**
  * Bounds of each setting, mirrored by the CHECKs on `platform_settings`
@@ -49,9 +60,10 @@ export const PLATFORM_SETTING_BOUNDS = {
   certificateDeadlineBusinessDays: { min: 1, max: 90 },
   // S/1 to S/1,000: a procedure is paid (CLAUDE.md §1), never free.
   contractAlertDays: { min: 1, max: 180 },
-} as const satisfies Record<PlatformSettingKey, { min: number; max: number }>;
+} as const satisfies Record<PlatformNumberKey, { min: number; max: number }>;
 
-export const PLATFORM_SETTING_KEYS = Object.keys(PLATFORM_SETTING_BOUNDS) as PlatformSettingKey[];
+export const PLATFORM_NUMBER_KEYS = Object.keys(PLATFORM_SETTING_BOUNDS) as PlatformNumberKey[];
+export const PLATFORM_SETTING_KEYS: PlatformSettingKey[] = [...PLATFORM_NUMBER_KEYS, ...PLATFORM_FLAG_KEYS];
 
 /** The column each setting lives in — also the audit trail's target id, so
  * a change reads the same in the log as in the database. */
@@ -64,20 +76,22 @@ export const PLATFORM_SETTING_COLUMNS: Record<PlatformSettingKey, string> = {
   passingGrade: "passing_grade",
   certificateDeadlineBusinessDays: "certificate_deadline_business_days",
   contractAlertDays: "contract_alert_days",
+  progressionRequiresPassingGrade: "progression_requires_passing_grade",
 };
 
-export function platformSettingSchema(key: PlatformSettingKey) {
+export function platformSettingSchema(key: PlatformNumberKey) {
   const { min, max } = PLATFORM_SETTING_BOUNDS[key];
   return z.number().int().min(min).max(max);
 }
 
 /** A partial change: any subset of the settings, each within its bounds. */
 export const PlatformSettingsChangesSchema = z
-  .object(
-    Object.fromEntries(PLATFORM_SETTING_KEYS.map((key) => [key, platformSettingSchema(key).optional()])) as {
-      [K in PlatformSettingKey]: z.ZodOptional<z.ZodNumber>;
-    },
-  )
+  .object({
+    ...(Object.fromEntries(PLATFORM_NUMBER_KEYS.map((key) => [key, platformSettingSchema(key).optional()])) as {
+      [K in PlatformNumberKey]: z.ZodOptional<z.ZodNumber>;
+    }),
+    progressionRequiresPassingGrade: z.boolean().optional(),
+  })
   .strict();
 
 export type PlatformSettingsChanges = Partial<PlatformSettings>;

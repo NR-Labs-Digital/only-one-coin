@@ -5,6 +5,9 @@ import { enrollmentRecipients, type EnrollmentEmailFacts } from "./enrollmentEma
 /** What a grade e-mail needs: the seat's people and course. */
 export interface GradeEmailFacts {
   enrollmentId: string;
+  /** The run and attempt the seat is in now (OOC-156) — what makes each grade's e-mail its own. */
+  classGroupModuleId: string;
+  attempt: number;
   student: EnrollmentEmailFacts["student"];
   guardian: EnrollmentEmailFacts["guardian"];
   courseName: string;
@@ -19,12 +22,12 @@ export interface GradeEmailFacts {
  * certificate: Inglés Básico also needs the certification exam (CLAUDE.md §1),
  * and issuing is coordination's batch (OOC-33).
  *
- * Keyed by class group and seat: an enrollment that moves on to the next
- * module gets that module's grade e-mail too.
+ * Keyed by module run, attempt and seat (OOC-156): the next module's grade,
+ * and a repeated module's, are e-mails of their own; a retry of the same one
+ * is not.
  */
 export function gradeEmails(
   facts: GradeEmailFacts,
-  classGroupId: string,
   value: GradeValue,
   passingGrade: number,
   locale: Locale,
@@ -38,7 +41,7 @@ export function gradeEmails(
         ...base,
         templateKey: "grade_did_not_sit",
         vars: { recipientName: recipient.name, studentName, courseName: facts.courseName },
-        dedupeKey: `grade_did_not_sit:${classGroupId}:${facts.enrollmentId}:${recipient.kind}`,
+        dedupeKey: `grade_did_not_sit:${facts.classGroupModuleId}:${facts.attempt}:${facts.enrollmentId}:${recipient.kind}`,
       };
     }
     return {
@@ -51,7 +54,7 @@ export function gradeEmails(
         grade: value.score,
         passingGrade,
       },
-      dedupeKey: `grade_posted:${classGroupId}:${facts.enrollmentId}:${recipient.kind}`,
+      dedupeKey: `grade_posted:${facts.classGroupModuleId}:${facts.attempt}:${facts.enrollmentId}:${recipient.kind}`,
     };
   });
 }

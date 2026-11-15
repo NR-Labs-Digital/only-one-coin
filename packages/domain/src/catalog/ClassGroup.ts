@@ -165,9 +165,14 @@ export class ClassGroup extends SoftDeletableModel {
    * from the repository's sequence (`classGroupCodeOf`), never from the DTO.
    * The first module run is born with it.
    */
-  static create(dto: CreateClassGroupDTO, code: string): ClassGroup {
+  static create(dto: CreateClassGroupDTO, code: string, courseModules = 1): ClassGroup {
     const valid = CreateClassGroupSchema.parse(dto);
     const id = uuid();
+    // A full course is one run per module of the course (OOC-156), with the
+    // same teacher and week in each and each module's own Classroom.
+    const modules = valid.fullCourse
+      ? Array.from({ length: Math.max(1, courseModules) }, (_, index) => index + 1)
+      : [valid.module ?? null];
     const group = new ClassGroup(
       ClassGroupPropsSchema.parse({
         id,
@@ -183,15 +188,17 @@ export class ClassGroup extends SoftDeletableModel {
         status: "draft",
         sourceClassGroupId: null,
       }),
-      [
+      modules.map((module) =>
         ClassGroupModule.create(id, {
           teacherId: valid.teacherId,
-          classroomLinks: valid.classroomLinks,
-          module: valid.module,
-          fullCourse: valid.fullCourse,
+          classroomLinks:
+            module === null || !valid.fullCourse
+              ? valid.classroomLinks
+              : valid.classroomLinks?.filter((link) => link.module === module),
+          module,
           slots: valid.slots,
         }),
-      ],
+      ),
     );
     group.assertConsistent();
     return group;
