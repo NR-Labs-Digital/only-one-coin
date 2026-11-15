@@ -1,4 +1,4 @@
-import { classGroups, documentTemplateVersions, teacherContracts, teacherLanguages, teachers } from "@ooc/db";
+import { documentTemplateVersions, teacherContracts, teacherLanguages, teachers } from "@ooc/db";
 import type { IPlatformSettingsRepository, TeacherStatus } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -140,9 +140,13 @@ export class ListTeachersQuery {
   }
 
   private select(contract: ReturnType<ListTeachersQuery["latestContract"]>) {
-    const running = sql`${classGroups.teacherId} = ${teachers.id}
-      and ${classGroups.status} in ('enrolling', 'in_progress')
-      and ${classGroups.deletedAt} is null`;
+    // The teacher's module runs (OOC-156) in a class group still enrolling or running.
+    // The teacher's module runs (OOC-156) in a class group still enrolling or
+    // running. Aliased by hand so nothing in here binds to the outer row.
+    const running = sql`own_run.teacher_id = "teachers"."id"
+      and own_run.deleted_at is null
+      and own_group.status in ('enrolling', 'in_progress')
+      and own_group.deleted_at is null`;
 
     return this.db
       .select({
@@ -151,10 +155,21 @@ export class ListTeachersQuery {
           select array_agg(${teacherLanguages.language} order by ${teacherLanguages.language})
           from ${teacherLanguages} where ${teacherLanguages.teacherId} = ${teachers.id}
         ), '{}')`,
-        activeClassGroups: sql<number>`(select count(*) from ${classGroups} where ${running})`.mapWith(Number),
-        studentCount: sql<number>`(select coalesce(sum(${classGroups.seatsTaken}), 0) from ${classGroups} where ${running})`.mapWith(
-          Number,
-        ),
+        activeClassGroups: sql<number>`(
+          select count(*) from "class_group_modules" own_run
+          join "class_groups" own_group on own_group.id = own_run.class_group_id
+          where ${running}
+        )`.mapWith(Number),
+        // The seats held — reserved or confirmed — in those runs: the
+        // students the teacher has, not the class group's whole count.
+        studentCount: sql<number>`(
+          select count(*) from "enrollments" seat
+          join "class_group_modules" own_run on own_run.id = coalesce(seat.class_group_module_id, seat.class_group_id)
+          join "class_groups" own_group on own_group.id = own_run.class_group_id
+          where ${running}
+            and seat.seat_status <> 'released'
+            and seat.deleted_at is null
+        )`.mapWith(Number),
         contractId: contract.id,
         contractRecordedAt: contract.recordedAt,
         contractStartsOn: contract.startsOn,
@@ -184,10 +199,12 @@ export class ListTeachersQuery {
     const contract = this.latestContract();
 
     const running = sql`exists (
-      select 1 from ${classGroups}
-      where ${classGroups.teacherId} = ${teachers.id}
-        and ${classGroups.status} in ('enrolling', 'in_progress')
-        and ${classGroups.deletedAt} is null
+      select 1 from "class_group_modules" own_run
+      join "class_groups" own_group on own_group.id = own_run.class_group_id
+      where own_run.teacher_id = "teachers"."id"
+        and own_run.deleted_at is null
+        and own_group.status in ('enrolling', 'in_progress')
+        and own_group.deleted_at is null
     )`;
     // When a contract starts being this quarter's errand — the backoffice's
     // number (OOC-41), the same one the badge on screen reads.

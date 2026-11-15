@@ -309,6 +309,9 @@
         "receipt_reread_requested": "Nueva lectura del comprobante pedida",
         "class_group_created": "Aula creada",
         "class_group_updated": "Aula editada",
+        "class_group_module_added": "Grupo de módulo abierto",
+        "class_group_module_updated": "Grupo de módulo editado",
+        "class_group_module_retired": "Grupo de módulo retirado",
         "class_group_status_changed": "Estado del aula cambiado",
         "waitlist_joined": "Alumno en lista de espera",
         "waitlist_left": "Alumno salió de la lista de espera",
@@ -2102,7 +2105,13 @@
       "class_group_module_out_of_range": "El curso no tiene ese módulo.",
       "language_not_found": "Ese idioma ya no está en la lista. Recarga la página y elige otro.",
       "language_exists": "Ya existe un idioma con ese nombre.",
-      "language_in_use": "Todavía hay cursos en este idioma. Muévelos a otro idioma antes de retirarlo."
+      "language_in_use": "Todavía hay cursos en este idioma. Muévelos a otro idioma antes de retirarlo.",
+      "class_group_module_not_found": "Ese grupo de módulo ya no existe. Recarga la página.",
+      "class_group_module_taken": "El aula ya tiene un grupo de ese módulo.",
+      "class_group_module_alone": "Un grupo de curso completo, o sin módulo definido, es el único del aula. Define su módulo antes de abrir otro.",
+      "class_group_module_last": "El aula necesita al menos un grupo de módulo.",
+      "class_group_module_has_students": "Todavía hay alumnos en este grupo. Muévelos antes de retirarlo.",
+      "class_group_module_ambiguous": "El aula tiene varios grupos de módulo: edita el docente, el horario y el Classroom en cada grupo."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2497,6 +2506,40 @@
         "not_found": "La matrícula ya no existe.",
         "failed": "No pudimos mover la matrícula. Inténtalo de nuevo."
       }
+    },
+    "class_group_runs": {
+      "title": "Grupos por módulo",
+      "subtitle": "Cada grupo da un módulo, con su horario, docente y Classroom. Corren al mismo tiempo y las vacantes son del aula entera. Un alumno nuevo entra al primero.",
+      "module_label": "Módulo {number}",
+      "full_course": "Curso completo",
+      "no_module": "Sin módulo definido",
+      "entry": "Entrada",
+      "entry_hint": "Aquí entra cada alumno nuevo.",
+      "students": "{count, plural, =0 {Sin alumnos} one {# alumno} other {# alumnos}}",
+      "no_teacher": "Sin docente",
+      "no_schedule": "Sin horario",
+      "classroom_ok": "Classroom listo",
+      "classroom_missing": "Sin Classroom",
+      "add": "Abrir grupo de módulo",
+      "add_title": "Nuevo grupo de módulo",
+      "add_needs_module": "Para abrir otro grupo, primero define el módulo del grupo actual (no puede ser curso completo ni quedar sin módulo).",
+      "add_no_modules_left": "Todos los módulos del curso ya tienen su grupo.",
+      "edit": "Editar",
+      "edit_title": "Editar grupo de módulo",
+      "retire": "Retirar",
+      "confirm_retire": "¿Retirar este grupo? Solo se puede si no tiene alumnos. Sale de la lista y del portal del docente; las notas que tenga se mantienen.",
+      "retired": "Grupo retirado.",
+      "saved": "Grupo guardado.",
+      "created": "Grupo abierto.",
+      "create": "Abrir grupo",
+      "module_pick": "Elige el módulo",
+      "code_with_module": "{code} · módulo {number}",
+      "edit_on_runs": "Docente, horario y Classroom son de cada grupo de módulo: edítalos en la tarjeta “Grupos por módulo”.",
+      "close": "Cerrar",
+      "count": "{count, plural, one {# grupo de módulo} other {# grupos de módulo}}",
+      "module_short": "Mód. {number}",
+      "full_short": "Completo",
+      "unset_short": "Sin mód."
     }
   }
 }

@@ -5,6 +5,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { ClassGroupRosterQuery } from "./ClassGroupRosterQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The class group roster, read against a real, migrated Postgres: confirmed
@@ -121,6 +122,7 @@ async function seed(tx: Db): Promise<Record<string, string>> {
   await tx.insert(plans).values({ id: PLAN, courseId: COURSE, name: "Mensual (roster integration)" });
   await tx.insert(planPrices).values({ id: PRICE, planId: PLAN, amountCents: 9900, validFrom: new Date(now - DAY) });
   await tx.insert(classGroups).values([groupRow(GROUP, "ROSTER-01"), groupRow(OTHER_GROUP, "ROSTER-02")]);
+  await seedModuleRuns(tx);
   await tx
     .insert(students)
     .values([
@@ -185,6 +187,7 @@ describe("class group roster", { timeout: 30_000 }, () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
       await tx.insert(classGroups).values(groupRow(EMPTY, "ROSTER-03"));
+      await seedModuleRuns(tx);
       const query = new ClassGroupRosterQuery(tx);
       expect(await query.run(EMPTY)).toEqual([]);
       expect(await query.run(UNKNOWN)).toBeNull();

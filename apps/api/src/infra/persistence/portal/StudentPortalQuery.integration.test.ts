@@ -21,6 +21,7 @@ import { GetStudentQuery } from "../student/GetStudentQuery.js";
 import { StudentPortalQuery } from "./StudentPortalQuery.js";
 import type { Db } from "@/infra/db/client.js";
 import { insertPasswordlessUser } from "@/infra/auth/credentialAccount.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The student portal's read (OOC-32): scoped by the account, across every
@@ -120,6 +121,7 @@ async function seed(): Promise<void> {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 50,
   });
+  await seedModuleRuns(db);
 
   // Two files of the same person on one account (not consolidated yet,
   // CLAUDE.md §1) — the same document, which is what makes them one person
@@ -226,13 +228,15 @@ describe("StudentPortalQuery.overview", () => {
 
   it("hands the link of every module a full-course class group teaches, in order (OOC-144)", async () => {
     await db.update(courses).set({ modules: 2 }).where(eq(courses.id, COURSE));
+    // The teaching side lives on the module run since OOC-156; 0058's run shares the class group's id.
     await db
-      .update(classGroups)
+      .update(schema.classGroupModules)
       .set({
         fullCourse: true,
+        module: null,
         classroomLinks: { "2": "https://classroom.google.com/c/m2", "1": "https://classroom.google.com/c/m1" },
       })
-      .where(eq(classGroups.id, GROUP));
+      .where(eq(schema.classGroupModules.id, GROUP));
     try {
       const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
       expect(byId.get(ON_OLD_FILE)!.classGroup.classroomLinks).toEqual([
@@ -240,7 +244,10 @@ describe("StudentPortalQuery.overview", () => {
         { module: 2, url: "https://classroom.google.com/c/m2" },
       ]);
     } finally {
-      await db.update(classGroups).set({ fullCourse: false, classroomLinks: {} }).where(eq(classGroups.id, GROUP));
+      await db
+        .update(schema.classGroupModules)
+        .set({ fullCourse: false, classroomLinks: {} })
+        .where(eq(schema.classGroupModules.id, GROUP));
       await db.update(courses).set({ modules: 1 }).where(eq(courses.id, COURSE));
     }
   });

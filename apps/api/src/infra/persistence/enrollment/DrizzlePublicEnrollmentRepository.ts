@@ -34,6 +34,7 @@ import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
 import { seatForExpiredHold } from "./classGroupOffer.js";
+import { entryModuleIdOf } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -312,6 +313,8 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
           // The class group the seat is actually on: a sibling of the hold's
           // when an expired hold was seated again.
           classGroupId: seat.classGroupId,
+          // A new student starts in the class group's entry run (OOC-156).
+          classGroupModuleId: entryModuleIdOf(seat.classGroupId),
           planPriceId: params.enrollment.planPriceId,
           seatStatus: params.enrollment.seatStatus,
           origin: params.enrollment.origin,

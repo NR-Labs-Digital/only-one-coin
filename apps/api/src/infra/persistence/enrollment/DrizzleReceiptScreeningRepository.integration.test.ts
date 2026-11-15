@@ -21,6 +21,7 @@ import type { Db } from "@/infra/db/client.js";
 import { fingerprintDistance, SIMILAR_IMAGE_MAX_DISTANCE } from "@/infra/storage/fingerprintReceiptImage.js";
 import { DrizzleReceiptScreeningRepository } from "./DrizzleReceiptScreeningRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The receipt antifraud's SQL (OOC-22) — the part typecheck cannot vouch
@@ -100,6 +101,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 50,
   });
+  await seedModuleRuns(tx);
 }
 
 let sequence = 0;

@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
 import { DrizzleEnrollmentRepository } from "./DrizzleEnrollmentRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The manual enrollment's receipt is mandatory (OOC-146): the payment is born
@@ -98,6 +99,7 @@ async function seed(tx: Db): Promise<void> {
     seatsTaken: 0,
     status: "enrolling",
   });
+  await seedModuleRuns(tx);
   await tx.insert(students).values([studentRow(ROSA, "MANUAL-RECEIPT-1"), studentRow(JUAN, "MANUAL-RECEIPT-2")]);
 }
 

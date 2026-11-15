@@ -1,4 +1,4 @@
-import { classGroups, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
+import { classGroupModules, classGroups, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
 import type { WeeklySlot } from "@ooc/domain";
 import { and, asc, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -10,8 +10,19 @@ export interface TeacherOption {
   lastName: string;
   languages: string[];
   availability: WeeklySlot[];
-  /** Class groups still ahead of them (not finished, closed or retired) — what a new allocation can clash with. */
-  classGroups: { id: string; code: string; academicPeriodId: string; slots: WeeklySlot[] }[];
+  /**
+   * The module runs still ahead of them (class group not finished, closed or
+   * retired; run not retired) — what a new allocation can clash with. `id` is
+   * the run's (OOC-156); `classGroupId` and `code` are its class group's.
+   */
+  classGroups: {
+    id: string;
+    classGroupId: string;
+    code: string;
+    module: number | null;
+    academicPeriodId: string;
+    slots: WeeklySlot[];
+  }[];
 }
 
 /**
@@ -51,21 +62,25 @@ export class ListTeacherOptionsQuery {
       .orderBy(asc(teacherAvailability.weekday), asc(teacherAvailability.startTime));
     const groups = await this.db
       .select({
-        teacherId: classGroups.teacherId,
-        id: classGroups.id,
+        teacherId: classGroupModules.teacherId,
+        id: classGroupModules.id,
+        classGroupId: classGroups.id,
         code: classGroups.code,
+        module: classGroupModules.module,
         academicPeriodId: classGroups.academicPeriodId,
-        slots: classGroups.slots,
+        slots: classGroupModules.slots,
       })
-      .from(classGroups)
+      .from(classGroupModules)
+      .innerJoin(classGroups, eq(classGroups.id, classGroupModules.classGroupId))
       .where(
         and(
-          inArray(classGroups.teacherId, ids),
+          inArray(classGroupModules.teacherId, ids),
+          isNull(classGroupModules.deletedAt),
           notInArray(classGroups.status, ["finished", "closed"]),
           isNull(classGroups.deletedAt),
         ),
       )
-      .orderBy(asc(classGroups.code), asc(classGroups.id));
+      .orderBy(asc(classGroups.code), asc(classGroupModules.module), asc(classGroupModules.id));
 
     return roster.map((teacher) => ({
       ...teacher,
@@ -81,7 +96,9 @@ export class ListTeacherOptionsQuery {
         .filter((row) => row.teacherId === teacher.id)
         .map((row) => ({
           id: row.id,
+          classGroupId: row.classGroupId,
           code: row.code,
+          module: row.module,
           academicPeriodId: row.academicPeriodId,
           slots: row.slots as WeeklySlot[],
         })),

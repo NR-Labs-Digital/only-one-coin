@@ -34,6 +34,9 @@ import {
   DuplicateClassGroupsUseCase,
   CreateClassGroupUseCase,
   UpdateClassGroupUseCase,
+  AddClassGroupModuleUseCase,
+  UpdateClassGroupModuleUseCase,
+  RetireClassGroupModuleUseCase,
   AdvanceClassGroupStatusUseCase,
   IssuePortalAccessUseCase,
   ResendFailedEmailUseCase,
@@ -409,6 +412,9 @@ export interface AppUseCases {
     duplicatePeriod: DuplicateClassGroupsUseCase;
     createClassGroup: CreateClassGroupUseCase;
     updateClassGroup: UpdateClassGroupUseCase;
+    addClassGroupModule: AddClassGroupModuleUseCase;
+    updateClassGroupModule: UpdateClassGroupModuleUseCase;
+    retireClassGroupModule: RetireClassGroupModuleUseCase;
     advanceClassGroupStatus: AdvanceClassGroupStatusUseCase;
     joinWaitlist: JoinWaitlistUseCase;
     leaveWaitlist: LeaveWaitlistUseCase;
@@ -755,6 +761,19 @@ function buildContainer(): AppContainer {
     teacherRepository,
     auditLogRepository,
   );
+  const addClassGroupModule = new AddClassGroupModuleUseCase(
+    courseRepository,
+    classGroupRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
+  const updateClassGroupModule = new UpdateClassGroupModuleUseCase(
+    courseRepository,
+    classGroupRepository,
+    teacherRepository,
+    auditLogRepository,
+  );
+  const retireClassGroupModule = new RetireClassGroupModuleUseCase(classGroupRepository, auditLogRepository);
   const advanceClassGroupStatus = new AdvanceClassGroupStatusUseCase(classGroupRepository, auditLogRepository);
   const joinWaitlist = new JoinWaitlistUseCase(classGroupRepository, waitlistRepository, auditLogRepository);
   const leaveWaitlist = new LeaveWaitlistUseCase(waitlistRepository, auditLogRepository);
@@ -900,7 +919,7 @@ function buildContainer(): AppContainer {
         listOwnClassGroups,
         getOwnClassGroup,
         listOwnClassGroupStudents: new ListOwnClassGroupStudentsUseCase(getOwnClassGroup, teachingReader),
-        listOwnClassGroupGrades: new ListOwnClassGroupGradesUseCase(getOwnClassGroup, gradeRepository),
+        listOwnClassGroupGrades: new ListOwnClassGroupGradesUseCase(getOwnClassGroup, teachingReader, gradeRepository),
         recordOwnClassGroupGrades: new RecordOwnClassGroupGradesUseCase(
           getOwnClassGroup,
           teachingReader,
@@ -997,6 +1016,9 @@ function buildContainer(): AppContainer {
         duplicatePeriod,
         createClassGroup,
         updateClassGroup,
+        addClassGroupModule,
+        updateClassGroupModule,
+        retireClassGroupModule,
         advanceClassGroupStatus,
         joinWaitlist,
         leaveWaitlist,

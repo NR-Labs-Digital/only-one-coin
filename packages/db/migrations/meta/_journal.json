@@ -407,6 +407,13 @@
       "when": 1794689595080,
       "tag": "0057_class_group_over_capacity",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794700793772,
+      "tag": "0058_class_group_modules",
+      "breakpoints": true
     }
   ]
 }

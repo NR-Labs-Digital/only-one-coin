@@ -34,8 +34,8 @@ function inside(slot: WeeklySlotItem, window: WeeklySlotItem): boolean {
 export interface AllocationWarnings {
   /** The schedule leaves the week the teacher declared. False when they declared none — nothing to compare. */
   outsideAvailability: boolean
-  /** Codes of their other class groups, in the same period, that meet at the same time. */
-  clashes: string[]
+  /** Their other module runs (OOC-156), in the same period, that meet at the same time. */
+  clashes: { code: string; module: number | null }[]
 }
 
 /**
@@ -47,7 +47,8 @@ export interface AllocationWarnings {
 export function allocationWarnings(
   teacher: TeacherOption,
   slots: WeeklySlotItem[],
-  context: { academicPeriodId: string; classGroupId?: string },
+  /** `classGroupModuleId` is the run being edited, never a clash with itself. */
+  context: { academicPeriodId: string; classGroupModuleId?: string },
 ): AllocationWarnings {
   const outsideAvailability =
     teacher.availability.length > 0 &&
@@ -56,11 +57,11 @@ export function allocationWarnings(
   const clashes = teacher.classGroups
     .filter(
       (group) =>
-        group.id !== context.classGroupId &&
+        group.id !== context.classGroupModuleId &&
         group.academicPeriodId === context.academicPeriodId &&
         group.slots.some((theirs) => slots.some((ours) => overlaps(theirs, ours))),
     )
-    .map((group) => group.code)
+    .map((group) => ({ code: group.code, module: group.module }))
 
   return { outsideAvailability, clashes }
 }

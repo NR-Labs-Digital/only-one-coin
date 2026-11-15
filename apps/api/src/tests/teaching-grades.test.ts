@@ -51,9 +51,14 @@ function file(): Teacher {
   });
 }
 
-function group(status: TeachingClassGroup["status"]): TeachingClassGroup {
+/**
+ * The teacher's module run. By default the one 0058 made from the class group,
+ * under the class group's own id; `run` names a later run (OOC-156).
+ */
+function group(status: TeachingClassGroup["status"], run: string = GROUP): TeachingClassGroup {
   return {
-    id: GROUP,
+    id: run,
+    classGroupId: GROUP,
     teacherId: TEACHER,
     code: "A-00038",
     courseName: "Inglés Básico",
@@ -81,6 +86,10 @@ class FakeGrades implements IGradeRepository {
   audits: Array<{ action: string; metadata?: unknown }> = [];
   emails: EmailNotification[] = [];
   status: TeachingClassGroup["status"] = "finished";
+  /** Every confirmed seat of the class group, across its runs — what the write counts to finish it. */
+  classGroupSeats: string[] = [SEAT_A, SEAT_B];
+  /** Where the last batch went. */
+  recordedInto: string | null = null;
   /** Set to make the next correction lose a race with somebody else's. */
   raceNextCorrection = false;
 
@@ -129,6 +138,7 @@ class FakeGrades implements IGradeRepository {
   }
 
   async record(params: Parameters<IGradeRepository["record"]>[0]) {
+    this.recordedInto = params.classGroupId;
     const conflicts = params.entries.filter((entry) => {
       const posted = this.posted.get(entry.enrollmentId);
       return posted && JSON.stringify(posted) !== JSON.stringify(entry.value);
@@ -140,7 +150,7 @@ class FakeGrades implements IGradeRepository {
     if (fresh.length > 0) {
       this.audits.push(params.audit(fresh));
       this.emails.push(...params.emails(fresh));
-      if (this.status === "in_progress" && params.seatIds.every((id) => this.posted.has(id))) {
+      if (this.status === "in_progress" && this.classGroupSeats.every((id) => this.posted.has(id))) {
         this.status = "finished";
         this.audits.push(params.finishAudit());
         finished = true;
@@ -150,14 +160,17 @@ class FakeGrades implements IGradeRepository {
   }
 }
 
-function setUp(status: TeachingClassGroup["status"] = "finished") {
+const ROSA = { enrollmentId: SEAT_A, firstName: "Rosa", lastName: "Quispe" };
+const LUIS = { enrollmentId: SEAT_B, firstName: "Luis", lastName: "Huamán" };
+
+function setUp(status: TeachingClassGroup["status"] = "finished", run: string = GROUP) {
   const teachers = { findByUserId: async () => file() } as unknown as ITeacherRepository;
   const reader = {
-    findClassGroup: async () => group(status),
-    listStudents: async () => [
-      { enrollmentId: SEAT_A, firstName: "Rosa", lastName: "Quispe" },
-      { enrollmentId: SEAT_B, firstName: "Luis", lastName: "Huamán" },
-    ],
+    findClassGroup: async () => group(status, run),
+    // A later run holds Rosa only; the run 0058 made holds both.
+    listStudents: async () => (run === GROUP ? [ROSA, LUIS] : [ROSA]),
+    findGradingClassGroup: async (id: string) => (id === GROUP ? { id: GROUP, status } : null),
+    listClassGroupStudents: async () => [ROSA, LUIS],
   } as unknown as ITeachingReader;
   const grades = new FakeGrades();
   grades.status = status;
@@ -176,9 +189,35 @@ function setUp(status: TeachingClassGroup["status"] = "finished") {
   };
 }
 
-const post = (entries: GradeEntry[]) => ({ userId: ACCOUNT, classGroupId: GROUP, entries });
+const post = (entries: GradeEntry[], run: string = GROUP) => ({ userId: ACCOUNT, classGroupId: run, entries });
 const score = (enrollmentId: string, value: number): GradeEntry => ({ enrollmentId, value: { kind: "score", score: value } });
 const da = (enrollmentId: string): GradeEntry => ({ enrollmentId, value: { kind: "did_not_sit" } });
+
+describe("Grades from a module run (OOC-156)", () => {
+  const RUN = "018f2b5c-3800-7000-8000-000000000022";
+
+  it("posts into the class group, for the seats of the teacher's own run only", async () => {
+    const { useCase, grades } = setUp("finished", RUN);
+    await expect(useCase.run(post([score(SEAT_A, 15)], RUN))).resolves.toMatchObject({ recorded: 1 });
+    expect(grades.recordedInto).toBe(GROUP);
+    expect(grades.audits.at(-1)).toMatchObject({ targetId: GROUP, metadata: { classGroupId: GROUP } });
+
+    // Luis is in the class group, in another run: not this teacher's to grade.
+    await expect(useCase.run(post([score(SEAT_B, 15)], RUN))).rejects.toMatchObject({
+      reason: "teaching.grade_unknown_enrollment",
+    });
+  });
+
+  it("finishes the class group only once every run's seats are graded", async () => {
+    const { useCase, supervision, grades } = setUp("in_progress", RUN);
+    await expect(useCase.run(post([score(SEAT_A, 15)], RUN))).resolves.toMatchObject({ finished: false });
+    expect(grades.status).toBe("in_progress");
+
+    await expect(
+      supervision.run({ actorId: "usr_sup", classGroupId: GROUP, entries: [score(SEAT_B, 14)] }),
+    ).resolves.toMatchObject({ finished: true });
+  });
+});
 
 describe("RecordOwnClassGroupGradesUseCase", () => {
   it("posts a batch — grades and DA — and audits the seats, never the grades", async () => {

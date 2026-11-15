@@ -1,6 +1,7 @@
 import {
   AcademicPeriod,
   ClassGroup,
+  ClassGroupModule,
   DuplicateClassGroupsUseCase,
   DuplicateSamePeriodError,
   PeriodAlreadyDuplicatedError,
@@ -53,27 +54,38 @@ beforeEach(async () => {
 
   // Already running, with seats taken by enrolled students.
   running = await groups.create(
-    new ClassGroup({
-      id: uuid(),
-      courseId: COURSE_ID,
-      academicPeriodId: source.id,
-      code: "ING-0101",
-      teacherId: TEACHER_ID,
-      legacyTeacherName: "",
-      classroomUrl: null,
-      classroomLinks: { "1": "https://classroom.google.com/c/running" },
-      module: 2,
-      fullCourse: false,
-      slots: SLOTS,
-      startsOn: new Date("2026-08-03T05:00:00Z"),
-      endsOn: new Date("2026-10-31T05:00:00Z"),
-      enrollmentOpensAt: new Date("2026-07-20T05:00:00Z"),
-      enrollmentClosesAt: new Date("2026-08-10T05:00:00Z"),
-      capacity: 25,
-      seatsTaken: 20,
-      status: "in_progress",
-      sourceClassGroupId: null,
-    }),
+    (() => {
+      const id = uuid();
+      return new ClassGroup(
+        {
+          id,
+          courseId: COURSE_ID,
+          academicPeriodId: source.id,
+          code: "ING-0101",
+          startsOn: new Date("2026-08-03T05:00:00Z"),
+          endsOn: new Date("2026-10-31T05:00:00Z"),
+          enrollmentOpensAt: new Date("2026-07-20T05:00:00Z"),
+          enrollmentClosesAt: new Date("2026-08-10T05:00:00Z"),
+          capacity: 25,
+          seatsTaken: 20,
+          status: "in_progress",
+          sourceClassGroupId: null,
+        },
+        [
+          new ClassGroupModule({
+            id,
+            classGroupId: id,
+            module: 2,
+            fullCourse: false,
+            teacherId: TEACHER_ID,
+            legacyTeacherName: "",
+            slots: SLOTS,
+            classroomLinks: { "2": "https://classroom.google.com/c/running" },
+            classroomUrl: null,
+          }),
+        ],
+      );
+    })(),
   );
   draft = await groups.create(
     ClassGroup.create({
@@ -107,7 +119,7 @@ describe("DuplicateClassGroupsUseCase", () => {
       expect(copy.enrollmentOpensAt).toBeNull();
       expect(copy.enrollmentClosesAt).toBeNull();
       expect(copy.seatsTaken).toBe(0);
-      expect(copy.classroomLinks).toEqual({});
+      expect(copy.modules.map((run) => run.classroomLinks)).toEqual([{}]);
       expect(copy.academicPeriodId).toBe(target.id);
     }
 
@@ -115,11 +127,11 @@ describe("DuplicateClassGroupsUseCase", () => {
     expect(bySource.get(running.id)?.capacity).toBe(running.capacity);
     expect(bySource.get(draft.id)?.capacity).toBe(draft.capacity);
     // Same teacher in the new period (CLAUDE.md §1); nobody stays nobody.
-    expect(bySource.get(running.id)?.teacherId).toBe(TEACHER_ID);
-    expect(bySource.get(draft.id)?.teacherId).toBeNull();
+    expect(bySource.get(running.id)?.entryModule?.teacherId).toBe(TEACHER_ID);
+    expect(bySource.get(draft.id)?.entryModule?.teacherId).toBeNull();
     // Same module too (OOC-100): the copy is the same offer, next period.
-    expect(bySource.get(running.id)?.module).toBe(2);
-    expect(bySource.get(draft.id)?.module).toBeNull();
+    expect(bySource.get(running.id)?.entryModule?.module).toBe(2);
+    expect(bySource.get(draft.id)?.entryModule?.module).toBeNull();
     expect(bySource.size).toBe(2);
   });
 

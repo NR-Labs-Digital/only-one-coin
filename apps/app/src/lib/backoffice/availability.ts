@@ -26,7 +26,10 @@ export function weeklyHours(slots: AvailabilitySlot[]): number {
 
 /** A class group laid over the day it was allocated into. */
 export interface AllocatedClass {
+  /** The class group's id — the backoffice's door to it. */
   id: string
+  /** The module run's id (OOC-156) — the docente portal's door to it. */
+  runId: string
   code: string
   courseName: string
   startTime: string
@@ -56,15 +59,19 @@ const byStart = (a: { startTime: string }, b: { startTime: string }) =>
 export function weekColumns(
   availability: AvailabilitySlot[],
   classGroups: ClassGroupItem[],
+  /** Whose week: only their module runs (OOC-156) fill it — a class group's other runs are another teacher's. */
+  teacherId: string,
 ): DayColumn[] {
   return WEEK.map((weekday) => {
     const slots = availability.filter((slot) => slot.weekday === weekday).sort(byStart)
     const classes = classGroups
-      .flatMap((group) =>
-        group.slots
+      .flatMap((group) => group.modules.filter((run) => run.teacherId === teacherId).map((run) => ({ group, run })))
+      .flatMap(({ group, run }) =>
+        run.slots
           .filter((meeting) => meeting.weekday === weekday)
           .map((meeting) => ({
             id: group.id,
+            runId: run.id,
             code: group.code,
             courseName: group.courseName,
             startTime: meeting.startTime,

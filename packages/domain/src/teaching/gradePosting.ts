@@ -5,7 +5,6 @@ import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSet
 import { ConflictError } from "../shared/base/errors/ConflictError.js";
 import { UnableToProcessEntryError } from "../shared/base/errors/UnableToProcessEntryError.js";
 import { isValidScore, type GradeEntry, type IGradeRepository, type RecordGradesResult } from "./Grade.js";
-import type { ITeachingReader, TeachingClassGroup } from "./TeachingReader.js";
 
 /**
  * When grades are posted: once the class group is running, and after its last
@@ -15,9 +14,19 @@ import type { ITeachingReader, TeachingClassGroup } from "./TeachingReader.js";
 export const GRADING_OPEN: ReadonlySet<ClassGroupStatus> = new Set(["in_progress", "finished"]);
 
 export interface GradePostingDeps {
-  reader: ITeachingReader;
   grades: IGradeRepository;
   settings: IPlatformSettingsRepository;
+}
+
+/**
+ * Where a batch of grades goes: the class group, which holds the grades, and
+ * the seats the poster may grade — a teacher's module run, or every seat of
+ * the class group for the supervision (OOC-156).
+ */
+export interface GradingScope {
+  classGroupId: string;
+  status: ClassGroupStatus;
+  seatIds: string[];
 }
 
 /**
@@ -37,14 +46,15 @@ export interface GradePostingDeps {
  * student's language.
  *
  * Sending the grades finishes the module (OOC-102, decision of 10/11/2026):
- * the batch that leaves every confirmed seat graded moves an in-progress
- * class group to finished, in the same transaction, with its own audit entry.
+ * the batch that leaves every confirmed seat of the class group graded —
+ * across all of its module runs (OOC-156) — moves an in-progress class group
+ * to finished, in the same transaction, with its own audit entry.
  * A finished class group stays in the teacher's portal until coordination
  * closes it.
  */
 export async function postGrades(
   deps: GradePostingDeps,
-  group: TeachingClassGroup,
+  group: GradingScope,
   actorId: string,
   entries: GradeEntry[],
 ): Promise<RecordGradesResult> {
@@ -59,8 +69,7 @@ export async function postGrades(
     throw new UnableToProcessEntryError({ reason: "teaching.no_grades", message: "Nothing to post." });
   }
 
-  const seatIds = (await deps.reader.listStudents(group.id)).map((student) => student.enrollmentId);
-  const seats = new Set(seatIds);
+  const seats = new Set(group.seatIds);
   const seen = new Set<string>();
   for (const entry of entries) {
     if (!seats.has(entry.enrollmentId)) {
@@ -86,7 +95,7 @@ export async function postGrades(
 
   const [facts, { passingGrade }] = await Promise.all([
     deps.grades.emailFacts(
-      group.id,
+      group.classGroupId,
       entries.map((entry) => entry.enrollmentId),
     ),
     deps.settings.get(),
@@ -94,23 +103,22 @@ export async function postGrades(
   const factsBySeat = new Map(facts.map((fact) => [fact.enrollmentId, fact]));
 
   const result = await deps.grades.record({
-    classGroupId: group.id,
+    classGroupId: group.classGroupId,
     recordedBy: actorId,
     entries,
-    seatIds,
     emails: (recorded) =>
       recorded.flatMap((entry) => {
         const fact = factsBySeat.get(entry.enrollmentId);
-        return fact ? gradeEmails(fact, group.id, entry.value, passingGrade, DEFAULT_LOCALE) : [];
+        return fact ? gradeEmails(fact, group.classGroupId, entry.value, passingGrade, DEFAULT_LOCALE) : [];
       }),
     // The seats and how many were DA — never the grades: they are the
     // `grades` rows themselves, and the log only says that they were posted.
     audit: (recorded) => ({
       actorId,
       action: "teaching.grades_recorded",
-      targetId: group.id,
+      targetId: group.classGroupId,
       metadata: {
-        classGroupId: group.id,
+        classGroupId: group.classGroupId,
         enrollmentIds: recorded.map((entry) => entry.enrollmentId),
         didNotSit: recorded.filter((entry) => entry.value.kind === "did_not_sit").length,
       },
@@ -120,7 +128,7 @@ export async function postGrades(
     finishAudit: () => ({
       actorId,
       action: "catalog.class_group.status_changed",
-      targetId: group.id,
+      targetId: group.classGroupId,
       metadata: { from: "in_progress", to: "finished", cause: "grades_completed" },
       at: new Date(),
     }),

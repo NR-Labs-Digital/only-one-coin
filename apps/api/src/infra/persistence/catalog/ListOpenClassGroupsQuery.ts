@@ -2,6 +2,7 @@ import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/d
 import { and, asc, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "./sellableClassGroup.js";
+import { outerEntrySlots } from "./classGroupModuleSql.js";
 
 export interface OpenClassGroupResult {
   id: string;
@@ -50,7 +51,8 @@ export class ListOpenClassGroupsQuery {
         courseName: courses.name,
         academicPeriodName: academicPeriods.name,
         schedule: classGroups.schedule,
-        slots: classGroups.slots,
+        // The entry run's week — where the student being enrolled starts (OOC-156).
+        slots: outerEntrySlots(),
         startsOn: classGroups.startsOn,
         capacity: classGroups.capacity,
         seatsTaken: classGroups.seatsTaken,

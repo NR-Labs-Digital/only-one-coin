@@ -33,6 +33,13 @@ const CASES: [string, string, Role][] = [
   ["POST", "/api/v1/catalog/class-groups", "academic_supervisor"],
   ["PATCH", `/api/v1/catalog/class-groups/${ID}`, "support"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/status`, "analyst"],
+  // Module runs (OOC-156): whoever edits the class group, nobody who only reads it.
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "academic_supervisor"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "teacher"],
+  ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`, "analyst"],
+  ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`, "teacher"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/retire`, "billing"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/retire`, "sales"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "billing"],
   // The waitlist carries the national id: only who runs class groups reads it (same as GET /students).
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],

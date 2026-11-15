@@ -56,6 +56,7 @@ function editBaseline(group: ClassGroupItem): string {
     group.endsOn,
     group.enrollmentOpensAt,
     group.enrollmentClosesAt,
+    group.modules.length,
   ])
 }
 

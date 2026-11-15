@@ -309,6 +309,9 @@
         "receipt_reread_requested": "New receipt reading requested",
         "class_group_created": "Class group created",
         "class_group_updated": "Class group edited",
+        "class_group_module_added": "Module group opened",
+        "class_group_module_updated": "Module group edited",
+        "class_group_module_retired": "Module group retired",
         "class_group_status_changed": "Class group status changed",
         "waitlist_joined": "Student added to the waitlist",
         "waitlist_left": "Student left the waitlist",
@@ -2102,7 +2105,13 @@
       "class_group_module_out_of_range": "The course has no such module.",
       "language_not_found": "That language is no longer on the list. Reload the page and pick another.",
       "language_exists": "A language with that name already exists.",
-      "language_in_use": "Courses are still in this language. Move them to another language before retiring it."
+      "language_in_use": "Courses are still in this language. Move them to another language before retiring it.",
+      "class_group_module_not_found": "That module group no longer exists. Reload the page.",
+      "class_group_module_taken": "The class group already has a group for that module.",
+      "class_group_module_alone": "A full-course group, or one with no module set, is the class group's only one. Set its module before opening another.",
+      "class_group_module_last": "The class group needs at least one module group.",
+      "class_group_module_has_students": "Students are still in this group. Move them before retiring it.",
+      "class_group_module_ambiguous": "The class group has several module groups: edit the teacher, schedule and Classroom on each group."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2497,6 +2506,40 @@
         "not_found": "The enrollment no longer exists.",
         "failed": "We could not move the enrollment. Try again."
       }
+    },
+    "class_group_runs": {
+      "title": "Module groups",
+      "subtitle": "Each group teaches one module, with its own schedule, teacher and Classroom. They run at the same time, and the seats belong to the whole class group. A new student starts in the first one.",
+      "module_label": "Module {number}",
+      "full_course": "Full course",
+      "no_module": "No module set",
+      "entry": "Entry",
+      "entry_hint": "Every new student starts here.",
+      "students": "{count, plural, =0 {No students} one {# student} other {# students}}",
+      "no_teacher": "No teacher",
+      "no_schedule": "No schedule",
+      "classroom_ok": "Classroom ready",
+      "classroom_missing": "No Classroom",
+      "add": "Open module group",
+      "add_title": "New module group",
+      "add_needs_module": "To open another group, first set the current group's module (it cannot be the full course or have no module).",
+      "add_no_modules_left": "Every module of the course already has its group.",
+      "edit": "Edit",
+      "edit_title": "Edit module group",
+      "retire": "Retire",
+      "confirm_retire": "Retire this group? Only possible with no students in it. It leaves the list and the teacher's portal; any grades it has are kept.",
+      "retired": "Group retired.",
+      "saved": "Group saved.",
+      "created": "Group opened.",
+      "create": "Open group",
+      "module_pick": "Pick the module",
+      "code_with_module": "{code} · module {number}",
+      "edit_on_runs": "Teacher, schedule and Classroom belong to each module group: edit them on the “Module groups” card.",
+      "close": "Close",
+      "count": "{count, plural, one {# module group} other {# module groups}}",
+      "module_short": "Mod. {number}",
+      "full_short": "Full",
+      "unset_short": "No mod."
     }
   }
 }

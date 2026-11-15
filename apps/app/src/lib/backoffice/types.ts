@@ -469,6 +469,28 @@ export interface WeeklySlotItem {
 }
 
 /** A class group as the catalog API answers it (OOC-35). */
+/**
+ * One module run of a class group — the "sub-turma" (OOC-156): its own
+ * teacher, schedule and Classroom. The runs of a class group go on at the same
+ * time, and a new student starts in the first one.
+ */
+export interface ClassGroupModuleItem {
+  id: string
+  /** Which of the course's modules it teaches, 1-based; null = not set, or a full course. */
+  module: number | null
+  fullCourse: boolean
+  teacherId: string | null
+  teacherName: string
+  legacyTeacherName: string
+  slots: WeeklySlotItem[]
+  classroomUrl: string | null
+  classroomLinksByModule: Record<string, string>
+  classroomLinks: ClassroomLink[]
+  classroomMissing: boolean
+  /** Confirmed seats in the run now. */
+  students: number
+}
+
 export interface ClassGroupItem {
   id: string
   code: string
@@ -479,7 +501,14 @@ export interface ClassGroupItem {
   courseActive: boolean
   academicPeriodId: string
   academicPeriodName: string
-  /** The teacher allocated from the roster (OOC-80); null = nobody yet. */
+  /**
+   * Every live module run, in module order (OOC-156). The teaching fields
+   * below (teacher to slots) repeat the first one — where a new student
+   * starts — so a screen about a class group of one run reads them as it
+   * always did; anything about several runs, or a teacher's runs, reads this.
+   */
+  modules: ClassGroupModuleItem[]
+  /** The first run's teacher (OOC-80); null = nobody yet. */
   teacherId: string | null
   /** The allocated teacher's name, from their file; empty when unallocated. */
   teacherName: string
@@ -497,10 +526,12 @@ export interface ClassGroupItem {
   classroomLinksByModule: Record<string, string>
   /** The links of the modules it teaches, in order — the same quick links teacher and student open. */
   classroomLinks: ClassroomLink[]
-  /** Some module it teaches has no Classroom yet — the "Sin Classroom" warning. */
+  /** Some run of the class group is missing a Classroom — the "Sin Classroom" warning. */
   classroomMissing: boolean
+  /** Some run of the class group has no teacher yet. */
+  teacherMissing: boolean
   /**
-   * Which of the course's modules it teaches, 1-based (OOC-100) — what picks
+   * Which of the course's modules its first run teaches, 1-based (OOC-100) — what picks
    * the material its teacher opens. Null = not set yet.
    */
   module: number | null
@@ -535,8 +566,18 @@ export interface TeacherOption {
   /** Catalog text, the same as `ClassGroupItem.language`. */
   languages: string[]
   availability: WeeklySlotItem[]
-  /** Their class groups not yet finished, closed or retired. */
-  classGroups: { id: string; code: string; academicPeriodId: string; slots: WeeklySlotItem[] }[]
+  /**
+   * Their module runs (OOC-156) in class groups not yet finished, closed or
+   * retired. `id` is the run's; `classGroupId` and `code` are its class group's.
+   */
+  classGroups: {
+    id: string
+    classGroupId: string
+    code: string
+    module: number | null
+    academicPeriodId: string
+    slots: WeeklySlotItem[]
+  }[]
 }
 
 /** A sales period: its own class groups, start dates and seats (CLAUDE.md §1). */
@@ -691,6 +732,12 @@ export type CatalogErrorKey =
   | 'module_material_invalid'
   | 'classroom_url_invalid'
   | 'class_group_module_out_of_range'
+  | 'class_group_module_not_found'
+  | 'class_group_module_taken'
+  | 'class_group_module_alone'
+  | 'class_group_module_last'
+  | 'class_group_module_has_students'
+  | 'class_group_module_ambiguous'
   | 'language_not_found'
   | 'language_exists'
   | 'language_in_use'

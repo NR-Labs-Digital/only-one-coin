@@ -126,6 +126,7 @@ function teacherFile(id: string): Teacher {
 function group(id: string, teacherId: string): TeachingClassGroup {
   return {
     id,
+    classGroupId: id,
     teacherId,
     code: "ING-01",
     courseName: "Inglés Básico",

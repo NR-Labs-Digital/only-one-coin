@@ -1,21 +1,26 @@
-import { classGroups, teachers } from "@ooc/db";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
+import { enrollmentModuleId, outerEntryModuleId } from "./classGroupModuleSql.js";
 
 /**
- * The name of the teacher allocated to a class group (OOC-80), read from the
- * roster — so a corrected teacher file shows everywhere at once. Empty when
- * nobody is allocated. A correlated subquery instead of a join, so each
- * reader keeps its own joins; `class_groups.teacher_id` is indexed.
+ * The name of the teacher allocated to a module run (OOC-80, OOC-156), read
+ * from the roster — so a corrected teacher file shows everywhere at once — or
+ * else the free text typed before teachers had a file (the run's
+ * `teacher_name`, copied by 0058). Empty when nobody is allocated. A
+ * correlated subquery instead of a join, so each reader keeps its own joins.
+ * Its own aliases, so nothing inside binds to the outer row by accident
+ * (`classGroupModuleSql.ts`).
  */
-export const linkedTeacherName = sql<string>`coalesce((
-  select ${teachers.firstName} || ' ' || ${teachers.lastName}
-  from ${teachers}
-  where ${teachers.id} = ${classGroups.teacherId}
-), '')`;
+export function moduleTeacherName(classGroupModuleId: SQL): SQL<string> {
+  return sql<string>`coalesce((
+    select coalesce(named_teacher.first_name || ' ' || named_teacher.last_name, nullif(named_run.teacher_name, ''))
+    from "class_group_modules" named_run
+    left join "teachers" named_teacher on named_teacher.id = named_run.teacher_id
+    where named_run.id = ${classGroupModuleId}
+  ), '')`;
+}
 
-/**
- * What every screen outside the class group form prints as "the teacher": the
- * allocated one, or else the free text typed before teachers had a file
- * (`class_groups.teacher_name`, kept until the contract step — CLAUDE.md §7).
- */
-export const classGroupTeacherName = sql<string>`coalesce(nullif(${linkedTeacherName}, ''), ${classGroups.teacherName})`;
+/** The teacher of the run an enrollment is in now — what the ledger and the student's portal print. */
+export const enrollmentTeacherName = moduleTeacherName(enrollmentModuleId());
+
+/** The teacher of the outer class group's entry run — the one a new student would meet. */
+export const entryTeacherName = moduleTeacherName(outerEntryModuleId());

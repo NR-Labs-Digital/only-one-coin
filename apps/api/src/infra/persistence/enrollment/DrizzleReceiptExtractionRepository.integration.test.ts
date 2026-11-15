@@ -20,6 +20,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleReceiptExtractionRepository } from "./DrizzleReceiptExtractionRepository.js";
 import { DrizzleReceiptUploadRepository } from "./DrizzleReceiptUploadRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The OCR level 1 SQL (OOC-20): which receipts the relay offers, the
@@ -96,6 +97,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 50,
   });
+  await seedModuleRuns(tx);
 }
 
 let sequence = 0;

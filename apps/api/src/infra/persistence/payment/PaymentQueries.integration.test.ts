@@ -23,6 +23,7 @@ import type { Db } from "@/infra/db/client.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { ListPaymentReviewQueueQuery } from "./ListPaymentReviewQueueQuery.js";
 import { ListPaymentsQuery } from "./ListPaymentsQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The two reads behind the Payments screens (OOC-55): the ledger of every
@@ -96,6 +97,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     capacity: 50,
     seatsTaken: 4,
   });
+  await seedModuleRuns(tx);
 }
 
 interface SeededPayments {

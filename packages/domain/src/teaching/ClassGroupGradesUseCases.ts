@@ -16,7 +16,7 @@ import {
   type RecordGradesResult,
 } from "./Grade.js";
 import { postGrades } from "./gradePosting.js";
-import type { ITeachingReader, TeachingClassGroup, TeachingStudent } from "./TeachingReader.js";
+import type { GradingClassGroup, ITeachingReader, TeachingStudent } from "./TeachingReader.js";
 
 /**
  * The academic supervision's side of the grades (OOC-102, decision of
@@ -29,8 +29,8 @@ import type { ITeachingReader, TeachingClassGroup, TeachingStudent } from "./Tea
 /** A correction is made while the class group runs, after it finishes, and after coordination closes it. */
 const CORRECTION_OPEN: ReadonlySet<ClassGroupStatus> = new Set(["in_progress", "finished", "closed"]);
 
-async function classGroupOf(reader: ITeachingReader, classGroupId: string): Promise<TeachingClassGroup> {
-  const group = await reader.findClassGroup(classGroupId);
+async function classGroupOf(reader: ITeachingReader, classGroupId: string): Promise<GradingClassGroup> {
+  const group = await reader.findGradingClassGroup(classGroupId);
   if (!group) throw new CatalogClassGroupNotFoundError();
   return group;
 }
@@ -53,7 +53,7 @@ export class ListClassGroupGradesUseCase extends BaseUseCase<{ classGroupId: str
   async run(input: { classGroupId: string }): Promise<ClassGroupGradeSheet> {
     const group = await classGroupOf(this.reader, input.classGroupId);
     const [students, grades] = await Promise.all([
-      this.reader.listStudents(group.id),
+      this.reader.listClassGroupStudents(group.id),
       this.grades.listWithHistory(group.id),
     ]);
     const bySeat = new Map(grades.map((grade) => [grade.enrollmentId, grade]));
@@ -82,9 +82,10 @@ export class RecordClassGroupGradesUseCase extends BaseUseCase<RecordClassGroupG
 
   async run(input: RecordClassGroupGradesInput): Promise<RecordGradesResult> {
     const group = await classGroupOf(this.reader, input.classGroupId);
+    const seatIds = (await this.reader.listClassGroupStudents(group.id)).map((student) => student.enrollmentId);
     return postGrades(
-      { reader: this.reader, grades: this.grades, settings: this.settings },
-      group,
+      { grades: this.grades, settings: this.settings },
+      { classGroupId: group.id, status: group.status, seatIds },
       input.actorId,
       input.entries,
     );
@@ -141,7 +142,7 @@ export class CorrectClassGroupGradeUseCase extends BaseUseCase<CorrectClassGroup
       });
     }
 
-    const seats = new Set((await this.reader.listStudents(group.id)).map((student) => student.enrollmentId));
+    const seats = new Set((await this.reader.listClassGroupStudents(group.id)).map((student) => student.enrollmentId));
     if (!seats.has(input.enrollmentId)) {
       throw new UnableToProcessEntryError({
         reason: "teaching.grade_unknown_enrollment",

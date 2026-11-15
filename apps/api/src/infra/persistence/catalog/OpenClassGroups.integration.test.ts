@@ -11,6 +11,7 @@ import { DrizzleSeatHoldRepository } from "@/infra/persistence/enrollment/Drizzl
 import { GetPublicCatalogQuery } from "./GetPublicCatalogQuery.js";
 import { ListOpenClassGroupsQuery } from "./ListOpenClassGroupsQuery.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * What "on sale" means (OOC-35), checked where it is written: a draft, a
@@ -106,6 +107,7 @@ async function seed(tx: Db): Promise<void> {
     { ...dated, id: WINDOW_NOT_OPEN, status: "enrolling", enrollmentOpensAt: new Date(now + DAY) },
     { ...dated, id: RETIRED_PERIOD, academicPeriodId: RETIRED, status: "enrolling" },
   ]);
+  await seedModuleRuns(tx);
 }
 
 describe("class groups on sale", () => {

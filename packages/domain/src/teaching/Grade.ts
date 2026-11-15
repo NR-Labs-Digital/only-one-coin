@@ -98,15 +98,16 @@ export interface IGradeRepository {
    * written. The audit entry and the e-mails of the seats actually written go
    * in the same transaction — a retry that writes nothing e-mails nobody.
    *
-   * When something was written and every seat of `seatIds` now has a grade,
-   * an in-progress class group moves to finished in the same transaction,
-   * with `finishAudit`'s entry.
+   * When something was written and every confirmed seat of the class group —
+   * across all of its module runs (OOC-156) — now has a grade, an in-progress
+   * class group moves to finished in the same transaction, with
+   * `finishAudit`'s entry. Counted by the write, not handed in: a seat can be
+   * confirmed meanwhile.
    */
   record(params: {
     classGroupId: string;
     recordedBy: string;
     entries: GradeEntry[];
-    seatIds: string[];
     audit: (recorded: GradeEntry[]) => AuditLogEntry;
     finishAudit: () => AuditLogEntry;
     emails: (recorded: GradeEntry[]) => EmailNotification[];

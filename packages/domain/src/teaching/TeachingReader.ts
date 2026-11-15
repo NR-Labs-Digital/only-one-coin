@@ -5,9 +5,18 @@ import type { ClassGroupStatus, ClassroomLink, WeeklySlot } from "../catalog/Cla
  * when it meets, how full it is. No money, no waitlist, nothing of the
  * coordination's — and `teacherId`, which is what every check here compares
  * against the session (CLAUDE.md §8).
+ *
+ * Since OOC-156 what a teacher teaches is a module run of a class group (the
+ * "sub-turma"): `id` is the run's, and the teaching fields — teacher,
+ * schedule, module, Classroom — are the run's. Code, course, dates, seats and
+ * status are the class group's (`classGroupId`). A run 0058 made from an
+ * existing class group shares its id, so the portal's old addresses still open.
  */
 export interface TeachingClassGroup {
+  /** The module run's id — what the portal's address and the grade sheet name. */
   id: string;
+  /** The class group the run belongs to: where the seats and the grades live. */
+  classGroupId: string;
   /** Who the class group is allocated to (OOC-80); null = nobody yet. */
   teacherId: string | null;
   code: string;
@@ -19,7 +28,9 @@ export interface TeachingClassGroup {
   /** Null only on a draft. */
   startsOn: Date | null;
   endsOn: Date | null;
+  /** The class group's, across every run. */
   capacity: number;
+  /** The class group's, across every run (`students` on the run is in the roster). */
   seatsTaken: number;
   status: ClassGroupStatus;
   /** One Classroom per module it teaches (OOC-144, `classroomLinksOf`), in module order; empty = nobody pasted one yet. */
@@ -35,8 +46,14 @@ export interface TeachingClassGroup {
   fullCourse: boolean;
   /** Every module's link, in order, on a full-course class group; empty on any other. */
   courseMaterialUrls: string[];
-  /** Retired from the catalog (`deleted_at`). */
+  /** The class group, or the run, retired from the catalog (`deleted_at`). */
   retired: boolean;
+}
+
+/** A class group as the grading reads it: where its grades go and whether they are open. */
+export interface GradingClassGroup {
+  id: string;
+  status: ClassGroupStatus;
 }
 
 /**
@@ -56,12 +73,16 @@ export interface TeachingStudent {
  * portal, is the usecase's call (`teachingScope.ts`).
  */
 export interface ITeachingReader {
-  /** The class groups allocated to one teacher — every status, retired ones included. */
+  /** The module runs allocated to one teacher — every status, retired ones included. */
   listClassGroupsOf(teacherId: string): Promise<TeachingClassGroup[]>;
-  /** One class group by id, whoever it is allocated to. */
-  findClassGroup(classGroupId: string): Promise<TeachingClassGroup | null>;
-  /** Confirmed seats only (OOC-55), in surname order. */
-  listStudents(classGroupId: string): Promise<TeachingStudent[]>;
-  /** Confirmed seats across these class groups. */
-  countStudents(classGroupIds: string[]): Promise<number>;
+  /** One module run by id, whoever it is allocated to. */
+  findClassGroup(classGroupModuleId: string): Promise<TeachingClassGroup | null>;
+  /** The confirmed seats (OOC-55) in one module run now, in surname order. */
+  listStudents(classGroupModuleId: string): Promise<TeachingStudent[]>;
+  /** Confirmed seats across these module runs. */
+  countStudents(classGroupModuleIds: string[]): Promise<number>;
+  /** One class group, for the supervision's grade sheet (OOC-102). */
+  findGradingClassGroup(classGroupId: string): Promise<GradingClassGroup | null>;
+  /** Every confirmed seat of the class group, across its runs, in surname order. */
+  listClassGroupStudents(classGroupId: string): Promise<TeachingStudent[]>;
 }

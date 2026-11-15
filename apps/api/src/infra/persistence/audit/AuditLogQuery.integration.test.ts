@@ -6,6 +6,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { AUDIT_LOG_PAGE_SIZE, AUDIT_LOG_TARGET, AuditLogQuery, type AuditLogRow } from "./AuditLogQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * OOC-122: the general audit log filters in Postgres — period as Lima
@@ -83,6 +84,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     endsOn: new Date("2099-06-30T00:00:00.000Z"),
     capacity: 20,
   });
+  await seedModuleRuns(tx);
   await tx.insert(students).values({
     id: STUDENT,
     firstName: "Rosa",

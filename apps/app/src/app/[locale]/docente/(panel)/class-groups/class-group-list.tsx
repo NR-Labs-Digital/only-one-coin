@@ -72,7 +72,10 @@ export async function ClassGroupList({ groups }: { groups: TeachingClassGroup[] 
                         >
                           <span className="font-semibold text-ink">{group.courseName}</span>
                           <span className="text-xs tabular-nums text-muted-foreground">
-                            {group.code}
+                            {/* A teacher may run two modules of one class group (OOC-156): the module tells them apart. */}
+                            {group.module === null
+                              ? group.code
+                              : t('class_group_runs.code_with_module', { code: group.code, number: group.module })}
                           </span>
                         </Link>
                       </td>

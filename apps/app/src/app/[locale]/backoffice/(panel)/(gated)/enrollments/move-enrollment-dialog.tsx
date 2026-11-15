@@ -19,13 +19,20 @@ import {
 interface MoveTargets {
   courseId: string
   classGroupId: string
+  /** The module run the seat is in now (OOC-156). */
+  classGroupModuleId: string
+  /** One entry per module run: `id` is the run's, `classGroupId` its class group's. */
   classGroups: MoveTargetGroup[]
   plans: { id: string; courseId: string; name: string; amountCents: number }[]
 }
 
 interface MoveTargetGroup {
   id: string
+  classGroupId: string
   code: string
+  teacherName: string
+  module: number | null
+  fullCourse: boolean
   courseId: string
   courseName: string
   academicPeriodName: string
@@ -123,16 +130,25 @@ export function MoveEnrollmentDialog({
     () => (group && targets ? targets.plans.filter((plan) => plan.courseId === group.courseId) : []),
     [group, targets],
   )
-  const isFull = (item: MoveTargetGroup) => item.seatsTaken + item.seatsOver >= item.capacity
+  /* Another run of the same class group keeps the seat where it is (OOC-156):
+     a full class group is not a reason to ask, the seat is already counted. */
+  const isFull = (item: MoveTargetGroup) =>
+    item.classGroupId !== targets?.classGroupId && item.seatsTaken + item.seatsOver >= item.capacity
   const groupFull = group !== null && (isFull(group) || fullOnServer)
 
-  // The same course first: changing schedule is the usual move.
+  // Its own class group's other runs first, then the same course: moving a
+  // student to another module or schedule is the usual move.
   const ordered = useMemo(() => {
     if (!targets) return []
-    return [...targets.classGroups].sort(
-      (a, b) => Number(b.courseId === targets.courseId) - Number(a.courseId === targets.courseId),
-    )
+    const rank = (item: MoveTargetGroup) =>
+      item.classGroupId === targets.classGroupId ? 2 : item.courseId === targets.courseId ? 1 : 0
+    return [...targets.classGroups].sort((a, b) => rank(b) - rank(a))
   }, [targets])
+
+  const codeOf = (item: MoveTargetGroup) =>
+    item.module === null
+      ? item.code
+      : t('class_group_runs.code_with_module', { code: item.code, number: item.module })
 
   const scheduleOf = (item: MoveTargetGroup) =>
     item.slots.length > 0 ? slotsLabel(item.slots, t) : item.schedule
@@ -153,7 +169,7 @@ export function MoveEnrollmentDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classGroupId: group.id,
+          classGroupModuleId: group.id,
           planId: courseChanges ? planId : null,
           allowOverCapacity: groupFull && overCapacityConfirmed,
           reason: reason.trim(),
@@ -234,7 +250,7 @@ export function MoveEnrollmentDialog({
                       <option value="">{t('move_enrollment.class_group_placeholder')}</option>
                       {ordered.map((item) => {
                         const label = t('move_enrollment.class_group_option', {
-                          code: item.code,
+                          code: codeOf(item),
                           course: item.courseName,
                           schedule: scheduleOf(item),
                           period: item.academicPeriodName,

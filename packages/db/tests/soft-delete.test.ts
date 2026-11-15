@@ -31,6 +31,7 @@ if (!DATABASE_URL) {
 /** Rows here can be retired — `deleted_at` instead of a DELETE (CLAUDE.md §6). */
 const SOFT_DELETABLE = [
   "academic_periods",
+  "class_group_modules",
   "class_groups",
   "courses",
   "documents",

@@ -1,6 +1,6 @@
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
-import { assertClassroomLinksOfCourse, assertModuleOfCourse, type ClassGroup, type UpdateClassGroupDTO } from "./ClassGroup.js";
+import { assertModuleOfCourse, type ClassGroup, type UpdateClassGroupDTO } from "./ClassGroup.js";
 import { CatalogClassGroupNotFoundError, CourseNotFoundError } from "./errors.js";
 import type { IClassGroupRepository } from "./ports/IClassGroupRepository.js";
 import type { ICourseRepository } from "./ports/ICourseRepository.js";
@@ -14,8 +14,11 @@ export interface UpdateClassGroupInput {
 }
 
 /**
- * Edits a class group. Capacity under the seats taken is refused by the
- * repository's conditional UPDATE, not here — the seats move under us.
+ * Edits a class group's own fields — course, capacity, dates, window. A module
+ * run's teacher, schedule and Classroom are edited on the run
+ * (`UpdateClassGroupModuleUseCase`, OOC-156). Capacity under the seats taken
+ * is refused by the repository's conditional UPDATE, not here — the seats move
+ * under us.
  */
 export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, ClassGroup> {
   constructor(
@@ -31,44 +34,16 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
     const group = await this.classGroups.findById(input.id);
     if (!group || group.isDeleted) throw new CatalogClassGroupNotFoundError();
 
-    const courseChanges = input.patch.courseId !== undefined && input.patch.courseId !== group.courseId;
-    const teacherChanges = input.patch.teacherId !== undefined && input.patch.teacherId !== group.teacherId;
-
-    const moduleChanges = input.patch.module !== undefined && input.patch.module !== group.module;
-
-    if (courseChanges) {
-      const course = await this.courses.findById(input.patch.courseId!);
+    // Every run carried onto another course must teach one of its modules,
+    // and its teacher must teach its language (OOC-80, OOC-100) — the course
+    // only changes on an empty draft, so nobody is left mid-cycle by this.
+    if (input.patch.courseId !== undefined && input.patch.courseId !== group.courseId) {
+      const course = await this.courses.findById(input.patch.courseId);
       if (!course || course.isDeleted) throw new CourseNotFoundError();
-    }
-
-    // A new module, or the same module carried onto another course, must be
-    // one of that course's; an untouched one is never re-checked — a course
-    // cut to fewer modules does not lock its class groups.
-    const moduleNumber = input.patch.fullCourse
-      ? null
-      : input.patch.module !== undefined
-        ? input.patch.module
-        : group.module;
-    if (moduleNumber !== null && (courseChanges || moduleChanges)) {
-      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
-      if (!course) throw new CourseNotFoundError();
-      assertModuleOfCourse(moduleNumber, course.modules);
-    }
-
-    // A Classroom link is set for one of the course's modules (OOC-144).
-    if (input.patch.classroomLinks?.length) {
-      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
-      if (!course) throw new CourseNotFoundError();
-      assertClassroomLinksOfCourse(input.patch.classroomLinks, course.modules);
-    }
-
-    // A new allocation, or the same teacher carried onto another course,
-    // goes through the roster check; an untouched allocation never does.
-    const teacherId = input.patch.teacherId !== undefined ? input.patch.teacherId : group.teacherId;
-    if (teacherId !== null && (courseChanges || teacherChanges)) {
-      const course = await this.courses.findById(input.patch.courseId ?? group.courseId);
-      if (!course) throw new CourseNotFoundError();
-      await assertAssignableTeacher(this.teachers, teacherId, course.language);
+      for (const run of group.modules) {
+        assertModuleOfCourse(run.module, course.modules);
+        if (run.teacherId !== null) await assertAssignableTeacher(this.teachers, run.teacherId, course.language);
+      }
     }
 
     const changed = group.update(input.patch);
@@ -80,7 +55,7 @@ export class UpdateClassGroupUseCase extends BaseUseCase<UpdateClassGroupInput, 
       actorId: input.actorId,
       action: "catalog.class_group.updated",
       targetId: group.id,
-      metadata: { fields: changed, ...(changed.includes("teacherId") && { teacherId: group.teacherId }) },
+      metadata: { fields: changed },
       at: saved.updatedAt,
     });
 

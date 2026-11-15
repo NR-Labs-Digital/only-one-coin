@@ -25,6 +25,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleReceiptRereadRepository } from "./DrizzleReceiptRereadRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The re-read's SQL (ROADMAP Sessão 32): the request and its audit entry in
@@ -100,6 +101,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     capacity: 50,
     seatsTaken: 1,
   });
+  await seedModuleRuns(tx);
 }
 
 /** An open payment, with a receipt in the given state (or none). */

@@ -625,6 +625,69 @@ export const consents = pgTable(
   ],
 );
 
+// A module run of a class group — the "sub-turma" (OOC-156, decisions of
+// 14/11/2026). The class group keeps what is sold: course, period, code,
+// dates, capacity and the seats, counted across all of its modules. The
+// teaching happens here: each module run has its own schedule, teacher and
+// Classroom, and the runs of one class group go on at the same time.
+//
+// The columns are the teaching columns `class_groups` carried until now, with
+// the same meaning, so every domain rule over them (`classroomLinksOf`,
+// `taughtModules`, the module material) reads a module run unchanged:
+// `module` (null = nobody set it), `full_course` (the run teaches every module
+// of the course, `module` null), `teacher_id`, `slots`, `classroom_links`
+// (module → link) and the legacy `classroom_url`/`teacher_name`.
+//
+// 0058 gave each existing class group one module run holding its own values,
+// **under the class group's own id**: a teacher's bookmark
+// (/docente/class-groups/<id>), a grade still waiting in a teacher's device
+// outbox and every enrollment keep pointing at the right run without being
+// rewritten. A run created later gets an id of its own. The same columns on
+// `class_groups` are frozen from 0058 on — nothing writes or reads them — and
+// leave in the contract step (CLAUDE.md §7).
+//
+// One live run per module of a class group (partial unique index), and at most
+// one live run with no module number — the full-course one or the unset one,
+// each of which is alone in its class group (the domain's rule:
+// `ClassGroup.assertModulesConsistent`).
+export const classGroupModules = pgTable(
+  "class_group_modules",
+  {
+    id: uuidPk(),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    module: integer("module"),
+    fullCourse: boolean("full_course").notNull().default(false),
+    teacherId: uuid("teacher_id").references(() => teachers.id, { onDelete: "restrict" }),
+    // The free-text teacher name of a class group made before teachers had a
+    // file, copied by 0058 as the hint the pending queue shows. Nothing new
+    // writes one; allocating a teacher clears it.
+    teacherName: text("teacher_name").notNull().default(""),
+    slots: jsonb("slots").notNull().default([]),
+    classroomLinks: jsonb("classroom_links").$type<Record<string, string>>().notNull().default({}),
+    // OOC-98's single link, read only for a run with no module set.
+    classroomUrl: text("classroom_url"),
+    ...softDeletable(),
+  },
+  (table) => [
+    check("class_group_modules_module_check", sql`${table.module} is null or ${table.module} > 0`),
+    check("class_group_modules_full_course_check", sql`not ${table.fullCourse} or ${table.module} is null`),
+    check("class_group_modules_classroom_links_check", sql`jsonb_typeof(${table.classroomLinks}) = 'object'`),
+    uniqueIndex("class_group_modules_module_live_uidx")
+      .on(table.classGroupId, table.module)
+      .where(sql`${table.deletedAt} is null and ${table.module} is not null`),
+    uniqueIndex("class_group_modules_unnumbered_live_uidx")
+      .on(table.classGroupId)
+      .where(sql`${table.deletedAt} is null and ${table.module} is null`),
+    // The target of enrollments' composite FK: a module run of the
+    // enrollment's own class group, never of another.
+    uniqueIndex("class_group_modules_id_class_group_uidx").on(table.id, table.classGroupId),
+    index("class_group_modules_class_group_id_idx").on(table.classGroupId),
+    index("class_group_modules_teacher_id_idx").on(table.teacherId),
+  ],
+);
+
 // Seat lifecycle (CLAUDE.md §5: reserved → confirmed → released) lives here,
 // not on class_groups — the incremented/decremented seats_taken counter is
 // what class_groups tracks. `status` shown to the student (under_review /
@@ -661,9 +724,21 @@ export const enrollments = pgTable(
     // not `seats_taken` (OOC-155). Giving the seat back decrements whichever
     // counter this says.
     overCapacity: boolean("over_capacity").notNull().default(false),
+    // The module run the student is in now (OOC-156) — always one of the
+    // enrollment's own class group (composite FK below). Null only on a row
+    // written by the code that ran before 0058, which every reader resolves
+    // as the run sharing the class group's id (0058's backfill rule). Moves
+    // with the staff moving the seat, and with progression.
+    classGroupModuleId: uuid("class_group_module_id"),
     ...softDeletable(),
   },
   (table) => [
+    foreignKey({
+      name: "enrollments_class_group_module_fk",
+      columns: [table.classGroupModuleId, table.classGroupId],
+      foreignColumns: [classGroupModules.id, classGroupModules.classGroupId],
+    }).onDelete("restrict"),
+    index("enrollments_class_group_module_id_idx").on(table.classGroupModuleId),
     check(
       "enrollments_seat_status_check",
       sql`"seat_status" in ('reserved', 'confirmed', 'released')`,

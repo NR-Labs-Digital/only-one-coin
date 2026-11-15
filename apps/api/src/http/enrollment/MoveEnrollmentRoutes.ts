@@ -11,10 +11,15 @@ const ParamsSchema = z.object({ id: z.string().uuid() });
 const MoveTargetsResponseSchema = z.object({
   courseId: z.string().uuid(),
   classGroupId: z.string().uuid(),
+  /** The module run the seat is in now (OOC-156). */
+  classGroupModuleId: z.string().uuid(),
+  /** One entry per module run (OOC-156): `id` is the run's, `classGroupId` its class group's. */
   classGroups: z.array(
     z.object({
       id: z.string().uuid(),
+      classGroupId: z.string().uuid(),
       code: z.string(),
+      teacherName: z.string(),
       courseId: z.string().uuid(),
       courseName: z.string(),
       academicPeriodName: z.string(),
@@ -44,9 +49,9 @@ const MoveTargetsResponseSchema = z.object({
 export const listEnrollmentMoveTargetsRoute = RouteBuilder.get("/enrollments/:id/move-targets")
   .docs({
     tags: ["Enrollments"],
-    summary: "Class groups an enrollment can be moved to, and the plans of their courses",
+    summary: "Module runs an enrollment can be moved to, and the plans of their courses",
     description:
-      "Every running class group (enrolling or in progress, nothing retired) except the enrollment's own, full ones included with their seat counters, and the live plans of those courses with the price in force.",
+      "Every live module run (OOC-156) of every running class group (enrolling or in progress, nothing retired) except the run the enrollment is in — the other runs of its own class group included — full ones included with their class group's seat counters, and the live plans of those courses with the price in force.",
   })
   .roles(...MANUAL_ENROLLMENT_ROLES)
   .params(ParamsSchema)
@@ -69,15 +74,15 @@ export const listEnrollmentMoveTargetsRoute = RouteBuilder.get("/enrollments/:id
 export const moveEnrollmentRoute = RouteBuilder.post("/enrollments/:id/move")
   .docs({
     tags: ["Enrollments"],
-    summary: "Move an enrollment to another class group (OOC-84)",
+    summary: "Move an enrollment to another module run (OOC-84, OOC-156)",
     description:
-      "Staff tool, free of charge: the payment never changes. Another course requires planId (a live plan of that course; the enrollment takes its price in force). A full target is 422 enrollment.class_group_full unless allowOverCapacity is true (OOC-155). Refusals: 422 enrollment.move_<seat_released|graded|same_class_group|target_unavailable|plan_required|plan_not_of_course|plan_not_allowed|reason_required>; 409 enrollment.move_conflict when the enrollment changed meanwhile.",
+      "Staff tool, free of charge: the payment never changes. classGroupModuleId names the run: of another class group (the seat moves) or of the same one (only the run changes). Another course requires planId (a live plan of that course; the enrollment takes its price in force). A full target is 422 enrollment.class_group_full unless allowOverCapacity is true (OOC-155). Refusals: 422 enrollment.move_<seat_released|graded|same_class_group|target_unavailable|plan_required|plan_not_of_course|plan_not_allowed|reason_required>; 409 enrollment.move_conflict when the enrollment changed meanwhile.",
   })
   .roles(...MANUAL_ENROLLMENT_ROLES)
   .params(ParamsSchema)
   .body(
     z.object({
-      classGroupId: z.string().uuid(),
+      classGroupModuleId: z.string().uuid(),
       planId: z.string().uuid().nullable().default(null),
       allowOverCapacity: z.boolean().default(false),
       reason: z.string().max(MOVE_REASON_MAX_LENGTH * 2),
@@ -88,6 +93,7 @@ export const moveEnrollmentRoute = RouteBuilder.post("/enrollments/:id/move")
     z.object({
       enrollmentId: z.string().uuid(),
       classGroupId: z.string().uuid(),
+      classGroupModuleId: z.string().uuid(),
       overCapacity: z.boolean(),
       planChanged: z.boolean(),
     }),

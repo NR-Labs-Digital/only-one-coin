@@ -13,6 +13,7 @@ import { DrizzlePlanPriceLookup } from "@/infra/persistence/enrollment/DrizzlePl
 import { DrizzleEmailResendRepository } from "./DrizzleEmailResendRepository.js";
 import { EmailDeliveryQuery } from "./EmailDeliveryQuery.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The undelivered e-mails screen (OOC-90) against a real, migrated Postgres:
@@ -90,6 +91,7 @@ async function seed(tx: Db): Promise<{ enrollmentRow: string; paymentRow: string
     capacity: 5,
     seatsTaken: 0,
   });
+  await seedModuleRuns(tx);
   await tx.insert(students).values({
     id: STUDENT,
     firstName: "Rosa",

@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, platformSettings, teacherContracts } from "@ooc/db";
+import { academicPeriods, classGroupModules, classGroups, courses, platformSettings, teacherContracts } from "@ooc/db";
 import {
   ClassGroup,
   Teacher,
@@ -13,7 +13,8 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { seedLanguages } from "@/tests/fixtures/languages.js";
-import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { moduleTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 import { DrizzleClassGroupRepository } from "@/infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "@/infra/persistence/catalog/ListClassGroupsQuery.js";
 import { DrizzleDocumentTemplateRepository } from "@/infra/persistence/document/DrizzleDocumentTemplateRepository.js";
@@ -145,7 +146,40 @@ async function allocate(tx: Db, teacherId: string | null, status: string, seatsT
       teacherId,
     })
     .returning({ id: classGroups.id });
+  await seedModuleRuns(tx);
   return row!.id;
+}
+
+let seatSequence = 0;
+
+/** One student per status, enrolled in the class group's first run. */
+async function seatStudents(tx: Db, classGroupId: string, statuses: ("confirmed" | "reserved" | "released")[]): Promise<void> {
+  const [plan] = await tx
+    .insert(schema.plans)
+    .values({ courseId: COURSE, name: `Paquete (teacher integration ${classGroupId})` })
+    .returning({ id: schema.plans.id });
+  const [price] = await tx
+    .insert(schema.planPrices)
+    .values({ planId: plan!.id, amountCents: 9900, validFrom: new Date(Date.now() - DAY_MS) })
+    .returning({ id: schema.planPrices.id });
+  for (const seatStatus of statuses) {
+    seatSequence += 1;
+    const [student] = await tx
+      .insert(schema.students)
+      .values({
+        firstName: "Alumno",
+        lastName: `Docente ${seatSequence}`,
+        nationalIdType: "DNI",
+        nationalId: `TCHSEAT${seatSequence}`,
+        email: `tch.seat.${seatSequence}@gmail.com`,
+        phone: "+51900000000",
+        birthDate: new Date("2000-01-01T00:00:00.000Z"),
+        country: "PE",
+        city: "Lima",
+      })
+      .returning({ id: schema.students.id });
+    await tx.insert(schema.enrollments).values({ studentId: student!.id, classGroupId, planPriceId: price!.id, seatStatus });
+  }
 }
 
 async function fileContract(tx: Db, teacherId: string, endsOn: Date, filedAt = new Date()): Promise<void> {
@@ -276,7 +310,8 @@ describe("ListTeachersQuery", () => {
       gone.leaveRoster();
       await teachers.create(gone);
 
-      await allocate(tx, ana.id, "in_progress", 12);
+      const anasGroup = await allocate(tx, ana.id, "in_progress", 12);
+      await seatStudents(tx, anasGroup, ["confirmed", "reserved", "released"]);
       // Ana's contract runs another year; Luis has none on file.
       await fileContract(tx, ana.id, new Date(Date.now() + 365 * DAY_MS));
 
@@ -286,7 +321,10 @@ describe("ListTeachersQuery", () => {
 
       const anaRow = roster.items.find((row) => row.id === ana.id)!;
       expect(anaRow.activeClassGroups).toBe(1);
-      expect(anaRow.studentCount).toBe(12);
+      // The seats held in her runs (OOC-156) — reserved or confirmed, never the
+      // released one, and never the class group's counter: that one is shared
+      // by every run.
+      expect(anaRow.studentCount).toBe(2);
       expect(anaRow.contract?.file?.name).toBe("contrato.pdf");
       expect(anaRow.contractDaysLeft).toBeGreaterThan(300);
 
@@ -472,7 +510,10 @@ describe("Class group allocation (OOC-80)", () => {
       const list = new ListClassGroupsQuery(tx);
 
       const legacyId = await allocate(tx, null, "enrolling", 0);
-      await tx.update(classGroups).set({ teacherName: "Prof. Ana (texto)" }).where(eq(classGroups.id, legacyId));
+      await tx
+        .update(classGroupModules)
+        .set({ teacherName: "Prof. Ana (texto)" })
+        .where(eq(classGroupModules.id, legacyId));
       const linkedId = await allocate(tx, ana.id, "enrolling", 0);
 
       const unassigned = await list.run({ periodId: PERIOD, unassigned: true });
@@ -481,16 +522,16 @@ describe("Class group allocation (OOC-80)", () => {
 
       // Everywhere else the typed name still prints until someone is allocated.
       const [printed] = await tx
-        .select({ name: classGroupTeacherName })
+        .select({ name: moduleTeacherName(sql`${legacyId}::uuid`) })
         .from(classGroups)
         .where(eq(classGroups.id, legacyId));
       expect(printed?.name).toBe("Prof. Ana (texto)");
 
       const legacy = (await repository.findById(legacyId))!;
-      legacy.update({ teacherId: ana.id });
-      await repository.update(legacy);
+      legacy.entryModule!.update({ teacherId: ana.id });
+      await repository.updateModule(legacy.entryModule!);
 
-      const [row] = await tx.select().from(classGroups).where(eq(classGroups.id, legacyId));
+      const [row] = await tx.select().from(classGroupModules).where(eq(classGroupModules.id, legacyId));
       expect(row).toEqual(expect.objectContaining({ teacherId: ana.id, teacherName: "" }));
       expect((await list.run({ periodId: PERIOD, unassigned: true })).map((item) => item.id)).toEqual([]);
       expect((await list.run({ id: linkedId }))[0]?.teacherName).toBe("Ana Docente");

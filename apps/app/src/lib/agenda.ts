@@ -71,7 +71,12 @@ export function monthGrid(day: string): string[] {
  * by `agendaClassGroup`; one without dates (a draft) never reaches here.
  */
 export interface AgendaClassGroup {
+  /** Unique on the agenda: the module run's id (OOC-156) — two runs of a class group are two entries. */
   id: string
+  /** What the entry opens: the class group's page in the backoffice, the run's own in the docente portal. */
+  pageId: string
+  /** The module the run teaches, shown beside the code; null when unset or a full course. */
+  module: number | null
   courseName: string
   code: string
   academicPeriodName: string
@@ -90,6 +95,8 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
   if (!group.startsOn || !group.endsOn) return null
   return {
     id: group.id,
+    pageId: group.id,
+    module: group.module,
     courseName: group.courseName,
     code: group.code,
     academicPeriodName: group.academicPeriodName,
@@ -104,26 +111,37 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
 }
 
 /**
- * A catalog class group on coordination's calendar (OOC-99): only one with a
- * teacher from the roster and both dates — the calendar is the teachers'
- * week, so a class group nobody teaches has nobody's slot to fill. Retired
- * ones are off the catalog and off the calendar.
+ * A catalog class group on coordination's calendar (OOC-99): one entry per
+ * module run (OOC-156) with a teacher from the roster, while the class group
+ * has both dates — the calendar is the teachers' week, so a run nobody
+ * teaches has nobody's slot to fill. Retired ones are off the catalog and off
+ * the calendar.
  */
-export function agendaCatalogClassGroup(group: ClassGroupItem): AgendaClassGroup | null {
-  if (!group.active || group.teacherId === null || !group.startsOn || !group.endsOn) return null
-  return {
-    id: group.id,
-    courseName: group.courseName,
-    code: group.code,
-    academicPeriodName: group.academicPeriodName,
-    status: group.status,
-    teacherId: group.teacherId,
-    teacherName: group.teacherName,
-    slots: group.slots,
-    classroomLinks: group.classroomLinks,
-    startDate: isoToLimaDate(group.startsOn),
-    endDate: isoToLimaDate(group.endsOn),
-  }
+export function agendaCatalogClassGroups(group: ClassGroupItem): AgendaClassGroup[] {
+  if (!group.active || !group.startsOn || !group.endsOn) return []
+  const startDate = isoToLimaDate(group.startsOn)
+  const endDate = isoToLimaDate(group.endsOn)
+  return group.modules.flatMap((run) =>
+    run.teacherId === null
+      ? []
+      : [
+          {
+            id: run.id,
+            pageId: group.id,
+            module: run.module,
+            courseName: group.courseName,
+            code: group.code,
+            academicPeriodName: group.academicPeriodName,
+            status: group.status,
+            teacherId: run.teacherId,
+            teacherName: run.teacherName,
+            slots: run.slots,
+            classroomLinks: run.classroomLinks,
+            startDate,
+            endDate,
+          },
+        ],
+  )
 }
 
 /** One class on one day — one of a class group's weekly slots, landed on a date. */

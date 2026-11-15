@@ -1,5 +1,6 @@
 import {
   academicPeriods,
+  classGroupModules,
   classGroups,
   courses,
   enrollments,
@@ -24,7 +25,8 @@ import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
 import type { GetStudentQuery, StudentDetailRow } from "../student/GetStudentQuery.js";
-import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { enrollmentModuleId } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 import { pickProfile, profilesOfAccount } from "./accountProfiles.js";
 import { reachesStudent } from "./reachableStudents.js";
@@ -142,14 +144,16 @@ export class StudentPortalQuery {
         certificateRule: courses.certificateRule,
         classGroupCode: classGroups.code,
         classGroupSchedule: classGroups.schedule,
-        teacherName: classGroupTeacherName,
-        slots: classGroups.slots,
+        // The run the student is in now (OOC-156): its teacher, its week,
+        // its Classroom. Dates and code are the class group's.
+        teacherName: enrollmentTeacherName,
+        slots: classGroupModules.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,
-        classroomUrl: classGroups.classroomUrl,
-        classroomLinks: classGroups.classroomLinks,
-        classGroupModule: classGroups.module,
-        classGroupFullCourse: classGroups.fullCourse,
+        classroomUrl: classGroupModules.classroomUrl,
+        classroomLinks: classGroupModules.classroomLinks,
+        classGroupModule: classGroupModules.module,
+        classGroupFullCourse: classGroupModules.fullCourse,
         courseModules: courses.modules,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
@@ -163,6 +167,8 @@ export class StudentPortalQuery {
       // A retired course or class group still labels the enrollment that
       // happened on it — only the enrollment itself is filtered.
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+      // A retired run still labels the seat that was in it.
+      .innerJoin(classGroupModules, eq(classGroupModules.id, enrollmentModuleId()))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .innerJoin(academicPeriods, eq(academicPeriods.id, classGroups.academicPeriodId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))

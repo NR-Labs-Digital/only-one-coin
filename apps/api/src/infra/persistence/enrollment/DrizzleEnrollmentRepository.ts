@@ -15,6 +15,7 @@ import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
 import { takeManualSeat } from "./takeManualSeat.js";
+import { entryModuleIdOf } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
   constructor(private readonly db: Db) {}
@@ -68,6 +69,8 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
           id: enrollment.id,
           studentId: enrollment.studentId,
           classGroupId: enrollment.classGroupId,
+          // A new student starts in the class group's entry run (OOC-156).
+          classGroupModuleId: entryModuleIdOf(enrollment.classGroupId),
           planPriceId: enrollment.planPriceId,
           seatStatus: enrollment.seatStatus,
           origin: enrollment.origin,
