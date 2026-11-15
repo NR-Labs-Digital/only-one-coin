@@ -165,9 +165,14 @@ export function ClassGroupsView({
         if (month !== start) return false
       }
       if (status !== ALL && row.status !== status) return false
-      if (unassigned && row.teacherId) return false
+      // Some module run with nobody to teach it (OOC-156).
+      if (unassigned && !row.teacherMissing) return false
       if (!needle) return true
-      return [row.courseName, row.code, row.teacherName, row.legacyTeacherName]
+      return [
+        row.courseName,
+        row.code,
+        ...row.modules.flatMap((run) => [run.teacherName, run.legacyTeacherName]),
+      ]
         .join(' ')
         .toLowerCase()
         .includes(needle)

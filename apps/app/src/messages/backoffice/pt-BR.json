@@ -309,6 +309,9 @@
         "receipt_reread_requested": "Nova leitura do comprovante pedida",
         "class_group_created": "Turma criada",
         "class_group_updated": "Turma editada",
+        "class_group_module_added": "Sub-turma aberta",
+        "class_group_module_updated": "Sub-turma editada",
+        "class_group_module_retired": "Sub-turma retirada",
         "class_group_status_changed": "Status da turma alterado",
         "waitlist_joined": "Aluno na lista de espera",
         "waitlist_left": "Aluno saiu da lista de espera",
@@ -2102,7 +2105,13 @@
       "class_group_module_out_of_range": "O curso não tem esse módulo.",
       "language_not_found": "Esse idioma não está mais na lista. Recarregue a página e escolha outro.",
       "language_exists": "Já existe um idioma com esse nome.",
-      "language_in_use": "Ainda há cursos neste idioma. Mova-os para outro idioma antes de retirá-lo."
+      "language_in_use": "Ainda há cursos neste idioma. Mova-os para outro idioma antes de retirá-lo.",
+      "class_group_module_not_found": "Essa sub-turma não existe mais. Recarregue a página.",
+      "class_group_module_taken": "A turma já tem uma sub-turma desse módulo.",
+      "class_group_module_alone": "Uma sub-turma de curso completo, ou sem módulo definido, é a única da turma. Defina o módulo dela antes de abrir outra.",
+      "class_group_module_last": "A turma precisa de pelo menos uma sub-turma.",
+      "class_group_module_has_students": "Ainda há alunos nesta sub-turma. Mova-os antes de retirá-la.",
+      "class_group_module_ambiguous": "A turma tem várias sub-turmas: edite docente, horário e Classroom em cada sub-turma."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",
@@ -2497,6 +2506,40 @@
         "not_found": "A matrícula não existe mais.",
         "failed": "Não conseguimos mover a matrícula. Tente de novo."
       }
+    },
+    "class_group_runs": {
+      "title": "Sub-turmas por módulo",
+      "subtitle": "Cada sub-turma dá um módulo, com horário, docente e Classroom próprios. Elas correm ao mesmo tempo e as vagas são da turma inteira. Aluno novo entra na primeira.",
+      "module_label": "Módulo {number}",
+      "full_course": "Curso completo",
+      "no_module": "Sem módulo definido",
+      "entry": "Entrada",
+      "entry_hint": "É aqui que entra cada aluno novo.",
+      "students": "{count, plural, =0 {Sem alunos} one {# aluno} other {# alunos}}",
+      "no_teacher": "Sem docente",
+      "no_schedule": "Sem horário",
+      "classroom_ok": "Classroom pronto",
+      "classroom_missing": "Sem Classroom",
+      "add": "Abrir sub-turma",
+      "add_title": "Nova sub-turma",
+      "add_needs_module": "Para abrir outra sub-turma, primeiro defina o módulo da atual (ela não pode ser de curso completo nem ficar sem módulo).",
+      "add_no_modules_left": "Todos os módulos do curso já têm sua sub-turma.",
+      "edit": "Editar",
+      "edit_title": "Editar sub-turma",
+      "retire": "Retirar",
+      "confirm_retire": "Retirar esta sub-turma? Só é possível sem alunos. Ela sai da lista e do portal do docente; as notas que tiver ficam guardadas.",
+      "retired": "Sub-turma retirada.",
+      "saved": "Sub-turma salva.",
+      "created": "Sub-turma aberta.",
+      "create": "Abrir sub-turma",
+      "module_pick": "Escolha o módulo",
+      "code_with_module": "{code} · módulo {number}",
+      "edit_on_runs": "Docente, horário e Classroom são de cada sub-turma: edite no cartão “Sub-turmas por módulo”.",
+      "close": "Fechar",
+      "count": "{count, plural, one {# sub-turma} other {# sub-turmas}}",
+      "module_short": "Mód. {number}",
+      "full_short": "Completo",
+      "unset_short": "Sem mód."
     }
   }
 }

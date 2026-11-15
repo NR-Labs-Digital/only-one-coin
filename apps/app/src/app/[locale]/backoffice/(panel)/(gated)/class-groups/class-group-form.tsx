@@ -7,6 +7,7 @@ import type {
   AcademicPeriodItem,
   CatalogErrorKey,
   ClassGroupItem,
+  ClassGroupModuleItem,
   ClassGroupStatus,
   CourseRow,
   TeacherOption,
@@ -68,6 +69,39 @@ export interface ClassGroupFormOutcome {
   courseId: string
   /** How many class groups this save opened; 1 on an edit. */
   count: number
+}
+
+/**
+ * One module run of the class group (OOC-156), opened or edited on its own:
+ * `initial` then carries the run's teaching fields (`classGroupAsRun`).
+ */
+export interface RunTarget {
+  /** Null = a new run. */
+  moduleId: string | null
+  /** Modules the class group's other live runs teach — not offered again. */
+  takenModules: number[]
+  /** Other live runs exist: a full course or an unset module would have to be alone, so neither is offered. */
+  hasOthers: boolean
+}
+
+/**
+ * The class group as the run form reads it: its own fields, with the teaching
+ * ones taken from one run — or empty, for a new run.
+ */
+export function classGroupAsRun(group: ClassGroupItem, run: ClassGroupModuleItem | null): ClassGroupItem {
+  return {
+    ...group,
+    teacherId: run?.teacherId ?? null,
+    teacherName: run?.teacherName ?? '',
+    legacyTeacherName: run?.legacyTeacherName ?? '',
+    classroomUrl: run?.classroomUrl ?? null,
+    classroomLinksByModule: run?.classroomLinksByModule ?? {},
+    classroomLinks: run?.classroomLinks ?? [],
+    classroomMissing: run?.classroomMissing ?? true,
+    module: run?.module ?? null,
+    fullCourse: run?.fullCourse ?? false,
+    slots: run?.slots ?? [],
+  }
 }
 
 /** The inputs as the form holds them — strings, exactly as the fields show them. */
@@ -139,6 +173,11 @@ const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : nu
  * period exists, the period is reloaded and selected, so a retry never creates
  * it twice.
  *
+ * Teacher, module, schedule and Classroom belong to a module run since
+ * OOC-156. A class group of one run keeps editing them here, as it always
+ * did; with more runs they leave the edit card, and each run is opened or
+ * edited with `mode="run"` — the same fields, only those, saved on the run.
+ *
  * Every write goes through `apps/api` — the browser never decides (CLAUDE.md §8).
  */
 export function ClassGroupForm({
@@ -147,11 +186,14 @@ export function ClassGroupForm({
   periods,
   teachers,
   initial,
+  run,
   defaultPeriodId,
   onDone,
   onCancel,
 }: {
-  mode: 'create' | 'edit'
+  mode: 'create' | 'edit' | 'run'
+  /** With `mode="run"`: which run, and what the class group's other runs already teach. */
+  run?: RunTarget
   courses: CourseRow[]
   periods: AcademicPeriodItem[]
   /** The roster for the picker; null when it could not be read. */
@@ -181,6 +223,13 @@ export function ClassGroupForm({
   const [newPeriodStartsOn, setNewPeriodStartsOn] = useState('')
   const [newPeriodEndsOn, setNewPeriodEndsOn] = useState('')
   const newPeriod = mode === 'create' && periodId === NEW_PERIOD
+  const isRun = mode === 'run'
+  /** Several runs: the class group's edit card leaves their fields to each run (OOC-156). */
+  const splitRuns = mode === 'edit' && (initial?.modules.length ?? 1) > 1
+  /** The run fields are on screen and saved. */
+  const runFields = !splitRuns
+  /** A full course or an unset module stays alone in its class group (OOC-156). */
+  const mustNumberModule = isRun && (run?.hasOthers ?? false)
   /** '' = nobody allocated yet. */
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '')
   /** '' = no module set yet; FULL_COURSE = every module. */
@@ -276,7 +325,8 @@ export function ClassGroupForm({
      touched is not sent (`changes()`). The code is not here at all: the API
      draws it from a sequence and nobody edits it. */
   const weekdaysRequired =
-    mode === 'create' || scheduleTouched || (initial?.slots.length ?? 0) > 0
+    runFields &&
+    (mode === 'create' || (isRun && run?.moduleId === null) || scheduleTouched || (initial?.slots.length ?? 0) > 0)
 
   const ready =
     courseId !== '' &&
@@ -285,8 +335,9 @@ export function ClassGroupForm({
         ? newPeriodName.trim() !== '' && newPeriodStartsOn !== '' && newPeriodEndsOn !== ''
         : periodId !== '')) &&
     (!weekdaysRequired || weekdays.length > 0) &&
-    !timeInvalid &&
-    !classroomInvalid &&
+    (!runFields || !timeInvalid) &&
+    (!runFields || !classroomInvalid) &&
+    (!mustNumberModule || moduleNumber !== null) &&
     capacityValid
   const hasDates = startsOn !== '' && endsOn !== ''
 
@@ -300,12 +351,16 @@ export function ClassGroupForm({
   function changes(): Record<string, unknown> {
     if (!initial) return {}
     const patch: Record<string, unknown> = {}
+    if (runFields) {
+      if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
+      if (fullCourse !== initial.fullCourse) patch.fullCourse = fullCourse
+      if (moduleNumber !== initial.module) patch.module = moduleNumber
+      if (!classroomInvalid && classroomPatch.length > 0) patch.classroomLinks = classroomPatch
+      if (scheduleTouched) patch.slots = slots
+    }
+    // A run carries only its own fields; the class group's stay on its card.
+    if (isRun) return patch
     if (courseId !== initial.courseId) patch.courseId = courseId
-    if (teacherId !== (initial.teacherId ?? '')) patch.teacherId = teacherId || null
-    if (fullCourse !== initial.fullCourse) patch.fullCourse = fullCourse
-    if (moduleNumber !== initial.module) patch.module = moduleNumber
-    if (!classroomInvalid && classroomPatch.length > 0) patch.classroomLinks = classroomPatch
-    if (scheduleTouched) patch.slots = slots
     if (capacity !== initial.capacity) patch.capacity = capacity
     if (startsOn !== loaded.startsOn) patch.startsOn = dateOrNull(startsOn)
     if (endsOn !== loaded.endsOn) patch.endsOn = dateOrNull(endsOn)
@@ -314,7 +369,7 @@ export function ClassGroupForm({
     return patch
   }
 
-  const patch = mode === 'edit' ? changes() : {}
+  const patch = mode === 'edit' || isRun ? changes() : {}
   const dirty = Object.keys(patch).length > 0
 
   async function create(publish: boolean) {
@@ -382,14 +437,22 @@ export function ClassGroupForm({
   }
 
   async function save() {
-    if (!initial || !ready || !dirty) return
+    const newRun = isRun && run?.moduleId === null
+    if (!initial || !ready || (!dirty && !newRun)) return
     setSaving(true)
     setError(null)
-    const result = await catalogWrite(
-      `/class-groups/${encodeURIComponent(initial.id)}`,
-      'PATCH',
-      patch,
-    )
+    const base = `/class-groups/${encodeURIComponent(initial.id)}`
+    const result = !isRun
+      ? await catalogWrite(base, 'PATCH', patch)
+      : newRun
+        ? await catalogWrite(`${base}/modules`, 'POST', {
+            module: moduleNumber,
+            fullCourse: false,
+            teacherId: teacherId || null,
+            slots,
+            classroomLinks: classroomInvalid ? [] : classroomPatch.filter((entry) => entry.url !== null),
+          })
+        : await catalogWrite(`${base}/modules/${encodeURIComponent(run!.moduleId!)}`, 'PATCH', patch)
     setSaving(false)
     if (!result.ok) {
       setError(result.error)
@@ -453,12 +516,20 @@ export function ClassGroupForm({
   const warnings = chosen
     ? allocationWarnings(chosen, slots, {
         academicPeriodId: initial?.academicPeriodId ?? periodId,
-        classGroupId: initial?.id,
+        // The run being edited never clashes with itself (OOC-156).
+        classGroupModuleId: isRun ? (run?.moduleId ?? undefined) : initial?.modules[0]?.id,
       })
     : null
 
-  /** One option per module of the course — plus a stored one past it, so an edit never hides what is there. */
-  const moduleOptions = Array.from({ length: courseModules }, (_, index) => index + 1)
+  /**
+   * One option per module of the course — plus a stored one past it, so an
+   * edit never hides what is there. A module another run of the class group
+   * already teaches is not offered (OOC-156).
+   */
+  const taken = new Set(isRun ? (run?.takenModules ?? []) : [])
+  const moduleOptions = Array.from({ length: courseModules }, (_, index) => index + 1).filter(
+    (number) => !taken.has(number) || number === moduleNumber,
+  )
   if (moduleNumber !== null && moduleNumber > courseModules) moduleOptions.push(moduleNumber)
 
   function changeCourse(next: string) {
@@ -518,13 +589,17 @@ export function ClassGroupForm({
           onChange={(event) => setModuleText(event.target.value)}
           className={`${fieldClass} tabular-nums`}
         >
-          <option value="">{t('class_groups.module_none')}</option>
+          <option value="" disabled={mustNumberModule}>
+            {t(mustNumberModule ? 'class_group_runs.module_pick' : 'class_groups.module_none')}
+          </option>
           {moduleOptions.map((number) => (
             <option key={number} value={String(number)}>
               {t('class_groups.module_option', { number })}
             </option>
           ))}
-          <option value={FULL_COURSE}>{t('class_groups.module_full_course_option')}</option>
+          {!mustNumberModule && (
+            <option value={FULL_COURSE}>{t('class_groups.module_full_course_option')}</option>
+          )}
         </select>
       )}
     </HelpField>
@@ -903,7 +978,15 @@ export function ClassGroupForm({
       {warnings && warnings.clashes.length > 0 && (
         <p className="mt-3 flex items-start gap-2 text-xs text-amber-700">
           <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-          {t('class_groups.teacher_schedule_clash', { codes: warnings.clashes.join(', ') })}
+          {t('class_groups.teacher_schedule_clash', {
+            codes: warnings.clashes
+              .map((clash) =>
+                clash.module === null
+                  ? clash.code
+                  : t('class_group_runs.code_with_module', { code: clash.code, number: clash.module }),
+              )
+              .join(', '),
+          })}
         </p>
       )}
     </>
@@ -932,6 +1015,39 @@ export function ClassGroupForm({
     </p>
   )
 
+  if (isRun) {
+    return (
+      <Card className="p-5">
+        <AutoGrid min="15rem" gap="gap-3">
+          {moduleField}
+          {teacherField}
+          {classroomField}
+          {timeFields}
+        </AutoGrid>
+
+        <div className="mt-3">{daysField}</div>
+
+        {teacherWarnings}
+        {timeError}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!ready || (!dirty && run?.moduleId !== null) || saving}
+            onClick={() => void save()}
+            className={primaryButtonClass}
+          >
+            <BoIcon name="check" size={16} />
+            {t(run?.moduleId === null ? 'class_group_runs.create' : 'class_groups.save_changes')}
+          </button>
+          {cancelButton}
+        </div>
+
+        {errorLine}
+      </Card>
+    )
+  }
+
   if (mode === 'edit') {
     return (
       <Card className="p-5">
@@ -939,21 +1055,28 @@ export function ClassGroupForm({
 
         <AutoGrid min="15rem" gap="gap-3">
           {courseField}
-          {moduleField}
-          {teacherField}
-          {classroomField}
+          {runFields && moduleField}
+          {runFields && teacherField}
+          {runFields && classroomField}
           {capacityField}
-          {timeFields}
+          {runFields && timeFields}
           {dateFields}
           {windowFields}
         </AutoGrid>
 
         <p className="mt-2 text-xs text-muted-foreground">{t('class_groups.window_hint')}</p>
 
-        <div className="mt-3">{daysField}</div>
+        {runFields ? (
+          <div className="mt-3">{daysField}</div>
+        ) : (
+          <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+            <BoIcon name="help" size={14} className="mt-0.5 shrink-0" />
+            {t('class_group_runs.edit_on_runs')}
+          </p>
+        )}
 
-        {teacherWarnings}
-        {timeError}
+        {runFields && teacherWarnings}
+        {runFields && timeError}
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button

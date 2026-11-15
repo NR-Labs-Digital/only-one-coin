@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { listCatalogClassGroups } from '@/lib/backoffice/catalog'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { canBrowseCatalog } from '@/lib/backoffice/permissions'
-import { agendaCatalogClassGroup, type AgendaClassGroup } from '@/lib/agenda'
+import { agendaCatalogClassGroups } from '@/lib/agenda'
 import { isoToLimaDateTime } from '@/lib/backoffice/lima-date'
 import { toMinutes } from '@/lib/backoffice/availability'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
@@ -52,9 +52,7 @@ export default async function TeacherCalendarPage({
         </Card>
       ) : (
         <TeacherCalendarView
-          groups={items
-            .map(agendaCatalogClassGroup)
-            .filter((group): group is AgendaClassGroup => group !== null)}
+          groups={items.flatMap(agendaCatalogClassGroups)}
           today={now.slice(0, 10)}
           nowMinutes={toMinutes(now.slice(11, 16))}
         />

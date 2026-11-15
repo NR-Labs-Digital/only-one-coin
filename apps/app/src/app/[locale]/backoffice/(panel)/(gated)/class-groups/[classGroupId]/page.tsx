@@ -35,6 +35,7 @@ import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
 import { RosterCard } from './roster-card'
 import { GradesCard } from './grades-card'
+import { ModuleRunsCard } from './module-runs-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 type Translate = Awaited<ReturnType<typeof getTranslations<'bo'>>>
@@ -81,6 +82,9 @@ export default async function ClassGroupDetailPage({
     readsGrades ? getClassGroupGradeSheet(group.id) : Promise.resolve(null),
   ])
   const schedule = slotsLabel(group.slots, t)
+  /* Several module runs (OOC-156): teacher and schedule are each run's, on
+     their card; the header keeps what is the class group's. */
+  const singleRun = group.modules.length <= 1
 
   /* The free certificate is owed within the business days the backoffice sets
      (`docs/REGRAS-NEGOCIO.md` §6, OOC-41) — only worth saying once classes are
@@ -130,12 +134,16 @@ export default async function ClassGroupDetailPage({
           <Field label={t('class_group.field_code')}>
             <span className="tabular-nums">{group.code}</span>
           </Field>
-          <Field label={t('class_group.field_teacher')}>
-            <TeacherCell row={group} />
-          </Field>
-          <Field label={t('class_group.field_schedule')}>
-            <span className="tabular-nums">{schedule}</span>
-          </Field>
+          {singleRun && (
+            <Field label={t('class_group.field_teacher')}>
+              <TeacherCell row={group} />
+            </Field>
+          )}
+          {singleRun && (
+            <Field label={t('class_group.field_schedule')}>
+              <span className="tabular-nums">{schedule}</span>
+            </Field>
+          )}
           <Field label={t('class_group.field_start')}>
             {group.startsOn
               ? formatDate(group.startsOn, locale as Locale)
@@ -187,6 +195,8 @@ export default async function ClassGroupDetailPage({
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
       />
+
+      <ModuleRunsCard group={group} courses={courses ?? []} teachers={teachers} canManage={canManage} />
 
       <RosterCard roster={roster} />
 

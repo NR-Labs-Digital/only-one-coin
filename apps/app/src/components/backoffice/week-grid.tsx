@@ -18,8 +18,8 @@ export function WeekGrid({
   hrefOf,
 }: {
   columns: DayColumn[]
-  /** Where a class group chip leads — each screen has its own door to it. */
-  hrefOf: (classGroupId: string) => string
+  /** Where a class group chip leads — each screen has its own door to it: the class group, or the teacher's run of it. */
+  hrefOf: (classGroupId: string, classGroupModuleId: string) => string
 }) {
   const t = useTranslations('bo')
 
@@ -51,7 +51,7 @@ export function WeekGrid({
             {column.classes.map((item) => (
               <Link
                 key={`${item.id}-${item.startTime}`}
-                href={hrefOf(item.id)}
+                href={hrefOf(item.id, item.runId)}
                 title={item.courseName}
                 className={`rounded px-1.5 py-1 text-[11px] font-semibold transition ${
                   item.outside

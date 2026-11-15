@@ -30,6 +30,13 @@ const KNOWN: ReadonlySet<CatalogErrorKey> = new Set<CatalogErrorKey>([
   'module_material_invalid',
   'classroom_url_invalid',
   'class_group_module_out_of_range',
+  // Module runs of a class group (OOC-156).
+  'class_group_module_not_found',
+  'class_group_module_taken',
+  'class_group_module_alone',
+  'class_group_module_last',
+  'class_group_module_has_students',
+  'class_group_module_ambiguous',
   'language_not_found',
   'language_exists',
   'language_in_use',

@@ -72,6 +72,8 @@ interface SavedTeacher {
  * (CLAUDE.md §8). Whoever may not edit gets the file read-only: what a teacher
  * may teach and what they were allocated is coordination's call.
  */
+const DOCENTE_BASE = '/docente/class-groups'
+
 export function TeacherFile({
   teacher,
   catalogue,
@@ -137,7 +139,12 @@ export function TeacherFile({
   const running = teacher.classGroups.filter(
     (group) => group.status === 'enrolling' || group.status === 'in_progress',
   )
-  const columns = weekColumns(availability, running)
+  const columns = weekColumns(availability, running, teacher.id)
+  /* One row per module run this teacher runs (OOC-156): a class group whose
+     other runs are someone else's shows only theirs. */
+  const ownRuns = teacher.classGroups.flatMap((group) =>
+    group.modules.filter((run) => run.teacherId === teacher.id).map((run) => ({ group, run })),
+  )
 
   /* A language the teacher holds stays listed even if the catalog stopped
      offering it — dropping it from the screen would drop it on the next save. */
@@ -373,7 +380,7 @@ export function TeacherFile({
               {t(`teacher_file.tab_${value}`)}
               {value === 'class_groups' && (
                 <span className="ml-1.5 text-xs text-slate-400">
-                  {teacher.classGroups.length}
+                  {ownRuns.length}
                 </span>
               )}
             </button>
@@ -591,7 +598,7 @@ export function TeacherFile({
                   not what the teacher wrote down. */}
               <WeekGrid
                 columns={columns}
-                hrefOf={(id) => `${classGroupBase}/${id}`}
+                hrefOf={(id, runId) => `${classGroupBase}/${classGroupBase === DOCENTE_BASE ? runId : id}`}
               />
             </>
           )}
@@ -600,7 +607,7 @@ export function TeacherFile({
 
       {tab === 'class_groups' && (
         <Card>
-          {teacher.classGroups.length === 0 ? (
+          {ownRuns.length === 0 ? (
             <div className="p-4">
               <EmptyState
                 icon="courses"
@@ -628,24 +635,26 @@ export function TeacherFile({
                 </tr>
               </thead>
               <tbody>
-                {teacher.classGroups.map((group) => (
-                  <tr key={group.id}>
+                {ownRuns.map(({ group, run }) => (
+                  <tr key={run.id}>
                     <td className={`${tdClass} whitespace-nowrap`}>
                       <Link
-                        href={`${classGroupBase}/${group.id}`}
+                        href={`${classGroupBase}/${classGroupBase === DOCENTE_BASE ? run.id : group.id}`}
                         className="font-semibold text-ink transition hover:text-brand-blue"
                       >
                         {group.courseName}
                       </Link>
                       <p className="text-xs tabular-nums text-muted-foreground">
-                        {group.code}
+                        {run.module === null
+                          ? group.code
+                          : t('class_group_runs.code_with_module', { code: group.code, number: run.module })}
                       </p>
                     </td>
                     <td
                       className={`${tdClass} whitespace-nowrap text-sm tabular-nums text-muted-foreground`}
                     >
                       <span className="flex flex-col leading-tight">
-                        {group.slots.map((slot) => (
+                        {run.slots.map((slot) => (
                           <span key={`${slot.weekday}-${slot.startTime}`}>
                             {`${t(`weekday.${slot.weekday}`)} ${slot.startTime}–${slot.endTime}`}
                           </span>
