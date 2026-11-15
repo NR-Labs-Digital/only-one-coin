@@ -414,6 +414,13 @@
       "when": 1794700793772,
       "tag": "0058_class_group_modules",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794709115679,
+      "tag": "0059_module_progression",
+      "breakpoints": true
     }
   ]
 }
