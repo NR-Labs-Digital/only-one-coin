@@ -207,3 +207,65 @@ export class LanguageInUseError extends ConflictError {
     super({ reason: "catalog.language_in_use", message: "Live courses are still filed under this language.", ...params });
   }
 }
+
+/** No live module run with that id in this class group (OOC-156). */
+export class ClassGroupModuleNotFoundError extends NotFoundError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_module_not_found", message: "No live module run with that id.", ...params });
+  }
+}
+
+/** The class group already runs that module (OOC-156) — one run per module. */
+export class ClassGroupModuleTakenError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_module_taken",
+      message: "The class group already has a run of that module.",
+      ...params,
+    });
+  }
+}
+
+/** A full-course run, or one with no module set, is the class group's only run (OOC-156). */
+export class ClassGroupModuleAloneError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_module_alone",
+      message: "A full-course run, or a run with no module set, is the class group's only run.",
+      ...params,
+    });
+  }
+}
+
+/** The class group's last live run stays (OOC-156). */
+export class ClassGroupLastModuleError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "catalog.class_group_module_last", message: "A class group keeps at least one run.", ...params });
+  }
+}
+
+/** Students are still in the run (OOC-156): move them first. */
+export class ClassGroupModuleHasStudentsError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_module_has_students",
+      message: "Students are still in this run. Move them before retiring it.",
+      ...params,
+    });
+  }
+}
+
+/**
+ * A class group with more than one run was edited with a run's field through
+ * the class group itself (OOC-156): which run is meant is not said. The run
+ * is edited on its own route.
+ */
+export class ClassGroupModuleAmbiguousError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_module_ambiguous",
+      message: "The class group has more than one run: edit the run itself.",
+      ...params,
+    });
+  }
+}

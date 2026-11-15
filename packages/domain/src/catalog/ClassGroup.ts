@@ -1,23 +1,39 @@
 import { v7 as uuid } from "uuid";
 import { z } from "zod";
 import { SoftDeletableModel, SoftDeletableModelPropsSchema } from "../shared/base/SoftDeletableModel.js";
+import { ClassGroupModule, CreateClassGroupModuleSchema, type CreateClassGroupModuleDTO } from "./ClassGroupModule.js";
 import {
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
-  ClassGroupModuleOutOfRangeError,
-  ClassroomUrlInvalidError,
+  ClassGroupLastModuleError,
+  ClassGroupModuleAloneError,
+  ClassGroupModuleNotFoundError,
+  ClassGroupModuleTakenError,
   InvalidDateRangeError,
   InvalidStatusTransitionError,
 } from "./errors.js";
 
-export const WeekdaySchema = z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-const HourMinute = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
-
-/** One weekly session, in America/Lima — the shape the checkout already reads. */
-export const WeeklySlotSchema = z
-  .object({ weekday: WeekdaySchema, startTime: HourMinute, endTime: HourMinute })
-  .refine((slot) => slot.startTime < slot.endTime);
-export type WeeklySlot = z.infer<typeof WeeklySlotSchema>;
+// The teaching rules moved beside the module runs (OOC-156); re-exported so
+// every import of them from here keeps working.
+export {
+  applyClassroomLinks,
+  assertClassroomLinksOfCourse,
+  assertModuleOfCourse,
+  CLASSROOM_HOST,
+  ClassroomLinkPatchSchema,
+  classroomLinksOf,
+  isMissingClassroom,
+  normalizeClassroomUrl,
+  sameLinks,
+  taughtModules,
+  WeekdaySchema,
+  WeeklySlotSchema,
+  type ClassroomLink,
+  type ClassroomLinkPatch,
+  type ClassroomLinks,
+  type ClassroomSource,
+  type WeeklySlot,
+} from "./classGroupTeaching.js";
 
 export const ClassGroupStatusSchema = z.enum(["draft", "enrolling", "in_progress", "finished", "closed"]);
 export type ClassGroupStatus = z.infer<typeof ClassGroupStatusSchema>;
@@ -47,150 +63,16 @@ export function classGroupCodeOf(sequence: number): string {
 }
 
 /**
- * Where the class happens (OOC-98): the Google Classroom coordination pastes
- * for the class group. The link ends up as an href on the teacher's and the
- * student's screens, so anything but https on this host is refused.
+ * The class group — the "turma" (OOC-156). What is sold lives here: course,
+ * period, code, dates, enrollment window, capacity and the seats, counted
+ * across every module run. Where and when the class happens lives on the runs
+ * (`ClassGroupModule`), which this aggregate owns: their rules — one run per
+ * module, the full-course or unset run alone — are checked here.
  */
-export const CLASSROOM_HOST = "classroom.google.com";
-
-/** The link normalized, null when left blank — or a refusal. */
-export function normalizeClassroomUrl(raw: string | null): string | null {
-  const value = raw?.trim() ?? "";
-  if (value === "") return null;
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch (cause) {
-    throw new ClassroomUrlInvalidError({ cause });
-  }
-  if (url.protocol !== "https:" || url.hostname !== CLASSROOM_HOST) throw new ClassroomUrlInvalidError();
-  return url.toString();
-}
-
-/**
- * One Google Classroom per module the class group teaches (OOC-144): module
- * number → link. JSON keys are text, so the number is too. Replaces the one
- * link per class group of OOC-98 (`classroomUrl`), which only a class group
- * with no module set still reads. A module the group no longer teaches keeps
- * its link — progression (OOC-85) moves the group on, and that Classroom is
- * still that module's.
- */
-export type ClassroomLinks = Record<string, string>;
-
-/** One module's link to set, or to clear with `url: null`. */
-export const ClassroomLinkPatchSchema = z.object({
-  module: z.number().int().positive(),
-  url: z.string().max(2048).nullable(),
-});
-export type ClassroomLinkPatch = z.infer<typeof ClassroomLinkPatchSchema>;
-
-/** A quick link as teacher and student read it. `module` is null only for the legacy link of a class group with no module set. */
-export interface ClassroomLink {
-  module: number | null;
-  url: string;
-}
-
-type ClassroomSource = {
-  module: number | null;
-  fullCourse: boolean;
-  classroomLinks: ClassroomLinks;
-  classroomUrl: string | null;
-};
-
-/** The modules a class group teaches: its one, every module of the course on a full course, none while unset. */
-export function taughtModules(group: Pick<ClassroomSource, "module" | "fullCourse">, courseModules: number): number[] {
-  if (group.fullCourse) return Array.from({ length: courseModules }, (_, i) => i + 1);
-  return group.module === null ? [] : [group.module];
-}
-
-/**
- * The Classroom links of the modules the class group teaches, in module order
- * — what its teacher and its confirmed students open. A class group with no
- * module set has nothing to key a link by, so it falls back to the one link
- * pasted before OOC-144 (`classroomUrl`), with no module.
- */
-export function classroomLinksOf(group: ClassroomSource, courseModules: number): ClassroomLink[] {
-  if (!group.fullCourse && group.module === null) {
-    return group.classroomUrl ? [{ module: null, url: group.classroomUrl }] : [];
-  }
-  return taughtModules(group, courseModules).flatMap((module) => {
-    const url = group.classroomLinks[String(module)];
-    return url ? [{ module, url }] : [];
-  });
-}
-
-/** Some module it teaches still has no Classroom — the list's "Sin Classroom" warning. Warns, never blocks. */
-export function isMissingClassroom(group: ClassroomSource, courseModules: number): boolean {
-  if (!group.fullCourse && group.module === null) return group.classroomUrl === null;
-  return taughtModules(group, courseModules).some((module) => !group.classroomLinks[String(module)]);
-}
-
-/**
- * A link can only be set for one of the course's modules. Clearing one is
- * always allowed — a course cut to fewer modules must still let coordination
- * tidy up the links of the modules it lost.
- */
-export function assertClassroomLinksOfCourse(patches: ClassroomLinkPatch[] | undefined, courseModules: number): void {
-  if (patches?.some((patch) => patch.url !== null && patch.url.trim() !== "" && patch.module > courseModules)) {
-    throw new ClassGroupModuleOutOfRangeError();
-  }
-}
-
-/** The links with the patches applied, each link normalized; a blank one clears its module. */
-function applyClassroomLinks(current: ClassroomLinks, patches: ClassroomLinkPatch[]): ClassroomLinks {
-  const next: ClassroomLinks = { ...current };
-  for (const patch of patches) {
-    const url = normalizeClassroomUrl(patch.url);
-    if (url) next[String(patch.module)] = url;
-    else delete next[String(patch.module)];
-  }
-  return next;
-}
-
-function sameLinks(a: ClassroomLinks, b: ClassroomLinks): boolean {
-  const keys = Object.keys(a);
-  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
-}
-
-/**
- * The module a class group teaches is one of its course's (OOC-100). Checked
- * by the usecases, which hold the course: the class group alone does not know
- * how many modules there are. Null — no module set — always passes.
- */
-export function assertModuleOfCourse(module: number | null, courseModules: number): void {
-  if (module !== null && module > courseModules) throw new ClassGroupModuleOutOfRangeError();
-}
-
 export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
   code: z.string().trim(),
-  /** The teacher running it (OOC-80). Null until somebody is allocated. */
-  teacherId: z.string().uuid().nullable(),
-  /**
-   * The free-text name typed before teachers had a file (`class_groups.teacher_name`).
-   * Read-only: nothing writes a new one, and allocating a teacher clears it —
-   * it only stays as a hint on the class groups still waiting for a link.
-   */
-  legacyTeacherName: z.string(),
-  /**
-   * The one link pasted before OOC-144. Read-only: nothing writes it any more,
-   * and only a class group with no module set still shows it (`classroomLinksOf`).
-   */
-  classroomUrl: z.string().nullable(),
-  /** One Classroom per module (OOC-144). Not re-checked here: a row read back never throws. */
-  classroomLinks: z.record(z.string(), z.string()),
-  /**
-   * Which of the course's modules this class group teaches, 1-based (OOC-100)
-   * — what picks the module material its teacher opens. Null on every class
-   * group written before the column, and on one nobody set yet. The upper
-   * bound is the course's module count, checked by the usecases that hold the
-   * course; a row read back never throws.
-   */
-  module: z.number().int().positive().nullable(),
-  /** Teaches every module of the course (OOC-130); `module` stays null then. */
-  fullCourse: z.boolean(),
-  slots: z.array(WeeklySlotSchema),
   startsOn: z.coerce.date().nullable(),
   endsOn: z.coerce.date().nullable(),
   enrollmentOpensAt: z.coerce.date().nullable(),
@@ -204,16 +86,14 @@ export const ClassGroupPropsSchema = SoftDeletableModelPropsSchema.extend({
 });
 export type ClassGroupProps = z.infer<typeof ClassGroupPropsSchema>;
 
-export const CreateClassGroupSchema = z.object({
+/**
+ * Opening a class group opens its first module run with it — the fields the
+ * form always asked for (teacher, module, schedule, Classroom). More runs are
+ * added afterwards (`ClassGroup.addModule`).
+ */
+export const CreateClassGroupSchema = CreateClassGroupModuleSchema.extend({
   courseId: z.string().uuid(),
   academicPeriodId: z.string().uuid(),
-  teacherId: z.string().uuid().nullable().optional(),
-  /** Per-module links to set or clear (OOC-144); modules not named keep theirs. */
-  classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
-  module: z.number().int().positive().nullable().optional(),
-  /** Wins over `module`: the whole course is not one of its modules. */
-  fullCourse: z.boolean().optional(),
-  slots: z.array(WeeklySlotSchema).min(1),
   capacity: z.number().int().positive(),
   startsOn: optionalDate,
   endsOn: optionalDate,
@@ -222,23 +102,33 @@ export const CreateClassGroupSchema = z.object({
 });
 export type CreateClassGroupDTO = z.infer<typeof CreateClassGroupSchema>;
 
-/** The period never changes — a class group in the wrong period is retired and reopened. */
-export const UpdateClassGroupSchema = CreateClassGroupSchema.omit({ academicPeriodId: true }).partial();
+/**
+ * The class group's own fields. The period never changes — a class group in
+ * the wrong period is retired and reopened. A run's fields are edited on the
+ * run (`UpdateClassGroupModuleSchema`).
+ */
+export const UpdateClassGroupSchema = z
+  .object({
+    courseId: z.string().uuid(),
+    capacity: z.number().int().positive(),
+    startsOn: optionalDate,
+    endsOn: optionalDate,
+    enrollmentOpensAt: optionalDate,
+    enrollmentClosesAt: optionalDate,
+  })
+  .partial();
 export type UpdateClassGroupDTO = z.infer<typeof UpdateClassGroupSchema>;
 
 type Editable = keyof UpdateClassGroupDTO;
+
+function moduleOrder(a: ClassGroupModule, b: ClassGroupModule): number {
+  return (a.module ?? 0) - (b.module ?? 0) || a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id);
+}
 
 export class ClassGroup extends SoftDeletableModel {
   public courseId: string;
   public readonly academicPeriodId: string;
   public readonly code: string;
-  public teacherId: string | null;
-  public legacyTeacherName: string;
-  public readonly classroomUrl: string | null;
-  public classroomLinks: ClassroomLinks;
-  public module: number | null;
-  public fullCourse: boolean;
-  public slots: WeeklySlot[];
   public startsOn: Date | null;
   public endsOn: Date | null;
   public enrollmentOpensAt: Date | null;
@@ -250,19 +140,14 @@ export class ClassGroup extends SoftDeletableModel {
   public readonly seatsOver: number;
   public status: ClassGroupStatus;
   public readonly sourceClassGroupId: string | null;
+  /** Every run loaded with it, retired ones included; `modules` is the live ones. */
+  private readonly runs: ClassGroupModule[];
 
-  constructor(props: ClassGroupProps) {
+  constructor(props: ClassGroupProps, modules: ClassGroupModule[] = []) {
     super(props);
     this.courseId = props.courseId;
     this.academicPeriodId = props.academicPeriodId;
     this.code = props.code;
-    this.teacherId = props.teacherId;
-    this.legacyTeacherName = props.legacyTeacherName;
-    this.classroomUrl = props.classroomUrl;
-    this.classroomLinks = props.classroomLinks;
-    this.module = props.module;
-    this.fullCourse = props.fullCourse;
-    this.slots = props.slots;
     this.startsOn = props.startsOn;
     this.endsOn = props.endsOn;
     this.enrollmentOpensAt = props.enrollmentOpensAt;
@@ -272,60 +157,62 @@ export class ClassGroup extends SoftDeletableModel {
     this.seatsOver = props.seatsOver ?? 0;
     this.status = props.status;
     this.sourceClassGroupId = props.sourceClassGroupId;
+    this.runs = [...modules];
   }
 
   /**
    * Always born a draft; publishing is a separate, checked step. The code comes
    * from the repository's sequence (`classGroupCodeOf`), never from the DTO.
+   * The first module run is born with it.
    */
   static create(dto: CreateClassGroupDTO, code: string): ClassGroup {
     const valid = CreateClassGroupSchema.parse(dto);
+    const id = uuid();
     const group = new ClassGroup(
       ClassGroupPropsSchema.parse({
-        ...valid,
-        id: uuid(),
+        id,
+        courseId: valid.courseId,
+        academicPeriodId: valid.academicPeriodId,
         code,
-        teacherId: valid.teacherId ?? null,
-        legacyTeacherName: "",
-        classroomUrl: null,
-        classroomLinks: applyClassroomLinks({}, valid.classroomLinks ?? []),
-        module: valid.fullCourse ? null : (valid.module ?? null),
-        fullCourse: valid.fullCourse ?? false,
         startsOn: valid.startsOn ?? null,
         endsOn: valid.endsOn ?? null,
         enrollmentOpensAt: valid.enrollmentOpensAt ?? null,
         enrollmentClosesAt: valid.enrollmentClosesAt ?? null,
+        capacity: valid.capacity,
         seatsTaken: 0,
         status: "draft",
         sourceClassGroupId: null,
       }),
+      [
+        ClassGroupModule.create(id, {
+          teacherId: valid.teacherId,
+          classroomLinks: valid.classroomLinks,
+          module: valid.module,
+          fullCourse: valid.fullCourse,
+          slots: valid.slots,
+        }),
+      ],
     );
     group.assertConsistent();
     return group;
   }
 
   /**
-   * Period duplication (OOC-35): same course, module, schedule, teacher and capacity;
-   * no dates, no window, no seats, no Classroom links, a draft — and a pointer
-   * back. Nothing that belongs to the old period's students comes along: their
-   * Classrooms are not the new group's (OOC-98, OOC-144). The copy is a new class group,
-   * so it gets a code of its own — the same code in two periods would name two
-   * groups.
+   * Period duplication (OOC-35): same course, capacity and module runs (module,
+   * schedule, teacher); no dates, no window, no seats, no Classroom links, a
+   * draft — and a pointer back. Nothing that belongs to the old period's
+   * students comes along: their Classrooms are not the new group's (OOC-98,
+   * OOC-144). The copy is a new class group, so it gets a code of its own —
+   * the same code in two periods would name two groups.
    */
   static copyInto(source: ClassGroup, academicPeriodId: string, code: string): ClassGroup {
+    const id = uuid();
     return new ClassGroup(
       ClassGroupPropsSchema.parse({
-        id: uuid(),
+        id,
         courseId: source.courseId,
         academicPeriodId,
         code,
-        teacherId: source.teacherId,
-        legacyTeacherName: source.legacyTeacherName,
-        classroomUrl: null,
-        classroomLinks: {},
-        module: source.module,
-        fullCourse: source.fullCourse,
-        slots: source.slots,
         startsOn: null,
         endsOn: null,
         enrollmentOpensAt: null,
@@ -335,7 +222,82 @@ export class ClassGroup extends SoftDeletableModel {
         status: "draft",
         sourceClassGroupId: source.id,
       }),
+      source.modules.map((run) => ClassGroupModule.copyInto(run, id)),
     );
+  }
+
+  /** The live module runs, in module order. */
+  get modules(): ClassGroupModule[] {
+    return this.runs.filter((run) => !run.isDeleted).sort(moduleOrder);
+  }
+
+  /**
+   * Where a new student starts (OOC-156, owner's decision: always module 1) —
+   * the lowest live run, which is module 1 whenever the class group has one.
+   * A class group with a single run of another module, a full course or an
+   * unset module keeps selling into that run, as it did before runs existed.
+   * Null only for a class group with no live run, which sells nothing.
+   */
+  get entryModule(): ClassGroupModule | null {
+    return this.modules[0] ?? null;
+  }
+
+  moduleById(id: string): ClassGroupModule {
+    const run = this.modules.find((candidate) => candidate.id === id);
+    if (!run) throw new ClassGroupModuleNotFoundError();
+    return run;
+  }
+
+  /** Opens another module run; the caller has checked the module against the course and the teacher against the roster. */
+  addModule(dto: CreateClassGroupModuleDTO): ClassGroupModule {
+    const run = ClassGroupModule.create(this.id, dto);
+    this.runs.push(run);
+    try {
+      this.assertModulesConsistent();
+    } catch (error) {
+      // A refused run never joins the aggregate.
+      this.runs.pop();
+      throw error;
+    }
+    return run;
+  }
+
+  /**
+   * Retires a run. The last one stays: a class group with no run has nowhere
+   * to teach nor to put a new student. Whether students are still in it is
+   * the repository's conditional write — they move under us.
+   */
+  retireModule(id: string, at: Date = new Date()): ClassGroupModule {
+    const run = this.moduleById(id);
+    if (this.modules.length === 1) throw new ClassGroupLastModuleError();
+    run.softDelete(at);
+    return run;
+  }
+
+  /**
+   * One run per module, and a run with no module number — the full course or
+   * the unset one — alone: the full course already teaches every module, and
+   * an unset run says nothing about which module the next one would follow.
+   * The partial unique indexes of 0058 say the same under a race.
+   */
+  assertModulesConsistent(): void {
+    const live = this.modules;
+    if (live.some((run) => run.isUnnumbered) && live.length > 1) throw new ClassGroupModuleAloneError();
+    const numbers = live.map((run) => run.module);
+    if (new Set(numbers).size !== numbers.length) throw new ClassGroupModuleTakenError();
+  }
+
+  /**
+   * Whether one run may teach `module` (null: a full course or unset) beside
+   * the others — the same rule, asked before the run changes so a refusal
+   * leaves it as it was.
+   */
+  assertRunCanTeach(runId: string, module: number | null): void {
+    const others = this.modules.filter((run) => run.id !== runId);
+    if (others.length > 0 && (module === null || others.some((run) => run.isUnnumbered))) {
+      throw new ClassGroupModuleAloneError();
+    }
+    if (module !== null && others.some((run) => run.module === module)) throw new ClassGroupModuleTakenError();
   }
 
   get isFull(): boolean {
@@ -354,41 +316,9 @@ export class ClassGroup extends SoftDeletableModel {
       changed.push("courseId");
     }
 
-    if (valid.teacherId !== undefined && valid.teacherId !== this.teacherId) {
-      this.teacherId = valid.teacherId;
-      // Somebody chose from the roster: the typed name has done its job.
-      if (valid.teacherId !== null) this.legacyTeacherName = "";
-      changed.push("teacherId");
-    }
-
-    if (valid.classroomLinks !== undefined) {
-      const next = applyClassroomLinks(this.classroomLinks, valid.classroomLinks);
-      if (!sameLinks(next, this.classroomLinks)) {
-        this.classroomLinks = next;
-        changed.push("classroomLinks");
-      }
-    }
-
-    // One or the other: picking a module ends "full course", and the reverse.
-    const fullCourse = valid.fullCourse ?? (valid.module ? false : this.fullCourse);
-    const module = fullCourse ? null : valid.module !== undefined ? valid.module : this.module;
-    if (fullCourse !== this.fullCourse) {
-      this.fullCourse = fullCourse;
-      changed.push("fullCourse");
-    }
-    if (module !== this.module) {
-      this.module = module;
-      changed.push("module");
-    }
-
     if (valid.capacity !== undefined && valid.capacity !== this.capacity) {
       this.capacity = valid.capacity;
       changed.push("capacity");
-    }
-
-    if (valid.slots !== undefined && JSON.stringify(valid.slots) !== JSON.stringify(this.slots)) {
-      this.slots = valid.slots;
-      changed.push("slots");
     }
 
     for (const key of ["startsOn", "endsOn", "enrollmentOpensAt", "enrollmentClosesAt"] as const) {

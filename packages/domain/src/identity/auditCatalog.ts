@@ -139,6 +139,9 @@ export const AUDIT_ACTIONS = {
 
   "catalog.class_group.created": { key: "class_group_created", entity: "class_group", subject: "target" },
   "catalog.class_group.updated": { key: "class_group_updated", entity: "class_group", subject: "target" },
+  "catalog.class_group.module_added": { key: "class_group_module_added", entity: "class_group", subject: "target" },
+  "catalog.class_group.module_updated": { key: "class_group_module_updated", entity: "class_group", subject: "target" },
+  "catalog.class_group.module_retired": { key: "class_group_module_retired", entity: "class_group", subject: "target" },
   "catalog.class_group.status_changed": {
     key: "class_group_status_changed",
     entity: "class_group",

@@ -57,7 +57,7 @@ export {
   type SetTeacherRosterStatusInput,
   type SetTeacherRosterStatusOutput,
 } from "./teacher/SetTeacherRosterStatusUseCase.js";
-export type { ITeachingReader, TeachingClassGroup, TeachingStudent } from "./teaching/TeachingReader.js";
+export type { GradingClassGroup, ITeachingReader, TeachingClassGroup, TeachingStudent } from "./teaching/TeachingReader.js";
 export { isOwnClassGroup, isTeaching } from "./teaching/teachingScope.js";
 export { ListOwnClassGroupsUseCase, type ListOwnClassGroupsInput } from "./teaching/ListOwnClassGroupsUseCase.js";
 export { GetOwnClassGroupUseCase, type GetOwnClassGroupInput } from "./teaching/GetOwnClassGroupUseCase.js";
@@ -78,7 +78,7 @@ export {
   type RecordedGrade,
   type RecordGradesResult,
 } from "./teaching/Grade.js";
-export { GRADING_OPEN, postGrades } from "./teaching/gradePosting.js";
+export { GRADING_OPEN, postGrades, type GradingScope } from "./teaching/gradePosting.js";
 export {
   ListClassGroupGradesUseCase,
   RecordClassGroupGradesUseCase,
@@ -581,6 +581,12 @@ export {
   ModuleMaterialInvalidError,
   ClassroomUrlInvalidError,
   ClassGroupModuleOutOfRangeError,
+  ClassGroupModuleNotFoundError,
+  ClassGroupModuleTakenError,
+  ClassGroupModuleAloneError,
+  ClassGroupLastModuleError,
+  ClassGroupModuleHasStudentsError,
+  ClassGroupModuleAmbiguousError,
   LanguageNotFoundError,
   LanguageExistsError,
   LanguageInUseError,
@@ -601,6 +607,24 @@ export {
   type CreateAcademicPeriodDTO,
   type UpdateAcademicPeriodDTO,
 } from "./catalog/AcademicPeriod.js";
+export {
+  ClassGroupModule,
+  ClassGroupModulePropsSchema,
+  CreateClassGroupModuleSchema,
+  UpdateClassGroupModuleSchema,
+  type ClassGroupModuleField,
+  type ClassGroupModuleProps,
+  type CreateClassGroupModuleDTO,
+  type UpdateClassGroupModuleDTO,
+} from "./catalog/ClassGroupModule.js";
+export {
+  AddClassGroupModuleUseCase,
+  UpdateClassGroupModuleUseCase,
+  RetireClassGroupModuleUseCase,
+  type AddClassGroupModuleInput,
+  type UpdateClassGroupModuleInput,
+  type RetireClassGroupModuleInput,
+} from "./catalog/ClassGroupModuleUseCases.js";
 export {
   assertModuleOfCourse,
   assertClassroomLinksOfCourse,

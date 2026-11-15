@@ -14,6 +14,7 @@ import type { ITeachingReader } from "./TeachingReader.js";
 export class ListOwnClassGroupGradesUseCase extends BaseUseCase<GetOwnClassGroupInput, RecordedGrade[]> {
   constructor(
     private readonly getOwnClassGroup: GetOwnClassGroupUseCase,
+    private readonly reader: ITeachingReader,
     private readonly grades: IGradeRepository,
   ) {
     super();
@@ -21,7 +22,14 @@ export class ListOwnClassGroupGradesUseCase extends BaseUseCase<GetOwnClassGroup
 
   async run(input: GetOwnClassGroupInput): Promise<RecordedGrade[]> {
     const group = await this.getOwnClassGroup.run(input);
-    return this.grades.listForClassGroup(group.id);
+    // The grades live on the class group; the teacher reads the ones of the
+    // seats in their own module run (OOC-156).
+    const [students, grades] = await Promise.all([
+      this.reader.listStudents(group.id),
+      this.grades.listForClassGroup(group.classGroupId),
+    ]);
+    const seats = new Set(students.map((student) => student.enrollmentId));
+    return grades.filter((grade) => seats.has(grade.enrollmentId));
   }
 }
 
@@ -49,9 +57,12 @@ export class RecordOwnClassGroupGradesUseCase extends BaseUseCase<RecordOwnClass
 
   async run(input: RecordOwnClassGroupGradesInput): Promise<RecordGradesResult> {
     const group = await this.getOwnClassGroup.run(input);
+    // The seats of the teacher's own module run (OOC-156); the grades go to
+    // its class group, where every run's grades live.
+    const seatIds = (await this.reader.listStudents(group.id)).map((student) => student.enrollmentId);
     return postGrades(
-      { reader: this.reader, grades: this.grades, settings: this.settings },
-      group,
+      { grades: this.grades, settings: this.settings },
+      { classGroupId: group.classGroupId, status: group.status, seatIds },
       input.userId,
       input.entries,
     );
