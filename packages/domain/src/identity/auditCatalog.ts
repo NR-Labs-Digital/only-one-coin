@@ -96,6 +96,9 @@ export const AUDIT_ACTIONS = {
   "student.guardian_updated": { key: "guardian_updated", entity: "student", subject: "target" },
   "student.directory_exported": { key: "student_directory_exported", entity: "student", subject: "none" },
   "enrollment.created": { key: "enrollment_created", entity: "student", subject: "metadata_student" },
+  // Staff moved the seat to another class group (OOC-84), possibly above its
+  // capacity (OOC-155).
+  "enrollment.moved": { key: "enrollment_moved", entity: "student", subject: "metadata_student" },
   "portal_access.created": { key: "portal_access_created", entity: "student", subject: "target" },
   "portal_access.issued": { key: "portal_access_issued", entity: "student", subject: "target" },
   "student.email_marked_invalid": { key: "student_email_marked_invalid", entity: "student", subject: "target" },

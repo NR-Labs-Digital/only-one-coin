@@ -1,5 +1,5 @@
 import { academicPeriods, classGroups, courses, planPrices, plans } from "@ooc/db";
-import { and, asc, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "./sellableClassGroup.js";
 
@@ -14,6 +14,7 @@ export interface OpenClassGroupResult {
   startsOn: string;
   capacity: number;
   seatsTaken: number;
+  seatsOver: number;
   status: string;
   planId: string;
   planName: string;
@@ -26,9 +27,11 @@ export interface OpenClassGroupResult {
  * outside packages/domain for the same reason as SearchStudentsQuery: no
  * invariant to protect, only a join to shape. Filters server-side to
  * on sale (`sellableClassGroup`: enrolling, not retired, inside its
- * enrollment window, its period and course not retired) AND `seats_taken < capacity` (defense in depth — the
- * client filters too, but the server is the one that must not lie about
- * what has room).
+ * enrollment window, its period and course not retired). Full class groups
+ * are listed too since OOC-155: staff may enroll above capacity after an
+ * explicit confirmation, and the picker shows `seatsTaken`/`seatsOver` so the
+ * screen knows when to ask. The seat itself is still decided by the atomic
+ * UPDATE (takeManualSeat), never by this read.
  *
  * One plan per course, matching apps/app/.../new-enrollment-form.tsx's
  * existing assumption (it already picks "the" plan for a course, not a
@@ -51,6 +54,7 @@ export class ListOpenClassGroupsQuery {
         startsOn: classGroups.startsOn,
         capacity: classGroups.capacity,
         seatsTaken: classGroups.seatsTaken,
+        seatsOver: classGroups.seatsOver,
         status: classGroups.status,
         planId: plans.id,
         planName: plans.name,
@@ -65,7 +69,7 @@ export class ListOpenClassGroupsQuery {
       // Every table joined here is part of the offer being listed, so a
       // retired row on any of them takes the class group out (CLAUDE.md §6):
       // course and period through sellableClassGroup, the plan here.
-      .where(and(sellableClassGroup(), gt(classGroups.capacity, classGroups.seatsTaken), isNull(plans.deletedAt)))
+      .where(and(sellableClassGroup(), isNull(plans.deletedAt)))
       .orderBy(asc(courses.name), desc(plans.createdAt), desc(planPrices.validFrom));
 
     // The joins above can produce more than one row per class_group when a

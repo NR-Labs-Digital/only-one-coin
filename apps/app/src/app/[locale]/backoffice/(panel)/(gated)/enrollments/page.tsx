@@ -4,6 +4,7 @@ import { getStudent } from '@/lib/backoffice/students'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateEnrollment,
+  canManageEnrollment,
   canBrowseEnrollments,
 } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
@@ -126,6 +127,7 @@ export default async function EnrollmentsPage({
         ledger={ledger}
         query={query}
         canCreate={canCreate}
+        canMove={canManageEnrollment(staff.role)}
         preselect={preselect}
       />
     </div>

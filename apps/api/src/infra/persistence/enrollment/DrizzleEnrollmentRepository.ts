@@ -1,5 +1,4 @@
 import {
-  ClassGroupFullError,
   Enrollment,
   ReceiptNotReadyError,
   Payment,
@@ -10,11 +9,12 @@ import {
   type PaymentStatus,
   type SeatStatus,
 } from "@ooc/domain";
-import { classGroups, enrollments, payments, receiptUploads, waitlistEntries } from "@ooc/db";
-import { and, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { enrollments, payments, receiptUploads, waitlistEntries } from "@ooc/db";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
+import { takeManualSeat } from "./takeManualSeat.js";
 
 export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
   constructor(private readonly db: Db) {}
@@ -24,6 +24,7 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
     payment: Payment;
     notifications: EmailNotification[];
     receipt: { receiptUploadId: string; uploadedBy: string };
+    allowOverCapacity?: boolean;
   }): Promise<{ enrollment: Enrollment; payment: Payment }> {
     const { enrollment, payment } = params;
 
@@ -56,31 +57,10 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
         operationNumber: payment.operationNumber ?? "",
       });
 
-      // The single atomic instruction CLAUDE.md §5 requires: seat validation
-      // never happens in application code, only in this WHERE clause. Zero
-      // rows back means the class group is full.
-      const [reservedSeat] = await tx
-        .update(classGroups)
-        .set({ seatsTaken: sql`${classGroups.seatsTaken} + 1` })
-        // isNull guards the window between resolving the offer and writing:
-        // a class group retired in between must not take the seat. Zero rows
-        // back is the same answer as full, which is what the caller already
-        // handles.
-        .where(
-          and(
-            eq(classGroups.id, enrollment.classGroupId),
-            lt(classGroups.seatsTaken, classGroups.capacity),
-            isNull(classGroups.deletedAt),
-            // A draft has no dates and is not on sale (OOC-35); zero rows is the same answer as full, which the caller already handles.
-            // No enrollment-window check here on purpose: staff enrolling outside the window is the documented exception.
-            ne(classGroups.status, "draft"),
-          ),
-        )
-        .returning({ seatsTaken: classGroups.seatsTaken });
-
-      if (!reservedSeat) {
-        throw new ClassGroupFullError();
-      }
+      const overCapacity = await takeManualSeat(tx, {
+        classGroupId: enrollment.classGroupId,
+        allowOverCapacity: params.allowOverCapacity ?? false,
+      });
 
       const [enrollmentRow] = await tx
         .insert(enrollments)
@@ -91,6 +71,7 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
           planPriceId: enrollment.planPriceId,
           seatStatus: enrollment.seatStatus,
           origin: enrollment.origin,
+          overCapacity,
         })
         .returning();
 
@@ -149,6 +130,7 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
           planPriceId: enrollmentRow.planPriceId,
           seatStatus: enrollmentRow.seatStatus as SeatStatus,
           origin: enrollmentRow.origin as EnrollmentOrigin,
+          overCapacity: enrollmentRow.overCapacity,
         }),
         payment: new Payment({
           id: paymentRow.id,

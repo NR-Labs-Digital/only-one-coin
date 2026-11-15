@@ -308,6 +308,11 @@ export function PaymentsView({
                         <span className="block truncate text-xs text-muted-foreground">
                           {t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
                         </span>
+                        {row.overCapacity && (
+                          <span className="block truncate text-xs font-semibold text-amber-700">
+                            {t('payment_over_capacity.badge')}
+                          </span>
+                        )}
                       </td>
 
                       <td className={`${tdClass} whitespace-nowrap`}>

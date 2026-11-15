@@ -13,6 +13,7 @@ import { clearCheckoutStorage, useCheckout } from '@/lib/enrollment/use-checkout
 import { phoneNumberOf, planOfCourse } from '@/lib/enrollment/checkout'
 import { Stepper } from '@/components/enrollment/stepper'
 import { HoldTimer } from '@/components/enrollment/hold-timer'
+import { CheckoutIcon } from '@/components/enrollment/icons'
 import { StepCourse } from './step-course'
 import { StepStudent } from './step-student'
 import { StepPayment } from './step-payment'
@@ -248,7 +249,20 @@ export function Checkout({
         })}
       />
 
-      {holdSecondsLeft !== null && (
+      {/* Past zero the reservation still counts (OOC-155): the server seats
+          it on submit, so the form stays and says so instead of a timer stuck
+          at 0:00. */}
+      {holdSecondsLeft === 0 && (
+        <p
+          role="status"
+          className="mb-5 flex items-start gap-2 rounded-xl border border-brand-yellow-deep/25 bg-brand-yellow/10 px-3.5 py-2.5 text-sm font-medium text-ink"
+        >
+          <CheckoutIcon name="clock" size={16} className="mt-0.5 shrink-0" />
+          {t('hold.ran_out')}
+        </p>
+      )}
+
+      {holdSecondsLeft !== null && holdSecondsLeft > 0 && (
         <div className="mb-5">
           <HoldTimer
             secondsLeft={holdSecondsLeft}

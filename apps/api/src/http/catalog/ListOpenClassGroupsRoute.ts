@@ -14,6 +14,7 @@ const OpenClassGroupResponseSchema = z.array(
     startsOn: z.string(),
     capacity: z.number().int(),
     seatsTaken: z.number().int(),
+    seatsOver: z.number().int(),
     status: z.string(),
     planId: z.string().uuid(),
     planName: z.string(),
@@ -24,7 +25,7 @@ const OpenClassGroupResponseSchema = z.array(
 
 // management + enrollment supervision only — same audience as the manual enrollment route this
 // feeds (CLAUDE.md §1). No client input at all: this is a fixed, server-decided
-// filter (on sale per sellableClassGroup AND seats left), so there's nothing to validate
+// filter (on sale per sellableClassGroup; full ones included since OOC-155), so there's nothing to validate
 // or bound beyond what the query itself already does.
 export const listOpenClassGroupsRoute = RouteBuilder.get("/class-groups")
   .docs({

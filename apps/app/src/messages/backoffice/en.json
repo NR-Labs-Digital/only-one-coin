@@ -290,6 +290,7 @@
         "guardian_updated": "Guardian details edited",
         "student_directory_exported": "Student directory exported",
         "enrollment_created": "Enrollment opened from the panel",
+        "enrollment_moved": "Enrollment moved to another class group",
         "portal_access_created": "Portal account created",
         "portal_access_issued": "Portal access sent",
         "email_resent": "E-mail resent",
@@ -786,12 +787,18 @@
       "field_paid_at": "Paid on",
       "not_paid": "No payment credited",
       "frozen_price": "Price frozen at enrollment ({id}). Correcting the price table does not change this enrollment.",
-      "manage_notice": "Moving, freezing or withdrawing the student is a paid procedure, recorded from the class group and not from here.",
+      "manage_notice": "Freezing or withdrawing a student is a paid procedure recorded from the class group, not from here.",
       "open_student": "Open the student file",
       "open_class_group": "Open the class group",
-      "field_origin": "Channel"
+      "field_origin": "Channel",
+      "move": "Move to another class group"
     },
     "new_enrollment": {
+      "class_group_option_full": "{label} (full)",
+      "seats_left_over": "{count} · +{over} above capacity",
+      "over_capacity_title": "This class group is full. Enroll above capacity?",
+      "over_capacity_body": "The enrollment goes above the class group's capacity and is recorded in the audit log under your name.",
+      "class_group_full_error": "The class group filled up while you were filling in the form. Confirm above to enroll above capacity.",
       "title": "New enrollment",
       "subtitle": "For the sale that closed on WhatsApp and never reached the form. The normal way in is the student enrolling at /enrollment.",
       "step_student": "Student",
@@ -1102,6 +1109,8 @@
       "field_capacity": "Seats",
       "create": "Create class group",
       "seats_left": "{count, plural, one {# left} other {# left}}",
+      "seats_over": "+{count}",
+      "seats_over_hint": "{count, plural, one {# enrollment above capacity} other {# enrollments above capacity}}",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
       "page_prev": "Previous",
@@ -2101,6 +2110,7 @@
       "guardian_added": "Guardian added",
       "guardian_updated": "Guardian data edited",
       "enrollment_created": "Enrollment opened from the panel",
+      "enrollment_moved": "Enrollment moved to another class group",
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
       "receipt_viewed": "Receipt viewed",
@@ -2367,6 +2377,9 @@
       "course_language_what": "The course's language. It groups the course on the enrollment form and decides which teachers can be assigned to its class groups.",
       "course_level_what": "The course's level, for example B2 or Basic. It shows next to the name."
     },
+    "payment_over_capacity": {
+      "badge": "Over capacity"
+    },
     "payment_origin": {
       "enrollment": "Enrollment",
       "enrollment_certificate": "Enrollment certificate"
@@ -2443,6 +2456,47 @@
       "web": "Web",
       "whatsapp": "WhatsApp · seller",
       "whatsapp_ai": "WhatsApp · AI assistant"
+    },
+    "move_enrollment": {
+      "close": "Close",
+      "title": "Move to another class group",
+      "subtitle": "{student} · now in {from}",
+      "loading": "Loading class groups…",
+      "load_error": "We could not load the class groups. Close and try again.",
+      "no_targets": "There is no other class group enrolling or in progress.",
+      "field_class_group": "Target class group",
+      "class_group_placeholder": "Pick a class group",
+      "class_group_option": "{code} · {course} — {schedule} · {period}",
+      "class_group_option_full": "{label} (full)",
+      "seats": "{taken} / {capacity} seats taken{over, plural, =0 {} other { · +# above capacity}}",
+      "field_plan": "Plan of the new course",
+      "plan_placeholder": "Pick a plan",
+      "no_plans": "This course has no plan with a price in force.",
+      "plan_notice": "The class group is in another course: the enrollment moves to this plan. What was already paid does not change.",
+      "over_capacity_title": "This class group is full. Move above capacity?",
+      "over_capacity_body": "The enrollment goes above the class group's capacity and is recorded in the audit log under your name.",
+      "field_reason": "Reason",
+      "reason_placeholder": "E.g. schedule change asked for on WhatsApp",
+      "money_notice": "Moving charges and refunds nothing: the enrollment's payment stays as it is. A price difference is settled outside the platform.",
+      "cancel": "Cancel",
+      "submit": "Move enrollment",
+      "saving": "Moving…",
+      "moved": "Enrollment moved to another class group.",
+      "moved_over_capacity": "Enrollment moved, above the class group's capacity.",
+      "error": {
+        "class_group_full": "The class group filled up. Confirm to move above capacity.",
+        "move_seat_released": "This enrollment's seat was already released.",
+        "move_graded": "This enrollment already has a grade in its class group and cannot be moved.",
+        "move_same_class_group": "The enrollment is already in this class group.",
+        "move_target_unavailable": "That class group is no longer enrolling or in progress.",
+        "move_plan_required": "Pick the plan of the new course.",
+        "move_plan_not_of_course": "That plan is not from the chosen class group's course.",
+        "move_plan_not_allowed": "Within the same course the plan does not change.",
+        "move_reason_required": "Write the reason.",
+        "move_conflict": "The enrollment changed while you were moving it. Close and open it again.",
+        "not_found": "The enrollment no longer exists.",
+        "failed": "We could not move the enrollment. Try again."
+      }
     }
   }
 }

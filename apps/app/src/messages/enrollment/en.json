@@ -110,7 +110,8 @@
       "active": "Your seat is held while you pay",
       "remaining": "{minutes} minutes and {seconds} seconds left on your hold",
       "full": "That schedule just filled up. Pick another schedule or another date.",
-      "failed": "We could not hold your seat. Check your connection and try again."
+      "failed": "We could not hold your seat. Check your connection and try again.",
+      "ran_out": "Your reservation time ran out, but your place in this schedule is still kept. If you have already paid, finish and send your receipt."
     },
     "expired": {
       "title": "Time ran out",

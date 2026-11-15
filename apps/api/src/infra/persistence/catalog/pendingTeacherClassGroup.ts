@@ -1,5 +1,6 @@
 import { classGroups } from "@ooc/db";
-import { and, eq, gt, gte, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { classGroupIsFull } from "./seatCounters.js";
 
 /**
  * What "this class group closed its seats and still has nobody to teach it"
@@ -24,10 +25,10 @@ export function pendingTeacherClassGroup(now: SQL = sql`now()`): SQL {
     isNull(classGroups.deletedAt),
     isNull(classGroups.teacherId),
     inArray(classGroups.status, ["enrolling", "in_progress"]),
-    gt(classGroups.seatsTaken, 0),
+    sql`${classGroups.seatsTaken} + ${classGroups.seatsOver} > 0`,
     or(
       eq(classGroups.status, "in_progress"),
-      gte(classGroups.seatsTaken, classGroups.capacity),
+      classGroupIsFull(),
       and(isNotNull(classGroups.enrollmentClosesAt), lte(classGroups.enrollmentClosesAt, now)),
     ),
   )!;

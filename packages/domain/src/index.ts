@@ -218,7 +218,20 @@ export {
   EmailVerificationCooldownError,
   EmailVerificationNotFoundError,
   EmailVerificationTooManySendsError,
+  EnrollmentMoveConflictError,
+  EnrollmentMoveRefusedError,
+  EnrollmentNotFoundError,
+  type EnrollmentMoveRefusal,
 } from "./enrollment/errors.js";
+export {
+  MoveEnrollmentUseCase,
+  MOVE_REASON_MAX_LENGTH,
+  type EnrollmentMoveSource,
+  type EnrollmentMoveTarget,
+  type IEnrollmentMoveRepository,
+  type MoveEnrollmentInput,
+  type MoveEnrollmentOutput,
+} from "./enrollment/MoveEnrollmentUseCase.js";
 export {
   ENROLLMENT_ORIGINS,
   EnrollmentOriginSchema,

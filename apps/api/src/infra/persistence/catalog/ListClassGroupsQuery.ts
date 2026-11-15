@@ -46,6 +46,8 @@ export interface ClassGroupItem {
   enrollmentClosesAt: string | null;
   capacity: number;
   seatsTaken: number;
+  /** Seats held above capacity (OOC-155) — the "+2" of "30/30 +2". */
+  seatsOver: number;
   status: ClassGroupStatus;
   /** Not retired. */
   active: boolean;
@@ -162,6 +164,7 @@ export class ListClassGroupsQuery {
       enrollmentClosesAt: row.enrollmentClosesAt?.toISOString() ?? null,
       capacity: row.capacity,
       seatsTaken: row.seatsTaken,
+      seatsOver: row.seatsOver,
       status: row.status as ClassGroupStatus,
       active: row.deletedAt === null,
       waitlistCount: waiting,

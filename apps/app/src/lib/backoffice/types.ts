@@ -515,6 +515,8 @@ export interface ClassGroupItem {
   enrollmentClosesAt: string | null
   capacity: number
   seatsTaken: number
+  /** Seats held above capacity (OOC-155) — the "+2" of "30/30 +2". */
+  seatsOver: number
   status: ClassGroupStatus
   /** False once retired from the catalog — the row stays, off sale. */
   active: boolean
@@ -952,6 +954,8 @@ export interface PaymentRow {
   amountCents: number
   /** The frozen price it is checked against: the plan's or the procedure's. */
   expectedAmountCents: number
+  /** The seat sits above its class group's capacity (OOC-155); false for a procedure. */
+  overCapacity: boolean
   currency: 'PEN'
   submittedAt: string
   /** When the latest approval or rejection was recorded. Null while open. */
@@ -1056,6 +1060,8 @@ export interface PaymentReviewItem {
   methodDetail: string | null
   operationNumber: string | null
   expectedAmountCents: number
+  /** The seat sits above its class group's capacity (OOC-155); false for a procedure. */
+  overCapacity: boolean
   currency: 'PEN'
   receipt: ReviewReceiptState
   fraudSignals: ReceiptFraudSignalKind[]

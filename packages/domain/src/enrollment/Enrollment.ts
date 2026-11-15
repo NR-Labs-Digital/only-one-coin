@@ -21,6 +21,9 @@ export const EnrollmentPropsSchema = SoftDeletableModelPropsSchema.extend({
   // enrollment, not the student: the same person can come back through
   // another channel next cycle.
   origin: EnrollmentOriginSchema,
+  // The seat is counted above the class group's capacity (OOC-155), in
+  // `seats_over`. Optional so every reader that predates it reads `false`.
+  overCapacity: z.boolean().optional(),
 });
 
 export type EnrollmentProps = z.infer<typeof EnrollmentPropsSchema>;
@@ -31,6 +34,7 @@ export class Enrollment extends SoftDeletableModel {
   public planPriceId: string;
   public seatStatus: SeatStatus;
   public origin: EnrollmentOrigin;
+  public overCapacity: boolean;
 
   constructor(props: EnrollmentProps) {
     super(props);
@@ -39,6 +43,7 @@ export class Enrollment extends SoftDeletableModel {
     this.planPriceId = props.planPriceId;
     this.seatStatus = props.seatStatus;
     this.origin = props.origin;
+    this.overCapacity = props.overCapacity ?? false;
   }
 
   /**

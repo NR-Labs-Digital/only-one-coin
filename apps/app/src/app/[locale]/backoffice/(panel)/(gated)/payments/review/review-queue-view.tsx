@@ -482,6 +482,11 @@ export function ReviewQueueView({
                           <span className="block truncate text-xs text-muted-foreground">
                             {t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
                           </span>
+                          {item.overCapacity && (
+                            <span className="block truncate text-xs font-semibold text-amber-700">
+                              {t('payment_over_capacity.badge')}
+                            </span>
+                          )}
                         </span>
                       </td>
 

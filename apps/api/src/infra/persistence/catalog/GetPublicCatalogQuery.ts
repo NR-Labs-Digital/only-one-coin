@@ -117,7 +117,11 @@ export class GetPublicCatalogQuery {
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,
         capacity: classGroups.capacity,
-        seatsTaken: classGroups.seatsTaken,
+        // The seats above capacity count as taken (OOC-155): a class group at
+        // 30/30 +2 that gets one regular seat back is still full to a
+        // reader. Capped at capacity so the checkout never reads a negative
+        // number of seats left, and `seats_over` itself never leaves the API.
+        seatsTaken: sql<number>`least(${classGroups.capacity}, ${classGroups.seatsTaken} + ${classGroups.seatsOver})`.mapWith(Number),
       })
       .from(classGroups)
       // A retired period or course takes the class group out too — part of

@@ -22,6 +22,9 @@ export interface CreateManualEnrollmentInput {
    * OOC-146: the manual enrollment's receipt goes up the same OCR ladder as
    * the checkout's, never as a box ticked by hand. */
   receiptUploadId: string;
+  /** The staff member confirmed enrolling above capacity (OOC-155). Without
+   * it a full class group is refused, as before. */
+  allowOverCapacity?: boolean;
 }
 
 export interface CreateManualEnrollmentOutput {
@@ -97,6 +100,7 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
       payment,
       notifications,
       receipt: { receiptUploadId: input.receiptUploadId, uploadedBy: input.actorId },
+      allowOverCapacity: input.allowOverCapacity ?? false,
     });
 
     // The exception path is the one that most needs a name on it: the
@@ -105,7 +109,14 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
       actorId: input.actorId,
       action: "enrollment.created",
       targetId: created.enrollment.id,
-      metadata: { studentId: input.studentId, paymentId: created.payment.id, receiptUploadId: input.receiptUploadId },
+      metadata: {
+        studentId: input.studentId,
+        paymentId: created.payment.id,
+        receiptUploadId: input.receiptUploadId,
+        // Only when it happened: the trail is where "who put this class group
+        // over its limit" is answered (OOC-155).
+        ...(created.enrollment.overCapacity ? { overCapacity: true } : {}),
+      },
       at: created.enrollment.createdAt,
     });
 

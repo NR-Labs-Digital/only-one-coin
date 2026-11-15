@@ -33,6 +33,7 @@ const RowSchema = z.object({
   operationNumber: z.string().nullable(),
   amountCents: z.number().int(),
   expectedAmountCents: z.number().int(),
+  overCapacity: z.boolean(),
   currency: z.literal("PEN"),
   submittedAt: z.string(),
   decidedAt: z.string().nullable(),

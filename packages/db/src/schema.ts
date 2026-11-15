@@ -299,11 +299,18 @@ export const classGroups = pgTable(
     ),
     capacity: integer("capacity").notNull(),
     seatsTaken: integer("seats_taken").notNull().default(0),
+    // Seats held above capacity (OOC-155): an expired checkout hold that came
+    // back paid to a full schedule, or the staff enrolling or moving past the
+    // limit on purpose. Kept apart from `seats_taken` so the capacity check
+    // above stays a real net; "room left" is `seats_taken + seats_over <
+    // capacity` (apps/api, classGroupHasRoom).
+    seatsOver: integer("seats_over").notNull().default(0),
     status: text("status").notNull().default("enrolling"),
     ...softDeletable(),
   },
   (table) => [
     check("class_groups_capacity_check", sql`${table.capacity} > 0`),
+    check("class_groups_seats_over_check", sql`${table.seatsOver} >= 0`),
     check("class_groups_module_check", sql`${table.module} is null or ${table.module} > 0`),
     check("class_groups_full_course_check", sql`not ${table.fullCourse} or ${table.module} is null`),
     check("class_groups_classroom_links_check", sql`jsonb_typeof(${table.classroomLinks}) = 'object'`),
@@ -650,6 +657,10 @@ export const enrollments = pgTable(
     // Default 'web' only so the column lands additively on existing rows
     // written before this column existed.
     origin: text("origin").notNull().default("web"),
+    // The seat this enrollment holds is counted in `class_groups.seats_over`,
+    // not `seats_taken` (OOC-155). Giving the seat back decrements whichever
+    // counter this says.
+    overCapacity: boolean("over_capacity").notNull().default(false),
     ...softDeletable(),
   },
   (table) => [

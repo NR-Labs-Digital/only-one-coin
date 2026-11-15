@@ -33,6 +33,7 @@ export function classGroupFromRow(row: Row): ClassGroup {
     enrollmentClosesAt: row.enrollmentClosesAt,
     capacity: row.capacity,
     seatsTaken: row.seatsTaken,
+    seatsOver: row.seatsOver,
     status: row.status as ClassGroupStatus,
     sourceClassGroupId: row.sourceClassGroupId,
     createdAt: row.createdAt,

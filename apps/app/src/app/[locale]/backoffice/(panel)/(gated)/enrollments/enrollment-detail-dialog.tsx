@@ -21,11 +21,10 @@ import {
 } from '@/components/ui/dialog'
 
 /**
- * One enrollment, opened from the ledger. Read-only, like the payment dialog
- * next door and for the same reason: what can be done to an enrollment —
- * moving it, freezing it, withdrawing it — is a paid administrative procedure
- * with its own audit entry (`docs/REGRAS-NEGOCIO.md` §5), and it is recorded
- * from the class group where the seat lives, not from a click on a list.
+ * One enrollment, opened from the ledger. Read-only but for one action:
+ * moving it to another class group (OOC-84), a free staff tool offered to
+ * whoever may manage enrollments (`onMove`). Freezing and withdrawing are
+ * still paid procedures (`docs/REGRAS-NEGOCIO.md` §5) recorded elsewhere.
  *
  * It exists so the row can stay a row: the teacher, the modality, the ciclo,
  * the frozen price and the operation number are each worth one look and none
@@ -34,9 +33,12 @@ import {
 export function EnrollmentDetailDialog({
   enrollment,
   onClose,
+  onMove,
 }: {
   enrollment: EnrollmentRow | null
   onClose: () => void
+  /** Present only for a role that may move enrollments. */
+  onMove?: (enrollment: EnrollmentRow) => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -186,6 +188,16 @@ export function EnrollmentDetailDialog({
                   {t('enrollment_detail.manage_notice')}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
+                  {onMove && enrollment.seatStatus !== 'released' && (
+                    <button
+                      type="button"
+                      onClick={() => onMove(enrollment)}
+                      className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+                    >
+                      <BoIcon name="courses" size={16} />
+                      {t('enrollment_detail.move')}
+                    </button>
+                  )}
                   <DialogLink
                     href={`/backoffice/students/${enrollment.studentId}`}
                     label={t('enrollment_detail.open_student')}
