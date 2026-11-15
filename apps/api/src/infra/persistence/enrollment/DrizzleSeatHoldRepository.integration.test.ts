@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleSeatHoldRepository } from "./DrizzleSeatHoldRepository.js";
 import type { Db } from "@/infra/db/client.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The checkout hold's SQL (apps/api/CLAUDE.md, "Dois relógios") — the part
@@ -91,6 +92,7 @@ beforeEach(async () => {
       capacity: 2,
     })),
   );
+  await seedModuleRuns(db);
 });
 
 afterEach(async () => {
@@ -99,6 +101,7 @@ afterEach(async () => {
 
 async function cleanUp(): Promise<void> {
   await db.delete(seatHolds).where(inArray(seatHolds.classGroupId, GROUPS));
+  await db.delete(schema.classGroupModules).where(inArray(schema.classGroupModules.classGroupId, GROUPS));
   await db.delete(classGroups).where(inArray(classGroups.id, GROUPS));
   await db.delete(courses).where(eq(courses.id, COURSE));
   await db.delete(academicPeriods).where(eq(academicPeriods.id, PERIOD));
@@ -185,6 +188,7 @@ describe("DrizzleSeatHoldRepository.claim — one schedule, several class groups
       slots: values.slots ?? [...MON_WED].reverse(),
       status: values.status ?? "enrolling",
     });
+    await seedModuleRuns(db);
   }
 
   function heldIn(result: Awaited<ReturnType<typeof claim>>): string | null {

@@ -10,6 +10,7 @@ import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/Driz
 import { DrizzleWaitlistRepository } from "./DrizzleWaitlistRepository.js";
 import { ListWaitlistQuery } from "./ListWaitlistQuery.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The manual waitlist (OOC-35), checked where it is written: the same student
@@ -104,6 +105,7 @@ async function seed(tx: Db): Promise<void> {
     seatsTaken: 1,
     status: "enrolling",
   });
+  await seedModuleRuns(tx);
   await tx
     .insert(students)
     .values([

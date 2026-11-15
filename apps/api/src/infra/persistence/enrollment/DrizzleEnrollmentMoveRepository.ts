@@ -5,18 +5,20 @@ import {
   type IEnrollmentMoveRepository,
   type SeatStatus,
 } from "@ooc/domain";
-import { classGroups, enrollments, grades, plans } from "@ooc/db";
+import { classGroupModules, classGroups, enrollments, grades, plans } from "@ooc/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { giveBackSeat } from "@/infra/persistence/catalog/seatCounters.js";
 import { movableClassGroup } from "@/infra/persistence/catalog/sellableClassGroup.js";
 import { takeManualSeat } from "./takeManualSeat.js";
+import { enrollmentInModule, enrollmentModuleId } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 /**
- * Moving an enrollment between class groups (OOC-84). The seat counters move
- * in the same transaction as the enrollment row, and only through atomic
- * UPDATEs — the target's room is never read and compared in code (apps/api
- * CLAUDE.md, Vagas).
+ * Moving an enrollment between class groups (OOC-84), or between the module
+ * runs of one (OOC-156). The seat counters move in the same transaction as
+ * the enrollment row, and only through atomic UPDATEs — the target's room is
+ * never read and compared in code (apps/api CLAUDE.md, Vagas). Within one
+ * class group the seat stays: the seats are the class group's.
  */
 export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepository {
   constructor(private readonly db: Db) {}
@@ -27,6 +29,7 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         id: enrollments.id,
         studentId: enrollments.studentId,
         classGroupId: enrollments.classGroupId,
+        classGroupModuleId: enrollmentModuleId(),
         courseId: classGroups.courseId,
         seatStatus: enrollments.seatStatus,
         graded: sql<boolean>`exists (
@@ -41,15 +44,17 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
     return row ? { ...row, seatStatus: row.seatStatus as SeatStatus } : null;
   }
 
-  async findTarget(classGroupId: string): Promise<EnrollmentMoveTarget | null> {
+  async findTarget(classGroupModuleId: string): Promise<EnrollmentMoveTarget | null> {
     const [row] = await this.db
       .select({
-        id: classGroups.id,
+        id: classGroupModules.id,
+        classGroupId: classGroups.id,
         courseId: classGroups.courseId,
         open: sql<boolean>`${movableClassGroup()}`,
       })
-      .from(classGroups)
-      .where(eq(classGroups.id, classGroupId))
+      .from(classGroupModules)
+      .innerJoin(classGroups, eq(classGroups.id, classGroupModules.classGroupId))
+      .where(and(eq(classGroupModules.id, classGroupModuleId), isNull(classGroupModules.deletedAt)))
       .limit(1);
     return row ?? null;
   }
@@ -66,7 +71,9 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
   async move(params: {
     enrollmentId: string;
     fromClassGroupId: string;
+    fromClassGroupModuleId: string;
     toClassGroupId: string;
+    toClassGroupModuleId: string;
     planPriceId: string | null;
     allowOverCapacity: boolean;
   }): Promise<{ overCapacity: boolean; movedAt: Date }> {
@@ -81,12 +88,38 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
           and(
             eq(enrollments.id, params.enrollmentId),
             eq(enrollments.classGroupId, params.fromClassGroupId),
+            enrollmentInModule(params.fromClassGroupModuleId),
             ne(enrollments.seatStatus, "released"),
             isNull(enrollments.deletedAt),
           ),
         )
         .for("update");
       if (!current) throw new EnrollmentMoveConflictError();
+
+      if (params.fromClassGroupId === params.toClassGroupId) {
+        // Another run of the same class group: the seat is the class group's
+        // and stays where it is — only the run changes. The run must still be
+        // live and the class group still open, re-checked by the write.
+        const [moved] = await tx
+          .update(enrollments)
+          .set({ classGroupModuleId: params.toClassGroupModuleId, updatedAt: sql`now()` })
+          .where(
+            and(
+              eq(enrollments.id, params.enrollmentId),
+              sql`exists (
+                select 1 from ${classGroupModules}
+                join ${classGroups} on ${classGroups.id} = ${classGroupModules.classGroupId}
+                where ${classGroupModules.id} = ${params.toClassGroupModuleId}
+                  and ${classGroupModules.classGroupId} = ${params.toClassGroupId}
+                  and ${classGroupModules.deletedAt} is null
+                  and ${movableClassGroup()}
+              )`,
+            ),
+          )
+          .returning({ updatedAt: enrollments.updatedAt });
+        if (!moved) throw new EnrollmentMoveConflictError();
+        return { overCapacity: current.overCapacity, movedAt: moved.updatedAt };
+      }
 
       // Both class groups in id order, so two moves crossing between the same
       // pair lock in the same order and never deadlock.
@@ -112,6 +145,7 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         .update(enrollments)
         .set({
           classGroupId: params.toClassGroupId,
+          classGroupModuleId: params.toClassGroupModuleId,
           overCapacity,
           ...(params.planPriceId ? { planPriceId: params.planPriceId } : {}),
           updatedAt: sql`now()`,

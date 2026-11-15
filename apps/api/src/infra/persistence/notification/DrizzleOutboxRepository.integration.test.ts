@@ -12,6 +12,7 @@ import { DrizzleEnrollmentRepository } from "@/infra/persistence/enrollment/Driz
 import { DrizzlePlanPriceLookup } from "@/infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { DrizzleOutboxRepository, insertOutboxEmails } from "./DrizzleOutboxRepository.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The outbox against a real, migrated Postgres — the "pronto quando" of the
@@ -99,6 +100,7 @@ async function seed(tx: Db): Promise<void> {
       capacity: 1,
       seatsTaken,
     });
+    await seedModuleRuns(tx);
   }
   await tx.insert(students).values({
     id: STUDENT,

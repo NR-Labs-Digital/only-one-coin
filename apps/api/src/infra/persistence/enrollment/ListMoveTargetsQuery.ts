@@ -1,11 +1,19 @@
-import { academicPeriods, classGroups, courses, enrollments, planPrices, plans } from "@ooc/db";
+import { academicPeriods, classGroupModules, classGroups, courses, enrollments, planPrices, plans } from "@ooc/db";
 import { and, asc, desc, eq, inArray, isNull, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { movableClassGroup } from "@/infra/persistence/catalog/sellableClassGroup.js";
+import { enrollmentModuleId, MODULE_ORDER } from "@/infra/persistence/catalog/classGroupModuleSql.js";
+import { moduleTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
+/**
+ * One module run a seat can move to (OOC-156). `id` is the run's — what the
+ * move names; `classGroupId`, code, capacity and seats are its class group's.
+ */
 export interface MoveTargetClassGroup {
   id: string;
+  classGroupId: string;
   code: string;
+  teacherName: string;
   courseId: string;
   courseName: string;
   academicPeriodName: string;
@@ -30,6 +38,8 @@ export interface MoveTargetPlan {
 export interface MoveTargets {
   courseId: string;
   classGroupId: string;
+  /** The run the seat is in now. */
+  classGroupModuleId: string;
   classGroups: MoveTargetClassGroup[];
   plans: MoveTargetPlan[];
 }
@@ -38,9 +48,10 @@ export interface MoveTargets {
 const MOVE_TARGET_LIMIT = 500;
 
 /**
- * What the move dialog offers (OOC-84): every class group staff could move
- * the enrollment to (`movableClassGroup`, the same predicate the move's own
- * UPDATE checks) except the one it is in, full ones included — a full target
+ * What the move dialog offers (OOC-84): every live module run (OOC-156) of
+ * every class group staff could move the enrollment to (`movableClassGroup`,
+ * the same predicate the move's own UPDATE checks) except the run it is in —
+ * the other runs of its own class group included — full ones included: a full target
  * asks for the over-capacity confirmation (OOC-155) — and the live plans of
  * those courses with their price in force, for a move that changes course.
  * Read-only shaping; the move itself decides nothing from it.
@@ -52,7 +63,11 @@ export class ListMoveTargetsQuery {
 
   async run(enrollmentId: string): Promise<MoveTargets | null> {
     const [source] = await this.db
-      .select({ classGroupId: enrollments.classGroupId, courseId: classGroups.courseId })
+      .select({
+        classGroupId: enrollments.classGroupId,
+        classGroupModuleId: enrollmentModuleId(),
+        courseId: classGroups.courseId,
+      })
       .from(enrollments)
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
       .where(and(eq(enrollments.id, enrollmentId), isNull(enrollments.deletedAt)))
@@ -61,26 +76,31 @@ export class ListMoveTargetsQuery {
 
     const groupRows = await this.db
       .select({
-        id: classGroups.id,
+        id: classGroupModules.id,
+        classGroupId: classGroups.id,
         code: classGroups.code,
+        teacherName: moduleTeacherName(sql`${classGroupModules.id}`),
         courseId: classGroups.courseId,
         courseName: courses.name,
         academicPeriodName: academicPeriods.name,
         schedule: classGroups.schedule,
-        slots: classGroups.slots,
+        slots: classGroupModules.slots,
         startsOn: classGroups.startsOn,
         status: classGroups.status,
-        module: classGroups.module,
-        fullCourse: classGroups.fullCourse,
+        module: classGroupModules.module,
+        fullCourse: classGroupModules.fullCourse,
         capacity: classGroups.capacity,
         seatsTaken: classGroups.seatsTaken,
         seatsOver: classGroups.seatsOver,
       })
-      .from(classGroups)
+      .from(classGroupModules)
+      .innerJoin(classGroups, eq(classGroups.id, classGroupModules.classGroupId))
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .innerJoin(academicPeriods, eq(academicPeriods.id, classGroups.academicPeriodId))
-      .where(and(movableClassGroup(), ne(classGroups.id, source.classGroupId)))
-      .orderBy(asc(courses.name), asc(classGroups.startsOn), asc(classGroups.code))
+      .where(
+        and(movableClassGroup(), isNull(classGroupModules.deletedAt), ne(classGroupModules.id, source.classGroupModuleId)),
+      )
+      .orderBy(asc(courses.name), asc(classGroups.startsOn), asc(classGroups.code), ...MODULE_ORDER)
       .limit(MOVE_TARGET_LIMIT);
 
     const courseIds = [...new Set(groupRows.map((row) => row.courseId))];
@@ -111,6 +131,7 @@ export class ListMoveTargetsQuery {
     return {
       courseId: source.courseId,
       classGroupId: source.classGroupId,
+      classGroupModuleId: source.classGroupModuleId,
       classGroups: groupRows.map((row) => ({ ...row, startsOn: row.startsOn?.toISOString() ?? null })),
       plans: planList,
     };

@@ -15,6 +15,9 @@ import {
 import {
   CapacityBelowSeatsTakenError,
   ClassGroup,
+  ClassGroupModule,
+  ClassGroupModuleHasStudentsError,
+  ClassGroupModuleTakenError,
   DuplicateClassGroupsUseCase,
   PeriodAlreadyDuplicatedError,
 } from "@ooc/domain";
@@ -28,6 +31,7 @@ import { DrizzleAcademicPeriodRepository } from "./DrizzleAcademicPeriodReposito
 import { DrizzleClassGroupRepository } from "./DrizzleClassGroupRepository.js";
 import { ListClassGroupsQuery } from "./ListClassGroupsQuery.js";
 import { ListPeriodsQuery } from "./ListPeriodsQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The OOC-35 acceptance criterion, checked where it is written: duplicating a
@@ -133,6 +137,7 @@ async function seed(tx: Db): Promise<void> {
     { ...dated, id: T2, courseId: C1, status: "enrolling", deletedAt: new Date(now - DAY) },
     { ...dated, id: T3, courseId: C2, status: "enrolling" },
   ]);
+  await seedModuleRuns(tx);
 
   await tx.insert(enrollments).values({ studentId: student!.id, classGroupId: T1, planPriceId: PRICE, seatStatus: "confirmed" });
   await tx.insert(waitlistEntries).values({ studentId: student!.id, classGroupId: T1 });
@@ -168,14 +173,23 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         seatsTaken: 0,
         capacity: 25,
         code: expect.stringMatching(/^A-\d{5,}$/),
-        teacherName: "Docente de prueba",
-        slots: [{ weekday: "mon", startTime: "19:00", endTime: "20:30" }],
         schedule: "Lun 19:00-20:30",
         sourceClassGroupId: T1,
         deletedAt: null,
       });
 
       const copyId = copies[0]!.id;
+      // The copy's module run carries the teaching side (OOC-156): same
+      // schedule and teacher hint, a fresh id, no Classroom.
+      const runs = await tx.select().from(schema.classGroupModules).where(eq(schema.classGroupModules.classGroupId, copyId));
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        teacherName: "Docente de prueba",
+        slots: [{ weekday: "mon", startTime: "19:00", endTime: "20:30" }],
+        classroomLinks: {},
+        deletedAt: null,
+      });
+      expect(runs[0]!.id).not.toBe(copyId);
       expect(await tx.select().from(enrollments).where(eq(enrollments.classGroupId, copyId))).toEqual([]);
       expect(await tx.select().from(waitlistEntries).where(eq(waitlistEntries.classGroupId, copyId))).toEqual([]);
       expect(await tx.select().from(seatHolds).where(eq(seatHolds.classGroupId, copyId))).toEqual([]);
@@ -230,8 +244,9 @@ describe("class group catalog", { timeout: 30_000 }, () => {
       const [afterCreate] = await tx.select().from(classGroups).where(eq(classGroups.id, created.id));
       expect(afterCreate?.schedule).toBe("Lun/Mié 18:00-19:30");
 
-      created.update({ slots: [{ weekday: "sat", startTime: "09:00", endTime: "12:00" }] });
-      await groups.update(created);
+      const run = created.entryModule!;
+      run.update({ slots: [{ weekday: "sat", startTime: "09:00", endTime: "12:00" }] });
+      await groups.updateModule(run);
       const [afterEdit] = await tx.select().from(classGroups).where(eq(classGroups.id, created.id));
       expect(afterEdit?.schedule).toBe("Sáb 09:00-12:00");
     });
@@ -252,7 +267,7 @@ describe("class group catalog", { timeout: 30_000 }, () => {
           capacity: 20,
         }, "CGCAT-NEW"),
       );
-      expect((await groups.findById(created.id))?.classroomLinks).toEqual({ "1": link });
+      expect((await groups.findById(created.id))?.entryModule?.classroomLinks).toEqual({ "1": link });
       const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });
       expect(listed).toMatchObject({
         classroomLinksByModule: { "1": link },
@@ -260,9 +275,9 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         classroomMissing: false,
       });
 
-      created.update({ classroomLinks: [{ module: 1, url: null }] });
-      await groups.update(created);
-      expect((await groups.findById(created.id))?.classroomLinks).toEqual({});
+      created.entryModule!.update({ classroomLinks: [{ module: 1, url: null }] });
+      await groups.updateModule(created.entryModule!);
+      expect((await groups.findById(created.id))?.entryModule?.classroomLinks).toEqual({});
       const [cleared] = await new ListClassGroupsQuery(tx).run({ id: created.id });
       expect(cleared).toMatchObject({ classroomLinks: [], classroomMissing: true });
     });
@@ -281,20 +296,22 @@ describe("class group catalog", { timeout: 30_000 }, () => {
           capacity: 20,
         }, "CGCAT-MOD"),
       );
-      expect((await groups.findById(created.id))?.module).toBe(1);
+      expect((await groups.findById(created.id))?.entryModule?.module).toBe(1);
       const [listed] = await new ListClassGroupsQuery(tx).run({ id: created.id });
       expect(listed?.module).toBe(1);
+      expect(listed?.modules.map((run) => run.module)).toEqual([1]);
 
-      created.update({ module: null });
-      await groups.update(created);
-      expect((await groups.findById(created.id))?.module).toBeNull();
+      created.entryModule!.update({ module: null });
+      await groups.updateModule(created.entryModule!);
+      expect((await groups.findById(created.id))?.entryModule?.module).toBeNull();
     });
   });
 
   it("leaves a legacy schedule text alone when the class group has no slots", async () => {
     await inRolledBackTransaction(async (tx) => {
       await seed(tx);
-      await tx.update(classGroups).set({ slots: [], schedule: "Mar/Jue 18:00-19:00" }).where(eq(classGroups.id, T1));
+      await tx.update(classGroups).set({ schedule: "Mar/Jue 18:00-19:00" }).where(eq(classGroups.id, T1));
+      await tx.update(schema.classGroupModules).set({ slots: [] }).where(eq(schema.classGroupModules.classGroupId, T1));
       const groups = new DrizzleClassGroupRepository(tx);
 
       const legacy = (await groups.findById(T1))!;
@@ -418,6 +435,7 @@ describe("class group catalog", { timeout: 30_000 }, () => {
         { ...base, id: id(7), status: "finished", seatsTaken: 3 },
         { ...base, id: id(8), status: "in_progress", seatsTaken: 3, deletedAt: new Date(now - DAY) },
       ]);
+      await seedModuleRuns(tx);
       const ours = new Set([T1, T2, T3, ...Array.from({ length: 9 }, (_, n) => id(n))]);
       const pending = async () =>
         (await new ListClassGroupsQuery(tx).run({ pendingTeacher: true }))
@@ -443,9 +461,16 @@ describe("class group catalog", { timeout: 30_000 }, () => {
           addressLine: "Av. de prueba 1",
         })
         .returning({ id: teachers.id });
-      await tx.update(classGroups).set({ teacherId: teacher!.id }).where(eq(classGroups.id, id(0)));
+      await tx
+        .update(schema.classGroupModules)
+        .set({ teacherId: teacher!.id })
+        .where(eq(schema.classGroupModules.classGroupId, id(0)));
 
       expect(await pending()).toEqual([T1, id(1), id(2)].sort());
+
+      // A second run with nobody to teach it puts the class group back on the list (OOC-156).
+      await tx.insert(schema.classGroupModules).values({ classGroupId: id(0), module: 2, slots: [] });
+      expect(await pending()).toEqual([T1, id(0), id(1), id(2)].sort());
     });
   });
 
@@ -473,6 +498,89 @@ describe("class group catalog", { timeout: 30_000 }, () => {
       expect(typeof a.startsOn).toBe("string");
       expect(b.classGroupCount).toBe(0);
       expect(items.indexOf(b)).toBeLessThan(items.indexOf(a));
+    });
+  });
+});
+
+describe("module runs of a class group (OOC-156)", { timeout: 30_000 }, () => {
+  const SLOTS_B = [{ weekday: "thu" as const, startTime: "18:00", endTime: "19:30" }];
+
+  it("opens a class group with its first run, and lists every run with who is in it", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const groups = new DrizzleClassGroupRepository(tx);
+      const created = await groups.create(
+        ClassGroup.create(
+          { courseId: C1, academicPeriodId: PERIOD_A, module: 1, slots: [{ weekday: "mon", startTime: "18:00", endTime: "19:30" }], capacity: 20 },
+          "CGCAT-RUNS",
+        ),
+      );
+      expect(created.modules).toHaveLength(1);
+      const second = await groups.insertModule(created.addModule({ module: 2, slots: SLOTS_B }));
+
+      // T1 is 0058's shape: its run shares its id and holds its one confirmed seat.
+      const [listed] = await new ListClassGroupsQuery(tx).run({ id: T1 });
+      expect(listed!.modules).toEqual([expect.objectContaining({ id: T1, students: 1 })]);
+
+      const [withRuns] = await new ListClassGroupsQuery(tx).run({ id: created.id });
+      expect(withRuns!.modules.map((run) => [run.module, run.students])).toEqual([
+        [1, 0],
+        [2, 0],
+      ]);
+      expect(withRuns!.module).toBe(1);
+      expect(withRuns!.teacherMissing).toBe(true);
+      expect((await groups.findById(created.id))!.modules.map((run) => run.id)).toEqual([created.entryModule!.id, second.id]);
+    });
+  });
+
+  it("lets the database refuse a second live run of a module", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const groups = new DrizzleClassGroupRepository(tx);
+      const group = (await groups.findById(T1))!;
+      await groups.updateModule(Object.assign(group.entryModule!, { module: 1 }));
+      // Built past the aggregate, as a second panel saving at the same moment would.
+      const twin = ClassGroupModule.create(T1, { module: 1, slots: SLOTS_B });
+      await expect(groups.insertModule(twin)).rejects.toBeInstanceOf(ClassGroupModuleTakenError);
+    });
+  });
+
+  it("retires a run only while no live seat is in it, and keeps the schedule text on the entry run", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const groups = new DrizzleClassGroupRepository(tx);
+      const group = (await groups.findById(T1))!;
+      await groups.updateModule(Object.assign(group.entryModule!, { module: 1 }));
+      const second = await groups.insertModule(group.addModule({ module: 2, slots: SLOTS_B }));
+
+      // T1's confirmed seat sits in the first run.
+      await expect(groups.retireModule(Object.assign(group.entryModule!, { deletedAt: new Date() }))).rejects.toBeInstanceOf(
+        ClassGroupModuleHasStudentsError,
+      );
+
+      const [seat] = await tx.select({ id: enrollments.id }).from(enrollments).where(eq(enrollments.classGroupId, T1));
+      await tx.update(enrollments).set({ classGroupModuleId: second.id }).where(eq(enrollments.id, seat!.id));
+      await expect(groups.retireModule(Object.assign(second, { deletedAt: new Date() }))).rejects.toBeInstanceOf(
+        ClassGroupModuleHasStudentsError,
+      );
+
+      await tx.update(enrollments).set({ seatStatus: "released" }).where(eq(enrollments.id, seat!.id));
+      await groups.retireModule(Object.assign(second, { deletedAt: new Date() }));
+      const [run] = await tx.select().from(schema.classGroupModules).where(eq(schema.classGroupModules.id, second.id));
+      expect(run!.deletedAt).not.toBeNull();
+      const [row] = await tx.select({ schedule: classGroups.schedule }).from(classGroups).where(eq(classGroups.id, T1));
+      expect(row!.schedule).toBe("Lun 19:00-20:30");
+    });
+  });
+
+  it("refuses an enrollment pointing at a run of another class group", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const [seat] = await tx.select({ id: enrollments.id }).from(enrollments).where(eq(enrollments.classGroupId, T1));
+      // T2's run: a real run, but not of the seat's class group.
+      await expect(
+        tx.update(enrollments).set({ classGroupModuleId: T2 }).where(eq(enrollments.id, seat!.id)),
+      ).rejects.toThrow();
     });
   });
 });

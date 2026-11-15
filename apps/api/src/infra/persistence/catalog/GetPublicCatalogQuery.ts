@@ -3,7 +3,8 @@ import { and, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { LandingCourseKey } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "./sellableClassGroup.js";
-import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { entryTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { entryModules } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 export interface PublicCatalogCourse {
   id: string;
@@ -107,13 +108,17 @@ export class GetPublicCatalogQuery {
       planRows.push({ id: row.planId, courseId: row.courseId, name: row.name, planPriceId: row.planPriceId, amountCents: row.amountCents });
     }
 
+    // The schedule sold is the entry run's — where a new student starts
+    // (OOC-156). A class group with no live run has nowhere to put one, so
+    // the inner join leaves it out.
+    const entry = entryModules(this.db);
     const classGroupResult = await this.db
       .select({
         id: classGroups.id,
         courseId: classGroups.courseId,
         code: classGroups.code,
-        teacherName: classGroupTeacherName,
-        slots: classGroups.slots,
+        teacherName: entryTeacherName,
+        slots: entry.slots,
         startsOn: classGroups.startsOn,
         endsOn: classGroups.endsOn,
         capacity: classGroups.capacity,
@@ -124,6 +129,7 @@ export class GetPublicCatalogQuery {
         seatsTaken: sql<number>`least(${classGroups.capacity}, ${classGroups.seatsTaken} + ${classGroups.seatsOver})`.mapWith(Number),
       })
       .from(classGroups)
+      .innerJoin(entry, eq(entry.classGroupId, classGroups.id))
       // A retired period or course takes the class group out too — part of
       // sellableClassGroup, the same rule the picker and the claim read.
       .where(sellableClassGroup());

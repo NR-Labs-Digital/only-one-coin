@@ -12,6 +12,7 @@ import { DrizzlePlanRepository } from "./DrizzlePlanRepository.js";
 import { GetCourseQuery } from "./GetCourseQuery.js";
 import { ListCoursesQuery } from "./ListCoursesQuery.js";
 import { ListLanguagesQuery } from "./ListLanguagesQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The OOC-36 acceptance criterion at the storage layer: a course written
@@ -139,6 +140,7 @@ describe("course catalog storage", () => {
         endsOn: new Date("2027-01-30T05:00:00Z"),
         capacity: 30,
       });
+      await seedModuleRuns(tx);
 
       const relisted = (await new ListCoursesQuery(tx).run()).find((item) => item.id === course.id);
       expect(relisted?.classGroupCount).toBe(1);

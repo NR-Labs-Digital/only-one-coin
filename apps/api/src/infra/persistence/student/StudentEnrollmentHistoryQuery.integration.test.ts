@@ -5,6 +5,7 @@ import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { StudentEnrollmentHistoryQuery } from "./StudentEnrollmentHistoryQuery.js";
 import type { Db } from "@/infra/db/client.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The student file's enrollment tab (OOC-73). Unlike the ledger it must list
@@ -84,6 +85,7 @@ async function seed(): Promise<void> {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 50,
   });
+  await seedModuleRuns(db);
 
   await db.insert(students).values(
     [STUDENT, OTHER_STUDENT].map((id, i) => ({

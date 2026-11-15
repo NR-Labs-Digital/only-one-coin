@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { sellableClassGroup } from "@/infra/persistence/catalog/sellableClassGroup.js";
 import { classGroupHasRoom } from "@/infra/persistence/catalog/seatCounters.js";
+import { outerEntrySlots } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -38,8 +39,9 @@ function offerFields(row: { courseId: string; startsOn: Date | null; endsOn: Dat
  *
  * The named group may itself be off sale (retired, window closed) while a
  * sibling is still selling; the schedule the reader picked is still there.
- * Course, period and dates narrow the read in SQL; the week is compared by
- * `classGroupOfferKey`, the same function the checkout groups with.
+ * Course, period and dates narrow the read in SQL; the week — the entry run's,
+ * where a new student starts (OOC-156) — is compared by `classGroupOfferKey`,
+ * the same function the checkout groups with.
  */
 export async function offerOf(tx: Tx, classGroupId: string): Promise<string[]> {
   const [named] = await tx
@@ -48,7 +50,7 @@ export async function offerOf(tx: Tx, classGroupId: string): Promise<string[]> {
       academicPeriodId: classGroups.academicPeriodId,
       startsOn: classGroups.startsOn,
       endsOn: classGroups.endsOn,
-      slots: classGroups.slots,
+      slots: outerEntrySlots(),
     })
     .from(classGroups)
     .where(eq(classGroups.id, classGroupId))
@@ -63,7 +65,7 @@ export async function offerOf(tx: Tx, classGroupId: string): Promise<string[]> {
       courseId: classGroups.courseId,
       startsOn: classGroups.startsOn,
       endsOn: classGroups.endsOn,
-      slots: classGroups.slots,
+      slots: outerEntrySlots(),
     })
     .from(classGroups)
     .where(

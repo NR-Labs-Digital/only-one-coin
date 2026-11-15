@@ -23,6 +23,7 @@ import { insertPasswordlessUser, upsertCredentialPassword } from "@/infra/auth/c
 import { profilesOfAccount } from "./accountProfiles.js";
 import { DrizzlePortalAccessRepository } from "./DrizzlePortalAccessRepository.js";
 import { provisionPortalAccount } from "./provisionPortalAccount.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The SQL behind student portal access. `students`, `audit_log` are under the
@@ -250,6 +251,7 @@ async function seedConfirmedEnrollment(tx: Tx, studentId: string): Promise<void>
       seatsTaken: 1,
     })
     .returning({ id: classGroups.id });
+  await seedModuleRuns(tx);
   await tx.insert(enrollments).values({ studentId, classGroupId: group!.id, planPriceId: price!.id, seatStatus: "confirmed" });
 }
 

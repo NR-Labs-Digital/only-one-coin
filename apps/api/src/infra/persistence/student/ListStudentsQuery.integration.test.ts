@@ -12,6 +12,7 @@ import {
   STUDENT_DIRECTORY_TARGET,
   type StudentListRow,
 } from "./ListStudentsQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * OOC-55: the student directory is people who got in, plus people registered
@@ -120,6 +121,7 @@ async function seed(tx: Tx): Promise<Map<string, string>> {
       capacity: 50,
     })),
   );
+  await seedModuleRuns(tx);
 
   const rows = await tx
     .insert(students)

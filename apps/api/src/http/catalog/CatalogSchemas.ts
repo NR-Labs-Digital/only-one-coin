@@ -74,6 +74,23 @@ export const PeriodListItemSchema = z.object({
   classGroupCount: z.number().int(),
 });
 
+/** One module run of a class group (OOC-156): its own teacher, schedule and Classroom. */
+export const ClassGroupModuleItemSchema = z.object({
+  id: z.string().uuid(),
+  module: z.number().int().nullable(),
+  fullCourse: z.boolean(),
+  teacherId: z.string().uuid().nullable(),
+  teacherName: z.string(),
+  legacyTeacherName: z.string(),
+  slots: z.array(WeeklySlotSchema),
+  classroomUrl: z.string().nullable(),
+  classroomLinksByModule: z.record(z.string(), z.string()),
+  classroomLinks: z.array(ClassroomLinkSchema),
+  classroomMissing: z.boolean(),
+  /** Confirmed seats in the run now. */
+  students: z.number().int(),
+});
+
 export const ClassGroupItemSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
@@ -83,6 +100,9 @@ export const ClassGroupItemSchema = z.object({
   courseActive: z.boolean(),
   academicPeriodId: z.string().uuid(),
   academicPeriodName: z.string(),
+  /** Every live module run, in module order (OOC-156); the first is where a new student starts. */
+  modules: z.array(ClassGroupModuleItemSchema),
+  /** The fields from here to `slots` repeat the first run — a class group of one run reads them as before. */
   teacherId: z.string().uuid().nullable(),
   teacherName: z.string(),
   legacyTeacherName: z.string(),
@@ -92,8 +112,10 @@ export const ClassGroupItemSchema = z.object({
   classroomLinksByModule: z.record(z.string(), z.string()),
   /** The links of the modules it teaches, in order. */
   classroomLinks: z.array(ClassroomLinkSchema),
-  /** Some module it teaches has no Classroom yet. */
+  /** Some run of the class group is missing a Classroom. */
   classroomMissing: z.boolean(),
+  /** Some run of the class group has no teacher yet. */
+  teacherMissing: z.boolean(),
   module: z.number().int().nullable(),
   fullCourse: z.boolean(),
   slots: z.array(WeeklySlotSchema),
@@ -152,6 +174,27 @@ export const CreateClassGroupBodySchema = z.object({
   publish: z.boolean(),
 });
 
+/**
+ * The class group's own fields, plus — for a class group of a single module
+ * run — that run's (teacher, module, schedule, Classroom), the way the form
+ * always edited them (OOC-156). With more than one run those go to the run's
+ * route; sending them here is 422 `catalog.class_group_module_ambiguous`.
+ */
 export const UpdateClassGroupBodySchema = CreateClassGroupBodySchema.omit({ academicPeriodId: true, publish: true })
   .partial()
   .refine((patch) => Object.keys(patch).length > 0);
+
+/** The run's fields — opening another run of a class group, or (partial) editing one. */
+export const CreateClassGroupModuleBodySchema = CreateClassGroupBodySchema.pick({
+  teacherId: true,
+  classroomLinks: true,
+  module: true,
+  fullCourse: true,
+  slots: true,
+});
+
+export const UpdateClassGroupModuleBodySchema = CreateClassGroupModuleBodySchema.partial().refine(
+  (patch) => Object.keys(patch).length > 0,
+);
+
+export const ClassGroupModuleParamsSchema = z.object({ id: z.string().uuid(), moduleId: z.string().uuid() });

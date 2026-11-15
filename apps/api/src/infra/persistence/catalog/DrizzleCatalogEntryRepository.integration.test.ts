@@ -6,6 +6,7 @@ import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DrizzleCatalogEntryRepository } from "./DrizzleCatalogEntryRepository.js";
 import type { Db } from "@/infra/db/client.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The half of the catalog retirement that typecheck cannot vouch for: four
@@ -99,6 +100,7 @@ async function seedOneOfEverything(): Promise<void> {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 20,
   });
+  await seedModuleRuns(db);
 
   await db.insert(students).values({
     id: STUDENT,

@@ -1,5 +1,6 @@
 import {
   CapacityBelowSeatsTakenError,
+  ClassGroupModuleHasStudentsError,
   LanguageExistsError,
   PeriodAlreadyDuplicatedError,
   classGroupCodeOf,
@@ -7,6 +8,7 @@ import {
   type AcademicPeriod,
   type AuditLogEntry,
   type ClassGroup,
+  type ClassGroupModule,
   type Course,
   type IAcademicPeriodRepository,
   type IAuditLogRepository,
@@ -153,6 +155,22 @@ export class FakeClassGroupRepository implements IClassGroupRepository {
     if (group.capacity < taken) throw new CapacityBelowSeatsTakenError();
     this.rows.set(group.id, group);
     return group;
+  }
+
+  /** The aggregate in `rows` already holds the run the usecase added or edited. */
+  async insertModule(run: ClassGroupModule): Promise<ClassGroupModule> {
+    return run;
+  }
+
+  async updateModule(run: ClassGroupModule): Promise<ClassGroupModule> {
+    return run;
+  }
+
+  /** Runs a test says still have students in them — the conditional write's refusal. */
+  public readonly occupiedModules = new Set<string>();
+
+  async retireModule(run: ClassGroupModule): Promise<void> {
+    if (this.occupiedModules.has(run.id)) throw new ClassGroupModuleHasStudentsError();
   }
 
   async listForCopy(periodId: string): Promise<{ copyable: ClassGroup[]; skippedRetired: number }> {

@@ -2,7 +2,7 @@ import { academicPeriods, classGroups, courses, enrollments, payments, planPrice
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
-import { classGroupTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
 export interface StudentEnrollmentHistoryRow {
   id: string;
@@ -70,7 +70,7 @@ export class StudentEnrollmentHistoryQuery {
         courseName: courses.name,
         classGroupSchedule: classGroups.schedule,
         classGroupCode: classGroups.code,
-        teacherName: classGroupTeacherName,
+        teacherName: enrollmentTeacherName,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
         planPriceId: planPrices.id,

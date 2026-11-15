@@ -1,4 +1,4 @@
-import { classGroups } from "@ooc/db";
+import { classGroupModules, classGroups } from "@ooc/db";
 import { and, eq, inArray, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { classGroupIsFull } from "./seatCounters.js";
 
@@ -7,7 +7,8 @@ import { classGroupIsFull } from "./seatCounters.js";
  * means, written once (OOC-97). Coordination assigns teachers after enrollment
  * closes, so the Académico section lists these as its to-do list:
  *
- * - not retired, and no teacher from the roster yet;
+ * - not retired, and some live module run (OOC-156) with no teacher from the
+ *   roster yet;
  * - enrolling or in progress — a draft never opened, and a finished or closed
  *   class group is past the point where a teacher can be found for it;
  * - somebody holds a seat — a class group nobody bought is not an offer that
@@ -16,14 +17,19 @@ import { classGroupIsFull } from "./seatCounters.js";
  *   enrollment window has ended.
  *
  * Computed on read, never stored: the class group joins the list the moment
- * one of those turns true and leaves it the moment a teacher is assigned.
- * A retired course or period does not take it off — the students who already
- * hold a seat still need a teacher.
+ * one of those turns true and leaves it the moment its last run gets a
+ * teacher. A retired course or period does not take it off — the students who
+ * already hold a seat still need a teacher.
  */
 export function pendingTeacherClassGroup(now: SQL = sql`now()`): SQL {
   return and(
     isNull(classGroups.deletedAt),
-    isNull(classGroups.teacherId),
+    sql`exists (
+      select 1 from ${classGroupModules}
+      where ${classGroupModules.classGroupId} = ${classGroups.id}
+        and ${classGroupModules.deletedAt} is null
+        and ${classGroupModules.teacherId} is null
+    )`,
     inArray(classGroups.status, ["enrolling", "in_progress"]),
     sql`${classGroups.seatsTaken} + ${classGroups.seatsOver} > 0`,
     or(

@@ -13,6 +13,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzlePaymentSettlementRepository } from "./DrizzlePaymentSettlementRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The SQL that finishes an enrollment (OOC-55): the conditional UPDATEs are
@@ -90,6 +91,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     capacity: 50,
     seatsTaken: 1,
   });
+  await seedModuleRuns(tx);
 }
 
 let sequence = 0;

@@ -117,6 +117,11 @@ import { listClassGroupsRoute } from "@/http/catalog/ListClassGroupsRoute.js";
 import { getClassGroupRoute } from "@/http/catalog/GetClassGroupRoute.js";
 import { createClassGroupRoute } from "@/http/catalog/CreateClassGroupRoute.js";
 import { updateClassGroupRoute } from "@/http/catalog/UpdateClassGroupRoute.js";
+import {
+  addClassGroupModuleRoute,
+  retireClassGroupModuleRoute,
+  updateClassGroupModuleRoute,
+} from "@/http/catalog/ClassGroupModuleRoutes.js";
 import { listTeacherOptionsRoute } from "@/http/catalog/ListTeacherOptionsRoute.js";
 import { advanceClassGroupStatusRoute } from "@/http/catalog/AdvanceClassGroupStatusRoute.js";
 import { getClassGroupRosterRoute } from "@/http/catalog/GetClassGroupRosterRoute.js";
@@ -303,6 +308,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createClassGroupRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateClassGroupRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(addClassGroupModuleRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(updateClassGroupModuleRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireClassGroupModuleRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listTeacherOptionsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(advanceClassGroupStatusRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupRosterRoute);

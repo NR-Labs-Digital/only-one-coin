@@ -9,6 +9,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleEmailVerificationRepository, consumeVerifiedEmail } from "./DrizzleEmailVerificationRepository.js";
 import { DrizzleSeatHoldRepository } from "./DrizzleSeatHoldRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The checkout's e-mail proof in SQL (spec 2026-10-07): the code row and its
@@ -63,6 +64,7 @@ beforeEach(async () => {
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 5,
   });
+  await seedModuleRuns(db);
   const claimed = await new DrizzleSeatHoldRepository(db).claim({ classGroupId: GROUP, origin: "web", holdMinutes: 15 });
   if (claimed.kind !== "held") throw new Error("fixture hold not taken");
   holdId = claimed.hold.id;
@@ -80,6 +82,7 @@ async function cleanUp(): Promise<void> {
   }
   await db.delete(emailVerifications).where(inArray(emailVerifications.seatHoldId, holds));
   await db.delete(seatHolds).where(eq(seatHolds.classGroupId, GROUP));
+  await db.delete(schema.classGroupModules).where(eq(schema.classGroupModules.classGroupId, GROUP));
   await db.delete(classGroups).where(eq(classGroups.id, GROUP));
   await db.delete(courses).where(eq(courses.id, COURSE));
   await db.delete(academicPeriods).where(eq(academicPeriods.id, PERIOD));

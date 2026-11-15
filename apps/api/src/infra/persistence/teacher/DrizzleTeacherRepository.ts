@@ -1,4 +1,4 @@
-import { classGroups, languages, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
+import { classGroupModules, classGroups, languages, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
 import {
   LanguageNotFoundError,
   Teacher,
@@ -48,7 +48,8 @@ function toTeacher(row: TeacherRow, languages: string[], availability: WeeklySlo
 /**
  * The teacher aggregate over its three tables (OOC-78). Languages and
  * availability are lists rewritten as a whole when the file is saved — the
- * history that matters (who ran a class group) lives on `class_groups.teacher_id`,
+ * history that matters (who ran a class group) lives on the module runs'
+ * `teacher_id` (`class_group_modules`, OOC-156),
  * so these two tables carry no delete lock (0025).
  */
 export class DrizzleTeacherRepository implements ITeacherRepository {
@@ -154,10 +155,12 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
   async countRunningClassGroups(teacherId: string): Promise<number> {
     const [row] = await this.db
       .select({ total: count() })
-      .from(classGroups)
+      .from(classGroupModules)
+      .innerJoin(classGroups, eq(classGroups.id, classGroupModules.classGroupId))
       .where(
         and(
-          eq(classGroups.teacherId, teacherId),
+          eq(classGroupModules.teacherId, teacherId),
+          isNull(classGroupModules.deletedAt),
           inArray(classGroups.status, ["enrolling", "in_progress"]),
           isNull(classGroups.deletedAt),
         ),

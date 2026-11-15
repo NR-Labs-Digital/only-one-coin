@@ -15,6 +15,7 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DashboardSummaryQuery, type DashboardSummary } from "./DashboardSummaryQuery.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The home's headline numbers (OOC-67), read against Postgres: which approval
@@ -115,6 +116,7 @@ async function seedGroup(tx: Tx, status: "enrolling" | "in_progress" | "finished
       status,
     })
     .returning({ id: classGroups.id });
+  await seedModuleRuns(tx);
   return group!.id;
 }
 

@@ -2,6 +2,7 @@ import * as schema from "@ooc/db";
 import {
   academicPeriods,
   auditLog,
+  classGroupModules,
   classGroups,
   courses,
   currentGrades,
@@ -37,6 +38,7 @@ import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTea
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
 import { DrizzleGradeRepository } from "./DrizzleGradeRepository.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The docente portal's acceptance gate (OOC-82, Sessão 36): a teacher sees
@@ -215,6 +217,7 @@ async function seeded(fn: (tx: Db) => Promise<void>): Promise<void> {
           groupRow(B_RUNNING, "OOC82-B1", beto.id, "in_progress"),
           groupRow(NOBODYS, "OOC82-N1", null, "enrolling"),
         ]);
+      await seedModuleRuns(tx);
 
       const ZAPATA = "018f2b5c-8200-7000-8000-000000000021";
       const RESERVED = "018f2b5c-8200-7000-8000-000000000022";
@@ -293,7 +296,11 @@ describe("docente portal scope (OOC-82)", () => {
     await seeded(async (tx) => {
       const { get } = portal(tx);
 
-      await tx.update(classGroups).set({ fullCourse: true, module: null }).where(sql`${classGroups.id} = ${A_FINISHED}`);
+      // The teaching side is the module run's since OOC-156; 0058's run shares the class group's id.
+      await tx
+        .update(classGroupModules)
+        .set({ fullCourse: true, module: null })
+        .where(sql`${classGroupModules.id} = ${A_FINISHED}`);
       await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_FINISHED })).resolves.toMatchObject({
         module: null,
         fullCourse: true,
@@ -308,6 +315,17 @@ describe("docente portal scope (OOC-82)", () => {
 
       await expect(
         tx.update(classGroups).set({ fullCourse: true, module: 2 }).where(sql`${classGroups.id} = ${A_RUNNING}`),
+      ).rejects.toThrow();
+    });
+  });
+
+  it("refuses a full-course run with a module number, like the class group did", async () => {
+    await seeded(async (tx) => {
+      await expect(
+        tx
+          .update(classGroupModules)
+          .set({ fullCourse: true, module: 2 })
+          .where(sql`${classGroupModules.id} = ${A_RUNNING}`),
       ).rejects.toThrow();
     });
   });
@@ -365,6 +383,65 @@ describe("docente portal scope (OOC-82)", () => {
   });
 });
 
+describe("module runs in the docente portal (OOC-156)", () => {
+  it("gives each run's teacher their own run and students, and posts the grade into the class group", async () => {
+    await seeded(async (tx) => {
+      const beto = (await new DrizzleTeacherRepository(tx).findByUserId(B_ACCOUNT))!;
+      await tx.update(classGroupModules).set({ module: 1 }).where(sql`${classGroupModules.id} = ${A_RUNNING}`);
+      const [second] = await tx
+        .insert(classGroupModules)
+        .values({
+          classGroupId: A_RUNNING,
+          module: 2,
+          teacherId: beto.id,
+          slots: [{ weekday: "fri", startTime: "18:00", endTime: "19:30" }],
+        })
+        .returning({ id: classGroupModules.id });
+      const [lucia] = await tx
+        .select({ id: enrollments.id })
+        .from(enrollments)
+        .where(and(eq(enrollments.classGroupId, A_RUNNING), eq(enrollments.seatStatus, "confirmed")));
+      await tx.update(enrollments).set({ classGroupModuleId: second!.id }).where(eq(enrollments.id, lucia!.id));
+
+      const { list, students } = portal(tx);
+      // Ana keeps her run of the class group, now with nobody in it.
+      expect(await students.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).toEqual([]);
+      // Beto sees the second run — the class group's code, the run's week and module.
+      const betos = await list.run({ userId: B_ACCOUNT });
+      expect(betos.find((group) => group.id === second!.id)).toMatchObject({
+        classGroupId: A_RUNNING,
+        code: "OOC82-A1",
+        module: 2,
+        slots: [{ weekday: "fri", startTime: "18:00", endTime: "19:30" }],
+        moduleMaterialUrl: "https://drive.google.com/ooc100-m2",
+      });
+      expect(await students.run({ userId: B_ACCOUNT, classGroupId: second!.id })).toEqual([
+        expect.objectContaining({ enrollmentId: lucia!.id, firstName: "Lucía" }),
+      ]);
+      await expect(students.run({ userId: A_ACCOUNT, classGroupId: second!.id })).rejects.toBeInstanceOf(
+        CatalogClassGroupNotFoundError,
+      );
+
+      const repository = new DrizzleGradeRepository(tx);
+      const reader = new DrizzleTeachingReader(tx, new ClassGroupRosterQuery(tx));
+      const get = new GetOwnClassGroupUseCase(new DrizzleTeacherRepository(tx), reader);
+      const record = new RecordOwnClassGroupGradesUseCase(get, reader, repository, new DrizzlePlatformSettingsRepository(tx));
+      await expect(
+        record.run({
+          userId: B_ACCOUNT,
+          classGroupId: second!.id,
+          entries: [{ enrollmentId: lucia!.id, value: { kind: "score", score: 16 } }],
+        }),
+      ).resolves.toMatchObject({ recorded: 1, finished: true });
+      const [grade] = await tx.select({ classGroupId: grades.classGroupId }).from(grades).where(eq(grades.enrollmentId, lucia!.id));
+      expect(grade!.classGroupId).toBe(A_RUNNING);
+      const read = new ListOwnClassGroupGradesUseCase(get, reader, repository);
+      expect(await read.run({ userId: B_ACCOUNT, classGroupId: second!.id })).toHaveLength(1);
+      expect(await read.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).toEqual([]);
+    });
+  });
+});
+
 describe("final grades (OOC-38)", () => {
   function sheet(tx: Db) {
     const teachers = new DrizzleTeacherRepository(tx);
@@ -373,7 +450,7 @@ describe("final grades (OOC-38)", () => {
     const repository = new DrizzleGradeRepository(tx);
     return {
       roster: new ListOwnClassGroupStudentsUseCase(get, reader),
-      list: new ListOwnClassGroupGradesUseCase(get, repository),
+      list: new ListOwnClassGroupGradesUseCase(get, reader, repository),
       record: new RecordOwnClassGroupGradesUseCase(get, reader, repository, new DrizzlePlatformSettingsRepository(tx)),
     };
   }

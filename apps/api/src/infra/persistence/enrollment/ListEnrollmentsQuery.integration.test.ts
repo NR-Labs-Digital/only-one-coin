@@ -6,6 +6,7 @@ import pg from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ListEnrollmentsQuery, PAGE_SIZE } from "./ListEnrollmentsQuery.js";
 import type { Db } from "@/infra/db/client.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The ledger's filters, search and paging moved from the browser into SQL —
@@ -112,6 +113,7 @@ async function seedLedger(): Promise<void> {
       capacity: 50,
     })),
   );
+  await seedModuleRuns(db);
 
   // Batched, one statement per table: against a managed Postgres every
   // round trip costs ~140ms, and one insert per row would spend the hook

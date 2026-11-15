@@ -25,6 +25,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzlePublicEnrollmentRepository } from "./DrizzlePublicEnrollmentRepository.js";
 import { DrizzleSeatHoldRepository } from "./DrizzleSeatHoldRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The public submit in SQL. It used to require a verified e-mail proof for the
@@ -103,6 +104,7 @@ async function seed(tx: Db): Promise<{ holdId: string; receiptUploadId: string }
     endsOn: new Date("2026-06-30T00:00:00.000Z"),
     capacity: 5,
   });
+  await seedModuleRuns(tx);
   const claimed = await new DrizzleSeatHoldRepository(tx).claim({ classGroupId: GROUP, origin: "web", holdMinutes: 15 });
   if (claimed.kind !== "held") throw new Error("fixture hold not taken");
   const holdId = claimed.hold.id;

@@ -2,6 +2,7 @@ import * as schema from "@ooc/db";
 import {
   academicPeriods,
   auditLog,
+  classGroupModules,
   classGroups,
   courses,
   enrollments,
@@ -30,6 +31,7 @@ import { DrizzleAuditLogRepository } from "@/infra/identity/DrizzleAuditLogRepos
 import { GetPublicCatalogQuery } from "@/infra/persistence/catalog/GetPublicCatalogQuery.js";
 import { DrizzlePaymentSettlementRepository } from "@/infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import { seedManualReceipt } from "@/tests/fixtures/manualReceipt.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 import { DrizzleEnrollmentMoveRepository } from "./DrizzleEnrollmentMoveRepository.js";
 import { DrizzleEnrollmentRepository } from "./DrizzleEnrollmentRepository.js";
 import { DrizzlePlanPriceLookup } from "./DrizzlePlanPriceLookup.js";
@@ -140,6 +142,7 @@ async function seed(tx: Db, opts: { siblings: boolean } = { siblings: false }): 
     group(GROUP_B, "A-OC-2", COURSE, opts.siblings ? SLOTS : [{ weekday: "sat", startTime: "09:00", endTime: "10:30" }]),
     group(GROUP_OTHER_COURSE, "A-OC-3", OTHER_COURSE),
   ]);
+  await seedModuleRuns(tx);
   await tx.insert(students).values([studentRow(ROSA, "OC155-1"), studentRow(JUAN, "OC155-2")]);
 }
 
@@ -398,13 +401,19 @@ describe("moving an enrollment (OOC-84)", () => {
       const moved = await moveUseCase(tx).run({
         actorId: STAFF,
         enrollmentId,
-        classGroupId: GROUP_B,
+        classGroupModuleId: GROUP_B,
         planId: null,
         allowOverCapacity: false,
         reason: "  Cambio de horario pedido por WhatsApp  ",
       });
 
-      expect(moved).toEqual({ enrollmentId, classGroupId: GROUP_B, overCapacity: false, planChanged: false });
+      expect(moved).toEqual({
+        enrollmentId,
+        classGroupId: GROUP_B,
+        classGroupModuleId: GROUP_B,
+        overCapacity: false,
+        planChanged: false,
+      });
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 0, over: 0 });
       expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
       const [trail] = await tx
@@ -426,7 +435,7 @@ describe("moving an enrollment (OOC-84)", () => {
       await seed(tx);
       const { enrollmentId } = await manual(tx, ROSA, GROUP_A, false);
       await manual(tx, JUAN, GROUP_B, false); // B is full
-      const input = { actorId: STAFF, enrollmentId, classGroupId: GROUP_B, planId: null, reason: "Mismo docente" };
+      const input = { actorId: STAFF, enrollmentId, classGroupModuleId: GROUP_B, planId: null, reason: "Mismo docente" };
 
       await expect(moveUseCase(tx).run({ ...input, allowOverCapacity: false })).rejects.toBeInstanceOf(ClassGroupFullError);
       const moved = await moveUseCase(tx).run({ ...input, allowOverCapacity: true });
@@ -434,7 +443,7 @@ describe("moving an enrollment (OOC-84)", () => {
       expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 1 });
 
       // Back to A: the seat leaves B's seats_over, not its seats_taken.
-      await moveUseCase(tx).run({ ...input, classGroupId: GROUP_A, allowOverCapacity: false });
+      await moveUseCase(tx).run({ ...input, classGroupModuleId: GROUP_A, allowOverCapacity: false });
       expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
     });
@@ -447,7 +456,7 @@ describe("moving an enrollment (OOC-84)", () => {
       const input = {
         actorId: STAFF,
         enrollmentId,
-        classGroupId: GROUP_OTHER_COURSE,
+        classGroupModuleId: GROUP_OTHER_COURSE,
         allowOverCapacity: false,
         reason: "Cambio de curso",
       };
@@ -476,14 +485,81 @@ describe("moving an enrollment (OOC-84)", () => {
       await tx.update(classGroups).set({ status: "finished" }).where(eq(classGroups.id, GROUP_B));
       const input = { actorId: STAFF, enrollmentId, planId: null, allowOverCapacity: true, reason: "x" };
 
-      await expect(moveUseCase(tx).run({ ...input, classGroupId: GROUP_B })).rejects.toMatchObject({
+      await expect(moveUseCase(tx).run({ ...input, classGroupModuleId: GROUP_B })).rejects.toMatchObject({
         reason: "enrollment.move_target_unavailable",
       });
 
       await tx.update(enrollments).set({ seatStatus: "released" }).where(eq(enrollments.id, enrollmentId));
-      await expect(moveUseCase(tx).run({ ...input, classGroupId: GROUP_OTHER_COURSE, planId: OTHER_PLAN })).rejects.toBeInstanceOf(
+      await expect(moveUseCase(tx).run({ ...input, classGroupModuleId: GROUP_OTHER_COURSE, planId: OTHER_PLAN })).rejects.toBeInstanceOf(
         EnrollmentMoveRefusedError,
       );
+    });
+  });
+
+  it("to another module run of the same class group: the run changes, the seat stays (OOC-156)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      const { enrollmentId } = await manual(tx, ROSA, GROUP_A, false);
+      const [second] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: GROUP_A, module: 2, slots: [{ weekday: "thu", startTime: "18:00", endTime: "19:30" }] })
+        .returning({ id: classGroupModules.id });
+
+      const moved = await moveUseCase(tx).run({
+        actorId: STAFF,
+        enrollmentId,
+        classGroupModuleId: second!.id,
+        planId: null,
+        allowOverCapacity: false,
+        reason: "Pasa al módulo 2",
+      });
+
+      expect(moved).toMatchObject({ classGroupId: GROUP_A, classGroupModuleId: second!.id, overCapacity: false });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
+      const [row] = await tx
+        .select({ classGroupId: enrollments.classGroupId, classGroupModuleId: enrollments.classGroupModuleId })
+        .from(enrollments)
+        .where(eq(enrollments.id, enrollmentId));
+      expect(row).toEqual({ classGroupId: GROUP_A, classGroupModuleId: second!.id });
+
+      // Back to the first run, the one 0058 made under the class group's id.
+      await moveUseCase(tx).run({
+        actorId: STAFF,
+        enrollmentId,
+        classGroupModuleId: GROUP_A,
+        planId: null,
+        allowOverCapacity: false,
+        reason: "Vuelve",
+      });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
+      await expect(
+        moveUseCase(tx).run({
+          actorId: STAFF,
+          enrollmentId,
+          classGroupModuleId: GROUP_A,
+          planId: null,
+          allowOverCapacity: false,
+          reason: "Otra vez",
+        }),
+      ).rejects.toMatchObject({ reason: "enrollment.move_same_class_group" });
+    });
+  });
+
+  it("puts a manual enrollment in the class group's first run", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      await tx.update(classGroupModules).set({ module: 2 }).where(eq(classGroupModules.id, GROUP_A));
+      const [first] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: GROUP_A, module: 1, slots: SLOTS })
+        .returning({ id: classGroupModules.id });
+
+      const { enrollmentId } = await manual(tx, ROSA, GROUP_A, false);
+      const [row] = await tx
+        .select({ classGroupModuleId: enrollments.classGroupModuleId })
+        .from(enrollments)
+        .where(eq(enrollments.id, enrollmentId));
+      expect(row?.classGroupModuleId).toBe(first!.id);
     });
   });
 });

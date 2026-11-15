@@ -232,7 +232,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
           // e-mails nobody, and a retry that writes nothing sends nothing.
           await insertOutboxEmails(tx, params.emails(recorded));
           await insertAudit(tx, params.audit(recorded));
-          finished = await this.finishWhenComplete(tx, params.classGroupId, params.seatIds, params.finishAudit);
+          finished = await this.finishWhenComplete(tx, params.classGroupId, params.finishAudit);
         }
 
         return { recorded: recorded.length, alreadyRecorded: skipped.length, finished };
@@ -245,21 +245,31 @@ export class DrizzleGradeRepository implements IGradeRepository {
 
   /**
    * OOC-102: the batch that leaves every confirmed seat graded finishes the
-   * module. Only from in progress — the WHERE on the status makes a second,
-   * concurrent batch a no-op instead of a second step.
+   * module — every seat of the class group, across all of its module runs
+   * (OOC-156), counted here rather than handed in: a seat confirmed a moment
+   * ago is one more to grade. Only from in progress — the WHERE on the status
+   * makes a second, concurrent batch a no-op instead of a second step.
    */
-  private async finishWhenComplete(
-    tx: Tx,
-    classGroupId: string,
-    seatIds: string[],
-    finishAudit: () => AuditLogEntry,
-  ): Promise<boolean> {
-    if (seatIds.length === 0) return false;
-    const [{ graded }] = await tx
-      .select({ graded: sql<number>`count(*)::int` })
-      .from(grades)
-      .where(and(eq(grades.classGroupId, classGroupId), inArray(grades.enrollmentId, seatIds)));
-    if (graded < seatIds.length) return false;
+  private async finishWhenComplete(tx: Tx, classGroupId: string, finishAudit: () => AuditLogEntry): Promise<boolean> {
+    const [{ seats, ungraded }] = await tx
+      .select({
+        seats: sql<number>`count(*)::int`,
+        // Aliased and qualified by hand: a single-table select prints its
+        // columns bare, and a bare "id" in here would be the grade's.
+        ungraded: sql<number>`count(*) filter (where not exists (
+          select 1 from "grades" posted
+          where posted.class_group_id = ${classGroupId} and posted.enrollment_id = "enrollments"."id"
+        ))::int`,
+      })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.classGroupId, classGroupId),
+          eq(enrollments.seatStatus, "confirmed"),
+          isNull(enrollments.deletedAt),
+        ),
+      );
+    if (seats === 0 || ungraded > 0) return false;
 
     const moved = await tx
       .update(classGroups)

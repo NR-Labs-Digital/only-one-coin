@@ -32,6 +32,7 @@ import { ListPaymentReviewQueueQuery } from "@/infra/persistence/payment/ListPay
 import { ListPaymentsQuery } from "@/infra/persistence/payment/ListPaymentsQuery.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleProcedureRepository } from "./DrizzleProcedureRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * Paid procedures against the real SQL (OOC-83): the origin CHECK, the frozen
@@ -124,6 +125,7 @@ async function seed(tx: Tx, seatStatus: "reserved" | "confirmed"): Promise<Seede
     capacity: 50,
     seatsTaken: 1,
   });
+  await seedModuleRuns(tx);
   await tx.insert(procedurePrices).values({ kind: "enrollment_certificate", amountCents: PRICE_CENTS, validFrom: new Date(Date.now() - 1000) });
 
   const [student] = await tx

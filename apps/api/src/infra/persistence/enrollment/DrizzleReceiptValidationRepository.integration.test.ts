@@ -27,6 +27,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleReceiptUploadRepository } from "./DrizzleReceiptUploadRepository.js";
 import { DrizzleReceiptValidationRepository } from "./DrizzleReceiptValidationRepository.js";
+import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
 /**
  * The traffic light's SQL (OOC-21): which receipts the relay offers, the
@@ -100,6 +101,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
     capacity: 50,
     seatsTaken: 10,
   });
+  await seedModuleRuns(tx);
 }
 
 let sequence = 0;
