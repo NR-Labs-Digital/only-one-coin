@@ -23,6 +23,14 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ClassGroupForm, classGroupAsRun } from '../class-group-form'
+import { ProgressionPanel } from '@/components/progression/progression-panel'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const secondaryButtonClass =
   'inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-40'
@@ -53,11 +61,14 @@ export function ModuleRunsCard({
   courses,
   teachers,
   canManage,
+  canProgress,
 }: {
   group: ClassGroupItem
   courses: CourseRow[]
   teachers: TeacherOption[] | null
   canManage: boolean
+  /** Moves students on to the next module (OOC-156) — coordination, below the pass mark too. */
+  canProgress: boolean
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
@@ -66,6 +77,9 @@ export function ModuleRunsCard({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [progressing, setProgressing] = useState<ClassGroupModuleItem | null>(null)
+  /* Students move on once the class group runs — the grades come after the last class. */
+  const progressionOpen = group.active && (group.status === 'in_progress' || group.status === 'finished')
 
   const runs = group.modules
   const courseModules = courses.find((course) => course.id === group.courseId)?.modules ?? 0
@@ -182,20 +196,32 @@ export function ModuleRunsCard({
               </div>
             </dl>
 
-            {canManage && group.active && (
+            {((canManage && group.active) || (canProgress && progressionOpen && run.students > 0)) && (
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null)
-                    setEditing({ runId: run.id })
-                  }}
-                  className={secondaryButtonClass}
-                >
-                  <BoIcon name="edit" size={16} />
-                  {t('class_group_runs.edit')}
-                </button>
-                {runs.length > 1 && (
+                {canProgress && progressionOpen && run.students > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setProgressing(run)}
+                    className={secondaryButtonClass}
+                  >
+                    <BoIcon name="trend-up" size={16} />
+                    {t('progression.open')}
+                  </button>
+                )}
+                {canManage && group.active && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null)
+                      setEditing({ runId: run.id })
+                    }}
+                    className={secondaryButtonClass}
+                  >
+                    <BoIcon name="edit" size={16} />
+                    {t('class_group_runs.edit')}
+                  </button>
+                )}
+                {canManage && group.active && runs.length > 1 && (
                   <button
                     type="button"
                     disabled={pending || run.students > 0}
@@ -285,6 +311,39 @@ export function ModuleRunsCard({
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog
+        open={progressing !== null}
+        onOpenChange={(open) => {
+          if (!open) setProgressing(null)
+        }}
+      >
+        <DialogContent closeLabel={t('class_group_runs.close')} className="bg-white">
+          {progressing && (
+            <>
+              <DialogHeader className="gap-2 border-b border-line p-5 pr-14">
+                <DialogTitle className="text-base font-semibold text-ink">{t('progression.title')}</DialogTitle>
+                <DialogDescription>
+                  {progressing.module === null
+                    ? group.code
+                    : t('class_group_runs.code_with_module', { code: group.code, number: progressing.module })}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[70vh] overflow-y-auto p-5">
+                <ProgressionPanel
+                  endpoint={`/api/v1/catalog/class-groups/${encodeURIComponent(group.id)}/modules/${encodeURIComponent(progressing.id)}/progression`}
+                  canForce
+                  onDone={(result) => {
+                    setProgressing(null)
+                    setToast(t('progression.done', { advance: result.advanced, repeat: result.repeated }))
+                    router.refresh()
+                  }}
+                />
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </Card>

@@ -37,6 +37,7 @@ const KNOWN: ReadonlySet<CatalogErrorKey> = new Set<CatalogErrorKey>([
   'class_group_module_last',
   'class_group_module_has_students',
   'class_group_module_ambiguous',
+  'class_group_full_course_split',
   'language_not_found',
   'language_exists',
   'language_in_use',

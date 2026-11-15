@@ -16,6 +16,7 @@ import {
   canCreateClassGroup,
   canCreateEnrollment,
   canEditGrades,
+  canMoveStudentsOn,
   canReadGrades,
 } from '@/lib/backoffice/permissions'
 import { getClassGroupGradeSheet } from '@/lib/backoffice/grades'
@@ -196,7 +197,13 @@ export default async function ClassGroupDetailPage({
         canManage={canManage}
       />
 
-      <ModuleRunsCard group={group} courses={courses ?? []} teachers={teachers} canManage={canManage} />
+      <ModuleRunsCard
+        group={group}
+        courses={courses ?? []}
+        teachers={teachers}
+        canManage={canManage}
+        canProgress={canMoveStudentsOn(staff.role)}
+      />
 
       <RosterCard roster={roster} />
 

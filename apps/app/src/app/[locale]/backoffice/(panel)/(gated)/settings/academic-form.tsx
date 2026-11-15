@@ -9,7 +9,7 @@ import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from './se
 /** The academic half of the settings. */
 export type AcademicSettings = Pick<
   PlatformSettings,
-  'passingGrade' | 'certificateDeadlineBusinessDays' | 'contractAlertDays'
+  'passingGrade' | 'certificateDeadlineBusinessDays' | 'contractAlertDays' | 'progressionRequiresPassingGrade'
 >
 
 /**
@@ -46,6 +46,27 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
               onChange={(event) => set('passingGrade', Number(event.target.value))}
               className={numberClass}
             />
+          </Row>
+
+          <Row
+            helpLabel={t('common.help')}
+            label={t('settings.progression_requires_passing_label')}
+            hint={t('settings.progression_requires_passing_hint')}
+            value={t(
+              draft.progressionRequiresPassingGrade
+                ? 'settings.progression_requires_passing_on'
+                : 'settings.progression_requires_passing_off',
+            )}
+          >
+            <label className="inline-flex min-h-tap items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={draft.progressionRequiresPassingGrade}
+                onChange={(event) => set('progressionRequiresPassingGrade', event.target.checked)}
+                className="size-4 accent-brand-blue"
+              />
+              {t('settings.progression_requires_passing_toggle')}
+            </label>
           </Row>
 
           <Row

@@ -597,7 +597,9 @@ export function ClassGroupForm({
               {t('class_groups.module_option', { number })}
             </option>
           ))}
-          {!mustNumberModule && (
+          {/* A full course opens one group per module (OOC-156): something you
+              pick when opening a class group, never a group you edit into. */}
+          {mode === 'create' && (
             <option value={FULL_COURSE}>{t('class_groups.module_full_course_option')}</option>
           )}
         </select>

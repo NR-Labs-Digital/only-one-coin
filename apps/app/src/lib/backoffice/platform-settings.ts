@@ -22,6 +22,11 @@ export interface PlatformSettings {
   certificateDeadlineBusinessDays: number
   /** How early a teacher's contract starts showing as expiring. */
   contractAlertDays: number
+  /**
+   * Moving a student on to the next module asks for the pass mark (OOC-156).
+   * Coordination may still advance below it, with a reason.
+   */
+  progressionRequiresPassingGrade: boolean
 }
 
 /**
