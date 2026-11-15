@@ -13,6 +13,8 @@ export const PlatformSettingsResponseSchema = z.object({
   passingGrade: z.number().int(),
   certificateDeadlineBusinessDays: z.number().int(),
   contractAlertDays: z.number().int(),
+  /** OOC-156: advancing to the next module asks for the pass mark. */
+  progressionRequiresPassingGrade: z.boolean(),
 });
 
 /**

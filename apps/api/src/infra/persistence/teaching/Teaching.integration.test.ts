@@ -15,6 +15,8 @@ import {
   students,
 } from "@ooc/db";
 import {
+  ApplyOwnProgressionUseCase,
+  PreviewOwnProgressionUseCase,
   CatalogClassGroupNotFoundError,
   CorrectClassGroupGradeUseCase,
   GetOwnClassGroupUseCase,
@@ -36,6 +38,7 @@ import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { ClassGroupRosterQuery } from "@/infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
+import { DrizzleProgressionRepository } from "./DrizzleProgressionRepository.js";
 import { DrizzleGradeRepository } from "./DrizzleGradeRepository.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
@@ -442,6 +445,118 @@ describe("module runs in the docente portal (OOC-156)", () => {
   });
 });
 
+describe("moving students on (OOC-156, part 2)", () => {
+  it("advances who passed, repeats who did not, and grades the repeat as an attempt of its own", async () => {
+    await seeded(async (tx) => {
+      const ana = (await new DrizzleTeacherRepository(tx).findByUserId(A_ACCOUNT))!;
+      await tx.update(classGroupModules).set({ module: 1 }).where(sql`${classGroupModules.id} = ${A_RUNNING}`);
+      const [second] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: A_RUNNING, module: 2, teacherId: ana.id, slots: [] })
+        .returning({ id: classGroupModules.id });
+      const PEDRO = "018f2b5c-8200-7000-8000-000000000029";
+      await tx.insert(students).values(studentRow(PEDRO, "Pedro", "Vargas", "OOC156-STUDENT-1"));
+      const [pedro] = await tx
+        .insert(enrollments)
+        .values({ studentId: PEDRO, classGroupId: A_RUNNING, planPriceId: PRICE, seatStatus: "confirmed" })
+        .returning({ id: enrollments.id });
+      const [lucia] = await tx
+        .select({ id: enrollments.id })
+        .from(enrollments)
+        .where(and(eq(enrollments.classGroupId, A_RUNNING), eq(enrollments.seatStatus, "confirmed"), sql`${enrollments.id} <> ${pedro!.id}`));
+
+      const teachers = new DrizzleTeacherRepository(tx);
+      const reader = new DrizzleTeachingReader(tx, new ClassGroupRosterQuery(tx));
+      const get = new GetOwnClassGroupUseCase(teachers, reader);
+      const gradeRepository = new DrizzleGradeRepository(tx);
+      const settings = new DrizzlePlatformSettingsRepository(tx);
+      const record = new RecordOwnClassGroupGradesUseCase(get, reader, gradeRepository, settings);
+      const progression = new DrizzleProgressionRepository(tx);
+      const preview = new PreviewOwnProgressionUseCase(get, progression, settings);
+      const apply = new ApplyOwnProgressionUseCase(get, progression, settings);
+
+      await record.run({
+        userId: A_ACCOUNT,
+        classGroupId: A_RUNNING,
+        entries: [
+          { enrollmentId: lucia!.id, value: { kind: "score", score: 16 } },
+          { enrollmentId: pedro!.id, value: { kind: "score", score: 10 } },
+        ],
+      });
+
+      const before = await preview.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      expect(before.next).toEqual({ id: second!.id, module: 2 });
+      expect(before.seats.map((seat) => [seat.firstName, seat.verdict, seat.attempt])).toEqual([
+        ["Pedro", "below_passing", 1],
+        ["Lucía", "passed", 1],
+      ]);
+      // The teacher never advances below the pass mark.
+      await expect(
+        apply.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, advance: [pedro!.id], repeat: [] }),
+      ).rejects.toMatchObject({ reason: "teaching.progression_below_passing" });
+
+      await expect(
+        apply.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING, advance: [lucia!.id], repeat: [pedro!.id] }),
+      ).resolves.toEqual({ advanced: 1, repeated: 1 });
+
+      const seats = await tx
+        .select({ id: enrollments.id, run: enrollments.classGroupModuleId, attempt: enrollments.moduleAttempt })
+        .from(enrollments)
+        .where(sql`${enrollments.id} in (${lucia!.id}, ${pedro!.id})`);
+      expect(new Map(seats.map((seat) => [seat.id, [seat.run ?? A_RUNNING, seat.attempt]]))).toEqual(
+        new Map([
+          [lucia!.id, [second!.id, 1]],
+          [pedro!.id, [A_RUNNING, 2]],
+        ]),
+      );
+
+      // Pedro's second time through is graded on its own; his first grade stays in the history.
+      await expect(
+        record.run({
+          userId: A_ACCOUNT,
+          classGroupId: A_RUNNING,
+          entries: [{ enrollmentId: pedro!.id, value: { kind: "score", score: 15 } }],
+        }),
+      ).resolves.toMatchObject({ recorded: 1 });
+      const posted = await tx
+        .select({ score: grades.score, attempt: grades.attempt })
+        .from(grades)
+        .where(eq(grades.enrollmentId, pedro!.id));
+      expect(posted.map((row) => [Number(row.score), row.attempt]).sort()).toEqual([
+        [10, 1],
+        [15, 2],
+      ]);
+      const counting = await gradeRepository.listForClassGroup(A_RUNNING);
+      expect(counting.map((grade) => [grade.enrollmentId, grade.value])).toEqual([
+        [pedro!.id, { kind: "score", score: 15 }],
+      ]);
+
+      // A second confirmation from a stale screen moves nobody.
+      await expect(
+        progression.apply({
+          fromRunId: A_RUNNING,
+          toRunId: second!.id,
+          advance: [{ enrollmentId: pedro!.id, attempt: 1 }],
+          repeat: [],
+          audit: {
+            actorId: A_ACCOUNT,
+            action: "teaching.progression_applied",
+            targetId: A_RUNNING,
+            metadata: { classGroupModuleId: A_RUNNING, toClassGroupModuleId: second!.id, advanced: [pedro!.id], repeated: [] },
+            at: new Date(),
+          },
+        }),
+      ).resolves.toEqual({ conflicts: [pedro!.id] });
+
+      const [trail] = await tx
+        .select({ metadata: auditLog.metadata })
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "teaching.progression_applied"), eq(auditLog.targetId, A_RUNNING)));
+      expect(trail!.metadata).toMatchObject({ advanced: [lucia!.id], repeated: [pedro!.id] });
+    });
+  });
+});
+
 describe("final grades (OOC-38)", () => {
   function sheet(tx: Db) {
     const teachers = new DrizzleTeacherRepository(tx);
@@ -487,7 +602,7 @@ describe("final grades (OOC-38)", () => {
       const mails = await tx
         .select()
         .from(outbox)
-        .where(eq(outbox.dedupeKey, `grade_posted:${A_RUNNING}:${lucia!.enrollmentId}:student`));
+        .where(eq(outbox.dedupeKey, `grade_posted:${A_RUNNING}:1:${lucia!.enrollmentId}:student`));
       expect(mails).toHaveLength(1);
       expect(mails[0]).toMatchObject({ templateKey: "grade_posted", recipient: "ooc82-student-1@gmail.com", locale: "es-PE" });
       expect(mails[0]!.vars).toMatchObject({ grade: 13.75, courseName: "Curso (teaching integration)" });

@@ -40,6 +40,12 @@ const CASES: [string, string, Role][] = [
   ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`, "teacher"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/retire`, "billing"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/retire`, "sales"],
+  // Progression (OOC-156): management and both supervisions; never billing, sales, support or the analyst.
+  ["GET", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "billing"],
+  ["GET", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "sales"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "analyst"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "support"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "billing"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "billing"],
   // The waitlist carries the national id: only who runs class groups reads it (same as GET /students).
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],

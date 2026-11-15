@@ -5,7 +5,7 @@ import {
   type IEnrollmentMoveRepository,
   type SeatStatus,
 } from "@ooc/domain";
-import { classGroupModules, classGroups, enrollments, grades, plans } from "@ooc/db";
+import { classGroupModules, classGroups, enrollments, plans } from "@ooc/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { giveBackSeat } from "@/infra/persistence/catalog/seatCounters.js";
@@ -32,9 +32,13 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         classGroupModuleId: enrollmentModuleId(),
         courseId: classGroups.courseId,
         seatStatus: enrollments.seatStatus,
+        // Graded on the attempt it is on now (OOC-156): a grade from a module
+        // it already left, or from before it repeated, does not hold it.
         graded: sql<boolean>`exists (
-          select 1 from ${grades} g
-           where g.enrollment_id = ${enrollments.id} and g.class_group_id = ${enrollments.classGroupId}
+          select 1 from "grades" g
+           where g.enrollment_id = "enrollments"."id"
+             and coalesce(g.class_group_module_id, g.class_group_id) = coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")
+             and g.attempt = "enrollments"."module_attempt"
         )`,
       })
       .from(enrollments)
@@ -102,7 +106,16 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         // live and the class group still open, re-checked by the write.
         const [moved] = await tx
           .update(enrollments)
-          .set({ classGroupModuleId: params.toClassGroupModuleId, updatedAt: sql`now()` })
+          .set({
+            classGroupModuleId: params.toClassGroupModuleId,
+            // A run it took before keeps its grades: this is the next attempt.
+            moduleAttempt: sql`1 + (
+            select count(*) from "grades" earlier
+            where earlier.enrollment_id = ${params.enrollmentId}
+              and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${params.toClassGroupModuleId}
+          )`,
+            updatedAt: sql`now()`,
+          })
           .where(
             and(
               eq(enrollments.id, params.enrollmentId),
@@ -146,6 +159,11 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         .set({
           classGroupId: params.toClassGroupId,
           classGroupModuleId: params.toClassGroupModuleId,
+          moduleAttempt: sql`1 + (
+          select count(*) from "grades" earlier
+          where earlier.enrollment_id = ${params.enrollmentId}
+            and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${params.toClassGroupModuleId}
+          )`,
           overCapacity,
           ...(params.planPriceId ? { planPriceId: params.planPriceId } : {}),
           updatedAt: sql`now()`,

@@ -35,6 +35,10 @@ import {
   CreateClassGroupUseCase,
   UpdateClassGroupUseCase,
   AddClassGroupModuleUseCase,
+  ApplyOwnProgressionUseCase,
+  ApplyProgressionUseCase,
+  PreviewOwnProgressionUseCase,
+  PreviewProgressionUseCase,
   UpdateClassGroupModuleUseCase,
   RetireClassGroupModuleUseCase,
   AdvanceClassGroupStatusUseCase,
@@ -224,6 +228,7 @@ import { DrizzlePlanRepository } from "./infra/persistence/catalog/DrizzlePlanRe
 import { ListCoursesQuery } from "./infra/persistence/catalog/ListCoursesQuery.js";
 import { GetCourseQuery } from "./infra/persistence/catalog/GetCourseQuery.js";
 import { DrizzleAcademicPeriodRepository } from "./infra/persistence/catalog/DrizzleAcademicPeriodRepository.js";
+import { DrizzleProgressionRepository } from "@/infra/persistence/teaching/DrizzleProgressionRepository.js";
 import { DrizzleClassGroupRepository } from "./infra/persistence/catalog/DrizzleClassGroupRepository.js";
 import { DrizzleWaitlistRepository } from "./infra/persistence/catalog/DrizzleWaitlistRepository.js";
 import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.js";
@@ -311,6 +316,10 @@ export interface AppUseCases {
     listClassGroupGrades: ListClassGroupGradesUseCase;
     recordClassGroupGrades: RecordClassGroupGradesUseCase;
     correctClassGroupGrade: CorrectClassGroupGradeUseCase;
+    previewOwnProgression: PreviewOwnProgressionUseCase;
+    applyOwnProgression: ApplyOwnProgressionUseCase;
+    previewProgression: PreviewProgressionUseCase;
+    applyProgression: ApplyProgressionUseCase;
   };
   student: {
     register: RegisterStudentUseCase;
@@ -574,6 +583,7 @@ function buildContainer(): AppContainer {
   const planRepository = new DrizzlePlanRepository(db);
   const academicPeriodRepository = new DrizzleAcademicPeriodRepository(db);
   const classGroupRepository = new DrizzleClassGroupRepository(db);
+  const progressionRepository = new DrizzleProgressionRepository(db);
   const waitlistRepository = new DrizzleWaitlistRepository(db);
   const enrollmentEmailContextLookup = new DrizzleEnrollmentEmailContextLookup(db);
   const paymentSettlementRepository = new DrizzlePaymentSettlementRepository(db);
@@ -927,6 +937,10 @@ function buildContainer(): AppContainer {
           platformSettingsRepository,
         ),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),
+        previewOwnProgression: new PreviewOwnProgressionUseCase(getOwnClassGroup, progressionRepository, platformSettingsRepository),
+        applyOwnProgression: new ApplyOwnProgressionUseCase(getOwnClassGroup, progressionRepository, platformSettingsRepository),
+        previewProgression: new PreviewProgressionUseCase(teachingReader, progressionRepository, platformSettingsRepository),
+        applyProgression: new ApplyProgressionUseCase(teachingReader, progressionRepository, platformSettingsRepository),
         listClassGroupGrades: new ListClassGroupGradesUseCase(teachingReader, gradeRepository),
         recordClassGroupGrades: new RecordClassGroupGradesUseCase(
           teachingReader,
