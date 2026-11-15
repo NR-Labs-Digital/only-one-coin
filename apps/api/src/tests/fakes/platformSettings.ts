@@ -10,6 +10,7 @@ export const TEST_SETTINGS: PlatformSettings = {
   passingGrade: 14,
   certificateDeadlineBusinessDays: 25,
   contractAlertDays: 45,
+  progressionRequiresPassingGrade: true,
 };
 
 /** In-memory `platform_settings`: reads what the last update wrote. */

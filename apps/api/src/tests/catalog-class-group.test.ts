@@ -21,6 +21,7 @@ import {
   RetireClassGroupModuleUseCase,
   ClassGroupModuleTakenError,
   ClassGroupModuleAloneError,
+  ClassGroupFullCourseSplitError,
   ClassGroupLastModuleError,
   ClassGroupModuleHasStudentsError,
   ClassGroupModule,
@@ -528,10 +529,19 @@ describe("The module a class group teaches (OOC-100)", () => {
     expect(entry(saved).module).toBeNull();
   });
 
-  it("stores a full-course class group with no single module (OOC-130)", async () => {
-    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
-    expect(entry(group).fullCourse).toBe(true);
-    expect(entry(group).module).toBeNull();
+  it("opens one run per module for a full course, same teacher and week, each its own Classroom (OOC-156)", async () => {
+    const ana = await teachers.create(teacherOf());
+    const LINK3 = "https://classroom.google.com/c/m3";
+    const group = await create().run({
+      actorId: ACTOR,
+      classGroup: draftOf({ fullCourse: true, teacherId: ana.id, classroomLinks: [{ module: 3, url: LINK3 }] }),
+      publish: false,
+    });
+    expect(group.modules.map((run) => run.module)).toEqual([1, 2, 3, 4]);
+    expect(group.modules.every((run) => !run.fullCourse && run.teacherId === ana.id)).toBe(true);
+    expect(group.modules.every((run) => JSON.stringify(run.slots) === JSON.stringify(draftOf().slots))).toBe(true);
+    expect(group.modules.map((run) => run.classroomLinks)).toEqual([{}, {}, { "3": LINK3 }, {}]);
+    expect(entry(group).module).toBe(1);
   });
 
   it("lets the full course win over a module sent with it, without range-checking that module", async () => {
@@ -540,37 +550,21 @@ describe("The module a class group teaches (OOC-100)", () => {
       classGroup: draftOf({ fullCourse: true, module: 9 }),
       publish: false,
     });
-    expect(entry(group).fullCourse).toBe(true);
-    expect(entry(group).module).toBeNull();
+    expect(group.modules.map((run) => run.module)).toEqual([1, 2, 3, 4]);
   });
 
   it("is born without the full course when not asked for", async () => {
     const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 2 }), publish: false });
     expect(entry(group).fullCourse).toBe(false);
+    expect(group.modules).toHaveLength(1);
   });
 
-  it("turning the full course on drops the module, and audits both field names", async () => {
+  it("never turns a run into the full course: a full course is one run per module (OOC-156)", async () => {
     const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ module: 2 }), publish: false });
-    const saved = await editRunOf(group, { fullCourse: true, module: null });
-    expect(entry(saved).fullCourse).toBe(true);
-    expect(entry(saved).module).toBeNull();
-    expect(auditLog.appended.at(-1)!.metadata).toMatchObject({ fields: ["fullCourse", "module"] });
-  });
-
-  it("picking a module ends the full course, and that module is still range-checked", async () => {
-    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
-    await expect(editRun(group, { module: 9 })).rejects.toBeInstanceOf(
-      ClassGroupModuleOutOfRangeError,
+    await expect(editRun(group, { fullCourse: true, module: null })).rejects.toBeInstanceOf(
+      ClassGroupFullCourseSplitError,
     );
-    const saved = await editRunOf(group, { module: 3 });
-    expect(entry(saved).fullCourse).toBe(false);
-    expect(entry(saved).module).toBe(3);
-  });
-
-  it("clearing the module of a full-course class group leaves the full course alone", async () => {
-    const group = await create().run({ actorId: ACTOR, classGroup: draftOf({ fullCourse: true }), publish: false });
-    const saved = await editRunOf(group, { module: null });
-    expect(entry(saved).fullCourse).toBe(true);
+    expect(entry(groups.rows.get(group.id)).module).toBe(2);
   });
 
   it("checks the module against the new course when the course changes", async () => {
@@ -675,19 +669,23 @@ describe("Module runs of a class group (OOC-156)", () => {
     ).rejects.toBeInstanceOf(ClassGroupModuleTakenError);
   });
 
-  it.each([
-    ["a full course", { fullCourse: true }],
-    ["a module nobody set", {}],
-  ])("keeps %s alone in its class group", async (_, first) => {
-    const group = await groups.create(ClassGroup.create(draftOf(first), CODE));
+  it("keeps a run with no module set alone in its class group", async () => {
+    const group = await groups.create(ClassGroup.create(draftOf(), CODE));
     await expect(
       add().run({ actorId: ACTOR, classGroupId: group.id, module: { module: 2, slots: SLOTS_B } }),
     ).rejects.toBeInstanceOf(ClassGroupModuleAloneError);
 
     const numbered = await groups.create(ClassGroup.create(draftOf({ module: 1 }), "A-00002"));
     await expect(
-      add().run({ actorId: ACTOR, classGroupId: numbered.id, module: { ...first, slots: SLOTS_B } }),
+      add().run({ actorId: ACTOR, classGroupId: numbered.id, module: { slots: SLOTS_B } }),
     ).rejects.toBeInstanceOf(ClassGroupModuleAloneError);
+  });
+
+  it("never opens a full-course run beside the others", async () => {
+    const numbered = await groups.create(ClassGroup.create(draftOf({ module: 1 }), CODE));
+    await expect(
+      add().run({ actorId: ACTOR, classGroupId: numbered.id, module: { fullCourse: true, slots: SLOTS_B } }),
+    ).rejects.toBeInstanceOf(ClassGroupFullCourseSplitError);
   });
 
   it("checks the new run's module and teacher like the first one's", async () => {

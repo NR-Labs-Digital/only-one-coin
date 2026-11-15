@@ -69,6 +69,7 @@ export default async function SettingsPage({
           passingGrade: settings.passingGrade,
           certificateDeadlineBusinessDays: settings.certificateDeadlineBusinessDays,
           contractAlertDays: settings.contractAlertDays,
+          progressionRequiresPassingGrade: settings.progressionRequiresPassingGrade,
         }}
       />
       <ConstanciaPriceForm amountCents={constanciaFeeCents} />

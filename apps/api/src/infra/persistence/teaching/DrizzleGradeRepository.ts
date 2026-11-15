@@ -53,6 +53,20 @@ async function insertAudit(tx: Tx, entry: AuditLogEntry): Promise<void> {
   });
 }
 
+/**
+ * The grade of a seat's current attempt (OOC-156): posted in the run the
+ * enrollment is in now, on the attempt it is on. A grade of a module it
+ * already left, or of the time before it repeated, is history. Qualified by
+ * hand — see `classGroupModuleSql.ts`.
+ */
+const CURRENT_ATTEMPT_OF_VIEW = sql`"current_grades"."enrollment_id" = "enrollments"."id"
+  and "current_grades"."class_group_module_id" = coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")
+  and "current_grades"."attempt" = "enrollments"."module_attempt"`;
+
+const CURRENT_ATTEMPT_OF_GRADE = sql`"grades"."enrollment_id" = "enrollments"."id"
+  and coalesce("grades"."class_group_module_id", "grades"."class_group_id") = coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")
+  and "grades"."attempt" = "enrollments"."module_attempt"`;
+
 /** Postgres' unique_violation — two corrections replacing the same one (0052's partial indexes). */
 function isUniqueViolation(error: unknown): boolean {
   let current: unknown = error;
@@ -84,6 +98,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
         correctedAt: currentGrades.correctedAt,
       })
       .from(currentGrades)
+      .innerJoin(enrollments, CURRENT_ATTEMPT_OF_VIEW)
       .where(eq(currentGrades.classGroupId, classGroupId))
       .orderBy(asc(currentGrades.recordedAt));
 
@@ -108,6 +123,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
           byName: sql<string | null>`(select "name" from "user" where "id" = ${grades.recordedBy})`,
         })
         .from(grades)
+        .innerJoin(enrollments, CURRENT_ATTEMPT_OF_GRADE)
         .where(eq(grades.classGroupId, classGroupId)),
       this.db
         .select({
@@ -120,6 +136,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
         })
         .from(gradeCorrections)
         .innerJoin(grades, eq(grades.id, gradeCorrections.gradeId))
+        .innerJoin(enrollments, CURRENT_ATTEMPT_OF_GRADE)
         .where(eq(grades.classGroupId, classGroupId))
         // The line is straight (0052), so creation order is its order.
         .orderBy(asc(gradeCorrections.createdAt), asc(gradeCorrections.id)),
@@ -155,6 +172,8 @@ export class DrizzleGradeRepository implements IGradeRepository {
     const rows = await this.db
       .select({
         enrollmentId: enrollments.id,
+        classGroupModuleId: sql<string>`coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")`,
+        attempt: enrollments.moduleAttempt,
         firstName: students.firstName,
         lastName: students.lastName,
         email: students.email,
@@ -172,6 +191,8 @@ export class DrizzleGradeRepository implements IGradeRepository {
 
     return rows.map((row) => ({
       enrollmentId: row.enrollmentId,
+      classGroupModuleId: row.classGroupModuleId,
+      attempt: row.attempt,
       student: { firstName: row.firstName, lastName: row.lastName, email: row.email, birthDate: row.birthDate },
       guardian:
         row.guardianFirstName !== null && row.guardianEmail !== null
@@ -190,11 +211,19 @@ export class DrizzleGradeRepository implements IGradeRepository {
             params.entries.map((entry) => ({
               enrollmentId: entry.enrollmentId,
               classGroupId: params.classGroupId,
+              // The run and attempt the seat is on now (OOC-156): read from
+              // the enrollment as the row is written, never handed in.
+              classGroupModuleId: sql`(
+                select coalesce(seat.class_group_module_id, seat.class_group_id)
+                from "enrollments" seat where seat.id = ${entry.enrollmentId}
+              )`,
+              attempt: sql`(select seat.module_attempt from "enrollments" seat where seat.id = ${entry.enrollmentId})`,
               ...columnsOf(entry.value),
               recordedBy: params.recordedBy,
             })),
           )
-          .onConflictDoNothing({ target: [grades.classGroupId, grades.enrollmentId] })
+          // The one unique index of 0059: seat, run and attempt.
+          .onConflictDoNothing()
           .returning({ enrollmentId: grades.enrollmentId });
 
         const written = new Set(inserted.map((row) => row.enrollmentId));
@@ -206,6 +235,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
           const existing = await tx
             .select({ enrollmentId: grades.enrollmentId, score: grades.score, didNotSit: grades.didNotSit })
             .from(grades)
+            .innerJoin(enrollments, CURRENT_ATTEMPT_OF_GRADE)
             .where(
               and(
                 eq(grades.classGroupId, params.classGroupId),
@@ -258,7 +288,9 @@ export class DrizzleGradeRepository implements IGradeRepository {
         // columns bare, and a bare "id" in here would be the grade's.
         ungraded: sql<number>`count(*) filter (where not exists (
           select 1 from "grades" posted
-          where posted.class_group_id = ${classGroupId} and posted.enrollment_id = "enrollments"."id"
+          where posted.enrollment_id = "enrollments"."id"
+            and coalesce(posted.class_group_module_id, posted.class_group_id) = coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")
+            and posted.attempt = "enrollments"."module_attempt"
         ))::int`,
       })
       .from(enrollments)
@@ -288,6 +320,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
         const [posted] = await tx
           .select({ id: grades.id })
           .from(grades)
+          .innerJoin(enrollments, CURRENT_ATTEMPT_OF_GRADE)
           .where(and(eq(grades.classGroupId, params.classGroupId), eq(grades.enrollmentId, params.enrollmentId)));
         if (!posted) return { kind: "not_graded" } as const;
 

@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ClassResources } from '../class-resources'
 import { DA_MARK, gradeSheet, isDa, parseGrade, type GradeSheetRow } from '@/lib/grade-sheet'
 import { BatchGrades, type BatchEntry } from '../batch-grades'
+import { ProgressionPanel } from '@/components/progression/progression-panel'
 import { ClassGroupFacts } from '../class-group-facts'
 import { ClassNotices } from '../class-notices'
 
@@ -91,6 +92,8 @@ export function ClassGroupWorkspace({
   const [acknowledged, setAcknowledged] = useState<TeachingGrade[]>([])
   const [sync, setSync] = useState<'idle' | 'sending' | 'offline'>('idle')
   const [notice, setNotice] = useState<string | null>(null)
+  /** The "move on a module" panel (OOC-156): loaded only when opened. */
+  const [progressionOpen, setProgressionOpen] = useState(false)
   const flushing = useRef(false)
 
   const [editing, setEditing] = useState<string | null>(null)
@@ -432,6 +435,42 @@ export function ClassGroupWorkspace({
           </TableShell>
         )}
       </section>
+
+      {/* 2b — Moving the students on to the next module (OOC-156): once the
+          grades are in, the teacher confirms who moves on and who repeats.
+          Never below the pass mark — that is coordination's, with a reason. */}
+      {grading && gradingOpen && students.length > 0 && (
+        <section className="overflow-hidden rounded-2xl border border-line bg-white">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+              <BoIcon name="trend-up" size={16} className="text-brand-blue" />
+              {t('progression.title')}
+            </h2>
+            {!progressionOpen && (
+              <button
+                type="button"
+                onClick={() => setProgressionOpen(true)}
+                className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 text-sm font-semibold text-muted-foreground transition hover:text-ink sm:min-h-0 sm:py-2"
+              >
+                {t('progression.open')}
+              </button>
+            )}
+          </header>
+          {progressionOpen && (
+            <div className="px-5 py-4">
+              <ProgressionPanel
+                endpoint={`/api/v1/teaching/class-groups/${encodeURIComponent(group.id)}/progression`}
+                canForce={false}
+                onDone={(result) => {
+                  setProgressionOpen(false)
+                  setNotice(t('progression.done', { advance: result.advanced, repeat: result.repeated }))
+                  router.refresh()
+                }}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 3 — Notices: their own card, with the history of what was sent. */}
       {tools.notices && (

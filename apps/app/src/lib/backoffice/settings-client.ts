@@ -9,11 +9,11 @@ import type { PlatformSettings } from './platform-settings'
  * somebody actually moved.
  */
 export function changedSettings<T extends Partial<PlatformSettings>>(saved: T, draft: T): Partial<PlatformSettings> {
-  const changes: Partial<PlatformSettings> = {}
+  const changes: Record<string, unknown> = {}
   for (const key of Object.keys(draft) as (keyof T & keyof PlatformSettings)[]) {
-    if (draft[key] !== saved[key]) changes[key] = draft[key] as number
+    if (draft[key] !== saved[key]) changes[key] = draft[key]
   }
-  return changes
+  return changes as Partial<PlatformSettings>
 }
 
 /**

@@ -362,7 +362,8 @@
         "attachment_uploaded": "Arquivo anexado",
         "attachment_downloaded": "Arquivo baixado",
         "attachment_removed": "Arquivo removido",
-        "grade_corrected": "Nota corrigida"
+        "grade_corrected": "Nota corrigida",
+        "progression_applied": "Alunos avançados de módulo"
       },
       "field": {
         "first_name": "Nome",
@@ -413,7 +414,8 @@
         "certificate_deadline_business_days": "Prazo do certificado",
         "constancia_fee_cents": "Taxa da constancia",
         "contract_alert_days": "Aviso de vencimento do contrato",
-        "full_course": "Curso completo"
+        "full_course": "Curso completo",
+        "progression_requires_passing_grade": "Nota mínima para avançar de módulo"
       }
     },
     "student_status": {
@@ -1990,7 +1992,12 @@
       "rules_load_error_title": "Não foi possível carregar as regras acadêmicas",
       "rules_load_error_body": "Sem a nota mínima e o prazo do certificado esta tela não consegue decidir quem foi aprovado. Recarregue a página; se continuar, avise a equipe técnica.",
       "documents_title": "Documentos",
-      "constancia_fee_saved_toast": "Preço salvo. Vale para as novas solicitações."
+      "constancia_fee_saved_toast": "Preço salvo. Vale para as novas solicitações.",
+      "progression_requires_passing_label": "Avançar de módulo exige a nota mínima",
+      "progression_requires_passing_hint": "Ligado, só avança para o módulo seguinte quem tem a nota mínima. A coordenação pode avançar alguém abaixo dela, com motivo; o docente nunca. Desligado, qualquer nota lançada permite avançar.",
+      "progression_requires_passing_on": "Exige a nota mínima",
+      "progression_requires_passing_off": "Qualquer nota",
+      "progression_requires_passing_toggle": "Exigir"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2111,7 +2118,8 @@
       "class_group_module_alone": "Uma sub-turma de curso completo, ou sem módulo definido, é a única da turma. Defina o módulo dela antes de abrir outra.",
       "class_group_module_last": "A turma precisa de pelo menos uma sub-turma.",
       "class_group_module_has_students": "Ainda há alunos nesta sub-turma. Mova-os antes de retirá-la.",
-      "class_group_module_ambiguous": "A turma tem várias sub-turmas: edite docente, horário e Classroom em cada sub-turma."
+      "class_group_module_ambiguous": "A turma tem várias sub-turmas: edite docente, horário e Classroom em cada sub-turma.",
+      "class_group_full_course_split": "Um curso completo abre uma sub-turma por módulo; cada sub-turma dá um módulo."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",
@@ -2540,6 +2548,41 @@
       "module_short": "Mód. {number}",
       "full_short": "Completo",
       "unset_short": "Sem mód."
+    },
+    "progression": {
+      "title": "Avançar de módulo",
+      "open": "Avançar de módulo",
+      "intro": "Quem tem a nota mínima ({grade}) vai para a sub-turma do módulo {module}; quem ficou abaixo, ou não fez a prova, repete este módulo. Revise e confirme.",
+      "last_module": "Este é o último módulo do curso: não há módulo seguinte. Quem reprovou pode repeti-lo.",
+      "no_next_run": "O módulo {module} ainda não tem sub-turma nesta turma. A coordenação precisa abri-la antes de avançar alguém; repetir dá.",
+      "pass_mark_off": "A nota mínima não é exigida para avançar (Configuração): qualquer nota lançada permite avançar.",
+      "no_students": "Não há alunos confirmados nesta sub-turma.",
+      "loading": "Carregando…",
+      "load_error": "Não foi possível carregar a lista. Recarregue a página.",
+      "did_not_sit_mark": "DA",
+      "verdict_passed": "Aprovado",
+      "verdict_below_passing": "Abaixo da nota mínima",
+      "verdict_did_not_sit": "Não fez a prova (DA)",
+      "verdict_not_graded": "Sem nota",
+      "attempt": "{attempt}ª vez",
+      "choice_advance": "Avança",
+      "choice_repeat": "Repete",
+      "choice_none": "Sem mudança",
+      "reason_label": "{count, plural, one {Motivo para avançar # aluno abaixo da nota mínima} other {Motivo para avançar # alunos abaixo da nota mínima}}",
+      "reason_placeholder": "Ex.: passou na recuperação",
+      "summary": "{advance, plural, =0 {Ninguém avança} one {# avança} other {# avançam}} · {repeat, plural, =0 {ninguém repete} one {# repete} other {# repetem}}",
+      "confirm": "Confirmar",
+      "done": "{advance, plural, =0 {Ninguém avançou} one {# aluno avançou} other {# alunos avançaram}} de módulo; {repeat, plural, =0 {ninguém repete} one {# repete} other {# repetem}}.",
+      "error_closed": "Só se avança de módulo com a turma em andamento ou finalizada.",
+      "error_empty": "Escolha alguém para avançar ou repetir.",
+      "error_unknown_enrollment": "Um aluno não está mais nesta sub-turma. Recarregue a página.",
+      "error_duplicate_enrollment": "O mesmo aluno aparece duas vezes.",
+      "error_not_graded": "Um aluno ainda não tem nota.",
+      "error_no_next_run": "O módulo seguinte não tem sub-turma aberta.",
+      "error_below_passing": "Só a coordenação avança alguém abaixo da nota mínima.",
+      "error_reason_required": "Escreva o motivo (até 500 caracteres).",
+      "error_conflict": "Alguém moveu um destes alunos nesse meio-tempo. Recarregue e tente de novo.",
+      "error_failed": "Não foi possível salvar. Tente de novo."
     }
   }
 }

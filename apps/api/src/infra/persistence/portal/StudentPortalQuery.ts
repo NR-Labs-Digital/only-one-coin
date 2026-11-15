@@ -173,11 +173,22 @@ export class StudentPortalQuery {
       .innerJoin(academicPeriods, eq(academicPeriods.id, classGroups.academicPeriodId))
       .innerJoin(planPrices, eq(planPrices.id, enrollments.planPriceId))
       .innerJoin(plans, eq(plans.id, planPrices.planId))
-      // The grade that counts for this seat in this class group — the posted
-      // one or its last correction (OOC-38, OOC-102), one at most.
+      // The latest grade of the seat — the posted one or its last correction
+      // (OOC-38, OOC-102). One per module run and attempt since OOC-156: the
+      // newest is what the student last heard about, and it stays on screen
+      // after they move on to the next module, until that one is graded.
       .leftJoin(
         currentGrades,
-        and(eq(currentGrades.enrollmentId, enrollments.id), eq(currentGrades.classGroupId, enrollments.classGroupId)),
+        and(
+          eq(currentGrades.enrollmentId, enrollments.id),
+          eq(currentGrades.classGroupId, enrollments.classGroupId),
+          sql`not exists (
+            select 1 from "current_grades" newer
+            where newer.enrollment_id = "current_grades"."enrollment_id"
+              and newer.class_group_id = "current_grades"."class_group_id"
+              and (newer.recorded_at, newer.grade_id) > ("current_grades"."recorded_at", "current_grades"."grade_id")
+          )`,
+        ),
       )
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));

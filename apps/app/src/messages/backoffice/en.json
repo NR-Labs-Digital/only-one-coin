@@ -362,7 +362,8 @@
         "attachment_uploaded": "File attached",
         "attachment_downloaded": "File downloaded",
         "attachment_removed": "File removed",
-        "grade_corrected": "Grade corrected"
+        "grade_corrected": "Grade corrected",
+        "progression_applied": "Students moved on to the next module"
       },
       "field": {
         "first_name": "First name",
@@ -413,7 +414,8 @@
         "certificate_deadline_business_days": "Certificate deadline",
         "constancia_fee_cents": "Constancia fee",
         "contract_alert_days": "Contract expiry warning",
-        "full_course": "Full course"
+        "full_course": "Full course",
+        "progression_requires_passing_grade": "Pass mark to move on to the next module"
       }
     },
     "student_status": {
@@ -1990,7 +1992,12 @@
       "rules_load_error_title": "Could not load the academic rules",
       "rules_load_error_body": "Without the passing grade and the certificate deadline this screen cannot tell who passed. Reload the page; if it keeps happening, tell the technical team.",
       "documents_title": "Documents",
-      "constancia_fee_saved_toast": "Price saved. It applies to new requests."
+      "constancia_fee_saved_toast": "Price saved. It applies to new requests.",
+      "progression_requires_passing_label": "Moving on a module requires the pass mark",
+      "progression_requires_passing_hint": "On, only students with the pass mark move on to the next module. Coordination may move someone below it, with a reason; a teacher never can. Off, any posted grade lets a student move on.",
+      "progression_requires_passing_on": "Requires the pass mark",
+      "progression_requires_passing_off": "Any grade",
+      "progression_requires_passing_toggle": "Require"
     },
     "features": {
       "title": "Features",
@@ -2111,7 +2118,8 @@
       "class_group_module_alone": "A full-course group, or one with no module set, is the class group's only one. Set its module before opening another.",
       "class_group_module_last": "The class group needs at least one module group.",
       "class_group_module_has_students": "Students are still in this group. Move them before retiring it.",
-      "class_group_module_ambiguous": "The class group has several module groups: edit the teacher, schedule and Classroom on each group."
+      "class_group_module_ambiguous": "The class group has several module groups: edit the teacher, schedule and Classroom on each group.",
+      "class_group_full_course_split": "A full course opens one group per module; each group teaches one module."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2540,6 +2548,41 @@
       "module_short": "Mod. {number}",
       "full_short": "Full",
       "unset_short": "No mod."
+    },
+    "progression": {
+      "title": "Move on a module",
+      "open": "Move on a module",
+      "intro": "Students with the pass mark ({grade}) move on to the module {module} group; those below it, or who did not sit the exam, repeat this module. Review and confirm.",
+      "last_module": "This is the course's last module: there is no next one. Students who failed can repeat it.",
+      "no_next_run": "Module {module} has no group in this class group yet. Coordination has to open it before anyone moves on; repeating is possible.",
+      "pass_mark_off": "The pass mark is not required to move on (Settings): any posted grade lets a student move on.",
+      "no_students": "No confirmed students in this group.",
+      "loading": "Loading…",
+      "load_error": "The list could not load. Reload the page.",
+      "did_not_sit_mark": "DA",
+      "verdict_passed": "Passed",
+      "verdict_below_passing": "Below the pass mark",
+      "verdict_did_not_sit": "Did not sit (DA)",
+      "verdict_not_graded": "No grade",
+      "attempt": "Attempt {attempt}",
+      "choice_advance": "Moves on",
+      "choice_repeat": "Repeats",
+      "choice_none": "No change",
+      "reason_label": "{count, plural, one {Why # student moves on below the pass mark} other {Why # students move on below the pass mark}}",
+      "reason_placeholder": "E.g. passed the make-up exam",
+      "summary": "{advance, plural, =0 {Nobody moves on} one {# moves on} other {# move on}} · {repeat, plural, =0 {nobody repeats} one {# repeats} other {# repeat}}",
+      "confirm": "Confirm",
+      "done": "{advance, plural, =0 {Nobody moved on} one {# student moved on} other {# students moved on}}; {repeat, plural, =0 {nobody repeats} one {# repeats} other {# repeat}}.",
+      "error_closed": "Students move on only while the class group is running or finished.",
+      "error_empty": "Pick someone to move on or repeat.",
+      "error_unknown_enrollment": "A student is no longer in this group. Reload the page.",
+      "error_duplicate_enrollment": "The same student appears twice.",
+      "error_not_graded": "A student has no grade yet.",
+      "error_no_next_run": "The next module has no group open.",
+      "error_below_passing": "Only coordination moves someone on below the pass mark.",
+      "error_reason_required": "Write the reason (up to 500 characters).",
+      "error_conflict": "Somebody moved one of these students meanwhile. Reload and try again.",
+      "error_failed": "Could not save. Try again."
     }
   }
 }

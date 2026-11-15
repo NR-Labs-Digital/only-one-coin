@@ -39,6 +39,7 @@ const TEACHING_ROUTES = [
   `/api/v1/teaching/class-groups/${ID}`,
   `/api/v1/teaching/class-groups/${ID}/students`,
   `/api/v1/teaching/class-groups/${ID}/grades`,
+  `/api/v1/teaching/class-groups/${ID}/progression`,
   "/api/v1/teaching/summary",
 ];
 
@@ -66,6 +67,9 @@ const NOT_A_TEACHERS: [string, string][] = [
   ["GET", `/api/v1/catalog/class-groups/${ID}/grades`],
   ["POST", `/api/v1/catalog/class-groups/${ID}/grades`],
   ["POST", `/api/v1/catalog/class-groups/${ID}/grades/${ID}/correction`],
+  // Coordination's progression (OOC-156): a teacher moves students only through /teaching, never forcing.
+  ["GET", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`],
   ["GET", "/api/v1/catalog/courses"],
   ["GET", "/api/v1/catalog/periods"],
   ["GET", "/api/v1/teachers"],
@@ -164,6 +168,19 @@ describe("posting grades refuses every cargo but teacher (OOC-38)", () => {
       url: `/api/v1/teaching/class-groups/${ID}/grades`,
       cookies: { [SESSION_COOKIE_NAME]: "token" },
       payload: { entries: [{ enrollmentId: ID, grade: 15 }] },
+    });
+    expect(response.statusCode).toBe(403);
+  });
+});
+
+describe("moving students on refuses every cargo but teacher (OOC-156)", () => {
+  it.each(STAFF)("POST progression refuses %s", async (role) => {
+    signIn(role);
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/teaching/class-groups/${ID}/progression`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: { advance: [ID] },
     });
     expect(response.statusCode).toBe(403);
   });

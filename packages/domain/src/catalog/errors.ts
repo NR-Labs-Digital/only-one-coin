@@ -269,3 +269,14 @@ export class ClassGroupModuleAmbiguousError extends UnableToProcessEntryError {
     });
   }
 }
+
+/** A full course opens one run per module (OOC-156, 0059); a single run never teaches the whole course. */
+export class ClassGroupFullCourseSplitError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.class_group_full_course_split",
+      message: "A full course opens one group per module; a single group teaches one module.",
+      ...params,
+    });
+  }
+}

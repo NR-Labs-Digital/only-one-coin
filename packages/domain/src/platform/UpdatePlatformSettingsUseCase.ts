@@ -42,7 +42,7 @@ export class UpdatePlatformSettingsUseCase extends BaseUseCase<UpdatePlatformSet
     }
 
     const before = await this.settings.get();
-    const changes: PlatformSettingsChanges = {};
+    const changes: Record<string, number | boolean> = {};
     const audit: AuditLogEntry[] = [];
     const at = new Date();
 
@@ -61,7 +61,7 @@ export class UpdatePlatformSettingsUseCase extends BaseUseCase<UpdatePlatformSet
 
     if (audit.length === 0) return before;
 
-    await this.settings.update({ changes, actorId: input.actorId, audit });
-    return { ...before, ...changes };
+    await this.settings.update({ changes: changes as PlatformSettingsChanges, actorId: input.actorId, audit });
+    return { ...before, ...(changes as PlatformSettingsChanges) };
   }
 }

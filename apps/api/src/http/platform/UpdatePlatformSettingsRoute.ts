@@ -6,7 +6,7 @@ import { PlatformSettingsResponseSchema } from "./GetPlatformSettingsRoute.js";
 import { SETTINGS_WRITE_ROLES } from "./settingsRoles.js";
 
 // Bounds are the usecase's (PLATFORM_SETTING_BOUNDS) and the database's; here
-// only the shape — integers, any subset, nothing else.
+// only the shape — integers and the one on/off switch, any subset, nothing else.
 const BodySchema = z
   .object({
     checkoutHoldMinutes: z.number().int(),
@@ -17,6 +17,7 @@ const BodySchema = z
     passingGrade: z.number().int(),
     certificateDeadlineBusinessDays: z.number().int(),
     contractAlertDays: z.number().int(),
+    progressionRequiresPassingGrade: z.boolean(),
   })
   .partial()
   .strict();

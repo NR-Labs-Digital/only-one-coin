@@ -109,7 +109,7 @@ export async function postGrades(
     emails: (recorded) =>
       recorded.flatMap((entry) => {
         const fact = factsBySeat.get(entry.enrollmentId);
-        return fact ? gradeEmails(fact, group.classGroupId, entry.value, passingGrade, DEFAULT_LOCALE) : [];
+        return fact ? gradeEmails(fact, entry.value, passingGrade, DEFAULT_LOCALE) : [];
       }),
     // The seats and how many were DA — never the grades: they are the
     // `grades` rows themselves, and the log only says that they were posted.

@@ -325,11 +325,14 @@ describe("DrizzlePlatformSettingsRepository", () => {
         "contractAlertDays",
         "ocrLowConfidencePercent",
         "passingGrade",
+        "progressionRequiresPassingGrade",
         "receiptAmountToleranceCents",
         "receiptRejectBelowPercent",
         "reviewWindowDays",
       ].sort(),
     );
+    // 0059 (OOC-156): advancing a module asks for the pass mark unless switched off.
+    expect(settings.progressionRequiresPassingGrade).toBe(true);
   });
 
   it("writes only the changed columns over the one row, with their audit entries", async () => {

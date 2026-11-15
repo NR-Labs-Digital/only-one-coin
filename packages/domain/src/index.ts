@@ -80,6 +80,21 @@ export {
 } from "./teaching/Grade.js";
 export { GRADING_OPEN, postGrades, type GradingScope } from "./teaching/gradePosting.js";
 export {
+  ApplyOwnProgressionUseCase,
+  ApplyProgressionUseCase,
+  PreviewOwnProgressionUseCase,
+  PreviewProgressionUseCase,
+  verdictOf,
+  type ApplyProgressionInput,
+  type ApplyOwnProgressionInput,
+  type IProgressionRepository,
+  type ProgressionPreview,
+  type ProgressionPreviewSeat,
+  type ProgressionRun,
+  type ProgressionSeat,
+  type ProgressionVerdict,
+} from "./teaching/progression.js";
+export {
   ListClassGroupGradesUseCase,
   RecordClassGroupGradesUseCase,
   CorrectClassGroupGradeUseCase,
@@ -531,6 +546,10 @@ export {
   PLATFORM_SETTING_BOUNDS,
   PLATFORM_SETTING_COLUMNS,
   PLATFORM_SETTING_KEYS,
+  PLATFORM_NUMBER_KEYS,
+  PLATFORM_FLAG_KEYS,
+  type PlatformFlagKey,
+  type PlatformNumberKey,
   PlatformSettingsChangesSchema,
   platformSettingSchema,
   type PlatformSettingKey,
@@ -587,6 +606,7 @@ export {
   ClassGroupLastModuleError,
   ClassGroupModuleHasStudentsError,
   ClassGroupModuleAmbiguousError,
+  ClassGroupFullCourseSplitError,
   LanguageNotFoundError,
   LanguageExistsError,
   LanguageInUseError,

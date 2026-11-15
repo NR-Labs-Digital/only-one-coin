@@ -165,6 +165,15 @@ export function canEditGrades(role: StaffRole): boolean {
 }
 
 /**
+ * Moving students on to the next module from the backoffice (OOC-156, to
+ * confirm with the owner): management and both supervisions — the same list
+ * as `PROGRESSION_ROLES` in `apps/api`. The teacher does it from the portal.
+ */
+export function canMoveStudentsOn(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+}
+
+/**
  * Who downloads a recorded contract — the roster's readers, analyst included;
  * the teacher does not, even on their own file. Mirrors `TEACHER_READ_ROLES`
  * on `GET /teachers/:id/contracts/:id/document` (generated, OOC-124) and

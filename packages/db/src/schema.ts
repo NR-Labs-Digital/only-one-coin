@@ -730,9 +730,15 @@ export const enrollments = pgTable(
     // as the run sharing the class group's id (0058's backfill rule). Moves
     // with the staff moving the seat, and with progression.
     classGroupModuleId: uuid("class_group_module_id"),
+    // Which time through its current run this is (OOC-156): 1 on entering a
+    // run, one more each time the student repeats it after a failed module or
+    // a DA. A grade belongs to one attempt, so repeating never collides with
+    // the grade of the time before.
+    moduleAttempt: integer("module_attempt").notNull().default(1),
     ...softDeletable(),
   },
   (table) => [
+    check("enrollments_module_attempt_check", sql`${table.moduleAttempt} > 0`),
     foreignKey({
       name: "enrollments_class_group_module_fk",
       columns: [table.classGroupModuleId, table.classGroupId],
@@ -1339,6 +1345,12 @@ export const grades = pgTable(
     classGroupId: uuid("class_group_id")
       .notNull()
       .references(() => classGroups.id, { onDelete: "restrict" }),
+    // The module run and the attempt the grade was posted in (OOC-156, 0059).
+    // Null run only on a grade posted before 0059: its run is the one 0058
+    // made under the class group's id, which is what every reader resolves
+    // with `coalesce(class_group_module_id, class_group_id)`.
+    classGroupModuleId: uuid("class_group_module_id"),
+    attempt: integer("attempt").notNull().default(1),
     // Exact decimal, two places (`13.50`): a grade is compared as typed.
     score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
     didNotSit: boolean("did_not_sit").notNull().default(false),
@@ -1347,7 +1359,15 @@ export const grades = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
-    uniqueIndex("grades_class_group_enrollment_uidx").on(table.classGroupId, table.enrollmentId),
+    // One grade per seat, run and attempt (OOC-156): written by hand in 0059
+    // as an expression index over coalesce(class_group_module_id,
+    // class_group_id), which replaced grades_class_group_enrollment_uidx.
+    foreignKey({
+      name: "grades_class_group_module_fk",
+      columns: [table.classGroupModuleId, table.classGroupId],
+      foreignColumns: [classGroupModules.id, classGroupModules.classGroupId],
+    }).onDelete("restrict"),
+    check("grades_attempt_check", sql`${table.attempt} > 0`),
     check(
       "grades_value_check",
       sql`(${table.didNotSit} and ${table.score} is null) or (not ${table.didNotSit} and ${table.score} between 0 and 20)`,
@@ -1396,6 +1416,9 @@ export const currentGrades = pgView("current_grades", {
   gradeId: uuid("grade_id").notNull(),
   enrollmentId: uuid("enrollment_id").notNull(),
   classGroupId: uuid("class_group_id").notNull(),
+  // The run, resolved for grades posted before 0059 (OOC-156), and the attempt.
+  classGroupModuleId: uuid("class_group_module_id").notNull(),
+  attempt: integer("attempt").notNull(),
   score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
   didNotSit: boolean("did_not_sit").notNull(),
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
@@ -1702,6 +1725,10 @@ export const platformSettings = pgTable(
     // OOC-41: how early a teacher's contract starts warning. 45 is
     // provisional (CLAUDE.md §1).
     contractAlertDays: integer("contract_alert_days").notNull().default(45),
+    // OOC-156: advancing a student to the next module asks for the pass mark.
+    // Coordination may still advance below it, with a reason; off, any posted
+    // grade lets the student advance.
+    progressionRequiresPassingGrade: boolean("progression_requires_passing_grade").notNull().default(true),
     updatedBy: text("updated_by"),
     ...timestamps(),
   },

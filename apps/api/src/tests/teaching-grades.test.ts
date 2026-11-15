@@ -125,6 +125,8 @@ class FakeGrades implements IGradeRepository {
       .filter((id) => id === SEAT_A || id === SEAT_B)
       .map((enrollmentId) => ({
         enrollmentId,
+        classGroupModuleId: GROUP,
+        attempt: 1,
         student: {
           firstName: enrollmentId === SEAT_A ? "Rosa" : "Luis",
           lastName: "Quispe",
@@ -264,7 +266,7 @@ describe("RecordOwnClassGroupGradesUseCase", () => {
     expect(grades.emails[0]).toMatchObject({
       locale: "es-PE",
       vars: { recipientName: "Rosa", courseName: "Inglés Básico", grade: 13.5, passingGrade: 12 },
-      dedupeKey: `grade_posted:${GROUP}:${SEAT_A}:student`,
+      dedupeKey: `grade_posted:${GROUP}:1:${SEAT_A}:student`,
     });
   });
 

@@ -1,6 +1,7 @@
 import { v7 as uuid } from "uuid";
 import { z } from "zod";
 import { SoftDeletableModel, SoftDeletableModelPropsSchema } from "../shared/base/SoftDeletableModel.js";
+import { ClassGroupFullCourseSplitError } from "./errors.js";
 import {
   applyClassroomLinks,
   ClassroomLinkPatchSchema,
@@ -87,8 +88,14 @@ export class ClassGroupModule extends SoftDeletableModel {
     this.classroomUrl = props.classroomUrl;
   }
 
+  /**
+   * A new run teaches one module. A full course is one run per module since
+   * 0059 (OOC-156) — `ClassGroup.create` opens them — so a run is never born
+   * a full course.
+   */
   static create(classGroupId: string, dto: CreateClassGroupModuleDTO): ClassGroupModule {
     const valid = CreateClassGroupModuleSchema.parse(dto);
+    if (valid.fullCourse) throw new ClassGroupFullCourseSplitError();
     return new ClassGroupModule(
       ClassGroupModulePropsSchema.parse({
         id: uuid(),
@@ -131,6 +138,7 @@ export class ClassGroupModule extends SoftDeletableModel {
 
   update(patch: UpdateClassGroupModuleDTO): ClassGroupModuleField[] {
     const valid = UpdateClassGroupModuleSchema.parse(patch);
+    if (valid.fullCourse) throw new ClassGroupFullCourseSplitError();
     const changed: ClassGroupModuleField[] = [];
 
     if (valid.teacherId !== undefined && valid.teacherId !== this.teacherId) {

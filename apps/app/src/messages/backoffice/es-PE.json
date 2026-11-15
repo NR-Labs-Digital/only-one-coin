@@ -362,7 +362,8 @@
         "attachment_uploaded": "Archivo adjuntado",
         "attachment_downloaded": "Archivo descargado",
         "attachment_removed": "Archivo quitado",
-        "grade_corrected": "Nota corregida"
+        "grade_corrected": "Nota corregida",
+        "progression_applied": "Alumnos pasados de módulo"
       },
       "field": {
         "first_name": "Nombre",
@@ -413,7 +414,8 @@
         "certificate_deadline_business_days": "Plazo del certificado",
         "constancia_fee_cents": "Tasa de la constancia",
         "contract_alert_days": "Aviso de vencimiento del contrato",
-        "full_course": "Curso completo"
+        "full_course": "Curso completo",
+        "progression_requires_passing_grade": "Nota mínima para pasar de módulo"
       }
     },
     "student_status": {
@@ -1990,7 +1992,12 @@
       "rules_load_error_title": "No se pudieron cargar las reglas académicas",
       "rules_load_error_body": "Sin la nota mínima y el plazo del certificado esta pantalla no puede decidir quién aprueba. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "documents_title": "Documentos",
-      "constancia_fee_saved_toast": "Precio guardado. Vale para las solicitudes nuevas."
+      "constancia_fee_saved_toast": "Precio guardado. Vale para las solicitudes nuevas.",
+      "progression_requires_passing_label": "Pasar de módulo exige la nota mínima",
+      "progression_requires_passing_hint": "Encendido, solo pasa al módulo siguiente quien tiene la nota mínima. La coordinación puede pasar a alguien por debajo, con un motivo; el docente nunca. Apagado, cualquier nota lanzada permite pasar.",
+      "progression_requires_passing_on": "Exige la nota mínima",
+      "progression_requires_passing_off": "Cualquier nota",
+      "progression_requires_passing_toggle": "Exigir"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2111,7 +2118,8 @@
       "class_group_module_alone": "Un grupo de curso completo, o sin módulo definido, es el único del aula. Define su módulo antes de abrir otro.",
       "class_group_module_last": "El aula necesita al menos un grupo de módulo.",
       "class_group_module_has_students": "Todavía hay alumnos en este grupo. Muévelos antes de retirarlo.",
-      "class_group_module_ambiguous": "El aula tiene varios grupos de módulo: edita el docente, el horario y el Classroom en cada grupo."
+      "class_group_module_ambiguous": "El aula tiene varios grupos de módulo: edita el docente, el horario y el Classroom en cada grupo.",
+      "class_group_full_course_split": "Un curso completo abre un grupo por módulo; cada grupo da un módulo."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2540,6 +2548,41 @@
       "module_short": "Mód. {number}",
       "full_short": "Completo",
       "unset_short": "Sin mód."
+    },
+    "progression": {
+      "title": "Pasar de módulo",
+      "open": "Pasar de módulo",
+      "intro": "Quien tiene la nota mínima ({grade}) pasa al grupo del módulo {module}; quien quedó debajo, o no rindió el examen, repite este módulo. Revisa y confirma.",
+      "last_module": "Este es el último módulo del curso: no hay módulo siguiente. Quien reprobó puede repetirlo.",
+      "no_next_run": "El módulo {module} todavía no tiene grupo en esta aula. La coordinación debe abrirlo antes de pasar a alguien; repetir sí se puede.",
+      "pass_mark_off": "La nota mínima no se exige para pasar (Configuración): cualquier nota lanzada permite pasar.",
+      "no_students": "No hay alumnos confirmados en este grupo.",
+      "loading": "Cargando…",
+      "load_error": "No se pudo cargar la lista. Recarga la página.",
+      "did_not_sit_mark": "DA",
+      "verdict_passed": "Aprobado",
+      "verdict_below_passing": "Debajo de la nota mínima",
+      "verdict_did_not_sit": "No rindió (DA)",
+      "verdict_not_graded": "Sin nota",
+      "attempt": "{attempt}.ª vez",
+      "choice_advance": "Pasa",
+      "choice_repeat": "Repite",
+      "choice_none": "Sin cambio",
+      "reason_label": "{count, plural, one {Motivo para pasar a # alumno debajo de la nota mínima} other {Motivo para pasar a # alumnos debajo de la nota mínima}}",
+      "reason_placeholder": "Ej.: aprobó la recuperación",
+      "summary": "{advance, plural, =0 {Nadie pasa} one {# pasa} other {# pasan}} · {repeat, plural, =0 {nadie repite} one {# repite} other {# repiten}}",
+      "confirm": "Confirmar",
+      "done": "{advance, plural, =0 {Nadie pasó} one {# alumno pasó} other {# alumnos pasaron}} de módulo; {repeat, plural, =0 {nadie repite} one {# repite} other {# repiten}}.",
+      "error_closed": "Solo se pasa de módulo con el aula en curso o finalizada.",
+      "error_empty": "Elige a alguien para pasar o repetir.",
+      "error_unknown_enrollment": "Un alumno ya no está en este grupo. Recarga la página.",
+      "error_duplicate_enrollment": "El mismo alumno aparece dos veces.",
+      "error_not_graded": "Un alumno todavía no tiene nota.",
+      "error_no_next_run": "El módulo siguiente no tiene grupo abierto.",
+      "error_below_passing": "Solo la coordinación pasa a alguien debajo de la nota mínima.",
+      "error_reason_required": "Escribe el motivo (hasta 500 caracteres).",
+      "error_conflict": "Alguien movió a uno de estos alumnos mientras tanto. Recarga y vuelve a intentar.",
+      "error_failed": "No se pudo guardar. Intenta de nuevo."
     }
   }
 }

@@ -72,6 +72,7 @@ export const AUDITED_PLATFORM_SETTINGS = [
   "passing_grade",
   "certificate_deadline_business_days",
   "contract_alert_days",
+  "progression_requires_passing_grade",
 ] as const;
 
 /** Columns that were settings once and have entries in the trail: the fee of
@@ -155,6 +156,7 @@ export const AUDIT_ACTIONS = {
   // The supervision correcting a posted grade (OOC-102): the seat and the
   // correction travel in metadata; the grades and the reason never do.
   "teaching.grade_corrected": { key: "grade_corrected", entity: "class_group", subject: "target" },
+  "teaching.progression_applied": { key: "progression_applied", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },
   "catalog.course.updated": { key: "course_updated", entity: "course", subject: "target" },
@@ -301,6 +303,7 @@ export const AUDIT_FIELDS = {
   certificate_deadline_business_days: "certificate_deadline_business_days",
   constancia_fee_cents: "constancia_fee_cents",
   contract_alert_days: "contract_alert_days",
+  progression_requires_passing_grade: "progression_requires_passing_grade",
 } as const;
 
 export type AuditField = (typeof AUDIT_FIELDS)[keyof typeof AUDIT_FIELDS];
