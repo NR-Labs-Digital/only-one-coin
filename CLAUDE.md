@@ -108,7 +108,7 @@ Venda por WhatsApp (humano, fora do sistema)
 - ❌ Links de matrícula tokenizados
 - ❌ Descontos, bolsas, promoções
 - ❌ Parcelamento de paquete, juros, multa, cobrança de dívida — a modalidade mensual do inglês (§1) é compra pré-paga módulo a módulo, nunca dívida: atraso bloqueia acesso, não gera cobrança
-- ❌ Integração com Google Classroom (API) — em estudo; hoje aula é link externo e o bloqueio de acesso vive no portal do aluno
+- ❌ Integração com Google Classroom (API) — em estudo; hoje aula é link externo e o bloqueio de acesso vive no portal do aluno. Proposta documentada na OOC-157 (Classroom e Meet automáticos por sub-turma), esperando o dono — só sai daqui com a aprovação do dono
 - ❌ Aula virtual / videoconferência própria — mesmo caso da pasarela: desde 06/09/2026 o menu do portal tem o grupo **"Área do aluno"** (Tarefas · Provas · Sala de aula · Estudar) como **dropdown fechado, com os quatro itens travados** (cadeado, sem link, `aria-disabled`). Anuncia o que vem; não constrói nem promete data. Hoje a aula continua sendo link externo (Meet/Classroom).
 - ❌ Faturamento eletrônico / SUNAT
 
