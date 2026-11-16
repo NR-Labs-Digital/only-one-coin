@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { EnrollmentRow, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
+import { groupOffers, offerSeatsLeft, resolvePick } from '@/lib/backoffice/class-group-offers'
+import { ClassGroupOfferOptions } from '@/components/backoffice/class-group-offer-options'
 import { formatMoney, type Locale } from '@/lib/format'
 import { RequiredMark } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
@@ -34,11 +36,13 @@ interface MoveTargetGroup {
   module: number | null
   fullCourse: boolean
   courseId: string
+  academicPeriodId: string
   courseName: string
   academicPeriodName: string
   schedule: string
   slots: WeeklySlotItem[]
   startsOn: string | null
+  endsOn: string | null
   status: 'enrolling' | 'in_progress'
   capacity: number
   seatsTaken: number
@@ -88,7 +92,9 @@ export function MoveEnrollmentDialog({
 
   const [targets, setTargets] = useState<MoveTargets | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [classGroupId, setClassGroupId] = useState('')
+  // A picker value (`lib/backoffice/class-group-offers`): a run by code, or
+  // its schedule — the API then picks the class group (OOC-145).
+  const [pick, setPick] = useState('')
   const [planId, setPlanId] = useState('')
   const [overCapacityConfirmed, setOverCapacityConfirmed] = useState(false)
   const [fullOnServer, setFullOnServer] = useState(false)
@@ -103,7 +109,7 @@ export function MoveEnrollmentDialog({
     let cancelled = false
     setTargets(null)
     setLoadFailed(false)
-    setClassGroupId('')
+    setPick('')
     setPlanId('')
     setOverCapacityConfirmed(false)
     setFullOnServer(false)
@@ -124,18 +130,6 @@ export function MoveEnrollmentDialog({
     }
   }, [enrollmentId])
 
-  const group = targets?.classGroups.find((item) => item.id === classGroupId) ?? null
-  const courseChanges = group !== null && targets !== null && group.courseId !== targets.courseId
-  const coursePlans = useMemo(
-    () => (group && targets ? targets.plans.filter((plan) => plan.courseId === group.courseId) : []),
-    [group, targets],
-  )
-  /* Another run of the same class group keeps the seat where it is (OOC-156):
-     a full class group is not a reason to ask, the seat is already counted. */
-  const isFull = (item: MoveTargetGroup) =>
-    item.classGroupId !== targets?.classGroupId && item.seatsTaken + item.seatsOver >= item.capacity
-  const groupFull = group !== null && (isFull(group) || fullOnServer)
-
   // Its own class group's other runs first, then the same course: moving a
   // student to another module or schedule is the usual move.
   const ordered = useMemo(() => {
@@ -144,11 +138,37 @@ export function MoveEnrollmentDialog({
       item.classGroupId === targets.classGroupId ? 2 : item.courseId === targets.courseId ? 1 : 0
     return [...targets.classGroups].sort((a, b) => rank(b) - rank(a))
   }, [targets])
+  const ownClassGroupId = targets?.classGroupId ?? null
+  const offers = useMemo(() => groupOffers(ordered, ownClassGroupId), [ordered, ownClassGroupId])
+  const picked = resolvePick(offers, pick)
+
+  // The run the request names: the one picked, or the first of the schedule
+  // (its own class group's, when it has one). Siblings share the course.
+  const group = picked?.member ?? null
+  const bySchedule = picked?.placement === 'schedule'
+  const seatMembers = picked ? (bySchedule ? picked.offer.members : [picked.member]) : []
+  const staysInOwn = seatMembers[0]?.classGroupId === ownClassGroupId
+  const courseChanges = group !== null && targets !== null && group.courseId !== targets.courseId
+  const coursePlans = useMemo(
+    () => (group && targets ? targets.plans.filter((plan) => plan.courseId === group.courseId) : []),
+    [group, targets],
+  )
+  /* Another run of the same class group keeps the seat where it is (OOC-156):
+     a full class group is not a reason to ask, the seat is already counted.
+     For the schedule, it is full only when nothing the API may try has room. */
+  const groupFull = group !== null && !staysInOwn && (offerSeatsLeft(seatMembers) === 0 || fullOnServer)
 
   const codeOf = (item: MoveTargetGroup) =>
     item.module === null
       ? item.code
       : t('class_group_runs.code_with_module', { code: item.code, number: item.module })
+
+  const taughtOf = (item: MoveTargetGroup) =>
+    item.fullCourse
+      ? t('class_group_runs.full_course')
+      : item.module === null
+        ? t('class_group_runs.no_module')
+        : t('class_group_runs.module_label', { number: item.module })
 
   const scheduleOf = (item: MoveTargetGroup) =>
     item.slots.length > 0 ? slotsLabel(item.slots, t) : item.schedule
@@ -170,6 +190,7 @@ export function MoveEnrollmentDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           classGroupModuleId: group.id,
+          placement: picked?.placement ?? 'class_group',
           planId: courseChanges ? planId : null,
           allowOverCapacity: groupFull && overCapacityConfirmed,
           reason: reason.trim(),
@@ -237,9 +258,9 @@ export function MoveEnrollmentDialog({
                       <RequiredMark label={t('common.required')} />
                     </span>
                     <select
-                      value={classGroupId}
+                      value={pick}
                       onChange={(event) => {
-                        setClassGroupId(event.target.value)
+                        setPick(event.target.value)
                         setPlanId('')
                         setOverCapacityConfirmed(false)
                         setFullOnServer(false)
@@ -248,23 +269,51 @@ export function MoveEnrollmentDialog({
                       className={fieldClass}
                     >
                       <option value="">{t('move_enrollment.class_group_placeholder')}</option>
-                      {ordered.map((item) => {
-                        const label = t('move_enrollment.class_group_option', {
-                          code: codeOf(item),
-                          course: item.courseName,
-                          schedule: scheduleOf(item),
-                          period: item.academicPeriodName,
-                        })
-                        return (
-                          <option key={item.id} value={item.id}>
-                            {isFull(item) ? t('move_enrollment.class_group_option_full', { label }) : label}
-                          </option>
-                        )
-                      })}
+                      <ClassGroupOfferOptions
+                        offers={offers}
+                        ownClassGroupId={ownClassGroupId}
+                        label={(item) =>
+                          t('move_enrollment.class_group_option', {
+                            code: codeOf(item),
+                            course: item.courseName,
+                            schedule: scheduleOf(item),
+                            period: item.academicPeriodName,
+                          })
+                        }
+                        heading={(offer) => {
+                          const first = offer.members[0]!
+                          return t('move_enrollment.offer_heading', {
+                            course: first.courseName,
+                            taught: taughtOf(first),
+                            schedule: scheduleOf(first),
+                            period: first.academicPeriodName,
+                          })
+                        }}
+                        name={(item) =>
+                          t('move_enrollment.offer_name', { course: item.courseName, taught: taughtOf(item) })
+                        }
+                        memberLabel={(item) =>
+                          t('move_enrollment.offer_member', {
+                            code: item.code,
+                            course: item.courseName,
+                            teacher: item.teacherName || t('class_group_runs.no_teacher'),
+                          })
+                        }
+                      />
                     </select>
                   </label>
 
-                  {group && (
+                  {group && bySchedule && (
+                    <p className="text-xs text-muted-foreground">
+                      {staysInOwn
+                        ? t('class_group_picker.offer_stays', { code: group.code })
+                        : t('class_group_picker.offer_seats', {
+                            count: seatMembers.length,
+                            left: offerSeatsLeft(seatMembers),
+                          })}
+                    </p>
+                  )}
+                  {group && !bySchedule && (
                     <p className="text-xs text-muted-foreground">
                       {t('move_enrollment.seats', {
                         taken: group.seatsTaken,
@@ -311,8 +360,14 @@ export function MoveEnrollmentDialog({
                         className="mt-0.5 size-4 shrink-0 accent-amber-600"
                       />
                       <span>
-                        <span className="block font-semibold">{t('move_enrollment.over_capacity_title')}</span>
-                        <span className="block text-xs">{t('move_enrollment.over_capacity_body')}</span>
+                        <span className="block font-semibold">
+                          {bySchedule ? t('class_group_picker.all_full_title') : t('move_enrollment.over_capacity_title')}
+                        </span>
+                        <span className="block text-xs">
+                          {bySchedule
+                            ? t('class_group_picker.all_full_body', { code: group!.code })
+                            : t('move_enrollment.over_capacity_body')}
+                        </span>
                       </span>
                     </label>
                   )}

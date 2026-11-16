@@ -1,9 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { NationalIdType, PaymentMethod, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
+import {
+  groupOffers,
+  offerSeatsLeft,
+  pickerValue,
+  resolvePick,
+  seatsLeft,
+} from '@/lib/backoffice/class-group-offers'
+import { ClassGroupOfferOptions } from '@/components/backoffice/class-group-offer-options'
 import { formatFileSize, formatMoney, type Locale } from '@/lib/format'
 import { formatPaymentMethod } from '@/lib/payment-method'
 import {
@@ -63,13 +71,18 @@ const EMPTY_PAGE: StudentSearchPage = { items: [] }
 
 interface OpenClassGroup {
   id: string
+  /** Always its own id: a manual enrollment names class groups, not module runs. */
+  classGroupId: string
+  code: string
   courseId: string
+  academicPeriodId: string
   courseName: string
   academicPeriodName: string
   /** Legacy free text — only seed rows carry it; the panel writes `slots`. */
   schedule: string
   slots: WeeklySlotItem[]
   startsOn: string
+  endsOn: string
   capacity: number
   seatsTaken: number
   /** Seats already above capacity (OOC-155). */
@@ -131,7 +144,9 @@ export function NewEnrollmentForm({
 
   const [openGroups, setOpenGroups] = useState<OpenClassGroup[]>([])
   const [groupsLoaded, setGroupsLoaded] = useState(false)
-  const [classGroupId, setClassGroupId] = useState('')
+  // A picker value (`lib/backoffice/class-group-offers`): a class group's id,
+  // or its schedule — the API then takes the first one of it with room (OOC-145).
+  const [pick, setPick] = useState('')
   // A full class group takes the seat only after an explicit "yes" (OOC-155).
   // `fullOnServer` covers the list on screen being a moment old: the API
   // said full for a group the picker still showed with room.
@@ -181,14 +196,18 @@ export function NewEnrollmentForm({
     let cancelled = false
 
     fetch('/api/v1/class-groups')
-      .then((response) => (response.ok ? (response.json() as Promise<OpenClassGroup[]>) : []))
-      .then((data) => {
+      .then((response) =>
+        response.ok ? (response.json() as Promise<Omit<OpenClassGroup, 'classGroupId'>[]>) : [],
+      )
+      .then((rows) => {
         if (cancelled) return
+        const data = rows.map((row) => ({ ...row, classGroupId: row.id }))
         setOpenGroups(data)
         // A preselected class group that is not open for sale (no seat yet,
         // closed window, draft) is ignored — never forced into the picker.
         if (initialClassGroupId && data.some((item) => item.id === initialClassGroupId)) {
-          setClassGroupId(initialClassGroupId)
+          // The waitlist names one class group: that one, by code.
+          setPick(pickerValue('class_group', initialClassGroupId))
         }
       })
       .catch(() => {
@@ -234,9 +253,15 @@ export function NewEnrollmentForm({
     }
   }, [studentQuery])
 
-  const group = openGroups.find((item) => item.id === classGroupId) ?? null
-  const isFull = (item: OpenClassGroup) => item.seatsTaken + item.seatsOver >= item.capacity
-  const groupFull = group !== null && (isFull(group) || fullOnServer)
+  const offers = useMemo(() => groupOffers(openGroups), [openGroups])
+  const picked = resolvePick(offers, pick)
+  // The class group the request names: the one picked, or the first of the
+  // schedule. Siblings share course and plan, so price and plan read from it.
+  const group = picked?.member ?? null
+  const bySchedule = picked?.placement === 'schedule'
+  const seatMembers = picked ? (bySchedule ? picked.offer.members : [picked.member]) : []
+  // Full only when nothing the API may try has room — for the schedule, every class group of it.
+  const groupFull = group !== null && (offerSeatsLeft(seatMembers) === 0 || fullOnServer)
 
   /** The panel writes `slots`; only legacy seed rows still carry text alone. */
   const scheduleOf = (item: OpenClassGroup) =>
@@ -281,6 +306,7 @@ export function NewEnrollmentForm({
         body: JSON.stringify({
           studentId: selectedStudent.id,
           classGroupId: group.id,
+          placement: picked?.placement ?? 'class_group',
           planId: group.planId,
           method,
           methodDetail: method === 'other' ? methodDetail.trim() : null,
@@ -437,9 +463,9 @@ export function NewEnrollmentForm({
                 <RequiredMark label={t('common.required')} />
               </span>
               <select
-                value={classGroupId}
+                value={pick}
                 onChange={(event) => {
-                  setClassGroupId(event.target.value)
+                  setPick(event.target.value)
                   setOverCapacityConfirmed(false)
                   setFullOnServer(false)
                 }}
@@ -450,15 +476,13 @@ export function NewEnrollmentForm({
                 <option value="">
                   {t('new_enrollment.class_group_placeholder')}
                 </option>
-                {openGroups.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {isFull(item)
-                      ? t('new_enrollment.class_group_option_full', {
-                          label: `${item.courseName} — ${scheduleOf(item)}`,
-                        })
-                      : `${item.courseName} — ${scheduleOf(item)}`}
-                  </option>
-                ))}
+                <ClassGroupOfferOptions
+                  offers={offers}
+                  label={(item) => `${item.code} · ${item.courseName} — ${scheduleOf(item)}`}
+                  heading={(offer) => `${offer.members[0]!.courseName} — ${scheduleOf(offer.members[0]!)}`}
+                  name={(item) => item.courseName}
+                  memberLabel={(item) => `${item.code} · ${item.courseName}`}
+                />
               </select>
             </label>
 
@@ -475,9 +499,14 @@ export function NewEnrollmentForm({
                 <Summary
                   label={t('new_enrollment.seats_left')}
                   value={
-                    group.seatsOver > 0
+                    bySchedule
+                      ? t('class_group_picker.offer_seats_short', {
+                          count: seatMembers.length,
+                          left: offerSeatsLeft(seatMembers),
+                        })
+                      : group.seatsOver > 0
                       ? t('new_enrollment.seats_left_over', {
-                          count: Math.max(0, group.capacity - group.seatsTaken - group.seatsOver),
+                          count: seatsLeft(group),
                           over: group.seatsOver,
                         })
                       : String(Math.max(0, group.capacity - group.seatsTaken))
@@ -499,8 +528,17 @@ export function NewEnrollmentForm({
               className="mt-0.5 size-4 shrink-0 accent-amber-600"
             />
             <span>
-              <span className="block font-semibold">{t('new_enrollment.over_capacity_title')}</span>
-              <span className="block text-xs">{t('new_enrollment.over_capacity_body')}</span>
+              {bySchedule && group ? (
+                <>
+                  <span className="block font-semibold">{t('class_group_picker.all_full_title')}</span>
+                  <span className="block text-xs">{t('class_group_picker.all_full_body', { code: group.code })}</span>
+                </>
+              ) : (
+                <>
+                  <span className="block font-semibold">{t('new_enrollment.over_capacity_title')}</span>
+                  <span className="block text-xs">{t('new_enrollment.over_capacity_body')}</span>
+                </>
+              )}
             </span>
           </label>
         )}

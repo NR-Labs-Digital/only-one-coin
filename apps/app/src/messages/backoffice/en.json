@@ -799,7 +799,6 @@
       "move": "Move to another class group"
     },
     "new_enrollment": {
-      "class_group_option_full": "{label} (full)",
       "seats_left_over": "{count} · +{over} above capacity",
       "over_capacity_title": "This class group is full. Enroll above capacity?",
       "over_capacity_body": "The enrollment goes above the class group's capacity and is recorded in the audit log under your name.",
@@ -2484,7 +2483,9 @@
       "field_class_group": "Target class group",
       "class_group_placeholder": "Pick a class group",
       "class_group_option": "{code} · {course} — {schedule} · {period}",
-      "class_group_option_full": "{label} (full)",
+      "offer_heading": "{course} · {taught} — {schedule} · {period}",
+      "offer_name": "{course} · {taught}",
+      "offer_member": "{code} · {course} · {teacher}",
       "seats": "{taken} / {capacity} seats taken{over, plural, =0 {} other { · +# above capacity}}",
       "field_plan": "Plan of the new course",
       "plan_placeholder": "Pick a plan",
@@ -2583,6 +2584,19 @@
       "error_reason_required": "Write the reason (up to 500 characters).",
       "error_conflict": "Somebody moved one of these students meanwhile. Reload and try again.",
       "error_failed": "Could not save. Try again."
+    },
+    "class_group_picker": {
+      "single": "{label} · {left, plural, =0 {full} one {# seat} other {# seats}}",
+      "single_stays": "{label} · the seat stays",
+      "member": "{label} · {left, plural, =0 {full} one {# seat} other {# seats}}",
+      "member_stays": "{label} · their class, the seat stays",
+      "any": "{name} · first with a seat of {count} classes · {left, plural, =0 {all full} one {# seat} other {# seats}}",
+      "any_stays": "{name} · stays in their class ({code}), the seat stays",
+      "offer_seats": "{count} classes at this time · {left, plural, =0 {all full} one {# free seat} other {# free seats}}. The seat goes to the first with room, in code order.",
+      "offer_seats_short": "{left, plural, =0 {All full} one {# seat} other {# seats}} in {count} classes",
+      "offer_stays": "Stays in their class ({code}): the module group changes, the seat does not.",
+      "all_full_title": "Every class at this time is full. Go above capacity?",
+      "all_full_body": "The seat goes above the capacity of the first class ({code}) and is logged with your name."
     }
   }
 }
