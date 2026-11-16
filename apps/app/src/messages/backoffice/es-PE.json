@@ -799,7 +799,6 @@
       "move": "Mover de aula"
     },
     "new_enrollment": {
-      "class_group_option_full": "{label} (llena)",
       "seats_left_over": "{count} · +{over} por encima del cupo",
       "over_capacity_title": "Esta aula está llena. ¿Matricular por encima del cupo?",
       "over_capacity_body": "La matrícula queda por encima de la capacidad del aula y se registra en la bitácora con tu nombre.",
@@ -2484,7 +2483,9 @@
       "field_class_group": "Aula de destino",
       "class_group_placeholder": "Elige un aula",
       "class_group_option": "{code} · {course} — {schedule} · {period}",
-      "class_group_option_full": "{label} (llena)",
+      "offer_heading": "{course} · {taught} — {schedule} · {period}",
+      "offer_name": "{course} · {taught}",
+      "offer_member": "{code} · {course} · {teacher}",
       "seats": "{taken} / {capacity} vacantes ocupadas{over, plural, =0 {} other { · +# por encima del cupo}}",
       "field_plan": "Plan del nuevo curso",
       "plan_placeholder": "Elige un plan",
@@ -2583,6 +2584,19 @@
       "error_reason_required": "Escribe el motivo (hasta 500 caracteres).",
       "error_conflict": "Alguien movió a uno de estos alumnos mientras tanto. Recarga y vuelve a intentar.",
       "error_failed": "No se pudo guardar. Intenta de nuevo."
+    },
+    "class_group_picker": {
+      "single": "{label} · {left, plural, =0 {llena} one {# vacante} other {# vacantes}}",
+      "single_stays": "{label} · la vacante no cambia",
+      "member": "{label} · {left, plural, =0 {llena} one {# vacante} other {# vacantes}}",
+      "member_stays": "{label} · su aula, la vacante no cambia",
+      "any": "{name} · primera con vacante de {count} aulas · {left, plural, =0 {todas llenas} one {# vacante} other {# vacantes}}",
+      "any_stays": "{name} · se queda en su aula ({code}), la vacante no cambia",
+      "offer_seats": "{count} aulas en este horario · {left, plural, =0 {todas llenas} one {# vacante libre} other {# vacantes libres}}. La vacante va a la primera con lugar, por orden de código.",
+      "offer_seats_short": "{left, plural, =0 {Todas llenas} one {# vacante} other {# vacantes}} en {count} aulas",
+      "offer_stays": "Se queda en su aula ({code}): cambia el grupo de módulo, no la vacante.",
+      "all_full_title": "Todas las aulas de este horario están llenas. ¿Seguir por encima del cupo?",
+      "all_full_body": "La vacante queda por encima de la capacidad de la primera aula ({code}) y se registra en la bitácora con tu nombre."
     }
   }
 }

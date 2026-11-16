@@ -799,7 +799,6 @@
       "move": "Mover de turma"
     },
     "new_enrollment": {
-      "class_group_option_full": "{label} (cheia)",
       "seats_left_over": "{count} · +{over} acima do limite",
       "over_capacity_title": "Esta turma está cheia. Matricular acima do limite?",
       "over_capacity_body": "A matrícula fica acima da capacidade da turma e é registrada na bitácora com o seu nome.",
@@ -2484,7 +2483,9 @@
       "field_class_group": "Turma de destino",
       "class_group_placeholder": "Escolha uma turma",
       "class_group_option": "{code} · {course} — {schedule} · {period}",
-      "class_group_option_full": "{label} (cheia)",
+      "offer_heading": "{course} · {taught} — {schedule} · {period}",
+      "offer_name": "{course} · {taught}",
+      "offer_member": "{code} · {course} · {teacher}",
       "seats": "{taken} / {capacity} vagas ocupadas{over, plural, =0 {} other { · +# acima do limite}}",
       "field_plan": "Plano do novo curso",
       "plan_placeholder": "Escolha um plano",
@@ -2583,6 +2584,19 @@
       "error_reason_required": "Escreva o motivo (até 500 caracteres).",
       "error_conflict": "Alguém moveu um destes alunos nesse meio-tempo. Recarregue e tente de novo.",
       "error_failed": "Não foi possível salvar. Tente de novo."
+    },
+    "class_group_picker": {
+      "single": "{label} · {left, plural, =0 {lotada} one {# vaga} other {# vagas}}",
+      "single_stays": "{label} · a vaga não muda",
+      "member": "{label} · {left, plural, =0 {lotada} one {# vaga} other {# vagas}}",
+      "member_stays": "{label} · a turma dele, a vaga não muda",
+      "any": "{name} · primeira com vaga de {count} turmas · {left, plural, =0 {todas lotadas} one {# vaga} other {# vagas}}",
+      "any_stays": "{name} · fica na turma dele ({code}), a vaga não muda",
+      "offer_seats": "{count} turmas neste horário · {left, plural, =0 {todas lotadas} one {# vaga livre} other {# vagas livres}}. A vaga vai para a primeira com lugar, pela ordem do código.",
+      "offer_seats_short": "{left, plural, =0 {Todas lotadas} one {# vaga} other {# vagas}} em {count} turmas",
+      "offer_stays": "Fica na turma dele ({code}): muda o grupo de módulo, não a vaga.",
+      "all_full_title": "Todas as turmas deste horário estão lotadas. Seguir acima da capacidade?",
+      "all_full_body": "A vaga fica acima da capacidade da primeira turma ({code}) e é registrada na bitácora com o seu nome."
     }
   }
 }

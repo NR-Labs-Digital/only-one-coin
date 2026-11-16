@@ -1,3 +1,4 @@
+import type { SeatPlacement } from "../catalog/classGroupOffer.js";
 import { DEFAULT_LOCALE } from "../notification/EmailNotification.js";
 import { enrollmentReceivedEmails } from "../notification/enrollmentEmails.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
@@ -25,6 +26,9 @@ export interface CreateManualEnrollmentInput {
   /** The staff member confirmed enrolling above capacity (OOC-155). Without
    * it a full class group is refused, as before. */
   allowOverCapacity?: boolean;
+  /** `schedule`: the seat goes to the first class group of `classGroupId`'s
+   * offer with room (OOC-145); `class_group` (the default): exactly that one. */
+  placement?: SeatPlacement;
 }
 
 export interface CreateManualEnrollmentOutput {
@@ -101,6 +105,7 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
       notifications,
       receipt: { receiptUploadId: input.receiptUploadId, uploadedBy: input.actorId },
       allowOverCapacity: input.allowOverCapacity ?? false,
+      placement: input.placement ?? "class_group",
     });
 
     // The exception path is the one that most needs a name on it: the
@@ -113,6 +118,9 @@ export class CreateManualEnrollmentUseCase extends BaseUseCase<
         studentId: input.studentId,
         paymentId: created.payment.id,
         receiptUploadId: input.receiptUploadId,
+        // The class group the seat landed in, when the API chose it among the
+        // schedule's (OOC-145): the named one is only where the search began.
+        ...(input.placement === "schedule" ? { classGroupId: created.enrollment.classGroupId } : {}),
         // Only when it happened: the trail is where "who put this class group
         // over its limit" is answered (OOC-155).
         ...(created.enrollment.overCapacity ? { overCapacity: true } : {}),

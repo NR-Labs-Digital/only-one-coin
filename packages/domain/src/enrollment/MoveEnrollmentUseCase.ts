@@ -1,3 +1,4 @@
+import type { SeatPlacement } from "../catalog/classGroupOffer.js";
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import type { SeatStatus } from "./Enrollment.js";
@@ -43,6 +44,13 @@ export interface EnrollmentMoveTarget {
  * run changes, the seat stays (OOC-156). Throws ClassGroupFullError when the
  * target is full without the confirmation, and EnrollmentMoveConflictError
  * when the enrollment changed since `findSource`.
+ *
+ * With `placement: "schedule"` (OOC-145) the named run stands for its offer:
+ * the runs of the same course, period, dates, module and week, in running
+ * class groups. A run of the enrollment's own class group goes first — the
+ * seat stays where it is — then the others in fill order, each tried for a
+ * regular seat; above capacity (with the flag) on the first only when all are
+ * full. `move` answers where the seat landed.
  */
 export interface IEnrollmentMoveRepository {
   findSource(enrollmentId: string): Promise<EnrollmentMoveSource | null>;
@@ -58,7 +66,8 @@ export interface IEnrollmentMoveRepository {
     /** Null keeps the frozen price: the course did not change. */
     planPriceId: string | null;
     allowOverCapacity: boolean;
-  }): Promise<{ overCapacity: boolean; movedAt: Date }>;
+    placement: SeatPlacement;
+  }): Promise<{ overCapacity: boolean; movedAt: Date; toClassGroupId: string; toClassGroupModuleId: string }>;
 }
 
 export interface MoveEnrollmentInput {
@@ -70,6 +79,8 @@ export interface MoveEnrollmentInput {
   planId: string | null;
   allowOverCapacity: boolean;
   reason: string;
+  /** `schedule`: any run of the named one's offer, the API picks (OOC-145); `class_group` (the default): that run. */
+  placement?: SeatPlacement;
 }
 
 export interface MoveEnrollmentOutput {
@@ -147,6 +158,7 @@ export class MoveEnrollmentUseCase extends BaseUseCase<MoveEnrollmentInput, Move
       toClassGroupModuleId: target.id,
       planPriceId,
       allowOverCapacity: input.allowOverCapacity,
+      placement: input.placement ?? "class_group",
     });
 
     await this.auditLog.append({
@@ -156,9 +168,9 @@ export class MoveEnrollmentUseCase extends BaseUseCase<MoveEnrollmentInput, Move
       metadata: {
         studentId: source.studentId,
         fromClassGroupId: source.classGroupId,
-        toClassGroupId: target.classGroupId,
+        toClassGroupId: moved.toClassGroupId,
         fromClassGroupModuleId: source.classGroupModuleId,
-        toClassGroupModuleId: target.id,
+        toClassGroupModuleId: moved.toClassGroupModuleId,
         planChanged: courseChanges,
         ...(moved.overCapacity ? { overCapacity: true } : {}),
         reason,
@@ -168,8 +180,8 @@ export class MoveEnrollmentUseCase extends BaseUseCase<MoveEnrollmentInput, Move
 
     return {
       enrollmentId: source.id,
-      classGroupId: target.classGroupId,
-      classGroupModuleId: target.id,
+      classGroupId: moved.toClassGroupId,
+      classGroupModuleId: moved.toClassGroupModuleId,
       overCapacity: moved.overCapacity,
       planChanged: courseChanges,
     };

@@ -19,6 +19,7 @@ import {
   MoveEnrollmentUseCase,
   Payment,
   SeatHoldExpiredError,
+  type SeatPlacement,
   Student,
   type SubmitPublicEnrollmentParams,
 } from "@ooc/domain";
@@ -70,6 +71,9 @@ const GROUP_B = "018f2b5c-8155-7000-8000-000000000012";
 const GROUP_OTHER_COURSE = "018f2b5c-8155-7000-8000-000000000013";
 const ROSA = "018f2b5c-8155-7000-8000-000000000021";
 const JUAN = "018f2b5c-8155-7000-8000-000000000022";
+const PEDRO = "018f2b5c-8155-7000-8000-000000000023";
+/** Same course, another week: where a student starts before moving onto the A/B schedule. */
+const GROUP_D = "018f2b5c-8155-7000-8000-000000000014";
 const STAFF = "ooc-155-staff";
 const SLOTS = [{ weekday: "tue", startTime: "18:00", endTime: "19:30" }];
 
@@ -229,7 +233,8 @@ async function manual(
   studentId: string,
   classGroupId: string,
   allowOverCapacity: boolean,
-): Promise<{ enrollmentId: string; paymentId: string; overCapacity: boolean }> {
+  placement: SeatPlacement = "class_group",
+): Promise<{ enrollmentId: string; paymentId: string; overCapacity: boolean; classGroupId: string }> {
   const { receipt } = await seedManualReceipt(tx, STAFF);
   const enrollment = Enrollment.createManual({ studentId, classGroupId, planPriceId: PRICE });
   const payment = Payment.createManual({
@@ -245,8 +250,14 @@ async function manual(
     notifications: [],
     receipt,
     allowOverCapacity,
+    placement,
   });
-  return { enrollmentId: created.enrollment.id, paymentId: created.payment.id, overCapacity: created.enrollment.overCapacity };
+  return {
+    enrollmentId: created.enrollment.id,
+    paymentId: created.payment.id,
+    overCapacity: created.enrollment.overCapacity,
+    classGroupId: created.enrollment.classGroupId,
+  };
 }
 
 function moveUseCase(tx: Db): MoveEnrollmentUseCase {
@@ -560,6 +571,151 @@ describe("moving an enrollment (OOC-84)", () => {
         .from(enrollments)
         .where(eq(enrollments.id, enrollmentId));
       expect(row?.classGroupModuleId).toBe(first!.id);
+    });
+  });
+});
+
+/** GROUP_D: same course and dates as A/B, on Saturdays — one seat, one run under its own id. */
+async function seedGroupD(tx: Db): Promise<void> {
+  const [a] = await tx
+    .select({ startsOn: classGroups.startsOn, endsOn: classGroups.endsOn })
+    .from(classGroups)
+    .where(eq(classGroups.id, GROUP_A));
+  await tx.insert(classGroups).values({
+    id: GROUP_D,
+    courseId: COURSE,
+    academicPeriodId: PERIOD,
+    schedule: "",
+    slots: [{ weekday: "sat", startTime: "09:00", endTime: "10:30" }],
+    code: "A-OC-4",
+    startsOn: a!.startsOn,
+    endsOn: a!.endsOn,
+    capacity: 1,
+    seatsTaken: 0,
+    status: "enrolling",
+  });
+  await seedModuleRuns(tx);
+  await tx.insert(students).values(studentRow(PEDRO, "OC155-3"));
+}
+
+describe("staff picking the schedule instead of the class group (OOC-145)", () => {
+  it("a manual enrollment fills the schedule's class groups in code order, above capacity only when all are full", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx, { siblings: true });
+      await seedGroupD(tx);
+
+      expect((await manual(tx, ROSA, GROUP_A, false, "schedule")).classGroupId).toBe(GROUP_A);
+      // Named A again, A is full: the seat goes to its sibling.
+      const second = await manual(tx, JUAN, GROUP_A, false, "schedule");
+      expect(second).toMatchObject({ classGroupId: GROUP_B, overCapacity: false });
+
+      await expect(manual(tx, PEDRO, GROUP_B, false, "schedule")).rejects.toBeInstanceOf(ClassGroupFullError);
+      // Above capacity goes to the first in fill order, whichever was named.
+      const over = await manual(tx, PEDRO, GROUP_B, true, "schedule");
+      expect(over).toMatchObject({ classGroupId: GROUP_A, overCapacity: true });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 1 });
+      expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
+
+      const [row] = await tx
+        .select({ classGroupId: enrollments.classGroupId, classGroupModuleId: enrollments.classGroupModuleId })
+        .from(enrollments)
+        .where(eq(enrollments.id, second.enrollmentId));
+      // The seat, the class group and the entry run agree.
+      expect(row).toEqual({ classGroupId: GROUP_B, classGroupModuleId: GROUP_B });
+    });
+  });
+
+  it("a manual enrollment naming the class group still takes exactly that one", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx, { siblings: true });
+      await manual(tx, ROSA, GROUP_A, false);
+      await expect(manual(tx, JUAN, GROUP_A, false)).rejects.toBeInstanceOf(ClassGroupFullError);
+      expect(await counters(tx, GROUP_B)).toEqual({ taken: 0, over: 0 });
+    });
+  });
+
+  it("a move to the schedule lands in the sibling with room, and asks only when every one is full", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx, { siblings: true });
+      await seedGroupD(tx);
+      await manual(tx, JUAN, GROUP_A, false); // A is full
+      const { enrollmentId } = await manual(tx, ROSA, GROUP_D, false);
+      const input = { actorId: STAFF, enrollmentId, planId: null, reason: "Pasa al martes", placement: "schedule" as const };
+
+      const moved = await moveUseCase(tx).run({ ...input, classGroupModuleId: GROUP_A, allowOverCapacity: false });
+      expect(moved).toMatchObject({ classGroupId: GROUP_B, classGroupModuleId: GROUP_B, overCapacity: false });
+      expect(await counters(tx, GROUP_D)).toEqual({ taken: 0, over: 0 });
+      expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
+      const [trail] = await tx
+        .select({ metadata: auditLog.metadata })
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "enrollment.moved"), eq(auditLog.targetId, enrollmentId)));
+      expect(trail!.metadata).toMatchObject({ fromClassGroupId: GROUP_D, toClassGroupId: GROUP_B });
+
+      // PEDRO from D onto the same hour: A and B are full now.
+      const pedro = await manual(tx, PEDRO, GROUP_D, false);
+      const pedroInput = { ...input, enrollmentId: pedro.enrollmentId, classGroupModuleId: GROUP_B };
+      await expect(moveUseCase(tx).run({ ...pedroInput, allowOverCapacity: false })).rejects.toBeInstanceOf(ClassGroupFullError);
+      expect(await counters(tx, GROUP_D)).toEqual({ taken: 1, over: 0 });
+      const over = await moveUseCase(tx).run({ ...pedroInput, allowOverCapacity: true });
+      expect(over).toMatchObject({ classGroupId: GROUP_A, overCapacity: true });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 1 });
+      expect(await counters(tx, GROUP_D)).toEqual({ taken: 0, over: 0 });
+    });
+  });
+
+  it("a move to the next module's schedule keeps the seat in its own class group when it has that run", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx, { siblings: true });
+      const { enrollmentId } = await manual(tx, ROSA, GROUP_A, false);
+      const thursday = [{ weekday: "thu", startTime: "18:00", endTime: "19:30" }];
+      const [ownSecond] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: GROUP_A, module: 2, slots: thursday })
+        .returning({ id: classGroupModules.id });
+      const [siblingSecond] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: GROUP_B, module: 2, slots: thursday })
+        .returning({ id: classGroupModules.id });
+
+      // B has room and comes first by id, but A is where the seat already is.
+      const moved = await moveUseCase(tx).run({
+        actorId: STAFF,
+        enrollmentId,
+        classGroupModuleId: siblingSecond!.id,
+        planId: null,
+        allowOverCapacity: false,
+        reason: "Pasa al módulo 2",
+        placement: "schedule",
+      });
+      expect(moved).toMatchObject({ classGroupId: GROUP_A, classGroupModuleId: ownSecond!.id, overCapacity: false });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
+      expect(await counters(tx, GROUP_B)).toEqual({ taken: 0, over: 0 });
+    });
+  });
+
+  it("a move naming the run still takes exactly that run", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx, { siblings: true });
+      const { enrollmentId } = await manual(tx, ROSA, GROUP_A, false);
+      const thursday = [{ weekday: "thu", startTime: "18:00", endTime: "19:30" }];
+      await tx.insert(classGroupModules).values({ classGroupId: GROUP_A, module: 2, slots: thursday });
+      const [siblingSecond] = await tx
+        .insert(classGroupModules)
+        .values({ classGroupId: GROUP_B, module: 2, slots: thursday })
+        .returning({ id: classGroupModules.id });
+
+      const moved = await moveUseCase(tx).run({
+        actorId: STAFF,
+        enrollmentId,
+        classGroupModuleId: siblingSecond!.id,
+        planId: null,
+        allowOverCapacity: false,
+        reason: "Al grupo de B",
+      });
+      expect(moved).toMatchObject({ classGroupId: GROUP_B, classGroupModuleId: siblingSecond!.id });
+      expect(await counters(tx, GROUP_A)).toEqual({ taken: 0, over: 0 });
+      expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
     });
   });
 });

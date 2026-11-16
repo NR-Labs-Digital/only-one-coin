@@ -7,6 +7,7 @@ import {
   type IEnrollmentRepository,
   type PaymentMethod,
   type PaymentStatus,
+  type SeatPlacement,
   type SeatStatus,
 } from "@ooc/domain";
 import { enrollments, payments, receiptUploads, waitlistEntries } from "@ooc/db";
@@ -14,7 +15,8 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
-import { takeManualSeat } from "./takeManualSeat.js";
+import { takeManualSeatInOrder } from "./takeManualSeat.js";
+import { offerOf } from "./classGroupOffer.js";
 import { entryModuleIdOf } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
@@ -26,6 +28,7 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
     notifications: EmailNotification[];
     receipt: { receiptUploadId: string; uploadedBy: string };
     allowOverCapacity?: boolean;
+    placement?: SeatPlacement;
   }): Promise<{ enrollment: Enrollment; payment: Payment }> {
     const { enrollment, payment } = params;
 
@@ -58,19 +61,27 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
         operationNumber: payment.operationNumber ?? "",
       });
 
-      const overCapacity = await takeManualSeat(tx, {
-        classGroupId: enrollment.classGroupId,
+      // The schedule (OOC-145): the class groups of the named one's offer
+      // that are on sale — the same siblings the picker grouped and the
+      // checkout claim fills —, in fill order. Nothing of it on sale any more
+      // (the window closed meanwhile): the named one, as staff may act
+      // outside the window.
+      const named = enrollment.classGroupId;
+      const siblings = params.placement === "schedule" ? await offerOf(tx, named) : [];
+      const seat = await takeManualSeatInOrder(tx, {
+        candidates: siblings.length > 0 ? siblings : [named],
         allowOverCapacity: params.allowOverCapacity ?? false,
       });
+      const { classGroupId, overCapacity } = seat;
 
       const [enrollmentRow] = await tx
         .insert(enrollments)
         .values({
           id: enrollment.id,
           studentId: enrollment.studentId,
-          classGroupId: enrollment.classGroupId,
+          classGroupId,
           // A new student starts in the class group's entry run (OOC-156).
-          classGroupModuleId: entryModuleIdOf(enrollment.classGroupId),
+          classGroupModuleId: entryModuleIdOf(classGroupId),
           planPriceId: enrollment.planPriceId,
           seatStatus: enrollment.seatStatus,
           origin: enrollment.origin,
@@ -109,13 +120,14 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
 
       // A seat taken from the waitlist closes the student's place in the
       // queue in the same transaction (OOC-35) — the queue never shows
-      // somebody who is already in.
+      // somebody who is already in. Both the class group named and the one
+      // the seat landed in: queued on one hour, seated by its sibling.
       await tx
         .update(waitlistEntries)
         .set({ leftAt: sql`now()`, leftReason: "enrolled", updatedAt: sql`now()` })
         .where(
           and(
-            eq(waitlistEntries.classGroupId, enrollment.classGroupId),
+            inArray(waitlistEntries.classGroupId, [...new Set([named, classGroupId])]),
             eq(waitlistEntries.studentId, enrollment.studentId),
             isNull(waitlistEntries.leftAt),
           ),
