@@ -13,6 +13,7 @@
     "seed:students": "tsx --conditions=development --env-file=.env src/scripts/seed-students.ts",
     "seed:enrollments": "tsx --conditions=development --env-file=.env src/scripts/seed-enrollments.ts",
     "seed:preview": "tsx --conditions=development --env-file=.env src/scripts/seed-preview-user.ts",
+    "seed:preview-guardian": "tsx --conditions=development --env-file=.env src/scripts/seed-preview-guardian.ts",
     "seed:load": "tsx --conditions=development --env-file=.env src/scripts/seed-load.ts",
     "seed": "pnpm run seed:admin && pnpm run seed:catalog",
     "import:legacy": "tsx --conditions=development --env-file=.env src/scripts/import-legacy-enrollments.ts",
