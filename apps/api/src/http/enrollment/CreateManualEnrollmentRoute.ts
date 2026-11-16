@@ -1,4 +1,4 @@
-import { PaymentMethodSchema } from "@ooc/domain";
+import { PaymentMethodSchema, SEAT_PLACEMENTS } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -20,6 +20,9 @@ const CreateManualEnrollmentBodySchema = z
     // or false, a full class group is 422 enrollment.class_group_full, as
     // before; the screen asks and sends it on the second try.
     allowOverCapacity: z.boolean().default(false),
+    // "schedule": classGroupId names the hour, and the seat goes to the first
+    // class group of it with room (OOC-145). Absent: exactly that class group.
+    placement: z.enum(SEAT_PLACEMENTS).default("class_group"),
   })
   .refine((body) => body.method !== "other" || body.methodDetail !== null, {
     message: "methodDetail is required when method is 'other'",
@@ -54,7 +57,7 @@ export const createManualEnrollmentRoute = RouteBuilder.post("/enrollments")
     tags: ["Enrollments"],
     summary: "Open an enrollment from the backoffice over an existing student",
     description:
-      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready. A full class group is 422 enrollment.class_group_full unless allowOverCapacity is true, in which case the seat is taken above capacity (OOC-155).",
+      "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready. A full class group is 422 enrollment.class_group_full unless allowOverCapacity is true, in which case the seat is taken above capacity (OOC-155). With placement \"schedule\" (OOC-145), classGroupId names the hour: the seat goes to the first class group of its offer with room, in code order, and above capacity only when all of them are full; the response names the class group it landed in.",
   })
   .roles(...MANUAL_ENROLLMENT_ROLES)
   .body(CreateManualEnrollmentBodySchema)

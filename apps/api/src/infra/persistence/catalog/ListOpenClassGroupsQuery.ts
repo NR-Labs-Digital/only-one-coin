@@ -6,13 +6,17 @@ import { outerEntrySlots } from "./classGroupModuleSql.js";
 
 export interface OpenClassGroupResult {
   id: string;
+  /** Shown next to the hour, so siblings of one schedule can be told apart (OOC-145). */
+  code: string;
   courseId: string;
+  academicPeriodId: string;
   courseName: string;
   academicPeriodName: string;
   schedule: string;
   /** WeeklySlot[] as stored (jsonb) — the route's response schema names the shape. */
   slots: unknown;
   startsOn: string;
+  endsOn: string;
   capacity: number;
   seatsTaken: number;
   seatsOver: number;
@@ -47,13 +51,16 @@ export class ListOpenClassGroupsQuery {
     const rows = await this.db
       .select({
         id: classGroups.id,
+        code: classGroups.code,
         courseId: classGroups.courseId,
+        academicPeriodId: classGroups.academicPeriodId,
         courseName: courses.name,
         academicPeriodName: academicPeriods.name,
         schedule: classGroups.schedule,
         // The entry run's week — where the student being enrolled starts (OOC-156).
         slots: outerEntrySlots(),
         startsOn: classGroups.startsOn,
+        endsOn: classGroups.endsOn,
         capacity: classGroups.capacity,
         seatsTaken: classGroups.seatsTaken,
         seatsOver: classGroups.seatsOver,
@@ -72,7 +79,7 @@ export class ListOpenClassGroupsQuery {
       // retired row on any of them takes the class group out (CLAUDE.md §6):
       // course and period through sellableClassGroup, the plan here.
       .where(and(sellableClassGroup(), isNull(plans.deletedAt)))
-      .orderBy(asc(courses.name), desc(plans.createdAt), desc(planPrices.validFrom));
+      .orderBy(asc(courses.name), asc(classGroups.code), desc(plans.createdAt), desc(planPrices.validFrom));
 
     // The joins above can produce more than one row per class_group when a
     // course has multiple plans or a plan has price history — ordering puts
@@ -84,7 +91,7 @@ export class ListOpenClassGroupsQuery {
       if (seen.has(row.id)) continue;
       seen.add(row.id);
       // Never null here: sellableClassGroup excludes drafts, and the 0018 check forbids a non-draft without dates.
-      result.push({ ...row, startsOn: row.startsOn!.toISOString() });
+      result.push({ ...row, startsOn: row.startsOn!.toISOString(), endsOn: row.endsOn!.toISOString() });
     }
 
     return result;

@@ -15,11 +15,13 @@ export interface MoveTargetClassGroup {
   code: string;
   teacherName: string;
   courseId: string;
+  academicPeriodId: string;
   courseName: string;
   academicPeriodName: string;
   schedule: string;
   slots: unknown;
   startsOn: string | null;
+  endsOn: string | null;
   status: string;
   module: number | null;
   fullCourse: boolean;
@@ -81,11 +83,13 @@ export class ListMoveTargetsQuery {
         code: classGroups.code,
         teacherName: moduleTeacherName(sql`${classGroupModules.id}`),
         courseId: classGroups.courseId,
+        academicPeriodId: classGroups.academicPeriodId,
         courseName: courses.name,
         academicPeriodName: academicPeriods.name,
         schedule: classGroups.schedule,
         slots: classGroupModules.slots,
         startsOn: classGroups.startsOn,
+        endsOn: classGroups.endsOn,
         status: classGroups.status,
         module: classGroupModules.module,
         fullCourse: classGroupModules.fullCourse,
@@ -132,7 +136,11 @@ export class ListMoveTargetsQuery {
       courseId: source.courseId,
       classGroupId: source.classGroupId,
       classGroupModuleId: source.classGroupModuleId,
-      classGroups: groupRows.map((row) => ({ ...row, startsOn: row.startsOn?.toISOString() ?? null })),
+      classGroups: groupRows.map((row) => ({
+        ...row,
+        startsOn: row.startsOn?.toISOString() ?? null,
+        endsOn: row.endsOn?.toISOString() ?? null,
+      })),
       plans: planList,
     };
   }

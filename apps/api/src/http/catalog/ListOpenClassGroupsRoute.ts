@@ -6,12 +6,15 @@ import { WeeklySlotSchema } from "./CatalogSchemas.js";
 const OpenClassGroupResponseSchema = z.array(
   z.object({
     id: z.string().uuid(),
+    code: z.string(),
     courseId: z.string().uuid(),
+    academicPeriodId: z.string().uuid(),
     courseName: z.string(),
     academicPeriodName: z.string(),
     schedule: z.string(),
     slots: z.array(WeeklySlotSchema),
     startsOn: z.string(),
+    endsOn: z.string(),
     capacity: z.number().int(),
     seatsTaken: z.number().int(),
     seatsOver: z.number().int(),

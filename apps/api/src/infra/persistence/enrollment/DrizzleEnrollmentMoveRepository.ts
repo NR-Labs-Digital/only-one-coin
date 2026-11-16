@@ -3,14 +3,16 @@ import {
   type EnrollmentMoveSource,
   type EnrollmentMoveTarget,
   type IEnrollmentMoveRepository,
+  type SeatPlacement,
   type SeatStatus,
 } from "@ooc/domain";
 import { classGroupModules, classGroups, enrollments, plans } from "@ooc/db";
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { giveBackSeat } from "@/infra/persistence/catalog/seatCounters.js";
 import { movableClassGroup } from "@/infra/persistence/catalog/sellableClassGroup.js";
-import { takeManualSeat } from "./takeManualSeat.js";
+import { takeManualSeatInOrder } from "./takeManualSeat.js";
+import { moveOfferOf } from "./classGroupOffer.js";
 import { enrollmentInModule, enrollmentModuleId } from "@/infra/persistence/catalog/classGroupModuleSql.js";
 
 /**
@@ -80,7 +82,8 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
     toClassGroupModuleId: string;
     planPriceId: string | null;
     allowOverCapacity: boolean;
-  }): Promise<{ overCapacity: boolean; movedAt: Date }> {
+    placement: SeatPlacement;
+  }): Promise<{ overCapacity: boolean; movedAt: Date; toClassGroupId: string; toClassGroupModuleId: string }> {
     return this.db.transaction(async (tx) => {
       // Locked first and re-checked: a rejection in Pagos (which releases the
       // seat) or another move racing this one waits here, and whoever comes
@@ -100,20 +103,38 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
         .for("update");
       if (!current) throw new EnrollmentMoveConflictError();
 
-      if (params.fromClassGroupId === params.toClassGroupId) {
+      // Where the seat may go: the named run, or — staff picked the schedule
+      // (OOC-145) — the runs of its offer, own class group first. An offer
+      // read empty (the named run stopped running meanwhile) falls back to
+      // the named run, and the writes below refuse it as before.
+      const named = { id: params.toClassGroupModuleId, classGroupId: params.toClassGroupId };
+      const offer =
+        params.placement === "schedule"
+          ? await moveOfferOf(tx, {
+              runId: params.toClassGroupModuleId,
+              fromRunId: params.fromClassGroupModuleId,
+              fromClassGroupId: params.fromClassGroupId,
+            })
+          : [];
+      const candidates = offer.length > 0 ? offer : [named];
+
+      const nextAttempt = (runId: string) => sql`1 + (
+        select count(*) from "grades" earlier
+        where earlier.enrollment_id = ${params.enrollmentId}
+          and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${runId}
+      )`;
+
+      const ownRun = candidates[0]!.classGroupId === params.fromClassGroupId ? candidates[0]! : null;
+      if (ownRun) {
         // Another run of the same class group: the seat is the class group's
         // and stays where it is — only the run changes. The run must still be
         // live and the class group still open, re-checked by the write.
         const [moved] = await tx
           .update(enrollments)
           .set({
-            classGroupModuleId: params.toClassGroupModuleId,
+            classGroupModuleId: ownRun.id,
             // A run it took before keeps its grades: this is the next attempt.
-            moduleAttempt: sql`1 + (
-            select count(*) from "grades" earlier
-            where earlier.enrollment_id = ${params.enrollmentId}
-              and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${params.toClassGroupModuleId}
-          )`,
+            moduleAttempt: nextAttempt(ownRun.id),
             updatedAt: sql`now()`,
           })
           .where(
@@ -122,8 +143,8 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
               sql`exists (
                 select 1 from ${classGroupModules}
                 join ${classGroups} on ${classGroups.id} = ${classGroupModules.classGroupId}
-                where ${classGroupModules.id} = ${params.toClassGroupModuleId}
-                  and ${classGroupModules.classGroupId} = ${params.toClassGroupId}
+                where ${classGroupModules.id} = ${ownRun.id}
+                  and ${classGroupModules.classGroupId} = ${ownRun.classGroupId}
                   and ${classGroupModules.deletedAt} is null
                   and ${movableClassGroup()}
               )`,
@@ -131,47 +152,54 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
           )
           .returning({ updatedAt: enrollments.updatedAt });
         if (!moved) throw new EnrollmentMoveConflictError();
-        return { overCapacity: current.overCapacity, movedAt: moved.updatedAt };
+        return {
+          overCapacity: current.overCapacity,
+          movedAt: moved.updatedAt,
+          toClassGroupId: ownRun.classGroupId,
+          toClassGroupModuleId: ownRun.id,
+        };
       }
 
-      // Both class groups in id order, so two moves crossing between the same
-      // pair lock in the same order and never deadlock.
-      const take = () =>
-        takeManualSeat(tx, {
-          classGroupId: params.toClassGroupId,
-          allowOverCapacity: params.allowOverCapacity,
-          where: movableClassGroup(),
-        });
-      const giveBack = () =>
-        giveBackSeat(tx, { classGroupId: params.fromClassGroupId, overCapacity: current.overCapacity });
+      // Into another class group. Every class group this move may touch is
+      // locked up front, in id order, so two moves crossing between the same
+      // class groups wait for each other instead of deadlocking — whatever
+      // order the seat search then tries them in.
+      const others = candidates.filter((run) => run.classGroupId !== params.fromClassGroupId);
+      const lockIds = [...new Set([params.fromClassGroupId, ...others.map((run) => run.classGroupId)])];
+      await tx
+        .select({ id: classGroups.id })
+        .from(classGroups)
+        .where(inArray(classGroups.id, lockIds))
+        .orderBy(asc(classGroups.id))
+        .for("update");
 
-      let overCapacity: boolean;
-      if (params.fromClassGroupId < params.toClassGroupId) {
-        await giveBack();
-        overCapacity = await take();
-      } else {
-        overCapacity = await take();
-        await giveBack();
-      }
+      await giveBackSeat(tx, { classGroupId: params.fromClassGroupId, overCapacity: current.overCapacity });
+      const seat = await takeManualSeatInOrder(tx, {
+        candidates: others.map((run) => run.classGroupId),
+        allowOverCapacity: params.allowOverCapacity,
+        where: movableClassGroup(),
+      });
+      const target = others.find((run) => run.classGroupId === seat.classGroupId)!;
 
       const [moved] = await tx
         .update(enrollments)
         .set({
-          classGroupId: params.toClassGroupId,
-          classGroupModuleId: params.toClassGroupModuleId,
-          moduleAttempt: sql`1 + (
-          select count(*) from "grades" earlier
-          where earlier.enrollment_id = ${params.enrollmentId}
-            and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${params.toClassGroupModuleId}
-          )`,
-          overCapacity,
+          classGroupId: target.classGroupId,
+          classGroupModuleId: target.id,
+          moduleAttempt: nextAttempt(target.id),
+          overCapacity: seat.overCapacity,
           ...(params.planPriceId ? { planPriceId: params.planPriceId } : {}),
           updatedAt: sql`now()`,
         })
         .where(eq(enrollments.id, params.enrollmentId))
         .returning({ updatedAt: enrollments.updatedAt });
 
-      return { overCapacity, movedAt: moved!.updatedAt };
+      return {
+        overCapacity: seat.overCapacity,
+        movedAt: moved!.updatedAt,
+        toClassGroupId: target.classGroupId,
+        toClassGroupModuleId: target.id,
+      };
     });
   }
 }

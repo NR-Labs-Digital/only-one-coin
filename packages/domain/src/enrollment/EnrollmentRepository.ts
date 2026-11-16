@@ -1,3 +1,4 @@
+import type { SeatPlacement } from "../catalog/classGroupOffer.js";
 import type { EmailNotification } from "../notification/EmailNotification.js";
 import type { Enrollment } from "./Enrollment.js";
 import type { Payment } from "./Payment.js";
@@ -26,6 +27,12 @@ import type { Payment } from "./Payment.js";
  * payment, or the whole write is refused with ReceiptNotReadyError — locked
  * in the same transaction, so one file never pays for two enrollments.
  *
+ * `placement: "schedule"` (OOC-145) treats `enrollment.classGroupId` as the
+ * schedule, not the class group: the seat goes to the first class group of
+ * its offer with room, in fill order, and above capacity (with the flag) on
+ * the first one only when all of them are full. The returned enrollment names
+ * the class group the seat landed in.
+ *
  * The same transaction also closes the student's active waitlist entry for
  * that class group, if there is one (left_reason 'enrolled', OOC-35) — the
  * queue never shows somebody who already holds the seat.
@@ -37,6 +44,7 @@ export interface IEnrollmentRepository {
     notifications: EmailNotification[];
     receipt: { receiptUploadId: string; uploadedBy: string };
     allowOverCapacity?: boolean;
+    placement?: SeatPlacement;
   }): Promise<{
     enrollment: Enrollment;
     payment: Payment;
