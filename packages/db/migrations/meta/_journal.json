@@ -421,6 +421,13 @@
       "when": 1794709115679,
       "tag": "0059_module_progression",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1795031501693,
+      "tag": "0060_payment_lots",
+      "breakpoints": true
     }
   ]
 }
