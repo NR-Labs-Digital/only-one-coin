@@ -136,6 +136,12 @@ export const AUDIT_ACTIONS = {
   "attachment.downloaded": { key: "attachment_downloaded", entity: "student", subject: "metadata_student" },
   "attachment.removed": { key: "attachment_removed", entity: "student", subject: "metadata_student" },
 
+  // Documents the institution issues (OOC-33): the target is the document,
+  // the student travels in metadata; the batch targets its module group.
+  "issued_document.issued": { key: "issued_document_issued", entity: "student", subject: "metadata_student" },
+  "issued_document.downloaded": { key: "issued_document_downloaded", entity: "student", subject: "metadata_student" },
+  "certificate.batch_issued": { key: "certificate_batch_issued", entity: "class_group", subject: "metadata_class_group" },
+
   "payment.approved": { key: "payment_approved", entity: "payment", subject: "target" },
   "payment.rejected": { key: "payment_rejected", entity: "payment", subject: "target" },
   "payment.receipt_viewed": { key: "receipt_viewed", entity: "payment", subject: "target" },

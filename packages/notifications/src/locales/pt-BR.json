@@ -196,6 +196,22 @@
         "A coordenação acadêmica corrigiu o resultado de {studentName} em {courseName}: o módulo ficou registrado como DA (reprovado por não fazer o exame).",
         "Você pode ver o resultado no portal do aluno."
       ]
+    },
+    "enrollment_certificate_issued": {
+      "subject": "Sua constância de matrícula de {courseName} está pronta",
+      "preheader": "Baixe no portal do aluno.",
+      "paragraphs": [
+        "A constância de matrícula de {studentName} em {courseName} foi emitida.",
+        "Você pode baixá-la no portal do aluno, em Documentos. O código de verificação é {code}."
+      ]
+    },
+    "certificate_issued": {
+      "subject": "Seu certificado de {courseName} está pronto",
+      "preheader": "Baixe no portal do aluno.",
+      "paragraphs": [
+        "Parabéns! O certificado de {studentName} pela conclusão de {courseName} foi emitido.",
+        "Você pode baixá-lo no portal do aluno, em Documentos. O código de verificação é {code}."
+      ]
     }
   }
 }

@@ -78,8 +78,8 @@ export const EMAIL_CATALOG = {
      grade, or DA. Sent with the correction. */
   grade_corrected: { audience: "student", stage: "grades", conditional: true, emitted: true },
   grade_corrected_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
-  enrollment_certificate_issued: { audience: "student", stage: "documents", conditional: true, emitted: false },
-  certificate_issued: { audience: "student", stage: "documents", conditional: false, emitted: false },
+  enrollment_certificate_issued: { audience: "student", stage: "documents", conditional: true, emitted: true },
+  certificate_issued: { audience: "student", stage: "documents", conditional: false, emitted: true },
 
   email_verification_code: { audience: "student", stage: null, conditional: false, emitted: true },
   portal_password_reset: { audience: "student", stage: null, conditional: true, emitted: true },

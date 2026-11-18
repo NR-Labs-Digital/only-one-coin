@@ -114,6 +114,22 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** The constancia of a paid request was issued (OOC-33). It points to the
+   * portal's documents; the PDF is never attached. `code` is the document's
+   * verification code. */
+  enrollment_certificate_issued: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    code: string;
+  };
+  /** The course certificate was issued in coordination's batch (OOC-33). */
+  certificate_issued: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    code: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;
