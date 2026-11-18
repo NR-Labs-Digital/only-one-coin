@@ -137,6 +137,9 @@
       "deadline_overdue": "Prazo vencido",
       "approved_toast": "Pagamento aprovado. A matrícula ficou ativa.",
       "rejected_toast": "Pagamento rejeitado. A vaga voltou para a turma.",
+      "approved_lot_toast": "Pagamento aprovado. Todas as matrículas do pagamento ficaram ativas.",
+      "approved_lot_portal_conflict_toast": "Pagamento aprovado, mas não criamos a conta do portal de algum aluno do pagamento: o e-mail dele já pertence a outra conta. É preciso corrigir o e-mail antes de enviar o acesso.",
+      "rejected_lot_toast": "Pagamento rejeitado. Todas as vagas do pagamento voltaram para as turmas.",
       "load_error_title": "Não foi possível carregar a fila de revisão",
       "load_error_body": "O sistema não respondeu. Recarregue a página; se continuar igual, avise a equipe técnica.",
       "approved_portal_conflict_toast": "Pagamento aprovado, mas não criamos a conta do portal: o e-mail do aluno já pertence a outra conta. É preciso corrigir o e-mail antes de enviar o acesso."

@@ -224,6 +224,8 @@ export function ReviewQueueView({
       // was the last row. A run of reviews is A, A, R…, never a click back to
       // the list. The page re-read from the server fills the gap behind it.
       const index = items.findIndex((item) => item.id === paymentId)
+      // A lot (OOC-158): the toast speaks of every enrollment it decided.
+      const lot = (items[index]?.lot.length ?? 0) > 0
       const next = items[index + 1] ?? items[index - 1] ?? null
       setReviewingId(next?.id ?? null)
       if (!next && total > 1) openOnArrival.current = 'first'
@@ -239,9 +241,15 @@ export function ReviewQueueView({
         t(
           decision.kind === 'approve'
             ? conflict
-              ? 'review.approved_portal_conflict_toast'
-              : 'review.approved_toast'
-            : 'review.rejected_toast',
+              ? lot
+                ? 'review.approved_lot_portal_conflict_toast'
+                : 'review.approved_portal_conflict_toast'
+              : lot
+                ? 'review.approved_lot_toast'
+                : 'review.approved_toast'
+            : lot
+              ? 'review.rejected_lot_toast'
+              : 'review.rejected_toast',
         ),
       )
       refreshQueue()

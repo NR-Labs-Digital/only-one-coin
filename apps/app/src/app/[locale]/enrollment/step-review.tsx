@@ -263,7 +263,7 @@ export function StepReview({
           this screen thinking the seat is theirs — the payment still has to
           clear review (`CLAUDE.md` §5). */}
       <Note tone="info">
-        {t('step.review.what_happens', { days: catalog.settings.reservationDays })}
+        {t(isLot ? 'lot.what_happens' : 'step.review.what_happens', { days: catalog.settings.reservationDays })}
       </Note>
 
       <div className="flex flex-col gap-2">

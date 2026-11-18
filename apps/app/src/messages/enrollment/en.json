@@ -246,7 +246,9 @@
       "review_courses": "Courses in this order ({count})",
       "review_people": "Students ({count})",
       "price": "Price",
-      "submitted_summary": "Your {count} enrollments"
+      "submitted_summary": "Your {count} enrollments",
+      "what_happens": "When you send, your seats are held and your receipt goes to review. You have up to {days} days for the payment to be approved; we will email you as soon as it is.",
+      "timeline_received_body": "Your seats are held."
     }
   }
 }
