@@ -20,6 +20,18 @@ const QuerySchema = z.object({
   sort: z.enum(["newest", "oldest"]).default("newest"),
 });
 
+/** The other enrollments of a lot (OOC-158), in lot order — empty for an
+ * ordinary payment. */
+const LotItemSchema = z.object({
+  enrollmentId: z.string().uuid(),
+  studentId: z.string().uuid(),
+  studentName: z.string(),
+  courseName: z.string(),
+  classGroupName: z.string(),
+  planName: z.string(),
+  expectedAmountCents: z.number().int(),
+});
+
 const RowSchema = z.object({
   id: z.string().uuid(),
   enrollmentId: z.string().uuid(),
@@ -38,6 +50,7 @@ const RowSchema = z.object({
   submittedAt: z.string(),
   decidedAt: z.string().nullable(),
   decidedByName: z.string().nullable(),
+  lot: z.array(LotItemSchema),
 });
 
 const ResponseSchema = z.object({

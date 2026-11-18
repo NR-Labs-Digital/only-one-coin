@@ -27,6 +27,7 @@ import {
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { OPEN_STATUSES, PAYMENTS_PAGE_SIZE, paymentSearchCondition } from "./ListPaymentsQuery.js";
+import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, type PaymentLotItem } from "./paymentLot.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
 
 /**
@@ -133,6 +134,9 @@ export interface PaymentReviewItem {
   verdict: ReceiptVerdictOutcome | null;
   submittedAt: Date;
   reviewDeadline: Date;
+  /** The other enrollments this payment pays for, when it is a lot (OOC-158)
+   * — empty for an ordinary payment. Deciding the payment decides them all. */
+  lot: PaymentLotItem[];
 }
 
 export interface PaymentReviewQueue {
@@ -355,8 +359,9 @@ export class ListPaymentReviewQueueQuery {
         classGroupCode: classGroups.code,
         classGroupSchedule: classGroups.schedule,
         planName: plans.name,
-        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
-        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and ${enrollments.overCapacity}`,
+        // A lot (OOC-158) expects the sum of its enrollments' prices.
+        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents} + ${lotExpectedExtraCents})`.mapWith(Number),
+        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and (${enrollments.overCapacity} or ${lotHasOverCapacity})`,
         uploadStatus: latestUpload.status,
         fraudSignals: latestUpload.fraudSignals,
         validationVerdict: latestUpload.validationVerdict,
@@ -412,6 +417,7 @@ export class ListPaymentReviewQueueQuery {
       .where(where);
 
     const [rows, counted, { reviewWindowDays }] = await Promise.all([rowsPromise, totalPromise, this.settings.get()]);
+    const lots = await loadPaymentLots(this.db, rows.map((row) => row.id));
 
     const items = rows.map((row): PaymentReviewItem => {
       const fromReread = row.rereadAt !== null;
@@ -465,6 +471,7 @@ export class ListPaymentReviewQueueQuery {
           : receiptVerdict(row.validationVerdict, row.validationDetail),
         submittedAt: row.createdAt,
         reviewDeadline: new Date(row.createdAt.getTime() + reviewWindowDays * DAY_MS),
+        lot: lots.get(row.id) ?? [],
       };
     });
 

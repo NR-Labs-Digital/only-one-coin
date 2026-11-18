@@ -41,6 +41,46 @@
         "Se você acha que houve um erro, fale com a gente pelos canais de atendimento da Only One Coin."
       ]
     },
+    "lot_enrollment_received": {
+      "subject": "Recebemos as suas matrículas",
+      "preheader": "Estamos verificando o pagamento de {amount}.",
+      "paragraphs": [
+        "Recebemos estas matrículas, pagas com um único comprovante:",
+        "{items}",
+        "Estamos verificando o pagamento de {amount}. Vamos escrever por aqui assim que ele for confirmado.",
+        "As vagas ficam reservadas enquanto revisamos o pagamento."
+      ],
+      "item": "{studentName} em {courseName}, com início das aulas em {startsOn}."
+    },
+    "lot_payment_under_review": {
+      "subject": "Estamos revisando o pagamento das suas matrículas",
+      "preheader": "Nossa equipe vai verificar o comprovante.",
+      "paragraphs": [
+        "O pagamento destas matrículas foi para revisão manual:",
+        "{items}",
+        "Nossa equipe vai verificar o comprovante e escreveremos por aqui com o resultado. Não é preciso enviá-lo de novo."
+      ],
+      "item": "{studentName} em {courseName}."
+    },
+    "lot_payment_approved": {
+      "subject": "Matrículas confirmadas!",
+      "preheader": "Aprovamos o pagamento das suas matrículas.",
+      "paragraphs": [
+        "Aprovamos o pagamento. Estas matrículas estão confirmadas!",
+        "{items}"
+      ],
+      "item": "{studentName} em {courseName}: as aulas começam em {startsOn}."
+    },
+    "lot_payment_rejected": {
+      "subject": "Não conseguimos confirmar o pagamento das suas matrículas",
+      "preheader": "O comprovante não foi aprovado.",
+      "paragraphs": [
+        "Não conseguimos confirmar o pagamento, por isso estas matrículas não foram aprovadas:",
+        "{items}",
+        "Se você acha que houve um erro, fale com a gente pelos canais de atendimento da Only One Coin."
+      ],
+      "item": "{studentName} em {courseName}."
+    },
     "procedure_payment_under_review": {
       "subject": "Estamos revisando o pagamento do trâmite de {studentName}",
       "preheader": "Nossa equipe vai verificar o comprovante.",

@@ -1,3 +1,4 @@
+import { FakePaymentEmailLookup } from "./fakes/paymentEmail.js";
 import { describe, expect, it } from "vitest";
 import {
   MAX_LOOKALIKE_SIGNALS,
@@ -161,7 +162,11 @@ const MINOR_CONTEXT: EnrollmentEmailContext = {
 };
 
 function useCase(repository: FakeScreeningRepository, context: EnrollmentEmailContext | null = MINOR_CONTEXT) {
-  return new ScreenReceiptUploadUseCase(repository, new FakeEmailContextLookup(context));
+  return new ScreenReceiptUploadUseCase(
+    repository,
+    new FakeEmailContextLookup(context),
+    new FakePaymentEmailLookup(context ? [context] : null),
+  );
 }
 
 const SUBJECT: ReceiptScreeningSubject = {

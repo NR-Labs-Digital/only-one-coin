@@ -248,6 +248,7 @@ import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPassw
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
+import { DrizzlePaymentEmailContextLookup } from "./infra/persistence/enrollment/DrizzlePaymentEmailContextLookup.js";
 import {
   DrizzleEmailDeliveryRepository,
   type IEmailDeliveryRecorder,
@@ -586,6 +587,7 @@ function buildContainer(): AppContainer {
   const progressionRepository = new DrizzleProgressionRepository(db);
   const waitlistRepository = new DrizzleWaitlistRepository(db);
   const enrollmentEmailContextLookup = new DrizzleEnrollmentEmailContextLookup(db);
+  const paymentEmailContextLookup = new DrizzlePaymentEmailContextLookup(db, enrollmentEmailContextLookup);
   const paymentSettlementRepository = new DrizzlePaymentSettlementRepository(db);
 
   // Notifications
@@ -686,7 +688,11 @@ function buildContainer(): AppContainer {
   };
   const sendEmailVerification = new SendEmailVerificationCodeUseCase(emailVerificationRepository);
   const confirmEmailVerification = new ConfirmEmailVerificationUseCase(emailVerificationRepository);
-  const screenReceiptUpload = new ScreenReceiptUploadUseCase(receiptScreeningRepository, enrollmentEmailContextLookup);
+  const screenReceiptUpload = new ScreenReceiptUploadUseCase(
+    receiptScreeningRepository,
+    enrollmentEmailContextLookup,
+    paymentEmailContextLookup,
+  );
   const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
   const createInvite = new CreateStaffInviteUseCase(
     staffUserLookup,
@@ -789,7 +795,12 @@ function buildContainer(): AppContainer {
   const leaveWaitlist = new LeaveWaitlistUseCase(waitlistRepository, auditLogRepository);
 
   const portalLinkBuilder = new PortalLinkBuilder(config.PORTAL_PUBLIC_URL);
-  const settlePayment = new SettlePaymentUseCase(paymentSettlementRepository, enrollmentEmailContextLookup, portalLinkBuilder);
+  const settlePayment = new SettlePaymentUseCase(
+    paymentSettlementRepository,
+    enrollmentEmailContextLookup,
+    paymentEmailContextLookup,
+    portalLinkBuilder,
+  );
 
   const portalAccessRepository = new DrizzlePortalAccessRepository(db);
   const portal = {
@@ -809,6 +820,7 @@ function buildContainer(): AppContainer {
     receiptValidationRepository,
     platformSettingsRepository,
     enrollmentEmailContextLookup,
+    paymentEmailContextLookup,
   );
 
   // Queries (read-only, no domain invariant to protect — see class docs)

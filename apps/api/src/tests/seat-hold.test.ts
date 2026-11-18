@@ -75,6 +75,7 @@ class FakePublicEnrollments implements IPublicEnrollmentRepository {
 
   async findContext(): Promise<PublicEnrollmentContext> {
     return {
+      courseId: "course-1",
       courseMinAge: 7,
       planPriceId: PLAN_PRICE_ID,
       amountCents: 25000,
@@ -85,7 +86,11 @@ class FakePublicEnrollments implements IPublicEnrollmentRepository {
 
   async submit(params: SubmitPublicEnrollmentParams) {
     this.params = params;
-    return { student: params.student, guardian: params.guardian, enrollment: params.enrollment, payment: params.payment };
+    return {
+      students: params.people.map((person) => person.student),
+      enrollments: params.items.map((item) => item.enrollment),
+      payment: params.payment,
+    };
   }
 }
 
@@ -124,23 +129,25 @@ const UPLOADED_RECEIPT: ReceiptUpload = {
 };
 
 const SUBMIT: SubmitPublicEnrollmentInput = {
-  seatHoldId: HOLD_ID,
+  items: [{ seatHoldId: HOLD_ID, classGroupId: CLASS_GROUP_ID, planId: PLAN_ID, person: 0 }],
   receiptUploadId: RECEIPT_UPLOAD_ID,
-  classGroupId: CLASS_GROUP_ID,
-  planId: PLAN_ID,
-  student: {
-    firstName: "Rosa",
-    lastName: "Quispe",
-    nationalIdType: "DNI",
-    nationalId: "70123456",
-    email: "rosa.quispe@gmail.com",
-    phone: "+51987654321",
-    birthDate: new Date("1996-04-12T00:00:00.000Z"),
-    country: "PE",
-    region: "Lima",
-    city: "Chorrillos",
-  },
-  guardian: null,
+  people: [
+    {
+      student: {
+        firstName: "Rosa",
+        lastName: "Quispe",
+        nationalIdType: "DNI",
+        nationalId: "70123456",
+        email: "rosa.quispe@gmail.com",
+        phone: "+51987654321",
+        birthDate: new Date("1996-04-12T00:00:00.000Z"),
+        country: "PE",
+        region: "Lima",
+        city: "Chorrillos",
+      },
+      guardian: null,
+    },
+  ],
   consent: null,
   locale: "es-PE",
   payment: {
@@ -208,8 +215,8 @@ describe("SubmitPublicEnrollmentUseCase and the hold", () => {
 
     await useCase.run(SUBMIT);
 
-    expect(repository.params!.enrollment.origin).toBe("whatsapp");
-    expect(repository.params!.seatHoldId).toBe(HOLD_ID);
+    expect(repository.params!.items[0]!.enrollment.origin).toBe("whatsapp");
+    expect(repository.params!.items[0]!.seatHoldId).toBe(HOLD_ID);
   });
 
   it("refuses a hold that does not exist", async () => {

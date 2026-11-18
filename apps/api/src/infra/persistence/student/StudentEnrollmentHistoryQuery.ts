@@ -1,4 +1,4 @@
-import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans } from "@ooc/db";
+import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, payments, planPrices, plans } from "@ooc/db";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
@@ -47,19 +47,21 @@ export class StudentEnrollmentHistoryQuery {
     // Latest payment per enrollment, scoped to this student's enrollments so
     // the DISTINCT ON never walks the whole payments table.
     const latestPayment = this.db
-      .selectDistinctOn([payments.enrollmentId], {
+      .selectDistinctOn([paymentCoverage.enrollmentId], {
         id: payments.id,
-        enrollmentId: payments.enrollmentId,
+        enrollmentId: paymentCoverage.enrollmentId,
         status: payments.status,
         method: payments.method,
         methodDetail: payments.methodDetail,
         operationNumber: payments.operationNumber,
         updatedAt: payments.updatedAt,
       })
-      .from(payments)
-      .innerJoin(enrollments, eq(enrollments.id, payments.enrollmentId))
+      // Every enrollment a payment pays for, a lot's included (OOC-158).
+      .from(paymentCoverage)
+      .innerJoin(payments, eq(payments.id, paymentCoverage.paymentId))
+      .innerJoin(enrollments, eq(enrollments.id, paymentCoverage.enrollmentId))
       .where(eq(enrollments.studentId, studentId))
-      .orderBy(payments.enrollmentId, desc(payments.createdAt))
+      .orderBy(paymentCoverage.enrollmentId, desc(payments.createdAt))
       .as("latest_payment");
 
     const rows = await this.db

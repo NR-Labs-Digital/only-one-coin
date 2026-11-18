@@ -8,6 +8,7 @@ import {
   type ReceiptValidationSubject,
 } from "@ooc/domain";
 import { FakePlatformSettings, TEST_SETTINGS } from "./fakes/platformSettings.js";
+import { FakePaymentEmailLookup } from "./fakes/paymentEmail.js";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -80,7 +81,12 @@ function useCase(
   settings: PlatformSettings = SETTINGS,
   context: EnrollmentEmailContext | null = ADULT_CONTEXT,
 ) {
-  return new ValidateReceiptUseCase(repository, new FakePlatformSettings(settings), new FakeEmailContextLookup(context));
+  return new ValidateReceiptUseCase(
+    repository,
+    new FakePlatformSettings(settings),
+    new FakeEmailContextLookup(context),
+    new FakePaymentEmailLookup(context ? [context] : null),
+  );
 }
 
 describe("ValidateReceiptUseCase", () => {

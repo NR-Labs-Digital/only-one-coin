@@ -1,5 +1,17 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, auditLog, classGroups, courses, enrollments, outbox, payments, planPrices, plans, students } from "@ooc/db";
+import {
+  academicPeriods,
+  auditLog,
+  classGroups,
+  courses,
+  enrollments,
+  outbox,
+  paymentLotEnrollments,
+  payments,
+  planPrices,
+  plans,
+  students,
+} from "@ooc/db";
 import {
   newPortalToken,
   PaymentAlreadySettledError,
@@ -134,6 +146,51 @@ async function openPayment(
   return { paymentId: payment!.id, enrollmentId: enrollment!.id, studentId: student!.id };
 }
 
+/**
+ * A lot of two (OOC-158): the payment's own enrollment plus a sibling's, both
+ * seats counted on the class group (seed's one + one more).
+ */
+async function openLot(
+  tx: Tx,
+  siblingSeat: "reserved" | "released" = "reserved",
+): Promise<{ paymentId: string; enrollmentId: string; siblingEnrollmentId: string; siblingStudentId: string }> {
+  const own = await openPayment(tx);
+  sequence += 1;
+  const [sibling] = await tx
+    .insert(students)
+    .values({
+      firstName: "Hermano",
+      lastName: `Lote${sequence}`,
+      nationalIdType: "DNI",
+      nationalId: `SETTLE${sequence}`,
+      email: `settle.${sequence}@gmail.com`,
+      phone: "+51900000000",
+      birthDate: new Date("2001-01-01T00:00:00.000Z"),
+      country: "PE",
+      city: "Lima",
+    })
+    .returning({ id: students.id });
+  const [enrollment] = await tx
+    .insert(enrollments)
+    .values({ studentId: sibling!.id, classGroupId: GROUP, planPriceId: PLAN_PRICE, seatStatus: siblingSeat })
+    .returning({ id: enrollments.id });
+  await tx.insert(paymentLotEnrollments).values({ paymentId: own.paymentId, enrollmentId: enrollment!.id });
+  if (siblingSeat === "reserved") {
+    await tx.update(classGroups).set({ seatsTaken: sql`${classGroups.seatsTaken} + 1` }).where(eq(classGroups.id, GROUP));
+  }
+  return {
+    paymentId: own.paymentId,
+    enrollmentId: own.enrollmentId,
+    siblingEnrollmentId: enrollment!.id,
+    siblingStudentId: sibling!.id,
+  };
+}
+
+async function seatOf(tx: Tx, enrollmentId: string): Promise<string> {
+  const [row] = await tx.select({ seatStatus: enrollments.seatStatus }).from(enrollments).where(eq(enrollments.id, enrollmentId));
+  return row!.seatStatus;
+}
+
 function audit(paymentId: string, action: string): AuditLogEntry {
   return { actorId: REVIEWER, action, targetId: paymentId, metadata: { test: true }, at: DECIDED_AT };
 }
@@ -171,7 +228,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
         paymentId,
         classGroupId: GROUP,
         status: "pending",
-        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
       });
     });
   });
@@ -183,7 +240,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
         to: "approved",
         decision: approval,
         notifications: [
@@ -196,7 +253,7 @@ describe("DrizzlePaymentSettlementRepository", () => {
           },
         ],
         audit: audit(paymentId, "payment.approved"),
-        portalAccess: null,
+        portalAccess: [],
       });
 
       expect(result.seatStatus).toBe("confirmed");
@@ -221,12 +278,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
         to: "rejected",
         decision: rejection,
         notifications: [],
         audit: audit(paymentId, "payment.rejected"),
-        portalAccess: null,
+        portalAccess: [],
       });
 
       expect(result.seatStatus).toBe("released");
@@ -246,9 +303,9 @@ describe("DrizzlePaymentSettlementRepository", () => {
       const { paymentId, enrollmentId } = await openPayment(tx);
       const params = {
         paymentId,
-        origin: { kind: "enrollment" as const, enrollmentId, classGroupId: GROUP, seatStatus: "reserved" as const },
+        origin: { kind: "enrollment" as const, enrollmentId, classGroupId: GROUP, seatStatus: "reserved" as const, lot: [] },
         notifications: [],
-        portalAccess: null,
+        portalAccess: [],
       };
 
       await repository.settle({ ...params, to: "rejected", decision: rejection, audit: audit(paymentId, "payment.rejected") });
@@ -269,12 +326,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
       await expect(
         repository.settle({
           paymentId,
-          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
           to: "approved",
           decision: approval,
           notifications: [],
           audit: audit(paymentId, "payment.approved"),
-          portalAccess: null,
+          portalAccess: [],
         }),
       ).rejects.toBeInstanceOf(PaymentSeatReleasedError);
 
@@ -294,12 +351,12 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
         to: "rejected",
         decision: rejection,
         notifications: [],
         audit: audit(paymentId, "payment.rejected"),
-        portalAccess: null,
+        portalAccess: [],
       });
 
       expect(result.seatStatus).toBe("confirmed");
@@ -315,21 +372,23 @@ describe("DrizzlePaymentSettlementRepository", () => {
 
       const result = await repository.settle({
         paymentId,
-        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
         to: "approved",
         decision: approval,
         notifications: [],
         audit: audit(paymentId, "payment.approved"),
-        portalAccess: {
+        portalAccess: [
+          {
           studentId,
           actorId: REVIEWER,
           activation,
           at: new Date(),
           notify: (account, tokenId) => [portalCredentialsEmail(account, "https://student.test/access/x", tokenId, "es-PE")],
-        },
+          },
+        ],
       });
 
-      expect(result).toEqual({ seatStatus: "confirmed", portalAccess: "created" });
+      expect(result).toEqual({ seatStatus: "confirmed", portalAccess: ["created"] });
       const [student] = await tx.select({ userId: students.userId }).from(students).where(eq(students.id, studentId));
       expect(student!.userId).toBeTruthy();
       const mails = await tx.select().from(outbox).where(eq(outbox.templateKey, "portal_credentials"));
@@ -363,24 +422,26 @@ describe("DrizzlePaymentSettlementRepository", () => {
         const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
         const settling = repository.settle({
           paymentId,
-          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved" },
+          origin: { kind: "enrollment", enrollmentId, classGroupId: GROUP, seatStatus: "reserved", lot: [] },
           to: "approved",
           decision: approval,
           notifications: [],
           audit: audit(paymentId, "payment.approved"),
-          portalAccess: {
+          portalAccess: [
+            {
             studentId,
             actorId: REVIEWER,
             activation: newPortalToken("activation"),
             at: new Date(),
             notify: (account, tokenId) => [portalCredentialsEmail(account, "https://student.test/access/x", tokenId, "es-PE")],
-          },
+            },
+          ],
         });
 
         await waitUntilBlockedOnLock(settlementPid);
         await rival.query("commit");
 
-        expect(await settling).toEqual({ seatStatus: "confirmed", portalAccess: "email_conflict" });
+        expect(await settling).toEqual({ seatStatus: "confirmed", portalAccess: ["email_conflict"] });
 
         // The outer transaction survived the rolled-back savepoint: the
         // settlement's own writes are there, and nothing of the account is.
@@ -405,6 +466,83 @@ describe("DrizzlePaymentSettlementRepository", () => {
       if (rivalUserId) await rival.query(`delete from "user" where "id" = $1`, [rivalUserId]);
       await rival.end();
     }
+  });
+
+  describe("a lot (OOC-158)", () => {
+    it("reads the lot's other seats with the payment", async () => {
+      await rolledBack(async (tx) => {
+        const lot = await openLot(tx);
+        const found = await new DrizzlePaymentSettlementRepository(tx as unknown as Db).findForSettlement(lot.paymentId);
+        expect(found?.origin).toEqual({
+          kind: "enrollment",
+          enrollmentId: lot.enrollmentId,
+          classGroupId: GROUP,
+          seatStatus: "reserved",
+          lot: [{ enrollmentId: lot.siblingEnrollmentId, studentId: lot.siblingStudentId, seatStatus: "reserved" }],
+        });
+      });
+    });
+
+    it("approving confirms every seat; rejecting gives every seat back", async () => {
+      await rolledBack(async (tx) => {
+        const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
+        const approved = await openLot(tx);
+        await repository.settle({
+          paymentId: approved.paymentId,
+          origin: (await repository.findForSettlement(approved.paymentId))!.origin,
+          to: "approved",
+          decision: approval,
+          notifications: [],
+          audit: audit(approved.paymentId, "payment.approved"),
+          portalAccess: [],
+        });
+        expect(await seatOf(tx, approved.enrollmentId)).toBe("confirmed");
+        expect(await seatOf(tx, approved.siblingEnrollmentId)).toBe("confirmed");
+
+        const rejected = await openLot(tx);
+        const before = await seatsTaken(tx);
+        await repository.settle({
+          paymentId: rejected.paymentId,
+          origin: (await repository.findForSettlement(rejected.paymentId))!.origin,
+          to: "rejected",
+          decision: rejection,
+          notifications: [],
+          audit: audit(rejected.paymentId, "payment.rejected"),
+          portalAccess: [],
+        });
+        expect(await seatOf(tx, rejected.enrollmentId)).toBe("released");
+        expect(await seatOf(tx, rejected.siblingEnrollmentId)).toBe("released");
+        expect(await seatsTaken(tx)).toBe(before - 2);
+      });
+    });
+
+    it("refuses to approve when one seat of the lot was given back, and confirms none", async () => {
+      await rolledBack(async (tx) => {
+        const repository = new DrizzlePaymentSettlementRepository(tx as unknown as Db);
+        const lot = await openLot(tx, "released");
+        const origin = (await repository.findForSettlement(lot.paymentId))!.origin;
+        // The repository has the last word even when the usecase read a stale seat.
+        const stale =
+          origin.kind === "enrollment"
+            ? { ...origin, lot: origin.lot.map((seat) => ({ ...seat, seatStatus: "reserved" as const })) }
+            : origin;
+
+        await expect(
+          repository.settle({
+            paymentId: lot.paymentId,
+            origin: stale,
+            to: "approved",
+            decision: approval,
+            notifications: [],
+            audit: audit(lot.paymentId, "payment.approved"),
+            portalAccess: [],
+          }),
+        ).rejects.toBeInstanceOf(PaymentSeatReleasedError);
+
+        expect(await seatOf(tx, lot.enrollmentId)).toBe("reserved");
+        expect((await decisionColumns(tx, lot.paymentId)).status).toBe("pending");
+      });
+    });
   });
 });
 

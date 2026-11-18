@@ -4,6 +4,8 @@ import {
   classGroups,
   courses,
   enrollments,
+  paymentCoverage,
+  paymentLotEnrollments,
   payments,
   planPrices,
   plans,
@@ -15,6 +17,7 @@ import {
   Enrollment,
   OperationNumberAlreadyUsedError,
   Payment,
+  SeatHoldExpiredError,
   Student,
   type SubmitPublicEnrollmentParams,
 } from "@ooc/domain";
@@ -142,7 +145,57 @@ function submitParams(holdId: string, receiptUploadId: string, operationNumber =
     amountCents: 25000,
     operationNumber,
   });
-  return { seatHoldId: holdId, student, guardian: null, consent: null, enrollment, payment, receiptUploadId, notifications: [] };
+  return {
+    people: [{ student, guardian: null }],
+    items: [{ seatHoldId: holdId, person: 0, enrollment }],
+    consent: null,
+    payment,
+    receiptUploadId,
+    notifications: [],
+  };
+}
+
+/** Another seat on the same class group, for a lot (OOC-158). */
+async function secondHold(tx: Db): Promise<string> {
+  const claimed = await new DrizzleSeatHoldRepository(tx).claim({ classGroupId: GROUP, origin: "web", holdMinutes: 15 });
+  if (claimed.kind !== "held") throw new Error("fixture hold not taken");
+  return claimed.hold.id;
+}
+
+/** The lot of two: the params' person plus a sibling on a second hold. */
+function lotParams(holdId: string, receiptUploadId: string, siblingHoldId: string): SubmitPublicEnrollmentParams {
+  const params = submitParams(holdId, receiptUploadId);
+  const sibling = Student.create({
+    firstName: "Luis",
+    lastName: "Quispe",
+    nationalIdType: "DNI",
+    nationalId: "70000274",
+    email: "luis.lot.integration@gmail.com",
+    phone: "+51987654323",
+    birthDate: new Date("2001-01-01T00:00:00.000Z"),
+    country: "PE",
+    region: "Lima",
+    city: "Lima",
+  });
+  const siblingEnrollment = Enrollment.createFromPublicCheckout({
+    studentId: sibling.id,
+    classGroupId: GROUP,
+    planPriceId: PLAN_PRICE,
+    origin: "web",
+  });
+  return {
+    ...params,
+    people: [...params.people, { student: sibling, guardian: null }],
+    items: [...params.items, { seatHoldId: siblingHoldId, person: 1, enrollment: siblingEnrollment }],
+    payment: Payment.createFromPublicCheckout({
+      enrollmentId: params.items[0]!.enrollment.id,
+      idempotencyKey: `public-submit-integration-lot-${holdId}`,
+      method: "yape",
+      methodDetail: null,
+      amountCents: 50000,
+      operationNumber: "99900009",
+    }),
+  };
 }
 
 async function holdStatus(tx: Db, holdId: string): Promise<string> {
@@ -158,7 +211,9 @@ describe("DrizzlePublicEnrollmentRepository.submit", () => {
 
       const result = await new DrizzlePublicEnrollmentRepository(tx).submit(params);
 
-      expect(result.enrollment.id).toBe(params.enrollment.id);
+      expect(result.enrollments.map((enrollment) => enrollment.id)).toEqual([params.items[0]!.enrollment.id]);
+      // An ordinary payment writes no lot row.
+      expect(await tx.select().from(paymentLotEnrollments).where(eq(paymentLotEnrollments.paymentId, result.payment.id))).toEqual([]);
       expect(await holdStatus(tx, holdId)).toBe("consumed");
     });
   });
@@ -199,8 +254,52 @@ describe("DrizzlePublicEnrollmentRepository.submit", () => {
       const params = submitParams(holdId, receiptUploadId, "99900002");
       await expect(new DrizzlePublicEnrollmentRepository(tx).submit(params)).rejects.toBeInstanceOf(OperationNumberAlreadyUsedError);
 
-      expect(await tx.select().from(enrollments).where(eq(enrollments.id, params.enrollment.id))).toHaveLength(0);
-      expect(await tx.select().from(students).where(eq(students.id, params.student.id))).toHaveLength(0);
+      expect(await tx.select().from(enrollments).where(eq(enrollments.id, params.items[0]!.enrollment.id))).toHaveLength(0);
+      expect(await tx.select().from(students).where(eq(students.id, params.people[0]!.student.id))).toHaveLength(0);
+      expect(await holdStatus(tx, holdId)).toBe("active");
+    });
+  });
+
+  it("writes a lot: every seat, one payment for the sum, and the coverage of both (OOC-158)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { holdId, receiptUploadId } = await seed(tx);
+      const siblingHoldId = await secondHold(tx);
+      const params = lotParams(holdId, receiptUploadId, siblingHoldId);
+
+      const result = await new DrizzlePublicEnrollmentRepository(tx).submit(params);
+
+      expect(result.enrollments.map((enrollment) => enrollment.id)).toEqual(params.items.map((item) => item.enrollment.id));
+      expect(result.students).toHaveLength(2);
+      expect(await holdStatus(tx, holdId)).toBe("consumed");
+      expect(await holdStatus(tx, siblingHoldId)).toBe("consumed");
+
+      const [payment] = await tx.select().from(payments).where(eq(payments.id, result.payment.id));
+      expect(payment).toMatchObject({ enrollmentId: params.items[0]!.enrollment.id, amountCents: 50000 });
+      expect(
+        (await tx.select().from(paymentLotEnrollments).where(eq(paymentLotEnrollments.paymentId, result.payment.id))).map(
+          (row) => row.enrollmentId,
+        ),
+      ).toEqual([params.items[1]!.enrollment.id]);
+      const covered = await tx.select().from(paymentCoverage).where(eq(paymentCoverage.paymentId, result.payment.id));
+      expect(covered.map((row) => row.enrollmentId).sort()).toEqual(params.items.map((item) => item.enrollment.id).sort());
+
+      // A retry with the same key returns the same lot, writing nothing new.
+      const again = await new DrizzlePublicEnrollmentRepository(tx).submit(params);
+      expect(again.enrollments.map((enrollment) => enrollment.id)).toEqual(result.enrollments.map((enrollment) => enrollment.id));
+      expect(again.payment.id).toBe(result.payment.id);
+    });
+  });
+
+  it("writes nothing of a lot when one of its holds is gone (OOC-158)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { holdId, receiptUploadId } = await seed(tx);
+      const siblingHoldId = await secondHold(tx);
+      await new DrizzleSeatHoldRepository(tx).release(siblingHoldId);
+      const params = lotParams(holdId, receiptUploadId, siblingHoldId);
+
+      await expect(new DrizzlePublicEnrollmentRepository(tx).submit(params)).rejects.toBeInstanceOf(SeatHoldExpiredError);
+
+      expect(await tx.select().from(students).where(eq(students.id, params.people[0]!.student.id))).toHaveLength(0);
       expect(await holdStatus(tx, holdId)).toBe("active");
     });
   });

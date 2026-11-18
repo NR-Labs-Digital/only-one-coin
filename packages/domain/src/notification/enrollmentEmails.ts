@@ -1,5 +1,5 @@
 import { Student } from "../student/Student.js";
-import type { EmailNotification, Locale } from "./EmailNotification.js";
+import type { EmailNotification, LotEmailItem, Locale } from "./EmailNotification.js";
 
 /**
  * What an enrollment e-mail needs to know, read off the records rather than
@@ -120,4 +120,152 @@ export function paymentRejectedEmails(facts: PaymentEmailFacts, locale: Locale):
     vars: { recipientName: recipient.name, studentName, courseName: facts.courseName },
     dedupeKey: `payment_rejected:${facts.paymentId}:${recipient.kind}`,
   }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lots (OOC-158) — one receipt, several enrollments                          */
+/* -------------------------------------------------------------------------- */
+
+/** One enrollment a payment pays for, as its e-mails need it. */
+export interface PaymentItemEmailFacts {
+  enrollmentId: string;
+  studentId: string;
+  student: EnrollmentEmailFacts["student"];
+  guardian: EnrollmentEmailFacts["guardian"];
+  courseName: string;
+  classGroupStartsOn: Date;
+}
+
+/**
+ * Everything a payment pays for, in lot order: the payment's own enrollment
+ * first, then the other items of its lot. One item is the ordinary payment,
+ * and its e-mails are the single-enrollment templates, unchanged.
+ */
+export interface PaymentCoverageEmailFacts {
+  paymentId: string;
+  items: PaymentItemEmailFacts[];
+}
+
+/** An address a lot e-mail goes to, and the items of the lot it hears about. */
+export interface LotRecipient {
+  to: string;
+  name: string;
+  /** The recipient kind and student of the first item that names this
+   * address — what the dedupe key and the undelivered screen lead back to. */
+  kind: EnrollmentRecipientKind;
+  studentId: string;
+  items: PaymentItemEmailFacts[];
+}
+
+/**
+ * Who hears about a lot, one entry per address (decision of 16/11/2026,
+ * OOC-158): each item's recipients by the single-enrollment rule
+ * (`enrollmentRecipients` — the student, and a minor's guardian), merged by
+ * address without case. A mother of two children gets one e-mail listing
+ * both; a child with their own Gmail gets one listing their own course; the
+ * same student in two courses gets one listing the two. Lot order is kept,
+ * both for the addresses and for the items of each.
+ */
+export function lotRecipients(items: PaymentItemEmailFacts[]): LotRecipient[] {
+  const byAddress = new Map<string, LotRecipient>();
+  for (const item of items) {
+    for (const recipient of enrollmentRecipients(item)) {
+      const key = recipient.to.trim().toLowerCase();
+      const existing = byAddress.get(key);
+      if (existing) {
+        if (!existing.items.includes(item)) existing.items.push(item);
+      } else {
+        byAddress.set(key, {
+          to: recipient.to,
+          name: recipient.name,
+          kind: recipient.kind,
+          studentId: item.studentId,
+          items: [item],
+        });
+      }
+    }
+  }
+  return [...byAddress.values()];
+}
+
+function lotItems(items: PaymentItemEmailFacts[]): LotEmailItem[] {
+  return items.map((item) => ({
+    studentName: `${item.student.firstName} ${item.student.lastName}`,
+    courseName: item.courseName,
+    startsOn: item.classGroupStartsOn.toISOString(),
+  }));
+}
+
+/** `<template>:<payment>:<kind>:<student>` — the payment is the subject, and
+ * the fourth part says whose file the address belongs to (OOC-90's screen
+ * reads it back; `parseDeliveryDedupeKey` ignores it). */
+function lotDedupeKey(template: string, paymentId: string, recipient: LotRecipient): string {
+  return `${template}:${paymentId}:${recipient.kind}:${recipient.studentId}`;
+}
+
+/** "We received your enrollments" — the checkout's lot, written with it. */
+export function lotEnrollmentReceivedEmails(
+  facts: PaymentCoverageEmailFacts & { amountCents: number },
+  locale: Locale,
+): EmailNotification[] {
+  return lotRecipients(facts.items).map((recipient) => ({
+    templateKey: "lot_enrollment_received",
+    to: recipient.to,
+    locale,
+    vars: { recipientName: recipient.name, items: lotItems(recipient.items), amountCents: facts.amountCents },
+    dedupeKey: lotDedupeKey("lot_enrollment_received", facts.paymentId, recipient),
+  }));
+}
+
+function lotDecisionEmails(
+  templateKey: "lot_payment_under_review" | "lot_payment_approved" | "lot_payment_rejected",
+  facts: PaymentCoverageEmailFacts,
+  locale: Locale,
+): EmailNotification[] {
+  return lotRecipients(facts.items).map((recipient) => ({
+    templateKey,
+    to: recipient.to,
+    locale,
+    vars: { recipientName: recipient.name, items: lotItems(recipient.items) },
+    dedupeKey: lotDedupeKey(templateKey, facts.paymentId, recipient),
+  }));
+}
+
+function singleFacts(facts: PaymentCoverageEmailFacts): PaymentEmailFacts | null {
+  const [only] = facts.items;
+  return only ? { paymentId: facts.paymentId, ...only } : null;
+}
+
+/**
+ * "We received your enrollment(s)" for whatever the checkout just paid for:
+ * the single-enrollment template for one item, the lot one for more.
+ */
+export function receivedEmailsFor(
+  facts: PaymentCoverageEmailFacts & { amountCents: number },
+  locale: Locale,
+): EmailNotification[] {
+  if (facts.items.length > 1) return lotEnrollmentReceivedEmails(facts, locale);
+  const [only] = facts.items;
+  return only ? enrollmentReceivedEmails({ ...only, amountCents: facts.amountCents }, locale) : [];
+}
+
+/** The receipt went to a person — for a payment of one enrollment or a lot. */
+export function underReviewEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.items.length > 1) return lotDecisionEmails("lot_payment_under_review", facts, locale);
+  const single = singleFacts(facts);
+  return single ? paymentUnderReviewEmails(single, locale) : [];
+}
+
+/** The payment was approved — every seat it pays for is confirmed. */
+export function approvedEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.items.length > 1) return lotDecisionEmails("lot_payment_approved", facts, locale);
+  const single = singleFacts(facts);
+  return single ? paymentApprovedEmails(single, locale) : [];
+}
+
+/** The payment was rejected — every seat it held went back. */
+export function rejectedEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.items.length > 1) return lotDecisionEmails("lot_payment_rejected", facts, locale);
+  const single = singleFacts(facts);
+  return single ? paymentRejectedEmails(single, locale) : [];
 }

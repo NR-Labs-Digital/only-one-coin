@@ -14,6 +14,7 @@ import {
   type PortalAccount,
 } from "@ooc/domain";
 import { beforeEach, describe, expect, it } from "vitest";
+import { FakePaymentEmailLookup } from "./fakes/paymentEmail.js";
 
 /**
  * Payments is where an enrollment is finished (OOC-55): approving confirms
@@ -44,7 +45,7 @@ class FakeSettlementRepository implements IPaymentSettlementRepository {
             ? "confirmed"
             : "released"
           : origin.seatStatus;
-    return { seatStatus, portalAccess: params.portalAccess ? this.portalOutcome : null };
+    return { seatStatus, portalAccess: params.portalAccess.map(() => this.portalOutcome) };
   }
 }
 
@@ -78,7 +79,13 @@ function target(overrides: Partial<PaymentToSettle> & { seatStatus?: SeatStatus 
     studentId: "018f2b5c-0000-7000-8000-00000000s001",
     classGroupId: CLASS_GROUP,
     status: "pending",
-    origin: { kind: "enrollment", enrollmentId: "018f2b5c-0000-7000-8000-00000000e001", classGroupId: CLASS_GROUP, seatStatus },
+    origin: {
+      kind: "enrollment",
+      enrollmentId: "018f2b5c-0000-7000-8000-00000000e001",
+      classGroupId: CLASS_GROUP,
+      seatStatus,
+      lot: [],
+    },
     ...rest,
   };
 }
@@ -90,7 +97,12 @@ let useCase: SettlePaymentUseCase;
 
 beforeEach(() => {
   repository = new FakeSettlementRepository(target());
-  useCase = new SettlePaymentUseCase(repository, new FakeEmailContextLookup(MINOR_CONTEXT), new FakePortalLinkBuilder());
+  useCase = new SettlePaymentUseCase(
+    repository,
+    new FakeEmailContextLookup(MINOR_CONTEXT),
+    new FakePaymentEmailLookup([MINOR_CONTEXT]),
+    new FakePortalLinkBuilder(),
+  );
 });
 
 describe("SettlePaymentUseCase", () => {
@@ -107,7 +119,8 @@ describe("SettlePaymentUseCase", () => {
   it("asks for the student's portal account on approval, with a credentials e-mail behind a link", async () => {
     await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } });
 
-    const request = repository.settled[0]!.portalAccess!;
+    const [request] = repository.settled[0]!.portalAccess;
+    if (!request) throw new Error("no portal access asked for");
     expect(request.studentId).toBe(target().studentId);
     expect(request.actorId).toBe(ACTOR);
     expect(request.activation.purpose).toBe("activation");
@@ -128,7 +141,7 @@ describe("SettlePaymentUseCase", () => {
       paymentId: PAYMENT,
       decision: { kind: "reject", reason: "illegible", note: "" },
     });
-    expect(repository.settled[0]!.portalAccess).toBeNull();
+    expect(repository.settled[0]!.portalAccess).toEqual([]);
     expect(result.portalAccess).toBeNull();
   });
 
@@ -216,7 +229,7 @@ describe("SettlePaymentUseCase", () => {
       expect(result).toEqual({ paymentId: PAYMENT, status: "approved", seatStatus: null, portalAccess: null });
       const settled = repository.settled[0]!;
       expect(settled.origin).toEqual({ kind: "procedure", procedureRequestId: REQUEST });
-      expect(settled.portalAccess).toBeNull();
+      expect(settled.portalAccess).toEqual([]);
       expect(settled.audit.metadata).toEqual({ procedureRequestId: REQUEST });
     });
 
@@ -239,6 +252,75 @@ describe("SettlePaymentUseCase", () => {
       expect(result).toMatchObject({ status: "rejected", seatStatus: null });
       expect(repository.settled[0]!.decision.rejectionReason).toBe("illegible");
       expect(repository.settled[0]!.notifications[0]!.templateKey).toBe("procedure_payment_rejected");
+    });
+  });
+
+  describe("a lot (OOC-158)", () => {
+    const SIBLING = "018f2b5c-0000-7000-8000-00000000s002";
+    const lotTarget = (siblingSeat: SeatStatus = "reserved") =>
+      target({
+        origin: {
+          kind: "enrollment",
+          enrollmentId: "018f2b5c-0000-7000-8000-00000000e001",
+          classGroupId: CLASS_GROUP,
+          seatStatus: "reserved",
+          lot: [{ enrollmentId: "018f2b5c-0000-7000-8000-00000000e002", studentId: SIBLING, seatStatus: siblingSeat }],
+        },
+      });
+    const SIBLING_CONTEXT: EnrollmentEmailContext = {
+      ...MINOR_CONTEXT,
+      student: { ...MINOR_CONTEXT.student, firstName: "Luis", email: "luis@gmail.com" },
+      courseName: "Francés Kids",
+    };
+
+    beforeEach(() => {
+      repository = new FakeSettlementRepository(lotTarget());
+      useCase = new SettlePaymentUseCase(
+        repository,
+        new FakeEmailContextLookup(MINOR_CONTEXT),
+        new FakePaymentEmailLookup([MINOR_CONTEXT, SIBLING_CONTEXT]),
+        new FakePortalLinkBuilder(),
+      );
+    });
+
+    it("approving asks for a portal account per distinct student and audits every enrollment", async () => {
+      await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } });
+
+      const settled = repository.settled[0]!;
+      expect(settled.portalAccess.map((request) => request.studentId)).toEqual([target().studentId, SIBLING]);
+      expect(settled.audit.metadata).toEqual({
+        enrollmentId: "018f2b5c-0000-7000-8000-00000000e001",
+        lotEnrollmentIds: ["018f2b5c-0000-7000-8000-00000000e002"],
+      });
+    });
+
+    it("tells each address once, the mother listing both children", async () => {
+      await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "reject", reason: "amount_mismatch", note: "" } });
+
+      const emails = repository.settled[0]!.notifications;
+      expect(emails.map((email) => [email.templateKey, email.to, "items" in email.vars ? email.vars.items.length : 0])).toEqual([
+        ["lot_payment_rejected", "ana@gmail.com", 1],
+        ["lot_payment_rejected", "rosa@example.com", 2],
+        ["lot_payment_rejected", "luis@gmail.com", 1],
+      ]);
+    });
+
+    it("refuses to approve when any seat of the lot was handed back", async () => {
+      repository.target = lotTarget("released");
+      await expect(useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } })).rejects.toBeInstanceOf(
+        PaymentSeatReleasedError,
+      );
+      expect(repository.settled).toEqual([]);
+    });
+
+    it("reports an e-mail conflict of any student of the lot", async () => {
+      let call = 0;
+      repository.settle = async (params) => {
+        repository.settled.push(params);
+        return { seatStatus: "confirmed", portalAccess: params.portalAccess.map(() => (call++ === 1 ? "email_conflict" : "created")) };
+      };
+      const result = await useCase.run({ actorId: ACTOR, paymentId: PAYMENT, decision: { kind: "approve" } });
+      expect(result.portalAccess).toBe("email_conflict");
     });
   });
 });

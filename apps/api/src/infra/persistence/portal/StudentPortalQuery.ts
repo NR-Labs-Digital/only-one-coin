@@ -5,6 +5,7 @@ import {
   courses,
   enrollments,
   currentGrades,
+  paymentCoverage,
   payments,
   platformSettings,
   planPrices,
@@ -27,7 +28,6 @@ import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enroll
 import type { GetStudentQuery, StudentDetailRow } from "../student/GetStudentQuery.js";
 import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { enrollmentModuleId } from "@/infra/persistence/catalog/classGroupModuleSql.js";
-import { paymentEnrollmentId } from "@/infra/persistence/payment/paymentOrigin.js";
 import { pickProfile, profilesOfAccount } from "./accountProfiles.js";
 import { reachesStudent } from "./reachableStudents.js";
 
@@ -285,7 +285,10 @@ export class StudentPortalQuery {
       .select({ id: payments.id })
       .from(payments)
       .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
-      .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
+      // Any enrollment the payment pays for (OOC-158): the second child of a
+      // lot opens the receipt that paid for their seat too.
+      .leftJoin(paymentCoverage, eq(paymentCoverage.paymentId, payments.id))
+      .innerJoin(enrollments, eq(enrollments.id, sql`coalesce(${paymentCoverage.enrollmentId}, ${procedureRequests.enrollmentId})`))
       .innerJoin(students, eq(students.id, enrollments.studentId))
       .where(
         and(
@@ -377,7 +380,7 @@ export class StudentPortalQuery {
     const rows = await this.db
       .select({
         id: payments.id,
-        enrollmentId: payments.enrollmentId,
+        enrollmentId: paymentCoverage.enrollmentId,
         amountCents: payments.amountCents,
         method: payments.method,
         methodDetail: payments.methodDetail,
@@ -387,14 +390,16 @@ export class StudentPortalQuery {
         updatedAt: payments.updatedAt,
         hasReceipt,
       })
-      .from(payments)
-      .where(inArray(payments.enrollmentId, enrollmentIds))
+      // Every enrollment a payment pays for (OOC-158): a lot's payment is
+      // listed under each of its enrollments, with the amount of the whole
+      // receipt — which is what was paid.
+      .from(paymentCoverage)
+      .innerJoin(payments, eq(payments.id, paymentCoverage.paymentId))
+      .where(inArray(paymentCoverage.enrollmentId, enrollmentIds))
       .orderBy(desc(payments.createdAt), desc(payments.id));
 
     for (const row of rows) {
-      // Never null here: the WHERE names enrollments, and the check allows one
-      // origin per payment.
-      const enrollmentId = row.enrollmentId!;
+      const enrollmentId = row.enrollmentId;
       const list = byEnrollment.get(enrollmentId) ?? [];
       list.push({
         id: row.id,

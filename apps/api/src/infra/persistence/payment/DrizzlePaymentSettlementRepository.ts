@@ -8,8 +8,8 @@ import {
   type PaymentToSettle,
   type SeatStatus,
 } from "@ooc/domain";
-import { auditLog, enrollments, payments, procedureRequests } from "@ooc/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { auditLog, enrollments, paymentLotEnrollments, payments, procedureRequests } from "@ooc/db";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { provisionPortalAccount } from "@/infra/persistence/portal/provisionPortalAccount.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
@@ -38,6 +38,21 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
       .where(eq(payments.id, paymentId));
     if (!row) return null;
 
+    // The other seats of a lot (OOC-158), in lot order. A procedure's payment
+    // has none: the table only lists enrollments of the public checkout.
+    const lot = row.procedureRequestId
+      ? []
+      : await this.db
+          .select({
+            enrollmentId: enrollments.id,
+            studentId: enrollments.studentId,
+            seatStatus: enrollments.seatStatus,
+          })
+          .from(paymentLotEnrollments)
+          .innerJoin(enrollments, eq(enrollments.id, paymentLotEnrollments.enrollmentId))
+          .where(eq(paymentLotEnrollments.paymentId, paymentId))
+          .orderBy(asc(paymentLotEnrollments.id));
+
     const origin: PaymentOrigin = row.procedureRequestId
       ? { kind: "procedure", procedureRequestId: row.procedureRequestId }
       : {
@@ -45,6 +60,7 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
           enrollmentId: row.enrollmentId,
           classGroupId: row.classGroupId,
           seatStatus: row.seatStatus as SeatStatus,
+          lot: lot.map((seat) => ({ ...seat, seatStatus: seat.seatStatus as SeatStatus })),
         };
     return {
       paymentId: row.paymentId,
@@ -57,7 +73,7 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
 
   async settle(
     params: Parameters<IPaymentSettlementRepository["settle"]>[0],
-  ): Promise<{ seatStatus: SeatStatus | null; portalAccess: PortalAccessOutcome | null }> {
+  ): Promise<{ seatStatus: SeatStatus | null; portalAccess: PortalAccessOutcome[] }> {
     return this.db.transaction(async (tx) => {
       // The guard against two reviewers (or one double click): the payment
       // only moves out of an open state, and Postgres serialises the two
@@ -78,7 +94,16 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
       const { origin, to } = params;
       let seatStatus: SeatStatus | null = null;
       if (origin.kind === "procedure") await this.moveRequest(tx, origin.procedureRequestId, to);
-      else seatStatus = to === "approved" ? await this.confirmSeat(tx, origin) : await this.releaseSeat(tx, origin);
+      else {
+        // The payment's own seat speaks for the response; a lot's other seats
+        // move the same way in the same transaction (OOC-158) — one already
+        // given back refuses the whole approval, as the lot's one receipt
+        // cannot pay for less than it says.
+        const move = (seat: { enrollmentId: string }) =>
+          to === "approved" ? this.confirmSeat(tx, seat) : this.releaseSeat(tx, seat);
+        seatStatus = await move(origin);
+        for (const seat of origin.lot) await move(seat);
+      }
 
       await insertOutboxEmails(tx, params.notifications);
       await tx.insert(auditLog).values({
@@ -89,7 +114,10 @@ export class DrizzlePaymentSettlementRepository implements IPaymentSettlementRep
         createdAt: params.audit.at,
       });
 
-      const portalAccess = params.portalAccess ? await provisionPortalAccount(tx, params.portalAccess) : null;
+      // One student at a time, in lot order: two children of one guardian
+      // meet the guardian's account the first of them just opened.
+      const portalAccess: PortalAccessOutcome[] = [];
+      for (const provisioning of params.portalAccess) portalAccess.push(await provisionPortalAccount(tx, provisioning));
 
       return { seatStatus, portalAccess };
     });
