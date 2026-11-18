@@ -347,7 +347,7 @@ export function DocumentEditor({ kind, view }: { kind: DocumentKind; view: Docum
           aria-label={t('documents.publish_confirm_title')}
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-blue/30 bg-sky-soft px-4 py-3"
         >
-          <p className="min-w-0 flex-1 text-sm text-ink">{t('documents.publish_confirm_body')}</p>
+          <p className="min-w-0 flex-1 text-sm text-ink">{t(`documents.publish_confirm_body.${kind}`)}</p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -374,7 +374,7 @@ export function DocumentEditor({ kind, view }: { kind: DocumentKind; view: Docum
             actionError ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
           }`}
         >
-          {actionError ? t(`documents.error_${actionError}`) : t(`documents.notice_${notice}`)}
+          {actionError ? t(`documents.error_${actionError}`) : t(notice === 'published' ? `documents.notice_published.${kind}` : `documents.notice_${notice}`)}
         </p>
       )}
 

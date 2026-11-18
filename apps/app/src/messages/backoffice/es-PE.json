@@ -368,7 +368,10 @@
         "attachment_downloaded": "Archivo descargado",
         "attachment_removed": "Archivo quitado",
         "grade_corrected": "Nota corregida",
-        "progression_applied": "Alumnos pasados de módulo"
+        "progression_applied": "Alumnos pasados de módulo",
+        "issued_document_issued": "Documento emitido",
+        "issued_document_downloaded": "Documento emitido descargado",
+        "certificate_batch_issued": "Certificados emitidos en lote"
       },
       "field": {
         "first_name": "Nombre",
@@ -2298,17 +2301,54 @@
           "legalName": "Razón social",
           "ruc": "RUC",
           "address": "Domicilio de la empresa"
-        }
+        },
+        "student": {
+          "fullName": "Nombre completo",
+          "firstName": "Nombres",
+          "lastName": "Apellidos",
+          "documentType": "Tipo de documento",
+          "nationalId": "Número de documento"
+        },
+        "course": {
+          "name": "Nombre del curso",
+          "language": "Idioma",
+          "level": "Nivel",
+          "totalHours": "Horas totales"
+        },
+        "classGroup": {
+          "code": "Código del aula",
+          "module": "Módulo actual",
+          "schedule": "Horario",
+          "startsOn": "Inicio de clases",
+          "endsOn": "Fin de clases"
+        },
+        "period": {
+          "name": "Período"
+        },
+        "document": {
+          "code": "Código de verificación"
+        },
+        "finalGrade": "Nota final"
       },
       "groups": {
         "teacher": "Docente",
         "contract": "Contrato",
-        "org": "Empresa"
+        "org": "Empresa",
+        "student": "Alumno",
+        "course": "Curso",
+        "class_group": "Aula",
+        "document": "Documento"
       },
       "kind": {
-        "teacher_contract": "Contrato del docente"
+        "teacher_contract": "Contrato del docente",
+        "enrollment_certificate": "Constancia de matrícula",
+        "certificate": "Certificado del curso"
       },
-      "intro": "Escribe el texto como en un documento normal. Los datos de cada docente se agregan con «Insertar dato» y se completan solos al descargar el contrato. En la vista previa ves el PDF tal como saldrá, con datos de ejemplo.",
+      "intro": {
+        "teacher_contract": "Escribe el texto como en un documento normal. Los datos de cada docente se agregan con «Insertar dato» y se completan solos al descargar el contrato. En la vista previa ves el PDF tal como saldrá, con datos de ejemplo.",
+        "enrollment_certificate": "Escribe el texto como en un documento normal. Los datos del alumno y de su matrícula se agregan con «Insertar dato» y se completan solos al emitir la constancia. El código de verificación sale en el pie de cada página.",
+        "certificate": "Escribe el texto como en un documento normal. Los datos del alumno y del curso se agregan con «Insertar dato» y se completan solos al emitir el certificado. El código de verificación sale en el pie de cada página."
+      },
       "editor_label": "Texto del documento",
       "preview_label": "Vista previa del PDF",
       "preview_title": "Vista previa",
@@ -2328,10 +2368,18 @@
       "publish": "Publicar",
       "cancel": "Cancelar",
       "publish_confirm_title": "Publicar el documento",
-      "publish_confirm_body": "Desde ahora, todo contrato que se descargue usará este texto. Los que ya se descargaron no cambian.",
+      "publish_confirm_body": {
+        "teacher_contract": "Desde ahora, todo contrato que se descargue usará este texto. Los que ya se descargaron no cambian.",
+        "enrollment_certificate": "Desde ahora, toda constancia que se emita usará este texto. Las ya emitidas no cambian.",
+        "certificate": "Desde ahora, todo certificado que se emita usará este texto. Los ya emitidos no cambian."
+      },
       "publish_confirm": "Sí, publicar",
       "notice_saved": "Borrador guardado.",
-      "notice_published": "Publicado. Los próximos contratos ya usan este texto.",
+      "notice_published": {
+        "teacher_contract": "Publicado. Los próximos contratos ya usan este texto.",
+        "enrollment_certificate": "Publicado. Las próximas constancias ya usan este texto.",
+        "certificate": "Publicado. Los próximos certificados ya usan este texto."
+      },
       "notice_unchanged": "Este texto ya era la versión publicada.",
       "error_save_failed": "No se pudo guardar el borrador. Inténtalo de nuevo.",
       "error_publish_failed": "No se pudo publicar. Inténtalo de nuevo.",
@@ -2361,7 +2409,8 @@
       "tab_edit": "Editar",
       "tab_preview": "Vista previa",
       "load_error_title": "No se pudo abrir el documento",
-      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico."
+      "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
+      "kinds_label": "Documento"
     },
     "catalog_retire": {
       "counting": "Contando las matrículas que siguen en curso…",
@@ -2641,6 +2690,41 @@
       "offer_stays": "Se queda en su aula ({code}): cambia el grupo de módulo, no la vacante.",
       "all_full_title": "Todas las aulas de este horario están llenas. ¿Seguir por encima del cupo?",
       "all_full_body": "La vacante queda por encima de la capacidad de la primera aula ({code}) y se registra en la bitácora con tu nombre."
+    },
+    "certificates": {
+      "title": "Certificados",
+      "subtitle": "Módulo {module}, el último del curso: aquí se emite el certificado de quien lo concluyó.",
+      "subtitle_single": "Último módulo del curso: aquí se emite el certificado de quien lo concluyó.",
+      "load_error": "No pudimos cargar los certificados. Recarga la página para intentarlo de nuevo.",
+      "template_missing": "Todavía no hay un texto de certificado publicado. Publícalo en Configuración → Documentos para poder emitir.",
+      "exam_hint": "Este curso exige el examen de certificación. Marca a quien lo aprobó: sin la marca, el certificado no sale.",
+      "empty": "Todavía no hay alumnos con vacante confirmada en este grupo.",
+      "col_student": "Alumno",
+      "col_grade": "Nota final",
+      "col_status": "Certificado",
+      "did_not_sit_mark": "DA",
+      "status_issued": "Emitido",
+      "issued_meta": "{code} · {date}",
+      "status_ready": "Listo para emitir",
+      "exam_mark": "Examen de certificación aprobado",
+      "reason": {
+        "already_issued": "Ya emitido",
+        "grade_pending": "Nota pendiente",
+        "did_not_sit": "No rindió el examen final (DA)",
+        "grade_below_minimum": "Nota menor a la mínima",
+        "earlier_module_failed": "Desaprobó un módulo anterior",
+        "exam_not_approved": "Falta el examen de certificación"
+      },
+      "issue": "{count, plural, =0 {Nada para emitir} one {Emitir # certificado} other {Emitir # certificados}}",
+      "confirm_body": "{count, plural, one {Se emitirá # certificado} other {Se emitirán # certificados}} y cada alumno recibirá un correo (y su apoderado, si es menor). La emisión no se puede deshacer.",
+      "confirm": "Sí, emitir",
+      "issuing": "Emitiendo…",
+      "cancel": "Cancelar",
+      "issued_toast": "{count, plural, one {Se emitió # certificado} other {Se emitieron # certificados}}.",
+      "error_nothing_to_issue": "Nadie de la lista puede recibir el certificado ahora. Recarga la página para ver la lista actualizada.",
+      "error_not_published": "Todavía no hay un texto de certificado publicado.",
+      "error_missing_value": "El texto del certificado imprime un dato que algún alumno no tiene. Revísalo en Configuración → Documentos.",
+      "error_failed": "No se pudo emitir. Inténtalo de nuevo."
     }
   }
 }

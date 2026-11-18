@@ -18,9 +18,13 @@ import {
   canEditGrades,
   canMoveStudentsOn,
   canReadGrades,
+  canIssueCertificates,
+  canReadCertificates,
 } from '@/lib/backoffice/permissions'
 import { getClassGroupGradeSheet } from '@/lib/backoffice/grades'
 import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
+import { getCertificateBatch, runClosesTheCourse } from '@/lib/backoffice/certificate-batch'
+import { CertificatesCard } from './certificates-card'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import {
@@ -82,6 +86,15 @@ export default async function ClassGroupDetailPage({
     getPlatformSettings(),
     readsGrades ? getClassGroupGradeSheet(group.id) : Promise.resolve(null),
   ])
+  /* The certificate batch (OOC-33) lives on the module group of the course's
+     last module. Who cannot read it never asks, as with the grade sheet. */
+  const courseModules = courses?.find((course) => course.id === group.courseId)?.modules ?? 1
+  const closingRuns = canReadCertificates(staff.role)
+    ? group.modules.filter((run) => runClosesTheCourse(run, courseModules))
+    : []
+  const certificateBatches = await Promise.all(
+    closingRuns.map(async (run) => ({ run, batch: await getCertificateBatch(group.id, run.id) })),
+  )
   const schedule = slotsLabel(group.slots, t)
   /* Several module runs (OOC-156): teacher and schedule are each run's, on
      their card; the header keeps what is the class group's. */
@@ -217,6 +230,17 @@ export default async function ClassGroupDetailPage({
           canEdit={canEditGrades(staff.role)}
         />
       )}
+
+      {certificateBatches.map(({ run, batch }) => (
+        <CertificatesCard
+          key={run.id}
+          classGroupId={group.id}
+          moduleId={run.id}
+          module={run.module}
+          batch={batch}
+          canIssue={canIssueCertificates(staff.role)}
+        />
+      ))}
 
       {showWaitlist && (
         <WaitlistCard

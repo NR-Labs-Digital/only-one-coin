@@ -35,6 +35,7 @@ import { EnrollmentDetailSheet } from './enrollment-detail-sheet'
 import { GuardianEditForm, type EditableGuardian } from './guardian-edit-form'
 import { StudentDocuments } from './student-documents'
 import type { AttachmentList } from '@/lib/attachments/types'
+import type { IssuedDocumentItem } from '@/lib/issued-documents/types'
 import { StudentEditForm, type EditableStudent } from './student-edit-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
@@ -77,6 +78,7 @@ export function StudentFile({
   canEdit,
   activity,
   attachments,
+  issuedDocuments,
   canManageAttachments,
 }: {
   student: StudentDetail
@@ -88,6 +90,8 @@ export function StudentFile({
   activity: StudentActivityPage | null
   /** The student's documents (OOC-143/OOC-148), read on the server; null when the API failed. */
   attachments: AttachmentList | null
+  /** The documents the institution issued (OOC-33); null when the API failed. */
+  issuedDocuments: IssuedDocumentItem[] | null
   canManageAttachments: boolean
 }) {
   const t = useTranslations('bo')
@@ -507,6 +511,7 @@ export function StudentFile({
         <StudentDocuments
           student={student}
           attachments={attachments}
+          issuedDocuments={issuedDocuments}
           canManageAttachments={canManageAttachments}
         />
       )}

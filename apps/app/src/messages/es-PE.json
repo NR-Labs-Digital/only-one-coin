@@ -216,22 +216,26 @@
     "origin": {
       "staff": {
         "portal": "Enviado por el alumno",
-        "backoffice": "Enviado por el equipo"
+        "backoffice": "Enviado por el equipo",
+        "issued": "Emitido por la institución"
       },
       "portal": {
         "portal": "Enviado por ti",
-        "backoffice": "Enviado por la coordinación"
+        "backoffice": "Enviado por la coordinación",
+        "issued": "Emitido por la institución"
       }
     },
     "filter": {
       "label": "Filtrar por origen",
       "staff": {
         "all": "Todos",
+        "issued": "Emitidos",
         "backoffice": "Del equipo",
         "portal": "Del alumno"
       },
       "portal": {
         "all": "Todos",
+        "issued": "Emitidos",
         "backoffice": "De la coordinación",
         "portal": "Enviados por ti"
       }
@@ -240,13 +244,21 @@
       "staff": {
         "all": "Sin documentos.",
         "backoffice": "El equipo todavía no adjuntó documentos a esta ficha.",
-        "portal": "El alumno todavía no envió documentos desde su portal."
+        "portal": "El alumno todavía no envió documentos desde su portal.",
+        "issued": "Todavía no se emitió una constancia ni un certificado para este alumno."
       },
       "portal": {
         "all": "Todavía no tienes documentos.",
         "backoffice": "La coordinación todavía no adjuntó documentos a tu ficha.",
-        "portal": "Todavía no enviaste documentos."
+        "portal": "Todavía no enviaste documentos.",
+        "issued": "Todavía no tienes una constancia ni un certificado emitidos."
       }
-    }
+    },
+    "issued_kind": {
+      "enrollment_certificate": "Constancia de matrícula",
+      "certificate": "Certificado del curso"
+    },
+    "issued_meta": "Código {code} · {date}",
+    "issued_load_error": "No pudimos cargar los documentos emitidos."
   }
 }
