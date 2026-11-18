@@ -127,6 +127,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       seatsTaken: group.seatsTaken,
       status: group.status as ClassGroupStatus,
       classroomLinks: classroomLinksOf(run, courseModules),
+      meetUrl: run.meetUrl,
       module: run.module,
       moduleMaterialUrl: materialOfModule(moduleMaterials, run.module),
       fullCourse: run.fullCourse,

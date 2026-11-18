@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ClassGroupModuleOutOfRangeError, ClassroomUrlInvalidError } from "./errors.js";
+import { ClassGroupModuleOutOfRangeError, ClassroomUrlInvalidError, MeetUrlInvalidError } from "./errors.js";
 
 /**
  * The teaching side of a class group — when it meets and where (Classroom) —
@@ -35,6 +35,28 @@ export function normalizeClassroomUrl(raw: string | null): string | null {
     throw new ClassroomUrlInvalidError({ cause });
   }
   if (url.protocol !== "https:" || url.hostname !== CLASSROOM_HOST) throw new ClassroomUrlInvalidError();
+  return url.toString();
+}
+
+/**
+ * The Google Meet of a module group (OOC-159), pasted by coordination next to
+ * its Classroom. One per module group — since 0059 every run teaches a single
+ * module, so there is no per-module map as with the Classroom. Ends up as an
+ * href on the student's and the teacher's screens: https on this host only.
+ */
+export const MEET_HOST = "meet.google.com";
+
+/** The link normalized, null when left blank — or a refusal. */
+export function normalizeMeetUrl(raw: string | null): string | null {
+  const value = raw?.trim() ?? "";
+  if (value === "") return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch (cause) {
+    throw new MeetUrlInvalidError({ cause });
+  }
+  if (url.protocol !== "https:" || url.hostname !== MEET_HOST) throw new MeetUrlInvalidError();
   return url.toString();
 }
 

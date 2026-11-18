@@ -5,6 +5,7 @@ import { ClassGroupFullCourseSplitError } from "./errors.js";
 import {
   applyClassroomLinks,
   ClassroomLinkPatchSchema,
+  normalizeMeetUrl,
   sameLinks,
   WeeklySlotSchema,
   type ClassroomLinks,
@@ -46,6 +47,8 @@ export const ClassGroupModulePropsSchema = SoftDeletableModelPropsSchema.extend(
   classroomLinks: z.record(z.string(), z.string()),
   /** OOC-98's single link, read only for a run with no module set (`classroomLinksOf`). */
   classroomUrl: z.string().nullable(),
+  /** Its Google Meet (OOC-159). Null until coordination pastes one — warns, never blocks. */
+  meetUrl: z.string().nullable(),
 });
 export type ClassGroupModuleProps = z.infer<typeof ClassGroupModulePropsSchema>;
 
@@ -54,6 +57,8 @@ export const CreateClassGroupModuleSchema = z.object({
   teacherId: z.string().uuid().nullable().optional(),
   /** Per-module links to set or clear (OOC-144); modules not named keep theirs. */
   classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
+  /** Its Meet link (OOC-159); null or blank clears it. Checked by `normalizeMeetUrl`. */
+  meetUrl: z.string().max(2000).nullable().optional(),
   module: z.number().int().positive().nullable().optional(),
   /** Wins over `module`: the whole course is not one of its modules. */
   fullCourse: z.boolean().optional(),
@@ -64,7 +69,7 @@ export type CreateClassGroupModuleDTO = z.infer<typeof CreateClassGroupModuleSch
 export const UpdateClassGroupModuleSchema = CreateClassGroupModuleSchema.partial();
 export type UpdateClassGroupModuleDTO = z.infer<typeof UpdateClassGroupModuleSchema>;
 
-export type ClassGroupModuleField = "teacherId" | "classroomLinks" | "module" | "fullCourse" | "slots";
+export type ClassGroupModuleField = "teacherId" | "classroomLinks" | "meetUrl" | "module" | "fullCourse" | "slots";
 
 export class ClassGroupModule extends SoftDeletableModel {
   public readonly classGroupId: string;
@@ -75,6 +80,7 @@ export class ClassGroupModule extends SoftDeletableModel {
   public slots: WeeklySlot[];
   public classroomLinks: ClassroomLinks;
   public readonly classroomUrl: string | null;
+  public meetUrl: string | null;
 
   constructor(props: ClassGroupModuleProps) {
     super(props);
@@ -86,6 +92,7 @@ export class ClassGroupModule extends SoftDeletableModel {
     this.slots = props.slots;
     this.classroomLinks = props.classroomLinks;
     this.classroomUrl = props.classroomUrl;
+    this.meetUrl = props.meetUrl;
   }
 
   /**
@@ -107,13 +114,15 @@ export class ClassGroupModule extends SoftDeletableModel {
         slots: valid.slots,
         classroomLinks: applyClassroomLinks({}, valid.classroomLinks ?? []),
         classroomUrl: null,
+        meetUrl: normalizeMeetUrl(valid.meetUrl ?? null),
       }),
     );
   }
 
   /**
    * Period duplication (OOC-35): same module, schedule and teacher; no
-   * Classroom — the old period's Classrooms are its students' (OOC-98, OOC-144).
+   * Classroom nor Meet — the old period's are its students' (OOC-98, OOC-144,
+   * OOC-159).
    */
   static copyInto(source: ClassGroupModule, classGroupId: string): ClassGroupModule {
     return new ClassGroupModule(
@@ -127,6 +136,7 @@ export class ClassGroupModule extends SoftDeletableModel {
         slots: source.slots,
         classroomLinks: {},
         classroomUrl: null,
+        meetUrl: null,
       }),
     );
   }
@@ -153,6 +163,14 @@ export class ClassGroupModule extends SoftDeletableModel {
       if (!sameLinks(next, this.classroomLinks)) {
         this.classroomLinks = next;
         changed.push("classroomLinks");
+      }
+    }
+
+    if (valid.meetUrl !== undefined) {
+      const next = normalizeMeetUrl(valid.meetUrl);
+      if (next !== this.meetUrl) {
+        this.meetUrl = next;
+        changed.push("meetUrl");
       }
     }
 

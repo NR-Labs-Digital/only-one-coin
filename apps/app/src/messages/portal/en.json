@@ -162,7 +162,9 @@
       "result_fail_note": "You did not reach the passing grade, which is {passingGrade}.",
       "result_did_not_attempt": "You did not take the final exam, so the module was recorded as DA.",
       "enrolled_on": "Enrolled on {date}",
-      "period_dates": "From {start} to {end}"
+      "period_dates": "From {start} to {end}",
+      "classroom": "Classroom",
+      "join_meet": "Join the Meet"
     },
     "enrollments": {
       "title": "My enrollment",

@@ -14,7 +14,7 @@ import type {
   Weekday,
 } from '@/lib/backoffice/types'
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
-import { classroomUrlOf } from '@/lib/backoffice/class-links'
+import { classroomUrlOf, meetUrlOf } from '@/lib/backoffice/class-links'
 import { allocationWarnings, teachersForLanguage } from '@/lib/backoffice/teacher-allocation'
 import {
   isoToLimaDate,
@@ -98,6 +98,7 @@ export function classGroupAsRun(group: ClassGroupItem, run: ClassGroupModuleItem
     classroomLinksByModule: run?.classroomLinksByModule ?? {},
     classroomLinks: run?.classroomLinks ?? [],
     classroomMissing: run?.classroomMissing ?? true,
+    meetUrl: run?.meetUrl ?? null,
     module: run?.module ?? null,
     fullCourse: run?.fullCourse ?? false,
     slots: run?.slots ?? [],
@@ -267,6 +268,17 @@ export function ClassGroupForm({
       ? []
       : [{ module, url: value }],
   )
+  /**
+   * The module group's Google Meet (OOC-159), beside its Classroom — optional,
+   * one per module group. A full course opens a group per module, each with
+   * its own Meet, so creating one asks for none.
+   */
+  const [meetDraft, setMeetDraft] = useState(initial?.meetUrl ?? '')
+  const meetValue = meetUrlOf(meetDraft)
+  const meetInvalid = meetValue === 'invalid'
+  const meetShown = !(mode === 'create' && fullCourse)
+  /** What the Meet field sends: unchanged, or typed wrong, sends nothing. */
+  const meetChanged = meetShown && !meetInvalid && meetValue !== (initial?.meetUrl ?? null)
   const [weekdays, setWeekdays] = useState<Weekday[]>(loaded.weekdays)
   const [startTime, setStartTime] = useState(loaded.startTime)
   const [endTime, setEndTime] = useState(loaded.endTime)
@@ -337,6 +349,7 @@ export function ClassGroupForm({
     (!weekdaysRequired || weekdays.length > 0) &&
     (!runFields || !timeInvalid) &&
     (!runFields || !classroomInvalid) &&
+    (!runFields || !meetInvalid) &&
     (!mustNumberModule || moduleNumber !== null) &&
     capacityValid
   const hasDates = startsOn !== '' && endsOn !== ''
@@ -356,6 +369,7 @@ export function ClassGroupForm({
       if (fullCourse !== initial.fullCourse) patch.fullCourse = fullCourse
       if (moduleNumber !== initial.module) patch.module = moduleNumber
       if (!classroomInvalid && classroomPatch.length > 0) patch.classroomLinks = classroomPatch
+      if (meetChanged) patch.meetUrl = meetValue
       if (scheduleTouched) patch.slots = slots
     }
     // A run carries only its own fields; the class group's stay on its card.
@@ -403,6 +417,7 @@ export function ClassGroupForm({
           fullCourse,
           classroomLinks:
             severalGroups || classroomInvalid ? [] : classroomPatch.filter((entry) => entry.url !== null),
+          meetUrl: severalGroups || !meetChanged ? null : meetValue,
           slots,
           capacity: capacities[index],
           startsOn: dateOrNull(startsOn),
@@ -451,6 +466,7 @@ export function ClassGroupForm({
             teacherId: teacherId || null,
             slots,
             classroomLinks: classroomInvalid ? [] : classroomPatch.filter((entry) => entry.url !== null),
+            meetUrl: meetChanged ? meetValue : null,
           })
         : await catalogWrite(`${base}/modules/${encodeURIComponent(run!.moduleId!)}`, 'PATCH', patch)
     setSaving(false)
@@ -776,6 +792,30 @@ export function ClassGroupForm({
     </HelpField>
   )
 
+  /* Beside the Classroom (OOC-159): the module group's Meet, pasted by
+     coordination. Optional — without it the student's and the teacher's
+     screens show the Classroom alone. Absent when creating a full course,
+     whose module groups each get their own afterwards. */
+  const meetField = meetShown ? (
+    <HelpField label={t('class_groups.field_meet')} what={t('help.meet_what')} how={t('help.meet_how')}>
+      {(id) => (
+        <span className="flex flex-col gap-1">
+          <input
+            id={id}
+            type="url"
+            inputMode="url"
+            value={meetDraft}
+            onChange={(event) => setMeetDraft(event.target.value)}
+            placeholder={t('class_groups.meet_placeholder')}
+            aria-invalid={meetInvalid}
+            className={fieldClass}
+          />
+          {meetInvalid && <span className="text-xs text-red-700">{t('class_groups.meet_invalid')}</span>}
+        </span>
+      )}
+    </HelpField>
+  ) : null
+
   const capacityField = (
     <HelpField
       label={t('class_groups.field_capacity_per_group')}
@@ -1024,6 +1064,7 @@ export function ClassGroupForm({
           {moduleField}
           {teacherField}
           {classroomField}
+          {meetField}
           {timeFields}
         </AutoGrid>
 
@@ -1060,6 +1101,7 @@ export function ClassGroupForm({
           {runFields && moduleField}
           {runFields && teacherField}
           {runFields && classroomField}
+          {runFields && meetField}
           {capacityField}
           {runFields && timeFields}
           {dateFields}
@@ -1131,7 +1173,8 @@ export function ClassGroupForm({
       return null
     }
     if (step === 'teacher') {
-      return classroomInvalid ? t('class_groups.classroom_invalid') : null
+      if (classroomInvalid) return t('class_groups.classroom_invalid')
+      return meetInvalid ? t('class_groups.meet_invalid') : null
     }
     return null
   }
@@ -1218,6 +1261,18 @@ export function ClassGroupForm({
               .join(' · ')
           : t('class_groups.classroom_missing'),
     ],
+    ...(meetShown
+      ? [
+          [
+            t('class_groups.field_meet'),
+            severalGroups
+              ? t('class_groups.review_assigned_later')
+              : meetValue && meetValue !== 'invalid'
+                ? meetValue
+                : t('class_groups.meet_missing'),
+          ] as [string, string],
+        ]
+      : []),
   ]
 
   return (
@@ -1288,6 +1343,7 @@ export function ClassGroupForm({
             <AutoGrid min="15rem" gap="gap-3">
               {teacherField}
               {classroomField}
+              {meetField}
             </AutoGrid>
             {teacherWarnings}
           </div>

@@ -21,6 +21,8 @@ export const TeachingClassGroupSchema = z.object({
   status: ClassGroupStatusSchema,
   /** One Classroom per module it teaches (OOC-144), in order; empty = coordination has not pasted one yet. */
   classroomLinks: z.array(ClassroomLinkSchema),
+  /** The run's Google Meet (OOC-159); null = coordination has not pasted one yet. */
+  meetUrl: z.string().nullable(),
   /** Which of the course's modules it teaches (OOC-100); null = coordination has not set it. */
   module: z.number().int().nullable(),
   /** That module's material, from the course (OOC-100); null = nothing to open. */
@@ -45,6 +47,7 @@ export function serializeTeachingClassGroup(group: TeachingClassGroup): z.infer<
     seatsTaken: group.seatsTaken,
     status: group.status,
     classroomLinks: group.classroomLinks,
+    meetUrl: group.meetUrl,
     module: group.module,
     moduleMaterialUrl: group.moduleMaterialUrl,
     fullCourse: group.fullCourse,

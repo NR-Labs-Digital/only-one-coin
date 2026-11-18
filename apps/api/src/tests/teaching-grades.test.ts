@@ -72,6 +72,7 @@ function group(status: TeachingClassGroup["status"], run: string = GROUP): Teach
     status,
     retired: false,
     classroomLinks: [],
+    meetUrl: null,
     module: 1,
     moduleMaterialUrl: null,
     fullCourse: false,

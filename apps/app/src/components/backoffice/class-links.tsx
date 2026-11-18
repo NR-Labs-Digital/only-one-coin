@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { BoIcon, type BoIconName } from '@/components/backoffice/icons'
-import { safeClassroomLinks, type ClassroomLink } from '@/lib/backoffice/class-links'
+import { safeClassroomLinks, safeMeetUrl, type ClassroomLink } from '@/lib/backoffice/class-links'
 
 /**
  * Where the teacher goes to give the class: the group's Classroom, where the
@@ -13,18 +13,25 @@ import { safeClassroomLinks, type ClassroomLink } from '@/lib/backoffice/class-l
  * With no link yet the button is still there, greyed out rather than gone, so
  * the teacher sees what is missing at a glance. A link labelled by module
  * says which module's Classroom it is; the old single link carries no module.
+ *
+ * Beside them, the module group's Google Meet (OOC-159), pasted the same way:
+ * greyed out while there is none.
  */
 export function ClassLinks({
   classroomLinks,
+  meetUrl,
   className = '',
 }: {
   classroomLinks: readonly ClassroomLink[]
+  /** The module group's Meet (OOC-159); null = none pasted yet. */
+  meetUrl: string | null
   className?: string
 }) {
   const t = useTranslations('bo')
   /* Whatever the row carries is re-checked before it becomes an `href`: a
      link that is not the Google host it claims to be is treated as missing. */
   const links = safeClassroomLinks(classroomLinks)
+  const meet = safeMeetUrl(meetUrl)
 
   return (
     <span className={`flex flex-wrap items-center gap-2 ${className}`}>
@@ -44,6 +51,7 @@ export function ClassLinks({
           />
         ))
       )}
+      <ExternalButton href={meet} icon="video" label={t('class_links.meet')} />
     </span>
   )
 }

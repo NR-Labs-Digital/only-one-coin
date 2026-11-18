@@ -87,6 +87,8 @@ export const ClassGroupModuleItemSchema = z.object({
   classroomLinksByModule: z.record(z.string(), z.string()),
   classroomLinks: z.array(ClassroomLinkSchema),
   classroomMissing: z.boolean(),
+  /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
+  meetUrl: z.string().nullable(),
   /** Confirmed seats in the run now. */
   students: z.number().int(),
 });
@@ -114,6 +116,8 @@ export const ClassGroupItemSchema = z.object({
   classroomLinks: z.array(ClassroomLinkSchema),
   /** Some run of the class group is missing a Classroom. */
   classroomMissing: z.boolean(),
+  /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
+  meetUrl: z.string().nullable(),
   /** Some run of the class group has no teacher yet. */
   teacherMissing: z.boolean(),
   module: z.number().int().nullable(),
@@ -161,6 +165,12 @@ export const CreateClassGroupBodySchema = z.object({
    * checks the host and that the module is one of the course's.
    */
   classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
+  /**
+   * The module group's Google Meet (OOC-159); null or blank clears it. The
+   * domain checks the host (https on meet.google.com). Ignored on a full
+   * course: each of its runs gets its own.
+   */
+  meetUrl: z.string().max(2000).nullable().optional(),
   /** Which of the course's modules it teaches (OOC-100); the domain checks the upper bound. Null clears it. */
   module: z.number().int().positive().nullable().optional(),
   /** Teaches every module of the course (OOC-130); wins over `module`. */
@@ -188,6 +198,7 @@ export const UpdateClassGroupBodySchema = CreateClassGroupBodySchema.omit({ acad
 export const CreateClassGroupModuleBodySchema = CreateClassGroupBodySchema.pick({
   teacherId: true,
   classroomLinks: true,
+  meetUrl: true,
   module: true,
   fullCourse: true,
   slots: true,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classroomUrlOf, parseClassLink } from './class-links'
+import { classroomUrlOf, meetUrlOf, parseClassLink, safeMeetUrl } from './class-links'
 
 describe('parseClassLink', () => {
   it('accepts a Drive folder as module material', () => {
@@ -48,4 +48,27 @@ describe('classroomUrlOf (OOC-98)', () => {
       expect(classroomUrlOf(raw)).toBe('invalid')
     },
   )
+})
+
+describe('meetUrlOf (OOC-159)', () => {
+  it('normalizes a Meet link and reads a blank field as none', () => {
+    expect(meetUrlOf('  https://MEET.google.com/abc-defg-hij ')).toBe('https://meet.google.com/abc-defg-hij')
+    expect(meetUrlOf('   ')).toBeNull()
+  })
+
+  it.each(['http://meet.google.com/abc', 'https://meet.google.com.evil.io/abc', 'https://classroom.google.com/c/abc', 'javascript:alert(1)'])(
+    'calls %s invalid',
+    (bad) => {
+      expect(meetUrlOf(bad)).toBe('invalid')
+    },
+  )
+})
+
+describe('safeMeetUrl (OOC-159)', () => {
+  it('lets only a Meet link become an href', () => {
+    expect(safeMeetUrl('https://meet.google.com/abc-defg-hij')).toBe('https://meet.google.com/abc-defg-hij')
+    expect(safeMeetUrl('https://evil.example/meet')).toBeNull()
+    expect(safeMeetUrl(null)).toBeNull()
+    expect(safeMeetUrl(undefined)).toBeNull()
+  })
 })

@@ -87,6 +87,8 @@ export interface AgendaClassGroup {
   slots: WeeklySlotItem[]
   /** One Classroom per module it teaches (OOC-144); empty = none pasted yet. */
   classroomLinks: ClassroomLink[]
+  /** The module group's Google Meet (OOC-159); null = none pasted yet. */
+  meetUrl: string | null
   startDate: string
   endDate: string
 }
@@ -105,6 +107,7 @@ export function agendaClassGroup(group: TeachingClassGroup): AgendaClassGroup | 
     teacherName: '',
     slots: group.slots,
     classroomLinks: group.classroomLinks,
+    meetUrl: group.meetUrl,
     startDate: isoToLimaDate(group.startsOn),
     endDate: isoToLimaDate(group.endsOn),
   }
@@ -137,6 +140,7 @@ export function agendaCatalogClassGroups(group: ClassGroupItem): AgendaClassGrou
             teacherName: run.teacherName,
             slots: run.slots,
             classroomLinks: run.classroomLinks,
+            meetUrl: run.meetUrl,
             startDate,
             endDate,
           },

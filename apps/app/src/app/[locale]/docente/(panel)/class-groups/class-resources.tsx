@@ -8,8 +8,8 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  * Everything a teacher needs to open before giving the class, in one place:
  *
  * - **The class group's Classroom** — the link coordination pastes with the
- *   teacher in the backoffice (OOC-98); the Meet lives inside it, and the
- *   confirmed students open the same link from their portal. Read-only here.
+ *   teacher in the backoffice (OOC-98), and its **Meet** (OOC-159); the
+ *   confirmed students open the same links from their portal. Read-only here.
  * - **Module material** — the Drive link coordination sets once per module
  *   on the course (OOC-94), picked by the module the class group teaches
  *   (OOC-100). The door only appears once there is a link to open: no module
@@ -21,11 +21,13 @@ import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
  */
 export function ClassResources({
   classroomLinks,
+  meetUrl,
   module,
   moduleMaterialsUrl,
   courseMaterialUrls,
 }: {
   classroomLinks: ClassroomLink[]
+  meetUrl: string | null
   module: number | null
   moduleMaterialsUrl: string | null
   courseMaterialUrls: string[]
@@ -39,7 +41,7 @@ export function ClassResources({
         {t('class_resources.title')}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <ClassLinks classroomLinks={classroomLinks} />
+        <ClassLinks classroomLinks={classroomLinks} meetUrl={meetUrl} />
         {materialsUrl && (
           <ExternalButton
             href={materialsUrl}

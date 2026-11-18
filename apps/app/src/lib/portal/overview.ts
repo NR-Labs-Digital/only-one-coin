@@ -11,7 +11,7 @@ import type {
   Student,
   WeeklySlot,
 } from './types'
-import { safeClassroomLinks, type ClassroomLink } from '@/lib/backoffice/class-links'
+import { safeClassroomLinks, safeMeetUrl, type ClassroomLink } from '@/lib/backoffice/class-links'
 
 /**
  * `GET /portal/overview` as the API sends it (apps/api,
@@ -54,6 +54,8 @@ interface ApiEnrollment {
     startsOn: string | null
     endsOn: string | null
     classroomLinks: ClassroomLink[]
+    /** OOC-159; null unless the seat is confirmed. Optional: an API from before it sends none. */
+    meetUrl?: string | null
   }
   academicPeriodName: string
   plan: { name: string; priceId: string; priceCents: number; currency: 'PEN' }
@@ -149,6 +151,7 @@ export function toEnrollment(row: ApiEnrollment): Enrollment {
       endDate: row.classGroup.endsOn,
       // Re-checked before they become an href: only a Classroom link opens.
       classroomLinks: safeClassroomLinks(row.classGroup.classroomLinks),
+      meetUrl: safeMeetUrl(row.classGroup.meetUrl),
     },
     plan: { name: row.plan.name, priceCents: row.plan.priceCents, currency: row.plan.currency },
     academicPeriod: { name: row.academicPeriodName },

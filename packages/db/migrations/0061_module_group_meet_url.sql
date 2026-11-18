@@ -1,0 +1,1 @@
+ALTER TABLE "class_group_modules" ADD COLUMN "meet_url" text;

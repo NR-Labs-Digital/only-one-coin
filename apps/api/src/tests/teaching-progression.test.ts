@@ -69,6 +69,7 @@ function run(overrides: Partial<TeachingClassGroup> = {}): TeachingClassGroup {
     status: "finished",
     retired: false,
     classroomLinks: [],
+    meetUrl: null,
     module: 1,
     moduleMaterialUrl: null,
     fullCourse: false,
