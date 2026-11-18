@@ -11,8 +11,13 @@ import copy from "./locales/es-PE.json" with { type: "json" };
  * and filled by the engine). Nothing here points at a URL: WeasyPrint would
  * fetch it, and a document render must never reach the network.
  */
-export function frameDocument(bodyHtml: string): string {
+export function frameDocument(bodyHtml: string, options: { verificationCode?: string } = {}): string {
   const header = `${escapeHtml(LEGAL_IDENTITY.legalName)} · ${escapeHtml(copy.frame.ruc)} ${escapeHtml(LEGAL_IDENTITY.ruc)}`;
+  // An issued document (OOC-33) carries its verification code on every page,
+  // in the frame — whoever edits the text cannot forget it or move it.
+  const codeRule = options.verificationCode
+    ? `@bottom-left { content: ${cssString(`${copy.frame.verificationCode}: ${options.verificationCode}`)}; font-size: 8.5pt; color: #555; }`
+    : "";
   return `<!doctype html>
 <html lang="es-PE">
 <head>
@@ -27,6 +32,7 @@ export function frameDocument(bodyHtml: string): string {
     font-size: 8.5pt;
     color: #555;
   }
+  ${codeRule}
 }
 html { font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif; font-size: 10.5pt; line-height: 1.5; color: #111; }
 .running-header { position: running(running-header); font-size: 8.5pt; color: #555; border-bottom: 0.5pt solid #999; padding-bottom: 4pt; width: 100%; text-align: center; }

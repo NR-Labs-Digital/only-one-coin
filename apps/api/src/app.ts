@@ -48,6 +48,12 @@ import { saveDocumentTemplateDraftRoute } from "@/http/document/SaveDocumentTemp
 import { previewDocumentTemplateRoute } from "@/http/document/PreviewDocumentTemplateRoute.js";
 import { publishDocumentTemplateRoute } from "@/http/document/PublishDocumentTemplateRoute.js";
 import { regenerateTeacherContractRoute } from "@/http/teacher/RegenerateTeacherContractRoute.js";
+import { issueCertificateBatchRoute, previewCertificateBatchRoute } from "@/http/issuedDocument/CertificateBatchRoutes.js";
+import { downloadIssuedDocumentRoute, listStudentIssuedDocumentsRoute } from "@/http/issuedDocument/IssuedDocumentRoutes.js";
+import {
+  downloadPortalIssuedDocumentRoute,
+  listPortalIssuedDocumentsRoute,
+} from "@/http/issuedDocument/PortalIssuedDocumentRoutes.js";
 import { openTeacherContractRoute } from "@/http/teacher/OpenTeacherContractRoute.js";
 import { saveGuardianRoute } from "@/http/student/SaveGuardianRoute.js";
 import { listStudentActivityRoute } from "@/http/student/ListStudentActivityRoute.js";
@@ -245,6 +251,13 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(previewDocumentTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(publishDocumentTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(regenerateTeacherContractRoute);
+        // Issued documents (OOC-33): the certificate batch, and printing.
+        instance.withTypeProvider<ZodTypeProvider>().route(previewCertificateBatchRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(issueCertificateBatchRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listStudentIssuedDocumentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadIssuedDocumentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listPortalIssuedDocumentsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(openTeacherContractRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listOwnClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnClassGroupRoute);

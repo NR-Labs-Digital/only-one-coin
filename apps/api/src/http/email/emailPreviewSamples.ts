@@ -84,6 +84,18 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
   },
+  enrollment_certificate_issued: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    code: "OOC-7K4M-9QX2",
+  },
+  certificate_issued: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    code: "OOC-7K4M-9QX2",
+  },
   portal_credentials: {
     recipientName: "María Fernanda",
     loginEmail: "maria.quispe@gmail.com",

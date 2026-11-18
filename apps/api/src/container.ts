@@ -249,6 +249,8 @@ import { DrizzleEmailProofRepository } from "./infra/persistence/notification/Dr
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
+import { DrizzleIssuedDocumentRepository } from "./infra/persistence/document/DrizzleIssuedDocumentRepository.js";
+import { IssuedDocumentService } from "./documents/IssuedDocumentService.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
 import { DrizzlePaymentEmailContextLookup } from "./infra/persistence/enrollment/DrizzlePaymentEmailContextLookup.js";
 import {
@@ -260,6 +262,8 @@ import { createNotificationProvider } from "./infra/notification/createNotificat
 import type { NotificationProvider } from "@ooc/notifications";
 
 export interface AppRepositories {
+  /** The institution's issued documents (OOC-33). */
+  issuedDocuments: DrizzleIssuedDocumentRepository;
   catalogEntry: ICatalogEntryRepository;
   course: ICourseRepository;
   academicPeriod: IAcademicPeriodRepository;
@@ -504,6 +508,8 @@ export interface AppDocuments {
   preview: DocumentPreviewService;
   /** The filled teacher contract, from the published template. */
   teacherContract: TeacherContractDocumentService;
+  /** The constancia and the certificate (OOC-33): issued, previewed, printed. */
+  issued: IssuedDocumentService;
 }
 
 /** The public-route protection (OOC-24): what stands between a burst of
@@ -605,7 +611,8 @@ function buildContainer(): AppContainer {
   const attachmentStorage = new TigrisAttachmentStorage(s3Client, config.BUCKET_NAME);
   const teacherContractRepository = new DrizzleTeacherContractRepository(db);
 
-  // Editable documents (OOC-123)
+  // Editable documents (OOC-123) and the issued ones (OOC-33)
+  const issuedDocumentRepository = new DrizzleIssuedDocumentRepository(db);
   const templateEngine = new TemplateEngine();
   const documentCompiler = new DocumentTemplateCompiler(templateEngine);
   const documentPreview = new DocumentPreviewService(
@@ -901,8 +908,16 @@ function buildContainer(): AppContainer {
         teacherContractRepository,
         auditLogRepository,
       ),
+      issued: new IssuedDocumentService(
+        documentPreview,
+        documentTemplateRepository,
+        issuedDocumentRepository,
+        platformSettingsRepository,
+        auditLogRepository,
+      ),
     },
     repositories: {
+      issuedDocuments: issuedDocumentRepository,
       catalogEntry: catalogEntryRepository,
       course: courseRepository,
       academicPeriod: academicPeriodRepository,
