@@ -82,6 +82,7 @@ beforeEach(async () => {
             slots: SLOTS,
             classroomLinks: { "2": "https://classroom.google.com/c/running" },
             classroomUrl: null,
+            meetUrl: null,
           }),
         ],
       );

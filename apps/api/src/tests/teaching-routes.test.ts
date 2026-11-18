@@ -144,6 +144,7 @@ function group(id: string, teacherId: string): TeachingClassGroup {
     status: "in_progress",
     retired: false,
     classroomLinks: [{ module: 3, url: "https://classroom.google.com/c/ing01" }],
+    meetUrl: "https://meet.google.com/abc-defg-hij",
     module: 3,
     moduleMaterialUrl: "https://drive.google.com/drive/folders/ing-m3",
     fullCourse: false,
@@ -289,7 +290,10 @@ describe("the id in the URL is not proof of whose class group it is", () => {
 
     const response = await inject("GET", `/api/v1/teaching/class-groups/${A_GROUP}`);
 
-    expect(response.json()).toMatchObject({ classroomLinks: [{ module: 3, url: "https://classroom.google.com/c/ing01" }] });
+    expect(response.json()).toMatchObject({
+      classroomLinks: [{ module: 3, url: "https://classroom.google.com/c/ing01" }],
+      meetUrl: "https://meet.google.com/abc-defg-hij",
+    });
   });
 
   it("serves the own class group's module and its material (OOC-100)", async () => {

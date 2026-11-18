@@ -22,7 +22,7 @@ export const updateClassGroupRoute = RouteBuilder.patch("/catalog/class-groups/:
     tags: ["Catalog"],
     summary: "Edit a class group",
     description:
-      "The class group's own fields. Teacher, module, schedule and Classroom are its module run's (OOC-156): accepted here only on a class group of one run; with more, 422 catalog.class_group_module_ambiguous — edit the run instead.",
+      "The class group's own fields. Teacher, module, schedule, Classroom and Meet are its module run's (OOC-156, OOC-159): accepted here only on a class group of one run; with more, 422 catalog.class_group_module_ambiguous — edit the run instead.",
   })
   .roles(...CATALOG_WRITE_ROLES)
   .params(IdParamsSchema)
@@ -32,11 +32,11 @@ export const updateClassGroupRoute = RouteBuilder.patch("/catalog/class-groups/:
   .response(404, ErrorResponseSchema)
   .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { startsOn, endsOn, enrollmentOpensAt, enrollmentClosesAt, teacherId, classroomLinks, module, fullCourse, slots, ...rest } =
+    const { startsOn, endsOn, enrollmentOpensAt, enrollmentClosesAt, teacherId, classroomLinks, meetUrl, module, fullCourse, slots, ...rest } =
       request.body;
     const actorId = request.currentUser!.id;
     const runPatch = Object.fromEntries(
-      Object.entries({ teacherId, classroomLinks, module, fullCourse, slots }).filter(([, value]) => value !== undefined),
+      Object.entries({ teacherId, classroomLinks, meetUrl, module, fullCourse, slots }).filter(([, value]) => value !== undefined),
     );
 
     if (Object.keys(runPatch).length > 0) {

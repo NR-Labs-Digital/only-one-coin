@@ -279,6 +279,19 @@ describe("docente portal scope (OOC-82)", () => {
     });
   });
 
+  it("reads the own module group's Meet link, and none where nobody pasted one (OOC-159)", async () => {
+    await seeded(async (tx) => {
+      const { get, list } = portal(tx);
+      const meet = "https://meet.google.com/abc-defg-hij";
+      await tx.update(schema.classGroupModules).set({ meetUrl: meet }).where(eq(schema.classGroupModules.id, A_RUNNING));
+
+      await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({ meetUrl: meet });
+      const listed = await list.run({ userId: A_ACCOUNT });
+      expect(listed.find((group) => group.id === A_RUNNING)?.meetUrl).toBe(meet);
+      await expect(get.run({ userId: B_ACCOUNT, classGroupId: B_RUNNING })).resolves.toMatchObject({ meetUrl: null });
+    });
+  });
+
   it("reads the material of the module the class group teaches (OOC-100)", async () => {
     await seeded(async (tx) => {
       const { get } = portal(tx);

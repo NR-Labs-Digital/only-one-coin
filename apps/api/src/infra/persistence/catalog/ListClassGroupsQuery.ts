@@ -29,6 +29,8 @@ export interface ClassGroupModuleItem {
   classroomLinks: ClassroomLink[];
   /** Some module it teaches has no Classroom yet (`isMissingClassroom`). */
   classroomMissing: boolean;
+  /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
+  meetUrl: string | null;
   /** Confirmed seats in this run now. */
   students: number;
 }
@@ -70,6 +72,8 @@ export interface ClassGroupItem {
   classroomLinks: ClassroomLink[];
   /** Some run of the class group is missing a Classroom — the "Sin Classroom" warning. */
   classroomMissing: boolean;
+  /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
+  meetUrl: string | null;
   /** Some run of the class group has no teacher yet. */
   teacherMissing: boolean;
   /** Which of the course's modules the first run teaches (OOC-100), 1-based; null = not set. */
@@ -208,6 +212,7 @@ export class ListClassGroupsQuery {
       classroomLinksByModule: first?.classroomLinksByModule ?? {},
       classroomLinks: first?.classroomLinks ?? [],
       classroomMissing: modules.some((run) => run.classroomMissing),
+      meetUrl: first?.meetUrl ?? null,
       teacherMissing: modules.some((run) => run.teacherId === null),
       module: first?.module ?? null,
       fullCourse: first?.fullCourse ?? false,
@@ -273,6 +278,7 @@ export class ListClassGroupsQuery {
         classroomLinksByModule: run.classroomLinks,
         classroomLinks: classroomLinksOf(run, courseModules),
         classroomMissing: isMissingClassroom(run, courseModules),
+        meetUrl: run.meetUrl,
         students: seated,
       };
       byGroup.set(run.classGroupId, [...(byGroup.get(run.classGroupId) ?? []), item]);
