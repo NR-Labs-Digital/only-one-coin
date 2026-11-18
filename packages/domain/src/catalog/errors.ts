@@ -179,6 +179,16 @@ export class ClassroomUrlInvalidError extends UnableToProcessEntryError {
   }
 }
 
+export class MeetUrlInvalidError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.meet_url_invalid",
+      message: "A module group's Meet link must be an https link on meet.google.com.",
+      ...params,
+    });
+  }
+}
+
 /** A class group teaches one of its course's modules (OOC-100): 1 up to the course's module count. */
 export class ClassGroupModuleOutOfRangeError extends UnableToProcessEntryError {
   constructor(params?: { path?: string; cause?: unknown }) {

@@ -242,6 +242,18 @@ describe("StudentPortalQuery.overview", () => {
     expect(byId.get(ON_NEW_FILE)!.classGroup.classroomLinks).toEqual([]);
   });
 
+  it("hands the module group's Meet link only to a confirmed seat (OOC-159)", async () => {
+    const meet = "https://meet.google.com/abc-defg-hij";
+    await db.update(schema.classGroupModules).set({ meetUrl: meet }).where(eq(schema.classGroupModules.id, GROUP));
+    try {
+      const byId = new Map((await query.overview(USER))!.enrollments.map((row) => [row.id, row]));
+      expect(byId.get(ON_OLD_FILE)!.classGroup.meetUrl).toBe(meet);
+      expect(byId.get(ON_NEW_FILE)!.classGroup.meetUrl).toBeNull();
+    } finally {
+      await db.update(schema.classGroupModules).set({ meetUrl: null }).where(eq(schema.classGroupModules.id, GROUP));
+    }
+  });
+
   it("hands the link of every module a full-course class group teaches, in order (OOC-144)", async () => {
     await db.update(courses).set({ modules: 2 }).where(eq(courses.id, COURSE));
     // The teaching side lives on the module run since OOC-156; 0058's run shares the class group's id.

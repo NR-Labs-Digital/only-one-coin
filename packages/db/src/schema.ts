@@ -668,6 +668,10 @@ export const classGroupModules = pgTable(
     classroomLinks: jsonb("classroom_links").$type<Record<string, string>>().notNull().default({}),
     // OOC-98's single link, read only for a run with no module set.
     classroomUrl: text("classroom_url"),
+    // Its Google Meet (OOC-159), pasted by coordination. Null = nobody pasted
+    // one yet. The host rule (https on meet.google.com) is the domain's
+    // (normalizeMeetUrl), as the Classroom's.
+    meetUrl: text("meet_url"),
     ...softDeletable(),
   },
   (table) => [

@@ -79,7 +79,9 @@ async function measure(seed: (tx: Tx) => Promise<void>): Promise<{ before: Dashb
   return result!;
 }
 
-function delta({ before, after }: { before: DashboardSummary; after: DashboardSummary }): DashboardSummary {
+type Counts = Omit<DashboardSummary, "seatOccupancy">;
+
+function delta({ before, after }: { before: DashboardSummary; after: DashboardSummary }): Counts {
   return {
     enrollmentsToday: after.enrollmentsToday - before.enrollmentsToday,
     enrollmentsYesterday: after.enrollmentsYesterday - before.enrollmentsYesterday,
@@ -304,5 +306,89 @@ describe("DashboardSummaryQuery — students studying now and at the end of yest
 
     expect(result.activeStudents).toBe(1);
     expect(result.activeStudentsYesterday).toBe(1);
+  });
+});
+
+describe("DashboardSummaryQuery — seat occupancy of the current period (OOC-160)", () => {
+  // Started a minute before NOW: the most recent period already started, so
+  // the current one whatever else the database holds.
+  const CURRENT = "018f2b5c-9100-7000-8000-000000000011";
+  const UPCOMING = "018f2b5c-9100-7000-8000-000000000012";
+  const RETIRED = "018f2b5c-9100-7000-8000-000000000013";
+  const OLD_LIST_CAP = 500;
+
+  async function occupancyWith(seed: (tx: Tx) => Promise<void>): Promise<DashboardSummary["seatOccupancy"]> {
+    let result: DashboardSummary["seatOccupancy"] | undefined;
+    try {
+      await db.transaction(async (tx) => {
+        await seedCatalog(tx);
+        await tx.insert(academicPeriods).values([
+          { id: CURRENT, name: "Ciclo actual (OOC-160)", startsOn: new Date(NOW.getTime() - 60_000), endsOn: new Date("2027-01-31T00:00:00.000Z") },
+          { id: UPCOMING, name: "Ciclo siguiente (OOC-160)", startsOn: new Date(NOW.getTime() + 86_400_000), endsOn: new Date("2027-06-30T00:00:00.000Z") },
+          // Started after CURRENT but retired: never the current one.
+          { id: RETIRED, name: "Ciclo retirado (OOC-160)", startsOn: new Date(NOW.getTime() - 30_000), endsOn: new Date("2027-01-31T00:00:00.000Z"), deletedAt: NOW },
+        ]);
+        await seed(tx);
+        result = (await new DashboardSummaryQuery(tx as unknown as Db).run(NOW)).seatOccupancy;
+        throw new RolledBack();
+      });
+    } catch (error) {
+      if (!(error instanceof RolledBack)) throw error;
+    }
+    return result!;
+  }
+
+  function group(
+    periodId: string,
+    fields: Partial<typeof classGroups.$inferInsert> = {},
+  ): typeof classGroups.$inferInsert {
+    return {
+      courseId: COURSE,
+      academicPeriodId: periodId,
+      schedule: "Lun/Mié 19:00",
+      startsOn: new Date("2026-10-12T00:00:00.000Z"),
+      endsOn: new Date("2026-12-20T00:00:00.000Z"),
+      capacity: 10,
+      seatsTaken: 5,
+      status: "enrolling",
+      ...fields,
+    };
+  }
+
+  it("sums every class group of the period, past the old 500-row list cap", async () => {
+    const count = OLD_LIST_CAP + 20;
+    const occupancy = await occupancyWith(async (tx) => {
+      await tx.insert(classGroups).values(Array.from({ length: count }, () => group(CURRENT)));
+    });
+
+    expect(occupancy).toEqual({ taken: count * 5, capacity: count * 10 });
+  });
+
+  it("counts the seats above capacity, as Académico's 30 / 30 +2", async () => {
+    const occupancy = await occupancyWith(async (tx) => {
+      await tx.insert(classGroups).values([
+        group(CURRENT, { capacity: 30, seatsTaken: 30, seatsOver: 2, status: "in_progress" }),
+        group(CURRENT, { capacity: 20, seatsTaken: 4 }),
+      ]);
+    });
+
+    expect(occupancy).toEqual({ taken: 36, capacity: 50 });
+  });
+
+  it("leaves out drafts, ended and retired class groups, and other periods", async () => {
+    const occupancy = await occupancyWith(async (tx) => {
+      await tx.insert(classGroups).values([
+        group(CURRENT, { capacity: 10, seatsTaken: 3 }),
+        group(CURRENT, { capacity: 30, seatsTaken: 0, status: "draft" }),
+        group(CURRENT, { capacity: 30, seatsTaken: 25, status: "finished" }),
+        group(CURRENT, { capacity: 30, seatsTaken: 25, status: "closed" }),
+        group(CURRENT, { capacity: 30, seatsTaken: 12, deletedAt: NOW }),
+        group(UPCOMING, { capacity: 30, seatsTaken: 30 }),
+        group(RETIRED, { capacity: 30, seatsTaken: 30 }),
+        group(PERIOD, { capacity: 30, seatsTaken: 30 }),
+      ]);
+    });
+
+    expect(occupancy).toEqual({ taken: 3, capacity: 10 });
   });
 });

@@ -395,6 +395,7 @@
         "module_materials": "Material de los módulos",
         "classroom_url": "Enlace del Classroom",
         "classroom_links": "Enlaces del Classroom por módulo",
+        "meet_url": "Enlace del Meet",
         "module": "Módulo",
         "total_hours": "Horas totales",
         "certificate_rule": "Regla del certificado",
@@ -1241,7 +1242,11 @@
       "step_intro_teacher": "Asigna el docente y el Classroom ahora, o continúa y hazlo después.",
       "step_intro_review": "Revisa los datos. Puedes volver a cualquier paso tocando su número arriba.",
       "teacher_optional_title": "Este paso es opcional: puedes continuar sin docente",
-      "teacher_many_hint": "Vas a abrir {count} aulas, y cada una tiene su docente y su Classroom. Se asignan después, en cada aula: cuando cierran las vacantes aparecen en Cursos y aulas → Pendientes."
+      "teacher_many_hint": "Vas a abrir {count} aulas, y cada una tiene su docente y su Classroom. Se asignan después, en cada aula: cuando cierran las vacantes aparecen en Cursos y aulas → Pendientes.",
+      "field_meet": "Google Meet",
+      "meet_placeholder": "https://meet.google.com/…",
+      "meet_invalid": "Pega un enlace https://meet.google.com/…",
+      "meet_missing": "Sin Meet"
     },
     "periods": {
       "label": "Período de matrícula",
@@ -2144,7 +2149,8 @@
       "class_group_module_last": "El aula necesita al menos un grupo de módulo.",
       "class_group_module_has_students": "Todavía hay alumnos en este grupo. Muévelos antes de retirarlo.",
       "class_group_module_ambiguous": "El aula tiene varios grupos de módulo: edita el docente, el horario y el Classroom en cada grupo.",
-      "class_group_full_course_split": "Un curso completo abre un grupo por módulo; cada grupo da un módulo."
+      "class_group_full_course_split": "Un curso completo abre un grupo por módulo; cada grupo da un módulo.",
+      "meet_url_invalid": "El enlace no es de Google Meet."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2163,7 +2169,8 @@
     },
     "class_links": {
       "classroom": "Abrir Classroom",
-      "classroom_module": "Classroom · Módulo {module}"
+      "classroom_module": "Classroom · Módulo {module}",
+      "meet": "Abrir Meet"
     },
     "grade_report": {
       "download": "Descargar reporte",
@@ -2418,7 +2425,9 @@
       "options_how": "Los precios y planes están en la pestaña Planes. Para sacar el curso del catálogo, usa la tarjeta «Sacar del catálogo» de esta pestaña.",
       "course_name_what": "El nombre con el que el alumno ve el curso.",
       "course_language_what": "El idioma del curso. Agrupa el curso en el formulario de matrícula y decide qué docentes se pueden asignar a sus aulas.",
-      "course_level_what": "El nivel del curso, por ejemplo B2 o Básico. Aparece junto al nombre."
+      "course_level_what": "El nivel del curso, por ejemplo B2 o Básico. Aparece junto al nombre.",
+      "meet_what": "El enlace de Google Meet de este grupo de módulo. Lo ve el docente en su portal, y el alumno con vacante confirmada en el suyo, junto al Classroom.",
+      "meet_how": "Copia el enlace de la reunión en Meet y pégalo aquí. Es opcional y puedes hacerlo después."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
@@ -2581,7 +2590,9 @@
       "count": "{count, plural, one {# grupo de módulo} other {# grupos de módulo}}",
       "module_short": "Mód. {number}",
       "full_short": "Completo",
-      "unset_short": "Sin mód."
+      "unset_short": "Sin mód.",
+      "meet_ok": "Meet listo",
+      "meet_missing": "Sin Meet"
     },
     "progression": {
       "title": "Pasar de módulo",

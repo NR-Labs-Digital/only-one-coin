@@ -64,6 +64,8 @@ export interface PortalEnrollmentRow {
     endsOn: Date | null;
     /** One Classroom per module the class group teaches (OOC-144), in order — only on a confirmed seat; empty otherwise. */
     classroomLinks: ClassroomLink[];
+    /** The run's Google Meet (OOC-159) — only on a confirmed seat; null otherwise or when nobody pasted one. */
+    meetUrl: string | null;
   };
   academicPeriodName: string;
   plan: { name: string; priceId: string; priceCents: number };
@@ -158,6 +160,7 @@ export class StudentPortalQuery {
         endsOn: classGroups.endsOn,
         classroomUrl: classGroupModules.classroomUrl,
         classroomLinks: classGroupModules.classroomLinks,
+        meetUrl: classGroupModules.meetUrl,
         classGroupModule: classGroupModules.module,
         classGroupFullCourse: classGroupModules.fullCourse,
         courseModules: courses.modules,
@@ -259,7 +262,8 @@ export class StudentPortalQuery {
             startsOn: row.startsOn,
             endsOn: row.endsOn,
             // The door to the class opens with the money confirmed (OOC-55):
-            // a reserved or released seat never sees a link (OOC-98, OOC-144).
+            // a reserved or released seat never sees a link (OOC-98, OOC-144,
+            // OOC-159).
             classroomLinks:
               row.seatStatus === "confirmed"
                 ? classroomLinksOf(
@@ -272,6 +276,7 @@ export class StudentPortalQuery {
                     row.courseModules,
                   )
                 : [],
+            meetUrl: row.seatStatus === "confirmed" ? row.meetUrl : null,
           },
           academicPeriodName: row.academicPeriodName,
           plan: { name: row.planName, priceId: row.planPriceId, priceCents: row.planPriceCents },

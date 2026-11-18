@@ -12,7 +12,7 @@ import { Link } from '@/i18n/navigation'
 import {
   getDashboardSummary,
   getReviewQueueHead,
-  seatOccupancy,
+  seatsHeld,
   seatsUnderPressure,
 } from '@/lib/backoffice/dashboard'
 import { listCatalogClassGroups } from '@/lib/backoffice/catalog'
@@ -78,7 +78,7 @@ export default async function BackofficeHomePage({
   ])
 
   const preview = queue?.items.slice(0, 5) ?? []
-  const occupancy = classGroups ? seatOccupancy(classGroups) : null
+  const occupancy = summary?.seatOccupancy ?? null
   const seats = classGroups ? seatsUnderPressure(classGroups) : []
 
   // The name and the number, nothing under them (OOC-151).
@@ -325,10 +325,11 @@ export default async function BackofficeHomePage({
           ) : (
           <AutoGrid min="20rem" gap="gap-3">
             {seats.map((group) => {
-              const tone = seatPressureTone(group.seatsTaken, group.capacity)
-              const full = group.seatsTaken >= group.capacity
+              const held = seatsHeld(group)
+              const tone = seatPressureTone(held, group.capacity)
+              const full = held >= group.capacity
               const pct =
-                group.capacity === 0 ? 0 : Math.round((group.seatsTaken / group.capacity) * 100)
+                group.capacity === 0 ? 0 : Math.min(100, Math.round((held / group.capacity) * 100))
               return (
                 <Card key={group.id} className="gap-0 py-4">
                   <CardContent className="px-4">
@@ -346,7 +347,7 @@ export default async function BackofficeHomePage({
                           full
                             ? t('seats.full')
                             : t('seats.available', {
-                                count: group.capacity - group.seatsTaken,
+                                count: group.capacity - held,
                               })
                         }
                       />
@@ -359,7 +360,7 @@ export default async function BackofficeHomePage({
                     <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
                       <span>
                         {t('seats.taken', {
-                          taken: group.seatsTaken,
+                          taken: held,
                           capacity: group.capacity,
                         })}
                       </span>

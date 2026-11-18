@@ -162,7 +162,9 @@
       "result_fail_note": "Você não alcançou a nota mínima, que é {passingGrade}.",
       "result_did_not_attempt": "Você não fez o exame final, então o módulo ficou registrado como DA.",
       "enrolled_on": "Matriculada em {date}",
-      "period_dates": "De {start} a {end}"
+      "period_dates": "De {start} a {end}",
+      "classroom": "Classroom",
+      "join_meet": "Entrar no Meet"
     },
     "enrollments": {
       "title": "Minha matrícula",

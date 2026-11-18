@@ -8,6 +8,7 @@ const DashboardSummaryResponseSchema = z.object({
   enrollmentsYesterday: z.number().int(),
   activeStudents: z.number().int(),
   activeStudentsYesterday: z.number().int(),
+  seatOccupancy: z.object({ taken: z.number().int(), capacity: z.number().int() }),
 });
 
 // The same people who read the enrollment ledger and the catalog: these are
@@ -16,9 +17,9 @@ const DashboardSummaryResponseSchema = z.object({
 export const getDashboardSummaryRoute = RouteBuilder.get("/dashboard/summary")
   .docs({
     tags: ["Dashboard"],
-    summary: "The backoffice home's enrollment and active-student figures",
+    summary: "The backoffice home's enrollment, active-student and seat-occupancy figures",
     description:
-      "Enrollments confirmed today and students studying now, each next to yesterday's figure (Lima time). Definitions in DashboardSummaryQuery.",
+      "Enrollments confirmed today and students studying now, each next to yesterday's figure (Lima time), and the current period's seat occupancy. Definitions in DashboardSummaryQuery.",
   })
   .roles(...CATALOG_READ_ROLES)
   .response(200, DashboardSummaryResponseSchema)

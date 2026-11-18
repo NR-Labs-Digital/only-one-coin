@@ -3,6 +3,7 @@ import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, pa
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
+import { currentPeriod } from "@/infra/persistence/catalog/currentPeriod.js";
 
 /**
  * The enrollment ledger — every confirmed seat in the institution, read for the
@@ -419,12 +420,7 @@ export class ListEnrollmentsQuery {
    *   and a monthly student with the next module in review is still studying.
    */
   private async metrics(): Promise<EnrollmentListMetrics> {
-    const [period] = await this.db
-      .select({ id: academicPeriods.id, name: academicPeriods.name })
-      .from(academicPeriods)
-      .where(and(sql`${academicPeriods.startsOn} <= now()`, isNull(academicPeriods.deletedAt)))
-      .orderBy(desc(academicPeriods.startsOn))
-      .limit(1);
+    const period = await currentPeriod(this.db);
 
     const inPeriod = period ? eq(classGroups.academicPeriodId, period.id) : sql`false`;
     const [totals] = await this.db

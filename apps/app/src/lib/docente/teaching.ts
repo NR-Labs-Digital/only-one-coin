@@ -31,6 +31,8 @@ export interface TeachingClassGroup {
   status: ClassGroupStatus
   /** One Classroom per module it teaches (OOC-144), in order; empty = coordination has not pasted one yet. */
   classroomLinks: ClassroomLink[]
+  /** The module group's Google Meet (OOC-159); null = coordination has not pasted one yet. */
+  meetUrl: string | null
   /** Which of the course's modules it teaches (OOC-100); null = coordination has not set it. */
   module: number | null
   /** That module's material, from the course (OOC-100); null = nothing to open. */

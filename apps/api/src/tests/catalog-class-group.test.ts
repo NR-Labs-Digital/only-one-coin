@@ -6,6 +6,7 @@ import {
   ClassGroupCourseLockedError,
   ClassGroupIncompleteError,
   ClassroomUrlInvalidError,
+  MeetUrlInvalidError,
   ClassGroupModuleOutOfRangeError,
   ClassGroupTeacherLanguageError,
   ClassGroupTeacherUnavailableError,
@@ -757,5 +758,50 @@ describe("Module runs of a class group (OOC-156)", () => {
       [2, copy.id, {}],
     ]);
     expect(copy.modules.every((run) => !group.modules.some((source) => source.id === run.id))).toBe(true);
+  });
+});
+
+describe("The module group's Meet link (OOC-159)", () => {
+  const MEET = "https://meet.google.com/abc-defg-hij";
+
+  it("keeps an https link on meet.google.com, normalized, and a blank one as none", () => {
+    expect(entry(ClassGroup.create(draftOf({ module: 1, meetUrl: "  https://MEET.google.com/abc-defg-hij " }), CODE)).meetUrl).toBe(
+      MEET,
+    );
+    expect(entry(ClassGroup.create(draftOf({ meetUrl: "   " }), CODE)).meetUrl).toBeNull();
+    expect(entry(ClassGroup.create(draftOf(), CODE)).meetUrl).toBeNull();
+  });
+
+  it.each([
+    "http://meet.google.com/abc-defg-hij",
+    "https://meet.google.com.evil.io/abc",
+    "https://classroom.google.com/c/abc",
+    "javascript:alert(1)",
+    "not a link",
+  ])("refuses %s", (bad) => {
+    expect(() => ClassGroup.create(draftOf({ meetUrl: bad }), CODE)).toThrow(MeetUrlInvalidError);
+  });
+
+  it("gives none to the module groups a full course opens — each gets its own", () => {
+    const group = ClassGroup.create(draftOf({ fullCourse: true, meetUrl: MEET }), CODE, 3);
+    expect(group.modules).toHaveLength(3);
+    expect(group.modules.every((run) => run.meetUrl === null)).toBe(true);
+  });
+
+  it("is edited on the module group, audited by name only, and cleared with null", async () => {
+    const group = await groups.create(ClassGroup.create(draftOf({ module: 1 }), CODE));
+
+    const saved = await editRunOf(group, { meetUrl: MEET });
+    expect(entry(saved).meetUrl).toBe(MEET);
+    expect(auditLog.appended.at(-1)!.metadata).toMatchObject({ fields: ["meetUrl"] });
+    expect(JSON.stringify(auditLog.appended.at(-1)!.metadata)).not.toContain("meet.google.com");
+
+    expect(entry(group).update({ meetUrl: ` ${MEET} ` })).toEqual([]);
+    expect(entry(await editRunOf(saved, { meetUrl: null })).meetUrl).toBeNull();
+  });
+
+  it("does not carry the link into a duplicated period", () => {
+    const group = ClassGroup.create(draftOf({ module: 1, meetUrl: MEET }), CODE);
+    expect(entry(ClassGroup.copyInto(group, period.id, "A-00002")).meetUrl).toBeNull();
   });
 });

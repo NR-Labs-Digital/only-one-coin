@@ -181,6 +181,11 @@ export interface ClassGroup {
    * single link of a class group with no module set.
    */
   classroomLinks: ClassroomLink[]
+  /**
+   * The module group's Google Meet (OOC-159), next to the Classrooms. Same
+   * rule: only on a confirmed seat, re-checked against the host; null otherwise.
+   */
+  meetUrl: string | null
 }
 
 export interface CourseMaterial {

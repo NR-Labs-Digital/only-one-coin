@@ -43,6 +43,8 @@ const PortalEnrollmentSchema = z.object({
     endsOn: z.string().nullable(),
     /** One Classroom per module the class group teaches (OOC-144) — empty unless the seat is confirmed. */
     classroomLinks: z.array(ClassroomLinkSchema),
+    /** The module group's Google Meet (OOC-159) — null unless the seat is confirmed. */
+    meetUrl: z.string().nullable(),
   }),
   academicPeriodName: z.string(),
   plan: z.object({ name: z.string(), priceId: z.string().uuid(), priceCents: z.number().int(), currency: z.literal("PEN") }),
@@ -217,6 +219,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
           startsOn: toIso(enrollment.classGroup.startsOn),
           endsOn: toIso(enrollment.classGroup.endsOn),
           classroomLinks: enrollment.classGroup.classroomLinks,
+          meetUrl: enrollment.classGroup.meetUrl,
         },
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },

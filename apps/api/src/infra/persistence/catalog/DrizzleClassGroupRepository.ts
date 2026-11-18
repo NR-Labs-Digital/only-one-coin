@@ -30,6 +30,7 @@ export function classGroupModuleFromRow(row: ModuleRow): ClassGroupModule {
     slots: row.slots as WeeklySlot[],
     classroomLinks: row.classroomLinks,
     classroomUrl: row.classroomUrl,
+    meetUrl: row.meetUrl,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -97,6 +98,7 @@ function moduleValues(run: ClassGroupModule) {
     slots: run.slots,
     classroomLinks: run.classroomLinks,
     classroomUrl: run.classroomUrl,
+    meetUrl: run.meetUrl,
   };
 }
 

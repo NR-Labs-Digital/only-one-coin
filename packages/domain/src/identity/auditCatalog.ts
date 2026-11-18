@@ -289,6 +289,7 @@ export const AUDIT_FIELDS = {
   teacherId: "teacher",
   classroomUrl: "classroom_url",
   classroomLinks: "classroom_links",
+  meetUrl: "meet_url",
   module: "module",
   fullCourse: "full_course",
   slots: "schedule",

@@ -23,7 +23,9 @@ export {
   ClassroomLinkPatchSchema,
   classroomLinksOf,
   isMissingClassroom,
+  MEET_HOST,
   normalizeClassroomUrl,
+  normalizeMeetUrl,
   sameLinks,
   taughtModules,
   WeekdaySchema,
@@ -195,6 +197,9 @@ export class ClassGroup extends SoftDeletableModel {
             module === null || !valid.fullCourse
               ? valid.classroomLinks
               : valid.classroomLinks?.filter((link) => link.module === module),
+          // A Meet is one module group's (OOC-159): a full course splits into
+          // a run per module, and which Meet each one uses is pasted per run.
+          meetUrl: valid.fullCourse ? null : valid.meetUrl,
           module,
           slots: valid.slots,
         }),
