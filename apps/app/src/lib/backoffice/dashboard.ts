@@ -11,6 +11,12 @@ export interface DashboardSummary {
   /** People with a confirmed seat in a class group not yet finished or closed. */
   activeStudents: number
   activeStudentsYesterday: number
+  /**
+   * Seats held and offered across the current period's class groups, summed by
+   * the API (OOC-160). `taken` includes the seats above capacity, so it can
+   * pass `capacity`.
+   */
+  seatOccupancy: { taken: number; capacity: number }
 }
 
 /** The home's enrollment and active-student figures. `null` = the API failed or refused. */
@@ -41,21 +47,19 @@ function onSale(group: ClassGroupItem): boolean {
   return group.status === 'enrolling' && group.active && group.courseActive
 }
 
-/** Seats taken over capacity across every class group on sale. */
-export function seatOccupancy(groups: ClassGroupItem[]): { taken: number; capacity: number } {
-  return groups.filter(onSale).reduce(
-    (total, group) => ({
-      taken: total.taken + group.seatsTaken,
-      capacity: total.capacity + group.capacity,
-    }),
-    { taken: 0, capacity: 0 },
-  )
+/**
+ * Seats a class group holds, within capacity and above it (OOC-155). A class
+ * group with seats above capacity is full and never shows room, even when a
+ * regular seat came back — the same rule as Académico's "30 / 30 +2".
+ */
+export function seatsHeld(group: Pick<ClassGroupItem, 'seatsTaken' | 'seatsOver'>): number {
+  return group.seatsTaken + group.seatsOver
 }
 
 /** The class groups on sale closest to full; the earliest start breaks a tie. */
 export function seatsUnderPressure(groups: ClassGroupItem[]): ClassGroupItem[] {
   const fill = (group: ClassGroupItem) =>
-    group.capacity === 0 ? 0 : group.seatsTaken / group.capacity
+    group.capacity === 0 ? 0 : seatsHeld(group) / group.capacity
   return groups
     .filter(onSale)
     .sort(

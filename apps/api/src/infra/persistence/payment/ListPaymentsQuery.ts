@@ -1,9 +1,10 @@
-import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, procedureRequests, students } from "@ooc/db";
+import { classGroups, courses, enrollments, payments, planPrices, procedureRequests, students } from "@ooc/db";
 import type { PaymentMethod, ProcedureKind } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
 import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, lotMatches, type PaymentLotItem } from "./paymentLot.js";
+import { currentPeriod } from "@/infra/persistence/catalog/currentPeriod.js";
 
 /**
  * The payment ledger — every payment the institution has received, read for
@@ -294,12 +295,7 @@ export class ListPaymentsQuery {
    *   rule as the enrollment ledger's header. No current period, no figure.
    */
   private async metrics(): Promise<PaymentListMetrics> {
-    const [period] = await this.db
-      .select({ id: academicPeriods.id, name: academicPeriods.name })
-      .from(academicPeriods)
-      .where(and(sql`${academicPeriods.startsOn} <= now()`, isNull(academicPeriods.deletedAt)))
-      .orderBy(desc(academicPeriods.startsOn))
-      .limit(1);
+    const period = await currentPeriod(this.db);
 
     const open = inArray(payments.status, OPEN_STATUSES);
     const inPeriod = period ? eq(classGroups.academicPeriodId, period.id) : sql`false`;
