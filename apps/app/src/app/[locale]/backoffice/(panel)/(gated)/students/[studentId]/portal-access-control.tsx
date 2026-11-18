@@ -11,6 +11,8 @@ import type { PortalAccessState } from '@/lib/backoffice/types'
  * Shows where the student's portal access stands and, for whoever may, sends
  * it: creates the account, re-sends the activation, or sends a reset link —
  * the API picks which. The outcome is said back in words, never as its code.
+ * The same button is how a pending guardian consent is asked for again
+ * (OOC-72): it opens, or re-sends, the guardian's own access.
  */
 export function PortalAccessControl({
   studentId,
@@ -37,9 +39,12 @@ export function PortalAccessControl({
       return
     }
     const warn: IssuePortalAccessOutcome[] = ['email_conflict']
+    // The guardian's door (OOC-72): opened with the student's account, or
+    // while a minor's consent is pending — said after the student's part.
+    const guardianText = result.guardian ? t(`student_file.portal_access_guardian_outcome.${result.guardian}`) : null
     setMessage({
-      tone: warn.includes(result.outcome) ? 'warn' : 'ok',
-      text: t(`student_file.portal_access_outcome.${result.outcome}`),
+      tone: warn.includes(result.outcome) || result.guardian === 'conflict' ? 'warn' : 'ok',
+      text: [t(`student_file.portal_access_outcome.${result.outcome}`), guardianText].filter(Boolean).join(' '),
     })
     startTransition(() => router.refresh())
   }

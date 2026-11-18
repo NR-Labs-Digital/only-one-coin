@@ -34,6 +34,26 @@ export interface PortalAccountProvisioning {
   guardian?: PortalGuardianProvisioning;
 }
 
+/**
+ * What opening the guardian's door did (OOC-147, reused by OOC-72):
+ * - `not_applicable` — the file is of age, has no live guardian, or the
+ *   guardian's address is the student's own account;
+ * - `created` — a new account in the guardian's address, with its own
+ *   activation e-mail;
+ * - `linked` — the open portal account behind that address now reaches the
+ *   file;
+ * - `already_linked` — it already did;
+ * - `conflict` — a staff or blocked account has the address; nothing linked.
+ */
+export type GuardianAccessOutcome = "not_applicable" | "created" | "linked" | "already_linked" | "conflict";
+
+export interface PortalGuardianAccessRequest {
+  studentId: string;
+  actorId: string;
+  at: Date;
+  guardian: PortalGuardianProvisioning;
+}
+
 export interface IssuePortalTokenRequest {
   userId: string;
   token: NewPortalToken;
@@ -62,6 +82,16 @@ export interface IPortalAccessRepository {
    */
   provision(request: PortalAccountProvisioning): Promise<PortalAccessOutcome>;
   findAccountByStudent(studentId: string): Promise<PortalAccount | null>;
+  /**
+   * The guardian's door alone, in its own transaction (OOC-72): the same
+   * rules as the guardian half of `provision`, for a file whose own account
+   * already exists. `account` is the guardian's account when it reaches the
+   * file (`linked`, `already_linked`), so a pending activation can be sent
+   * again.
+   */
+  openGuardianAccess(request: PortalGuardianAccessRequest): Promise<{ outcome: GuardianAccessOutcome; account: PortalAccount | null }>;
+  /** A minor whose live guardian has no consent on record (OOC-72). */
+  guardianConsentPending(studentId: string): Promise<boolean>;
   /** Only a `student` account, not banned, with at least one live file linked
    * — an account nobody's file points at never signs in to the portal. */
   findAccountByIdentifier(identifier: PortalIdentifier): Promise<PortalAccount | null>;

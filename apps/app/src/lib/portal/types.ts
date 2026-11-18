@@ -385,6 +385,19 @@ export interface PortalProfile {
   lastName: string
 }
 
+/**
+ * The guardian's consent for the profile shown (OOC-72). `canAccept`: the
+ * signed-in account is the guardian on file and the consent is pending — the
+ * portal opens the profile on the consent text. `not_required` for a student
+ * of age.
+ */
+export interface GuardianConsentView {
+  state: 'accepted' | 'pending' | 'not_required'
+  canAccept: boolean
+  /** The text version printed next to the box and sent back on accept. */
+  version: string
+}
+
 export interface PortalSession {
   /** The profile shown, and every profile of the account — two or more only for a guardian. */
   profileId: string
@@ -392,6 +405,7 @@ export interface PortalSession {
   student: Student
   /** The pass mark a final grade is compared with (`platform_settings`, OOC-41); null when it could not be read. */
   passingGrade: number | null
+  guardianConsent: GuardianConsentView
   enrollments: Enrollment[]
   requests: StudentRequest[]
   procedures: ProcedureCatalogItem[]

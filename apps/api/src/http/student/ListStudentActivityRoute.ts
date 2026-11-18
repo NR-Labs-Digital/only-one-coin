@@ -33,6 +33,7 @@ const ActivityResponseSchema = z.object({
         "student_updated",
         "guardian_added",
         "guardian_updated",
+        "guardian_consent_accepted",
         "enrollment_created",
         "payment_approved",
         "payment_rejected",

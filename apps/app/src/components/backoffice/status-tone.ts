@@ -86,6 +86,7 @@ export const auditTone: Record<AuditAction, Tone> = {
   student_updated: 'info',
   guardian_added: 'info',
   guardian_updated: 'info',
+  guardian_consent_accepted: 'success',
   enrollment_created: 'info',
   payment_approved: 'success',
   payment_rejected: 'danger',

@@ -1,4 +1,4 @@
-import { auditLog, classGroups, enrollments, students } from "@ooc/db";
+import { auditLog, classGroups, consents, enrollments, guardians, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { CURRENT_CLASS_GROUP_STATUSES } from "@/infra/persistence/enrollment/ListEnrollmentsQuery.js";
@@ -128,6 +128,8 @@ export interface StudentDirectoryFilters {
   status?: DirectoryStatus;
   /** Only students under 18 today. */
   minor?: boolean;
+  /** Only minors whose guardian has not accepted the consent (OOC-72). */
+  consentPending?: boolean;
   sort?: "newest" | "oldest";
   /** 1-based. */
   page?: number;
@@ -141,9 +143,9 @@ export interface StudentDirectoryPage {
   pageSize: number;
   /**
    * How many students the search reaches per tab and chip, ignoring the tab
-   * and the age filter themselves — so each says what choosing it would give.
+   * and the chips themselves — so each says what choosing it would give.
    */
-  counts: { all: number; active: number; former: number; noEnrollment: number; minors: number };
+  counts: { all: number; active: number; former: number; noEnrollment: number; minors: number; consentPending: number };
 }
 
 /** Rows per round trip of an export — one screen is 15, the whole base 30k+. */
@@ -230,6 +232,11 @@ export class ListStudentsQuery {
       status === "active" ? isActive : status === "former" ? isFormer : status === "no_enrollment" ? isNoEnrollment : sql`true`;
     // Under 18 today, in UTC — the same rule `isMinor` applies in JS.
     const isMinorSql = sql`${students.birthDate} > ((now() at time zone 'UTC')::date - interval '18 years')`;
+    // `guardianConsentStateOf` = pending, in SQL (OOC-72): a minor whose live
+    // guardian has no consent on record — or who has no guardian at all.
+    const consentPendingSql = sql`(${isMinorSql} and not exists (
+      select 1 from ${guardians} g join ${consents} c on c."guardian_id" = g."id"
+       where g."student_id" = ${students.id} and g."deleted_at" is null))`;
 
     const base: SQL[] = [
       isNull(students.deletedAt),
@@ -250,6 +257,7 @@ export class ListStudentsQuery {
 
     const narrowed: SQL[] = [...base, tabSql(filters.status)];
     if (filters.minor) narrowed.push(isMinorSql);
+    if (filters.consentPending) narrowed.push(consentPendingSql);
 
     const columns = {
       id: students.id,
@@ -271,12 +279,12 @@ export class ListStudentsQuery {
       lastEnrollmentAt: stats.lastAt,
     };
 
-    return { stats, base, narrowed, columns, tabSql, isMinorSql, isActive, isFormer, isNoEnrollment };
+    return { stats, base, narrowed, columns, tabSql, isMinorSql, consentPendingSql, isActive, isFormer, isNoEnrollment };
   }
 
   async directory(filters: StudentDirectoryFilters = {}): Promise<StudentDirectoryPage> {
     const page = Math.max(1, Math.floor(filters.page ?? 1));
-    const { stats, base, narrowed, columns, tabSql, isMinorSql, isActive, isFormer, isNoEnrollment } =
+    const { stats, base, narrowed, columns, tabSql, isMinorSql, consentPendingSql, isActive, isFormer, isNoEnrollment } =
       this.directoryScope(filters);
 
     const rowsPromise = this.db
@@ -295,14 +303,16 @@ export class ListStudentsQuery {
     // One pass for the total and every tab and chip: those ignore the tab and
     // the age filter (they are the choice), the total honours them.
     const minorFilterSql = filters.minor ? isMinorSql : sql`true`;
+    const consentFilterSql = filters.consentPending ? consentPendingSql : sql`true`;
     const countsPromise = this.db
       .select({
-        total: sql<number>`count(*) filter (where ${tabSql(filters.status)} and ${minorFilterSql})`.mapWith(Number),
+        total: sql<number>`count(*) filter (where ${tabSql(filters.status)} and ${minorFilterSql} and ${consentFilterSql})`.mapWith(Number),
         all: sql<number>`count(*)`.mapWith(Number),
         active: sql<number>`count(*) filter (where ${isActive})`.mapWith(Number),
         former: sql<number>`count(*) filter (where ${isFormer})`.mapWith(Number),
         noEnrollment: sql<number>`count(*) filter (where ${isNoEnrollment})`.mapWith(Number),
         minors: sql<number>`count(*) filter (where ${isMinorSql})`.mapWith(Number),
+        consentPending: sql<number>`count(*) filter (where ${consentPendingSql})`.mapWith(Number),
       })
       .from(students)
       .leftJoin(stats, eq(stats.studentId, students.id))
@@ -323,6 +333,7 @@ export class ListStudentsQuery {
         former: counted?.former ?? 0,
         noEnrollment: counted?.noEnrollment ?? 0,
         minors: counted?.minors ?? 0,
+        consentPending: counted?.consentPending ?? 0,
       },
     };
   }
@@ -358,6 +369,7 @@ export class ListStudentsQuery {
       metadata: {
         status: filters.status ?? "all",
         minor: filters.minor === true,
+        consentPending: filters.consentPending === true,
         searched: Boolean(filters.q?.trim()),
         sort: filters.sort ?? "newest",
         rowCount,

@@ -192,6 +192,7 @@
       "col_status": "Status",
       "col_courses": "Active courses",
       "minor": "Minor",
+      "consent_pending": "Consent pending",
       "empty_title": "No results",
       "empty_body": "Try another name, ID or email, or clear the age filter.",
       "page_prev": "Previous",
@@ -291,6 +292,7 @@
         "student_updated": "Student details edited",
         "guardian_added": "Guardian added",
         "guardian_updated": "Guardian details edited",
+        "guardian_consent_accepted": "Consent accepted by the guardian",
         "student_directory_exported": "Student directory exported",
         "enrollment_created": "Enrollment opened from the panel",
         "enrollment_moved": "Enrollment moved to another class group",
@@ -503,7 +505,9 @@
       "consent_given": "Consent signed",
       "consent_detail": "Version {version} · {date} · IP {ip}",
       "consent_missing": "Consent missing",
-      "consent_missing_detail": "The student is a minor and the guardian has not accepted the current text yet.",
+      "consent_missing_detail": "The student is a minor and the guardian has not accepted the current text yet. They accept it when signing in to the portal with their e-mail; \"Send portal access\" sends them their access.",
+      "consent_not_required": "Not required",
+      "consent_not_required_detail": "The student is of age: guardian consent is only for minors.",
       "no_guardian_title": "No guardian on file",
       "no_guardian_body": "The student is of age, so no guardian is required.",
       "no_guardian_minor_body": "The student is a minor with no guardian on file. Add one: consent is the guardian's to give.",
@@ -564,6 +568,13 @@
         "email_conflict": "This file's e-mail already belongs to another account, so we did not create the access. The student's e-mail has to be corrected before it is sent again.",
         "activation_resent": "We re-sent the link to create the password.",
         "reset_sent": "We sent the student a link to create a new password."
+      },
+      "portal_access_guardian_outcome": {
+        "created": "We also created the guardian's account and sent them their link: they accept the consent when signing in.",
+        "linked": "The account the guardian already had now sees this file: they accept the consent when signing in.",
+        "activation_resent": "We re-sent the guardian the link to create their password: they accept the consent when signing in.",
+        "active": "The guardian already has a password: the consent is waiting for them at their next sign-in.",
+        "conflict": "The guardian's e-mail belongs to a staff or blocked account, so we did not open access. Correct the guardian's e-mail."
       },
       "portal_access_error": {
         "no_confirmed_enrollment": "Portal access is only sent to students with a confirmed enrollment.",
@@ -2146,6 +2157,7 @@
       "student_updated": "Student data edited",
       "guardian_added": "Guardian added",
       "guardian_updated": "Guardian data edited",
+      "guardian_consent_accepted": "Consent accepted by the guardian",
       "enrollment_created": "Enrollment opened from the panel",
       "enrollment_moved": "Enrollment moved to another class group",
       "payment_approved": "Payment approved",

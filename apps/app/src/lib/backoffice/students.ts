@@ -15,7 +15,7 @@ export interface StudentDirectoryPage {
   page: number
   pageSize: number
   /** Per tab and chip, over the search alone — what choosing each would give. */
-  counts: { all: number; active: number; former: number; noEnrollment: number; minors: number }
+  counts: { all: number; active: number; former: number; noEnrollment: number; minors: number; consentPending: number }
 }
 
 /**

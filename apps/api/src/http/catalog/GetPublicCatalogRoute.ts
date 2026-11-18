@@ -1,4 +1,4 @@
-import { LandingCourseKeySchema } from "@ooc/domain";
+import { CURRENT_CONSENT_VERSION, LandingCourseKeySchema } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
@@ -81,7 +81,7 @@ const PROVISIONAL_ACCOUNTS = [
 // Payments works to (OOC-41), promised to the student on the last step.
 const PROVISIONAL_SETTINGS = {
   maxReceiptBytes: 8 * 1024 * 1024,
-  consentVersion: "v1",
+  consentVersion: CURRENT_CONSENT_VERSION,
 };
 
 export const getPublicCatalogRoute = RouteBuilder.get("/catalog")

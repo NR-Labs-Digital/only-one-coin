@@ -33,9 +33,9 @@ export const exportStudentsRoute = RouteBuilder.get("/students/export")
   .query(ExportStudentsQuerySchema)
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { q, status, minor, sort } = request.query;
+    const { q, status, minor, consent, sort } = request.query;
     const result = await container.queries.listStudents.exportDirectory(
-      { q, status: status === "all" ? undefined : status, minor: minor === "true", sort },
+      { q, status: status === "all" ? undefined : status, minor: minor === "true", consentPending: consent === "pending", sort },
       request.currentUser!.id,
     );
 

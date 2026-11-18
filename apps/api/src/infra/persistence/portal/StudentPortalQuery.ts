@@ -17,6 +17,9 @@ import {
 } from "@ooc/db";
 import {
   classroomLinksOf,
+  guardianConsentStateOf,
+  isGuardianAccount,
+  type GuardianConsentState,
   PROCEDURE_KINDS,
   type ClassroomLink,
   type ProcedureKind,
@@ -105,6 +108,9 @@ export interface PortalOverview {
   enrollments: PortalEnrollmentRow[];
   procedures: PortalProcedureRow[];
   requests: PortalProcedureRequestRow[];
+  /** The guardian's consent for this profile (OOC-72), and whether the
+   * signed-in account is the guardian who may give it. */
+  guardianConsent: { state: GuardianConsentState; canAccept: boolean };
 }
 
 /**
@@ -196,12 +202,16 @@ export class StudentPortalQuery {
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));
 
-    const [paymentsByEnrollment, prices, requests, settings] = await Promise.all([
+    const [paymentsByEnrollment, prices, requests, settings, account] = await Promise.all([
       this.paymentsOf(rows.map((row) => row.id)),
       this.currentPrices(),
       this.requestsOf(fileIds),
       this.db.select({ passingGrade: platformSettings.passingGrade }).from(platformSettings).limit(1),
+      this.db.execute<{ email: string }>(sql`select "email" from "user" where "id" = ${userId} limit 1`),
     ]);
+
+    const consentState = guardianConsentStateOf({ birthDate: student.birthDate, consentGiven: Boolean(student.guardian?.consent) });
+    const accountEmail = account.rows[0]?.email ?? "";
 
     // Blocked by a request that carries money or is paid; one still waiting for
     // its receipt is the same form picked up again.
@@ -221,6 +231,10 @@ export class StudentPortalQuery {
       profiles: profiles.map(({ id, firstName, lastName }) => ({ id, firstName, lastName })),
       student,
       passingGrade: settings[0]?.passingGrade ?? null,
+      guardianConsent: {
+        state: consentState,
+        canAccept: consentState === "pending" && isGuardianAccount(student.guardian?.email ?? null, accountEmail),
+      },
       procedures,
       requests: requests.map(({ enrollmentId: _enrollmentId, ...request }) => request),
       enrollments: rows.map((row): PortalEnrollmentRow => {

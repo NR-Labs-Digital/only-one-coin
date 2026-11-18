@@ -12,6 +12,8 @@ export interface StudentDirectoryQuery {
   /** The tab (OOC-116). Opens on `active`: who studies now. */
   status: StudentDirectoryTab
   minor: boolean
+  /** Only minors whose guardian has not accepted the consent (OOC-72). */
+  consentPending: boolean
 }
 
 export type StudentDirectoryTab = 'active' | 'former' | 'no_enrollment' | 'all'
@@ -51,6 +53,7 @@ export function parseStudentDirectoryQuery(
     q: q.length >= MIN_SEARCH_LENGTH && q.length <= MAX_SEARCH_LENGTH ? q : '',
     status: STUDENT_DIRECTORY_TABS.find((tab) => tab === status) ?? 'active',
     minor: first(params.minor) === 'true',
+    consentPending: first(params.consent) === 'pending',
   }
 }
 
@@ -61,5 +64,6 @@ export function studentDirectorySearchParams(query: StudentDirectoryQuery): URLS
   if (query.q) search.set('q', query.q)
   if (query.status !== 'active') search.set('status', query.status)
   if (query.minor) search.set('minor', 'true')
+  if (query.consentPending) search.set('consent', 'pending')
   return search
 }

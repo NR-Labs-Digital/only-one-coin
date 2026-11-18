@@ -121,6 +121,22 @@ export { GuardianRequiredForMinorError, StudentAlreadyRegisteredError, StudentNo
 export { UpdateStudentUseCase, type UpdateStudentInput } from "./student/UpdateStudentUseCase.js";
 export { SaveGuardianUseCase, type SaveGuardianInput } from "./student/SaveGuardianUseCase.js";
 export {
+  CURRENT_CONSENT_VERSION,
+  guardianConsentStateOf,
+  isGuardianAccount,
+  type GuardianConsentState,
+} from "./student/guardianConsent.js";
+export type {
+  GuardianConsentSubject,
+  IGuardianConsentRepository,
+  NewGuardianConsent,
+} from "./student/GuardianConsentRepository.js";
+export {
+  AcceptGuardianConsentUseCase,
+  type AcceptGuardianConsentInput,
+  type AcceptGuardianConsentOutcome,
+} from "./student/AcceptGuardianConsentUseCase.js";
+export {
   RegisterStudentUseCase,
   type RegisterStudentInput,
   type RegisterStudentOutput,
@@ -814,6 +830,8 @@ export type {
   PortalProfile,
 } from "./identity/portal/PortalAccess.js";
 export type {
+  GuardianAccessOutcome,
+  PortalGuardianAccessRequest,
   IPortalAccessRepository,
   IPortalLinkBuilder,
   IPortalPasswordSetter,
@@ -826,7 +844,7 @@ export { ResolvePortalSignInEmailUseCase } from "./identity/portal/ResolvePortal
 export { RequestPortalPasswordResetUseCase } from "./identity/portal/RequestPortalPasswordResetUseCase.js";
 export { CompletePortalAccessUseCase } from "./identity/portal/CompletePortalAccessUseCase.js";
 export { IssuePortalAccessUseCase } from "./identity/portal/IssuePortalAccessUseCase.js";
-export type { IssuePortalAccessOutcome } from "./identity/portal/IssuePortalAccessUseCase.js";
+export type { IssuePortalAccessOutcome, IssueGuardianAccessOutcome } from "./identity/portal/IssuePortalAccessUseCase.js";
 export {
   EMAIL_VERIFICATION_CODE_TTL_MINUTES,
   EMAIL_VERIFICATION_MAX_ATTEMPTS,

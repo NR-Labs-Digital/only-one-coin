@@ -3,6 +3,7 @@ import {
   academicPeriods,
   auditLog,
   classGroups,
+  consents,
   courses,
   enrollments,
   guardianPortalLinks,
@@ -22,6 +23,7 @@ import type { Db } from "@/infra/db/client.js";
 import { insertPasswordlessUser, upsertCredentialPassword } from "@/infra/auth/credentialAccount.js";
 import { profilesOfAccount } from "./accountProfiles.js";
 import { DrizzlePortalAccessRepository } from "./DrizzlePortalAccessRepository.js";
+import { DrizzleGuardianConsentRepository } from "./DrizzleGuardianConsentRepository.js";
 import { provisionPortalAccount } from "./provisionPortalAccount.js";
 import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
@@ -537,6 +539,98 @@ describe("account profiles (OOC-147)", () => {
 
       expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(lucia))!.userId)).toEqual(["Lucia"]);
       expect(await reachedFirstNames(tx, (await repo.findAccountByStudent(mateo))!.userId)).toEqual(["Mateo"]);
+    });
+  });
+});
+
+describe("the guardian's consent (OOC-72)", () => {
+  /** The guardian's door alone, as "send portal access" opens it. */
+  const guardianDoor = (studentId: string) => {
+    const { guardian, ...rest } = withGuardian(studentId);
+    return { studentId: rest.studentId, actorId: rest.actorId, at: rest.at, guardian: guardian! };
+  };
+  const guardianRowId = async (tx: Tx, studentId: string) =>
+    (await tx.select({ id: guardians.id }).from(guardians).where(eq(guardians.studentId, studentId)))[0]!.id;
+
+  it("is pending for a minor whose guardian has not accepted, and never for an adult", async () => {
+    await rolledBack(async (tx, repo) => {
+      const child = await insertChild(tx, "Lucia", "70000001");
+      const adult = await insertStudent(tx, { nationalId: "70000009", email: "adulto@gmail.com", birthDate: ADULT_BIRTH });
+      await insertGuardian(tx, adult, "tia@hotmail.com");
+      const orphan = await insertStudent(tx, { nationalId: "70000008", email: "solo@gmail.com", birthDate: MINOR_BIRTH });
+
+      expect(await repo.guardianConsentPending(child)).toBe(true);
+      expect(await repo.guardianConsentPending(adult)).toBe(false);
+      // No guardian: nobody to let in — the file flags it on its own.
+      expect(await repo.guardianConsentPending(orphan)).toBe(false);
+
+      await tx.insert(consents).values({ guardianId: await guardianRowId(tx, child), version: "v1", acceptedAt: new Date(), ip: "127.0.0.1" });
+      expect(await repo.guardianConsentPending(child)).toBe(false);
+    });
+  });
+
+  it("opens the guardian's door on a file whose own account already exists", async () => {
+    await rolledBack(async (tx, repo) => {
+      const child = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, provisioning(child));
+      expect(await userIdByEmail(tx, GUARDIAN_EMAIL)).toBeNull();
+
+      expect(await repo.openGuardianAccess(guardianDoor(child))).toEqual({ outcome: "created", account: null });
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+      expect(await reachedFirstNames(tx, guardianId)).toEqual(["Lucia"]);
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+
+      // Again: already there, and the account comes back so its activation can be re-sent.
+      expect(await repo.openGuardianAccess(guardianDoor(child))).toEqual({
+        outcome: "already_linked",
+        account: expect.objectContaining({ userId: guardianId, hasPassword: false }),
+      });
+      expect(await mailsTo(tx, GUARDIAN_EMAIL)).toEqual(["portal_credentials"]);
+    });
+  });
+
+  it("joins the guardian's existing account and reports a staff address", async () => {
+    await rolledBack(async (tx, repo) => {
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      const mateo = await insertChild(tx, "Mateo", "70000002");
+      await provisionPortalAccount(tx, provisioning(mateo));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+
+      expect(await repo.openGuardianAccess(guardianDoor(mateo))).toMatchObject({ outcome: "linked", account: { userId: guardianId } });
+      expect(await reachedFirstNames(tx, guardianId)).toEqual(["Lucia", "Mateo"]);
+
+      const staffChild = await insertChild(tx, "Sofia", "70000003", "coordinacion@onlyonecoin.edu.pe");
+      await insertPasswordlessUser(tx, { email: "coordinacion@onlyonecoin.edu.pe", name: "Coordinación", role: "admin" });
+      expect(await repo.openGuardianAccess(guardianDoor(staffChild))).toEqual({ outcome: "conflict", account: null });
+    });
+  });
+
+  it("lets only the guardian's account read the consent of the profile it names, exactly", async () => {
+    await rolledBack(async (tx) => {
+      const consentsRepo = new DrizzleGuardianConsentRepository(tx as unknown as Db);
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002", "otro.papa@hotmail.com");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+
+      expect(await consentsRepo.findSubject(guardianId, lucia)).toEqual({
+        studentId: lucia,
+        birthDate: MINOR_BIRTH,
+        guardian: { id: await guardianRowId(tx, lucia), email: GUARDIAN_EMAIL },
+        consentGiven: false,
+        accountEmail: GUARDIAN_EMAIL,
+      });
+      // Someone else's child: no fallback to the default profile.
+      expect(await consentsRepo.findSubject(guardianId, mateo)).toBeNull();
+
+      const guardianRow = await guardianRowId(tx, lucia);
+      const consent = { guardianId: guardianRow, version: "v1", acceptedAt: new Date(), ip: "200.48.1.1" };
+      expect(await consentsRepo.appendIfAbsent(consent)).toBe(true);
+      expect(await consentsRepo.appendIfAbsent(consent)).toBe(false);
+      expect(await tx.select({ ip: consents.ip }).from(consents).where(eq(consents.guardianId, guardianRow))).toEqual([{ ip: "200.48.1.1" }]);
+      expect((await consentsRepo.findSubject(guardianId, lucia))?.consentGiven).toBe(true);
     });
   });
 });

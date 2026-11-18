@@ -298,7 +298,7 @@
       "consent_title": "Consentimiento del apoderado",
       "consent_accepted": "Aceptado el {date}",
       "consent_version": "Versión {version}",
-      "consent_none": "Pendiente de registro.",
+      "consent_none": "Pendiente: tu apoderado lo acepta al entrar al portal con su correo.",
       "edit_note": "Los datos con candado solo los corrige la coordinación — escríbenos por WhatsApp.",
       "locked_hint": "Este dato solo lo corrige la coordinación.",
       "preferences_title": "Preferencias",
@@ -312,6 +312,18 @@
       "heading": "Perfiles de tu cuenta",
       "trigger_label": "Perfil de {name}. Cambiar de perfil",
       "current": "Perfil actual"
+    },
+    "guardian_consent": {
+      "title": "Consentimiento del apoderado",
+      "body": "Como apoderado de {name}, necesitamos tu autorización para el tratamiento de sus datos personales (Ley 29733) antes de mostrarte su información en el portal.",
+      "version_note": "Texto de consentimiento versión {version}. Guardamos la fecha, la hora y la dirección IP de tu aceptación.",
+      "submit": "Acepto",
+      "submitting": "Guardando…",
+      "error_generic": "No pudimos guardar tu aceptación. Inténtalo de nuevo en unos minutos.",
+      "error_outdated": "El texto del consentimiento cambió. Recarga la página para leer el vigente.",
+      "footnote": "Si tienes otros hijos en el portal, puedes cambiar de perfil desde la parte de arriba.",
+      "notice_title": "Falta el consentimiento de tu apoderado",
+      "notice_body": "Tu apoderado debe entrar al portal con su correo y aceptarlo. Mientras tanto, tus clases y pagos siguen igual."
     }
   }
 }

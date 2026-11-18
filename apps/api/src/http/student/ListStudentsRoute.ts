@@ -13,6 +13,8 @@ export const ListStudentsQuerySchema = z.object({
   q: z.string().trim().min(2).max(100).optional(),
   status: z.enum(["active", "former", "no_enrollment", "all"]).default("active"),
   minor: z.enum(["true"]).optional(),
+  /** Only minors whose guardian has not accepted the consent (OOC-72). */
+  consent: z.enum(["pending"]).optional(),
   sort: z.enum(["newest", "oldest"]).default("newest"),
 });
 
@@ -51,6 +53,7 @@ const StudentDirectoryResponseSchema = z.object({
     former: z.number().int(),
     noEnrollment: z.number().int(),
     minors: z.number().int(),
+    consentPending: z.number().int(),
   }),
 });
 
@@ -78,12 +81,13 @@ export const listStudentsRoute = RouteBuilder.get("/students")
   .response(200, StudentDirectoryResponseSchema)
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { page, q, status, minor, sort } = request.query;
+    const { page, q, status, minor, consent, sort } = request.query;
     const result = await container.queries.listStudents.directory({
       page,
       q,
       status: status === "all" ? undefined : status,
       minor: minor === "true",
+      consentPending: consent === "pending",
       sort,
     });
 

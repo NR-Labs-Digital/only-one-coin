@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logout } from '../actions'
 import { selectProfile } from './profile-actions'
+import { acceptGuardianConsent } from './consent-actions'
 import { getPortalView } from '@/lib/portal/session'
 import { getFeatureFlags, requireFeature } from '@/lib/feature-flags/server'
 import type { FeatureFlagKey } from '@/lib/feature-flags/registry'
@@ -10,6 +11,7 @@ import { initials } from '@/lib/portal/format'
 import type { NavGroup } from '@/components/portal/portal-nav'
 import { PortalShell } from '@/components/portal/portal-shell'
 import type { NoticeItem } from '@/components/portal/notifications-bell'
+import { GuardianConsentGate, GuardianConsentNotice } from '@/components/portal/guardian-consent'
 
 export default async function PortalLayout({
   children,
@@ -27,7 +29,7 @@ export default async function PortalLayout({
   await requireFeature('portal')
   const flags = await getFeatureFlags('portal')
 
-  const { student, notifications, profiles, profileId } = await getPortalView()
+  const { student, notifications, profiles, profileId, guardianConsent } = await getPortalView()
   const fullName = `${student.firstName} ${student.lastName}`
   const monogram = initials(student.firstName, student.lastName)
 
@@ -145,7 +147,23 @@ export default async function PortalLayout({
       currentProfileId={profileId}
       selectProfileAction={selectProfile}
     >
-      {children}
+      {/* The guardian's consent (OOC-72). The guardian's account opens a
+          pending child on the consent text, in place of every screen of that
+          profile; the minor's own account only reads a notice — nothing is
+          blocked for the student. */}
+      {guardianConsent.canAccept ? (
+        <GuardianConsentGate
+          childFirstName={student.firstName}
+          profileId={profileId}
+          version={guardianConsent.version}
+          acceptAction={acceptGuardianConsent}
+        />
+      ) : (
+        <>
+          {guardianConsent.state === 'pending' && student.guardian && <GuardianConsentNotice />}
+          {children}
+        </>
+      )}
     </PortalShell>
   )
 }

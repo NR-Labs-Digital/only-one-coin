@@ -192,6 +192,7 @@
       "col_status": "Status",
       "col_courses": "Cursos ativos",
       "minor": "Menor de idade",
+      "consent_pending": "Consentimento pendente",
       "empty_title": "Nenhum resultado",
       "empty_body": "Tente outro nome, documento ou e-mail, ou remova o filtro de idade.",
       "page_prev": "Anteriores",
@@ -291,6 +292,7 @@
         "student_updated": "Dados do aluno editados",
         "guardian_added": "Responsável adicionado",
         "guardian_updated": "Dados do responsável editados",
+        "guardian_consent_accepted": "Consentimento aceito pelo responsável",
         "student_directory_exported": "Cadastro de alunos exportado",
         "enrollment_created": "Matrícula aberta pelo painel",
         "enrollment_moved": "Matrícula movida de turma",
@@ -503,7 +505,9 @@
       "consent_given": "Consentimento assinado",
       "consent_detail": "Versão {version} · {date} · IP {ip}",
       "consent_missing": "Falta consentimento",
-      "consent_missing_detail": "O aluno é menor de idade e o responsável ainda não aceitou o texto vigente.",
+      "consent_missing_detail": "O aluno é menor de idade e o responsável ainda não aceitou o texto vigente. Ele aceita ao entrar no portal com o e-mail dele; «Enviar acesso ao portal» manda o acesso para ele.",
+      "consent_not_required": "Não exigido",
+      "consent_not_required_detail": "O aluno é maior de idade: o consentimento do responsável é só para menores.",
       "no_guardian_title": "Sem responsável cadastrado",
       "no_guardian_body": "O aluno é maior de idade, então não precisa de responsável.",
       "no_guardian_minor_body": "O aluno é menor de idade e não tem responsável cadastrado. Adicione-o: quem dá o consentimento é o responsável.",
@@ -564,6 +568,13 @@
         "email_conflict": "O e-mail desta ficha já pertence a outra conta, então não criamos o acesso. É preciso corrigir o e-mail do aluno antes de enviá-lo de novo.",
         "activation_resent": "Reenviamos o link para criar a senha.",
         "reset_sent": "Enviamos um link para o aluno criar uma senha nova."
+      },
+      "portal_access_guardian_outcome": {
+        "created": "Também criamos a conta do responsável e enviamos o link dele: ele aceita o consentimento ao entrar.",
+        "linked": "A conta que o responsável já tinha agora vê esta ficha: ele aceita o consentimento ao entrar.",
+        "activation_resent": "Reenviamos ao responsável o link para criar a senha: ele aceita o consentimento ao entrar.",
+        "active": "O responsável já tem senha: o consentimento espera por ele quando entrar no portal.",
+        "conflict": "O e-mail do responsável pertence a uma conta da equipe ou bloqueada, então não abrimos acesso. Corrija o e-mail do responsável."
       },
       "portal_access_error": {
         "no_confirmed_enrollment": "O acesso ao portal só é enviado a alunos com matrícula confirmada.",
@@ -2146,6 +2157,7 @@
       "student_updated": "Dados do aluno editados",
       "guardian_added": "Responsável adicionado",
       "guardian_updated": "Dados do responsável editados",
+      "guardian_consent_accepted": "Consentimento aceito pelo responsável",
       "enrollment_created": "Matrícula aberta pelo painel",
       "enrollment_moved": "Matrícula movida de turma",
       "payment_approved": "Pagamento aprovado",
