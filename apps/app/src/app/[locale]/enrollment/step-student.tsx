@@ -10,13 +10,18 @@ import type {
 } from '@/lib/enrollment/types'
 import {
   courseById,
+  emptyDraft,
   hasErrors,
   isMinor,
+  lotConflict,
+  lotPeople,
+  personKey,
   validateGuardian,
   validateStudent,
 } from '@/lib/enrollment/checkout'
 import {
   Card,
+  ChoiceCard,
   FieldGroup,
   GhostButton,
   Note,
@@ -72,12 +77,16 @@ export function StepStudent({
   setDraft,
   onBack,
   onContinue,
+  onAddCourse,
 }: {
   catalog: PublicCatalog
   draft: CheckoutDraft
   setDraft: (next: (prev: CheckoutDraft) => CheckoutDraft) => void
   onBack: () => void
   onContinue: () => void
+  /** Settles this course into the lot and opens the next one (OOC-158).
+   * Absent when the lot is full. */
+  onAddCourse?: () => void
 }) {
   const t = useTranslations('enrollment')
   const [touched, setTouched] = useState(false)
@@ -97,7 +106,35 @@ export function StepStudent({
     [minor, draft.guardian],
   )
 
-  const ready = !hasErrors(studentErrors) && !hasErrors(guardianErrors)
+  /* A lot (OOC-158): the course being added is for somebody already in it —
+     their data is copied, never typed again — or for somebody new. */
+  const people = lotPeople(draft)
+  const reusing = draft.samePersonAs !== null
+  const conflict = lotConflict(draft)
+
+  const ready = !hasErrors(studentErrors) && !hasErrors(guardianErrors) && conflict === null
+
+  function pickPerson(index: number | null) {
+    setDraft((prev) => {
+      if (index !== null) {
+        const entry = prev.lot[index]
+        return entry ? { ...prev, samePersonAs: index, student: entry.student, guardian: entry.guardian } : prev
+      }
+      // Somebody new: the guardian is usually the same adult (a mother
+      // enrolling a second child), so their details come along — but the
+      // consent is for this child, and is given again.
+      const lastGuardian = [...prev.lot].reverse().find((entry) => entry.guardian.consentAccepted)?.guardian
+      const fresh = emptyDraft(prev.source)
+      return {
+        ...prev,
+        samePersonAs: null,
+        student: fresh.student,
+        guardian: lastGuardian ? { ...lastGuardian, consentAccepted: false } : fresh.guardian,
+      }
+    })
+    setTouched(false)
+    setLeft(new Set())
+  }
   /** A field's error shows once the reader leaves it, or once they try to
       move on — never while they are still typing the first letter of it. */
   const leave = (key: string) => () =>
@@ -116,6 +153,11 @@ export function StepStudent({
     if (ready) onContinue()
   }
 
+  function addCourse() {
+    setTouched(true)
+    if (ready) onAddCourse?.()
+  }
+
   const show = touched
   const errFor = (scope: 'student' | 'guardian') => (field: string, key: string | undefined) =>
     (touched || left.has(`${scope}.${field}`)) && key ? t(`error.${key}`) : undefined
@@ -130,192 +172,225 @@ export function StepStudent({
         subtitle={t('step.student.subtitle')}
       />
 
-      <Card className="p-5">
-        <AutoGrid min="15rem" gap="gap-4">
-          <FieldGroup
-            label={t('field.first_name')}
-            htmlFor="first-name"
-            onLeave={leave('student.firstName')}
-            error={sErr('firstName', studentErrors.firstName)}
-          >
-            <TextInput
-              id="first-name"
-              autoComplete="given-name"
-              value={draft.student.firstName}
-              invalid={Boolean(sErr('firstName', studentErrors.firstName))}
-              onChange={(e) => patchStudent({ firstName: e.target.value })}
+      {people.length > 0 && (
+        <Card className="p-5">
+          <p className="mb-3 text-sm font-semibold text-ink">{t('lot.who_title')}</p>
+          <AutoGrid min="14rem" gap="gap-3">
+            {people.map((person) => (
+              <ChoiceCard
+                key={person.index}
+                selected={draft.samePersonAs !== null && lotPeopleIndexOf(draft, draft.samePersonAs) === person.index}
+                onSelect={() => pickPerson(person.index)}
+                title={`${person.student.firstName} ${person.student.lastName}`}
+                meta={`${t(`national_id_type.${person.student.nationalIdType}`)} ${person.student.nationalId}`}
+              />
+            ))}
+            <ChoiceCard
+              selected={!reusing}
+              onSelect={() => pickPerson(null)}
+              title={t('lot.who_new')}
+              meta={t('lot.who_new_meta')}
             />
-          </FieldGroup>
+          </AutoGrid>
+          {reusing && course && studentErrors.minAge && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-red-600">
+              <CheckoutIcon name="alert" size={14} />
+              {t('error.min_age')}
+            </p>
+          )}
+        </Card>
+      )}
 
-          <FieldGroup
-            label={t('field.last_name')}
-            htmlFor="last-name"
-            onLeave={leave('student.lastName')}
-            error={sErr('lastName', studentErrors.lastName)}
-            hint={t('step.student.full_name_hint')}
-          >
-            <TextInput
-              id="last-name"
-              autoComplete="family-name"
-              value={draft.student.lastName}
-              invalid={Boolean(sErr('lastName', studentErrors.lastName))}
-              onChange={(e) => patchStudent({ lastName: e.target.value })}
-            />
-          </FieldGroup>
+      {conflict && <Note tone="danger">{t(`error.${conflict}`)}</Note>}
 
-          <FieldGroup label={t('field.national_id_type')} htmlFor="id-type">
-            <SelectInput
-              id="id-type"
-              value={draft.student.nationalIdType}
-              onChange={(e) =>
-                patchStudent({ nationalIdType: e.target.value as NationalIdType })
+      {!reusing && (
+        <Card className="p-5">
+          <AutoGrid min="15rem" gap="gap-4">
+            <FieldGroup
+              label={t('field.first_name')}
+              htmlFor="first-name"
+              onLeave={leave('student.firstName')}
+              error={sErr('firstName', studentErrors.firstName)}
+            >
+              <TextInput
+                id="first-name"
+                autoComplete="given-name"
+                value={draft.student.firstName}
+                invalid={Boolean(sErr('firstName', studentErrors.firstName))}
+                onChange={(e) => patchStudent({ firstName: e.target.value })}
+              />
+            </FieldGroup>
+
+            <FieldGroup
+              label={t('field.last_name')}
+              htmlFor="last-name"
+              onLeave={leave('student.lastName')}
+              error={sErr('lastName', studentErrors.lastName)}
+              hint={t('step.student.full_name_hint')}
+            >
+              <TextInput
+                id="last-name"
+                autoComplete="family-name"
+                value={draft.student.lastName}
+                invalid={Boolean(sErr('lastName', studentErrors.lastName))}
+                onChange={(e) => patchStudent({ lastName: e.target.value })}
+              />
+            </FieldGroup>
+
+            <FieldGroup label={t('field.national_id_type')} htmlFor="id-type">
+              <SelectInput
+                id="id-type"
+                value={draft.student.nationalIdType}
+                onChange={(e) =>
+                  patchStudent({ nationalIdType: e.target.value as NationalIdType })
+                }
+              >
+                {ID_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {t(`national_id_type.${type}`)}
+                  </option>
+                ))}
+              </SelectInput>
+            </FieldGroup>
+
+            <FieldGroup
+              label={t('field.national_id')}
+              htmlFor="national-id"
+              onLeave={leave('student.nationalId')}
+              error={sErr('nationalId', studentErrors.nationalId)}
+            >
+              <TextInput
+                id="national-id"
+                inputMode="numeric"
+                value={draft.student.nationalId}
+                invalid={Boolean(sErr('nationalId', studentErrors.nationalId))}
+                onChange={(e) => patchStudent({ nationalId: e.target.value })}
+              />
+            </FieldGroup>
+
+            <FieldGroup
+              label={t('field.phone')}
+              htmlFor="phone"
+              onLeave={leave('student.phone')}
+              error={sErr('phone', studentErrors.phone)}
+              hint={t('step.student.phone_hint')}
+            >
+              <PhoneField
+                id="phone"
+                value={draft.student.phone}
+                invalid={Boolean(sErr('phone', studentErrors.phone))}
+                onChange={(phone) => patchStudent({ phone })}
+              />
+            </FieldGroup>
+
+            <FieldGroup
+              label={t('field.birth_date')}
+              htmlFor="birth-date"
+              onLeave={leave('student.birthDate')}
+              error={sErr('birthDate', studentErrors.birthDate) ?? sErr('birthDate', studentErrors.minAge)}
+              hint={
+                course ? t('step.student.min_age_hint', { age: course.minAge }) : undefined
               }
             >
-              {ID_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {t(`national_id_type.${type}`)}
-                </option>
-              ))}
-            </SelectInput>
-          </FieldGroup>
-
-          <FieldGroup
-            label={t('field.national_id')}
-            htmlFor="national-id"
-            onLeave={leave('student.nationalId')}
-            error={sErr('nationalId', studentErrors.nationalId)}
-          >
-            <TextInput
-              id="national-id"
-              inputMode="numeric"
-              value={draft.student.nationalId}
-              invalid={Boolean(sErr('nationalId', studentErrors.nationalId))}
-              onChange={(e) => patchStudent({ nationalId: e.target.value })}
-            />
-          </FieldGroup>
-
-          <FieldGroup
-            label={t('field.phone')}
-            htmlFor="phone"
-            onLeave={leave('student.phone')}
-            error={sErr('phone', studentErrors.phone)}
-            hint={t('step.student.phone_hint')}
-          >
-            <PhoneField
-              id="phone"
-              value={draft.student.phone}
-              invalid={Boolean(sErr('phone', studentErrors.phone))}
-              onChange={(phone) => patchStudent({ phone })}
-            />
-          </FieldGroup>
-
-          <FieldGroup
-            label={t('field.birth_date')}
-            htmlFor="birth-date"
-            onLeave={leave('student.birthDate')}
-            error={sErr('birthDate', studentErrors.birthDate) ?? sErr('birthDate', studentErrors.minAge)}
-            hint={
-              course ? t('step.student.min_age_hint', { age: course.minAge }) : undefined
-            }
-          >
-            <BirthDateField
-              id="birth-date"
-              value={draft.student.birthDate}
-              invalid={Boolean(
-                sErr('birthDate', studentErrors.birthDate) ?? sErr('birthDate', studentErrors.minAge),
-              )}
-              onChange={(birthDate) => patchStudent({ birthDate })}
-            />
-          </FieldGroup>
-
-          <FieldGroup
-            label={t('field.email')}
-            htmlFor="email"
-            onLeave={leave('student.email')}
-            error={sErr('email', studentErrors.email)}
-            hint={t('step.student.email_hint')}
-          >
-            <span className="flex gap-2">
-              <TextInput
-                id="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCapitalize="none"
-                spellCheck={false}
-                aria-describedby="email-suffix"
-                className="min-w-0 flex-1"
-                value={gmailUsernameOf(draft.student.email)}
-                invalid={Boolean(sErr('email', studentErrors.email))}
-                onChange={(e) => patchStudent({ email: gmailFromUsername(e.target.value) })}
+              <BirthDateField
+                id="birth-date"
+                value={draft.student.birthDate}
+                invalid={Boolean(
+                  sErr('birthDate', studentErrors.birthDate) ?? sErr('birthDate', studentErrors.minAge),
+                )}
+                onChange={(birthDate) => patchStudent({ birthDate })}
               />
-              <span
-                id="email-suffix"
-                className="flex shrink-0 items-center rounded-lg border border-line bg-sky-soft px-3 text-sm font-medium text-ink"
-              >
-                {GMAIL_SUFFIX}
+            </FieldGroup>
+
+            <FieldGroup
+              label={t('field.email')}
+              htmlFor="email"
+              onLeave={leave('student.email')}
+              error={sErr('email', studentErrors.email)}
+              hint={t('step.student.email_hint')}
+            >
+              <span className="flex gap-2">
+                <TextInput
+                  id="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-describedby="email-suffix"
+                  className="min-w-0 flex-1"
+                  value={gmailUsernameOf(draft.student.email)}
+                  invalid={Boolean(sErr('email', studentErrors.email))}
+                  onChange={(e) => patchStudent({ email: gmailFromUsername(e.target.value) })}
+                />
+                <span
+                  id="email-suffix"
+                  className="flex shrink-0 items-center rounded-lg border border-line bg-sky-soft px-3 text-sm font-medium text-ink"
+                >
+                  {GMAIL_SUFFIX}
+                </span>
               </span>
-            </span>
-          </FieldGroup>
+            </FieldGroup>
 
-          {/* One pair, always in its own row: region decides what city offers,
-              and the two read as one address line — an outer auto-fit column
-              could otherwise land them apart on a width neither expects. */}
-          <div className={fullRowClass}>
-            <AutoGrid min="10rem" gap="gap-4">
-              <FieldGroup
-                label={t('field.region')}
-                htmlFor="region"
-                onLeave={leave('student.region')}
-                error={sErr('region', studentErrors.region)}
-              >
-                <SelectInput
-                  id="region"
-                  value={draft.student.region ?? ''}
-                  invalid={Boolean(sErr('region', studentErrors.region))}
-                  onChange={(e) =>
-                    patchStudent({ region: e.target.value || null, city: '' })
-                  }
+            {/* One pair, always in its own row: region decides what city offers,
+                and the two read as one address line — an outer auto-fit column
+                could otherwise land them apart on a width neither expects. */}
+            <div className={fullRowClass}>
+              <AutoGrid min="10rem" gap="gap-4">
+                <FieldGroup
+                  label={t('field.region')}
+                  htmlFor="region"
+                  onLeave={leave('student.region')}
+                  error={sErr('region', studentErrors.region)}
                 >
-                  <option value="">{t('field.region_placeholder')}</option>
-                  {PERU_REGIONS.map((r) => (
-                    <option key={r.region} value={r.region}>
-                      {r.region}
-                    </option>
-                  ))}
-                </SelectInput>
-              </FieldGroup>
+                  <SelectInput
+                    id="region"
+                    value={draft.student.region ?? ''}
+                    invalid={Boolean(sErr('region', studentErrors.region))}
+                    onChange={(e) =>
+                      patchStudent({ region: e.target.value || null, city: '' })
+                    }
+                  >
+                    <option value="">{t('field.region_placeholder')}</option>
+                    {PERU_REGIONS.map((r) => (
+                      <option key={r.region} value={r.region}>
+                        {r.region}
+                      </option>
+                    ))}
+                  </SelectInput>
+                </FieldGroup>
 
-              <FieldGroup
-                label={t('field.city')}
-                htmlFor="city"
-                onLeave={leave('student.city')}
-                error={sErr('city', studentErrors.city)}
-              >
-                <SelectInput
-                  id="city"
-                  value={draft.student.city}
-                  invalid={Boolean(sErr('city', studentErrors.city))}
-                  disabled={cities.length === 0}
-                  onChange={(e) => patchStudent({ city: e.target.value })}
+                <FieldGroup
+                  label={t('field.city')}
+                  htmlFor="city"
+                  onLeave={leave('student.city')}
+                  error={sErr('city', studentErrors.city)}
                 >
-                  <option value="">
-                    {cities.length === 0
-                      ? t('field.city_needs_region')
-                      : t('field.region_placeholder')}
-                  </option>
-                  {cities.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
+                  <SelectInput
+                    id="city"
+                    value={draft.student.city}
+                    invalid={Boolean(sErr('city', studentErrors.city))}
+                    disabled={cities.length === 0}
+                    onChange={(e) => patchStudent({ city: e.target.value })}
+                  >
+                    <option value="">
+                      {cities.length === 0
+                        ? t('field.city_needs_region')
+                        : t('field.region_placeholder')}
                     </option>
-                  ))}
-                </SelectInput>
-              </FieldGroup>
-            </AutoGrid>
-          </div>
-        </AutoGrid>
-      </Card>
+                    {cities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </SelectInput>
+                </FieldGroup>
+              </AutoGrid>
+            </div>
+          </AutoGrid>
+        </Card>
+      )}
 
-      {minor && (
+      {minor && !reusing && (
         <Card className="p-5">
           <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
             <CheckoutIcon name="user" size={16} className="text-brand-blue" />
@@ -488,7 +563,20 @@ export function StepStudent({
         </Card>
       )}
 
-      {show && !ready && <Note tone="danger">{t('error.fix_fields')}</Note>}
+      {show && !ready && !conflict && <Note tone="danger">{t('error.fix_fields')}</Note>}
+
+      {/* Several courses, one receipt (OOC-158): the same student in another
+          course, or another child. Paid together at the next step. */}
+      {onAddCourse && (
+        <button
+          type="button"
+          onClick={addCourse}
+          className="flex w-full flex-col items-start gap-0.5 rounded-2xl border-2 border-dashed border-brand-blue/40 bg-white px-4 py-3.5 text-left transition hover:border-brand-blue hover:bg-sky-soft"
+        >
+          <span className="text-sm font-semibold text-brand-blue">{t('lot.add_course')}</span>
+          <span className="text-xs text-muted-foreground">{t('lot.add_course_hint')}</span>
+        </button>
+      )}
 
       <StepNav
         back={
@@ -505,4 +593,13 @@ export function StepStudent({
       </StepNav>
     </div>
   )
+}
+
+/** The lot index that stands for the person of `lot[index]` in the picker —
+ * the first entry that names them. */
+function lotPeopleIndexOf(draft: CheckoutDraft, index: number): number | null {
+  const entry = draft.lot[index]
+  if (!entry) return null
+  const key = personKey(entry.student)
+  return draft.lot.findIndex((other) => personKey(other.student) === key)
 }

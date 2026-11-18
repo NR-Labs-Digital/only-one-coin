@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { env } from '@/env'
 import type { CheckoutDraft, PublicCatalog } from '@/lib/enrollment/types'
-import { courseById, groupById } from '@/lib/enrollment/checkout'
+import { checkoutItems, courseById, groupById } from '@/lib/enrollment/checkout'
 import { scheduleLines } from '@/lib/enrollment/schedule'
 import { formatDate, type Locale } from '@/lib/format'
 import {
@@ -69,6 +69,8 @@ export function Submitted({
     : draft.student.email
 
   const steps = ['received', 'review', 'credentials'] as const
+  // Several courses, one receipt (OOC-158): every one of them is listed.
+  const items = checkoutItems(draft)
 
   return (
     <div className="flex flex-col gap-5">
@@ -132,7 +134,34 @@ export function Submitted({
         </ol>
       </Card>
 
-      {course && group && (
+      {items.length > 1 && (
+        <Card className="p-5">
+          <p className="mb-2 text-sm font-semibold text-ink">
+            {t('lot.submitted_summary', { count: items.length })}
+          </p>
+          <ul className="divide-y divide-line">
+            {items.map((item, index) => {
+              const itemCourse = courseById(catalog, item.course.courseId)
+              const itemGroup = groupById(catalog, item.course.classGroupId)
+              return (
+                <li key={index} className="py-2">
+                  <span className="block text-sm font-semibold text-ink">{itemCourse?.name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {[
+                      `${item.student.firstName} ${item.student.lastName}`,
+                      itemGroup ? t('lot.starts_on', { date: formatDate(itemGroup.startDate, locale) }) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
+
+      {items.length === 1 && course && group && (
         <Card className="p-5">
           <p className="mb-2 text-sm font-semibold text-ink">
             {t('submitted.summary_label')}

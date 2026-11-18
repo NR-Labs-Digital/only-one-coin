@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  checkoutTotalCents,
+  emptyDraft,
   fillTarget,
+  lotConflict,
+  lotPeople,
   resolvePrefill,
   resolveSource,
   whatsappAiArrivalQuery,
@@ -8,7 +12,7 @@ import {
   scheduleOptionsOnStartDate,
   startDatesOfCourse,
 } from './checkout'
-import type { CatalogClassGroup, PublicCatalog, WeeklySlot } from './types'
+import type { CatalogClassGroup, CheckoutDraft, PublicCatalog, WeeklySlot } from './types'
 
 const MWF: WeeklySlot[] = [
   { weekday: 'mon', startTime: '10:00', endTime: '11:30' },
@@ -188,5 +192,49 @@ describe('whatsappAiArrivalQuery (OOC-139)', () => {
 
   it('overwrites a src on the short link — the path says who sent it', () => {
     expect(whatsappAiArrivalQuery({ src: 'whatsapp' })).toEqual({ src: 'whatsapp_ai' })
+  })
+})
+
+describe('a lot — several courses, one receipt (OOC-158)', () => {
+  const lotCatalog = {
+    plans: [
+      { id: 'plan-en', courseId: 'course-en', name: 'Paquete', planPriceId: 'pp-en', amountCents: 25000, currency: 'PEN' },
+      { id: 'plan-fr', courseId: 'course-fr', name: 'Paquete', planPriceId: 'pp-fr', amountCents: 18000, currency: 'PEN' },
+    ],
+  } as unknown as PublicCatalog
+
+  function draftWith(lotCourses: string[], current: string, currentId = '71234567'): CheckoutDraft {
+    const base = emptyDraft()
+    const student = (nationalId: string) => ({ ...base.student, firstName: 'Ana', nationalId })
+    return {
+      ...base,
+      lot: lotCourses.map((courseId, index) => ({
+        course: { ...base.course, courseId, classGroupId: `group-${index}` },
+        student: student('71.234.567'),
+        guardian: base.guardian,
+        hold: { id: `hold-${index}`, classGroupId: `group-${index}`, expiresAt: '2026-11-18T12:00:00.000Z' },
+      })),
+      samePersonAs: null,
+      course: { ...base.course, courseId: current, classGroupId: 'group-current' },
+      student: student(currentId),
+    }
+  }
+
+  it('totals every plan price in force — never a discount', () => {
+    expect(checkoutTotalCents(lotCatalog, draftWith(['course-en'], 'course-fr'))).toBe(43000)
+    expect(checkoutTotalCents(lotCatalog, draftWith([], 'course-en'))).toBe(25000)
+  })
+
+  it('lists each person once, by document normalized as the server compares it', () => {
+    const draft = draftWith(['course-en', 'course-fr'], 'course-fr')
+    expect(lotPeople(draft).map((person) => person.index)).toEqual([0])
+  })
+
+  it('refuses the same person twice in a course, and a person typed in again', () => {
+    expect(lotConflict(draftWith(['course-en'], 'course-en'))).toBe('lot_same_course')
+    expect(lotConflict(draftWith(['course-en'], 'course-fr'))).toBe('lot_same_person')
+    expect(lotConflict({ ...draftWith(['course-en'], 'course-fr'), samePersonAs: 0 })).toBeNull()
+    expect(lotConflict(draftWith(['course-en'], 'course-fr', '70000001'))).toBeNull()
+    expect(lotConflict(draftWith([], 'course-en'))).toBeNull()
   })
 })

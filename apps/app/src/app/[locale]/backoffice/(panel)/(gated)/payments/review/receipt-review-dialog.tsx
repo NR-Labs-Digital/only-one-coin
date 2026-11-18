@@ -22,6 +22,7 @@ import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone, receiptStateTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
+import { LotBadge, LotEnrollments } from '../payment-lot'
 import {
   Dialog,
   DialogContent,
@@ -403,6 +404,7 @@ export function ReceiptReviewDialog({
                 {payment.overCapacity && (
                   <StatusBadge tone="warning" label={t('payment_over_capacity.badge')} />
                 )}
+                <LotBadge payment={payment} />
                 <span className="ml-auto flex items-center gap-1">
                   <CaseStepButton
                     icon="chevron-left"
@@ -434,6 +436,13 @@ export function ReceiptReviewDialog({
               <p className="border-b border-line bg-sky-soft px-5 py-3 text-sm text-ink">
                 {t('receipt_review.procedure_note')}
               </p>
+            )}
+
+            {/* A lot (OOC-158): everything the decision moves, before the receipt. */}
+            {payment.lot.length > 0 && (
+              <div className="border-b border-line px-5 py-4">
+                <LotEnrollments payment={payment} />
+              </div>
             )}
 
             {legend && (

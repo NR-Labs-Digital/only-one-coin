@@ -855,6 +855,10 @@
       "payment_under_review": "Receipt under review",
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
+      "lot_enrollment_received": "Enrollments received (several courses)",
+      "lot_payment_under_review": "Receipt for several courses under review",
+      "lot_payment_approved": "Payment for several courses approved",
+      "lot_payment_rejected": "Payment for several courses rejected",
       "portal_credentials": "Portal credentials",
       "class_access_ready": "Virtual classroom access",
       "grade_posted": "Final grade posted",
@@ -877,6 +881,10 @@
       "payment_under_review": "When the receipt goes to human review.",
       "payment_approved": "When the payment is approved.",
       "payment_rejected": "When the review rejects the receipt.",
+      "lot_enrollment_received": "When an enrollment for several courses is sent with a single receipt. One e-mail per address, with its courses.",
+      "lot_payment_under_review": "When the receipt for several courses goes to human review.",
+      "lot_payment_approved": "When the review approves the receipt for several courses: every seat is confirmed.",
+      "lot_payment_rejected": "When the review rejects the receipt for several courses: every seat goes back to its class group.",
       "portal_credentials": "When the portal account is created.",
       "class_access_ready": "Three days before the class group starts.",
       "grade_posted": "The teacher posts the final exam's grade",
@@ -909,6 +917,10 @@
     "email_condition": {
       "payment_under_review": "if it needs human review",
       "payment_rejected": "if it is rejected",
+      "lot_enrollment_received": "if it is several courses",
+      "lot_payment_under_review": "if it is several courses and needs human review",
+      "lot_payment_approved": "if it is several courses",
+      "lot_payment_rejected": "if it is several courses and is rejected",
       "grade_did_not_sit": "Only when the student did not take the final exam",
       "enrollment_certificate_issued": "if they request it",
       "procedure_payment_under_review": "if it is a procedure and goes to review",
@@ -2395,6 +2407,12 @@
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
+    },
+    "payment_lot": {
+      "badge": "Several courses · {count}",
+      "line": "{count} enrollments, one receipt",
+      "title": "Enrollments in this payment ({count})",
+      "note": "The receipt pays for all these enrollments. Approving confirms every seat and rejecting gives every seat back: they are not decided one by one."
     },
     "payment_origin": {
       "enrollment": "Enrollment",

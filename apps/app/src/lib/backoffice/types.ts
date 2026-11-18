@@ -985,6 +985,22 @@ export interface TeacherDetail extends TeacherRow {
 /** What a payment is for, when it is not the enrollment itself (OOC-83). */
 export type PaymentProcedureKind = 'enrollment_certificate'
 
+/**
+ * One more enrollment a lot payment pays for (OOC-158): several courses — one
+ * student's, or several children's — paid with one receipt. The payment's own
+ * student and course are the lot's first item; these are the others.
+ */
+export interface PaymentLotItem {
+  enrollmentId: string
+  studentId: string
+  studentName: string
+  courseName: string
+  classGroupName: string
+  planName: string
+  /** The plan price this enrollment was sold at — its share of the receipt. */
+  expectedAmountCents: number
+}
+
 export interface PaymentRow {
   /** Null is the enrollment's own payment. */
   procedureKind: PaymentProcedureKind | null
@@ -1010,6 +1026,8 @@ export interface PaymentRow {
   decidedAt: string | null
   /** Who recorded that decision; null when the audit entry names no account. */
   decidedByName: string | null
+  /** The other enrollments of a lot, in lot order — empty for one enrollment. */
+  lot: PaymentLotItem[]
 }
 
 /**
@@ -1110,6 +1128,9 @@ export interface PaymentReviewItem {
   expectedAmountCents: number
   /** The seat sits above its class group's capacity (OOC-155); false for a procedure. */
   overCapacity: boolean
+  /** The other enrollments of a lot, in lot order — empty for one enrollment.
+   * Deciding the payment decides all of them. */
+  lot: PaymentLotItem[]
   currency: 'PEN'
   receipt: ReviewReceiptState
   fraudSignals: ReceiptFraudSignalKind[]

@@ -475,8 +475,87 @@ export function emptyDraft(source: EnrollmentSource = 'web'): CheckoutDraft {
       emailConfirmation: '',
       consentAccepted: false,
     },
+    lot: [],
+    samePersonAs: null,
     payment: { method: null, operationNumber: '', receipt: null },
     source,
     campaign: {},
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lot — several courses, one receipt (OOC-158)                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * How many enrollments one checkout sends at most. The API refuses more
+ * (`MAX_PUBLIC_LOT_ITEMS`) as a guard on a public route — not a business rule.
+ */
+export const MAX_LOT_ITEMS = 10
+
+/** One person, one document (`CLAUDE.md` §1): the key the lot groups people by,
+ * normalized the way the server compares it. */
+export function personKey(student: StudentDraft): string {
+  return `${student.nationalIdType}:${normalizeNationalId(student.nationalId)}`
+}
+
+/** One item of the lot as the review and the submit read it. */
+export interface CheckoutItem {
+  course: CourseDraft
+  student: StudentDraft
+  guardian: GuardianDraft
+}
+
+/** Every enrollment of the checkout, the lot's first and the one being filled last. */
+export function checkoutItems(draft: CheckoutDraft): CheckoutItem[] {
+  return [
+    ...draft.lot.map(({ course, student, guardian }) => ({ course, student, guardian })),
+    { course: draft.course, student: draft.student, guardian: draft.guardian },
+  ]
+}
+
+/** The distinct people of the lot, each with the first entry that names them. */
+export function lotPeople(draft: CheckoutDraft): { index: number; student: StudentDraft }[] {
+  const seen = new Set<string>()
+  const people: { index: number; student: StudentDraft }[] = []
+  draft.lot.forEach((entry, index) => {
+    const key = personKey(entry.student)
+    if (seen.has(key)) return
+    seen.add(key)
+    people.push({ index, student: entry.student })
+  })
+  return people
+}
+
+/**
+ * What the receipt has to say: the sum of the plan prices in force of every
+ * course of the checkout. Never a discount (`CLAUDE.md` §1) — the server sums
+ * the same prices and the receipt is checked against its number, not this one.
+ */
+export function checkoutTotalCents(catalog: PublicCatalog, draft: CheckoutDraft): number {
+  return checkoutItems(draft).reduce(
+    (total, item) => total + (planOfCourse(catalog, item.course.courseId)?.amountCents ?? 0),
+    0,
+  )
+}
+
+/**
+ * Why the item being filled cannot join the lot as it is: its person already
+ * has this course in it, or somebody typed in fresh is a person the lot
+ * already has (they are picked from the list instead, so their data is one).
+ */
+export function lotConflict(draft: CheckoutDraft): 'lot_same_course' | 'lot_same_person' | null {
+  if (draft.lot.length === 0) return null
+  const key = personKey(draft.student)
+  if (
+    draft.lot.some(
+      (entry) => personKey(entry.student) === key && entry.course.courseId === draft.course.courseId,
+    )
+  ) {
+    return 'lot_same_course'
+  }
+  if (draft.samePersonAs === null && draft.lot.some((entry) => personKey(entry.student) === key)) {
+    return 'lot_same_person'
+  }
+  return null
 }

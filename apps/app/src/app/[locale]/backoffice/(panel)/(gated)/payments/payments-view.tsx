@@ -34,6 +34,7 @@ import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { PaymentDetailDialog } from './payment-detail-dialog'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { LotLine } from './payment-lot'
 
 /** Long enough to finish a word, short enough to feel like typing. */
 const SEARCH_DEBOUNCE_MS = 350
@@ -305,9 +306,13 @@ export function PaymentsView({
                         <span className="block max-w-[15rem] truncate text-sm text-ink">
                           {row.courseName}
                         </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
-                        </span>
+                        {row.lot.length > 0 ? (
+                          <LotLine payment={row} />
+                        ) : (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
+                          </span>
+                        )}
                         {row.overCapacity && (
                           <span className="block truncate text-xs font-semibold text-amber-700">
                             {t('payment_over_capacity.badge')}

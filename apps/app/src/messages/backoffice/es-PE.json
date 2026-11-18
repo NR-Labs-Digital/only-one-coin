@@ -855,6 +855,10 @@
       "payment_under_review": "Comprobante en revisión",
       "payment_approved": "Pago aprobado",
       "payment_rejected": "Pago rechazado",
+      "lot_enrollment_received": "Matrículas recibidas (varios cursos)",
+      "lot_payment_under_review": "Comprobante de varios cursos en revisión",
+      "lot_payment_approved": "Pago de varios cursos aprobado",
+      "lot_payment_rejected": "Pago de varios cursos rechazado",
       "portal_credentials": "Credenciales de acceso",
       "class_access_ready": "Acceso al aula virtual",
       "grade_posted": "Nota final registrada",
@@ -877,6 +881,10 @@
       "payment_under_review": "Cuando el comprobante pasa a revisión humana.",
       "payment_approved": "Cuando el pago queda aprobado.",
       "payment_rejected": "Cuando la revisión rechaza el comprobante.",
+      "lot_enrollment_received": "Cuando se envía la matrícula de varios cursos con un solo comprobante. Un correo por dirección, con sus cursos.",
+      "lot_payment_under_review": "Cuando el comprobante de varios cursos pasa a revisión humana.",
+      "lot_payment_approved": "Cuando la revisión aprueba el comprobante de varios cursos: todas las vacantes quedan confirmadas.",
+      "lot_payment_rejected": "Cuando la revisión rechaza el comprobante de varios cursos: todas las vacantes vuelven a sus aulas.",
       "portal_credentials": "Cuando se crea el acceso al portal.",
       "class_access_ready": "Tres días antes del inicio del aula.",
       "grade_posted": "El docente registra la nota del examen final",
@@ -909,6 +917,10 @@
     "email_condition": {
       "payment_under_review": "si necesita revisión humana",
       "payment_rejected": "si se rechaza",
+      "lot_enrollment_received": "si son varios cursos",
+      "lot_payment_under_review": "si son varios cursos y necesita revisión humana",
+      "lot_payment_approved": "si son varios cursos",
+      "lot_payment_rejected": "si son varios cursos y se rechaza",
       "grade_did_not_sit": "Solo si el alumno no rindió el examen final",
       "enrollment_certificate_issued": "si la solicita",
       "procedure_payment_under_review": "si es un trámite y va a revisión",
@@ -2395,6 +2407,12 @@
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
+    },
+    "payment_lot": {
+      "badge": "Varios cursos · {count}",
+      "line": "{count} matrículas, un solo comprobante",
+      "title": "Matrículas de este pago ({count})",
+      "note": "El comprobante paga todas estas matrículas. Aprobar confirma todas las vacantes y rechazar las devuelve todas: no se decide una por una."
     },
     "payment_origin": {
       "enrollment": "Matrícula",
