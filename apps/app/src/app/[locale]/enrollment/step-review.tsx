@@ -4,7 +4,15 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { FieldError } from '@ooc/domain/fields'
 import type { CheckoutDraft, PublicCatalog, StepId } from '@/lib/enrollment/types'
-import { courseById, groupById, planOfCourse } from '@/lib/enrollment/checkout'
+import {
+  checkoutItems,
+  checkoutTotalCents,
+  courseById,
+  groupById,
+  personKey,
+  planOfCourse,
+  type CheckoutItem,
+} from '@/lib/enrollment/checkout'
 import { scheduleLines } from '@/lib/enrollment/schedule'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
 import { paymentMethodLabel } from '@/lib/payment-method'
@@ -71,12 +79,15 @@ export function StepReview({
   onEdit,
   onBack,
   onSubmit,
+  onRemoveLotEntry,
 }: {
   catalog: PublicCatalog
   draft: CheckoutDraft
   onEdit: (step: StepId) => void
   onBack: () => void
   onSubmit: (captchaToken: string) => Promise<SubmitOutcome>
+  /** Takes a settled course out of the lot (OOC-158). */
+  onRemoveLotEntry: (index: number) => void
 }) {
   const t = useTranslations('enrollment')
   const locale = useLocale() as Locale
@@ -92,6 +103,10 @@ export function StepReview({
   const group = groupById(catalog, draft.course.classGroupId)
   const plan = planOfCourse(catalog, draft.course.courseId)
   const minorFlow = draft.guardian.consentAccepted
+  // Several courses, one receipt (OOC-158).
+  const items = checkoutItems(draft)
+  const isLot = items.length > 1
+  const totalCents = checkoutTotalCents(catalog, draft)
 
   async function send() {
     // Guards the double POST from a bad phone connection on the screen side;
@@ -124,86 +139,94 @@ export function StepReview({
         subtitle={t('step.review.subtitle')}
       />
 
-      <Card className="p-5">
-        <SectionHead
-          title={t('step.review.course_section')}
-          onEdit={() => onEdit('course')}
-          editLabel={t('action.edit')}
-        />
-        <dl className="divide-y divide-line">
-          {course && <SummaryRow label={t('summary.course')}>{course.name}</SummaryRow>}
-          {plan && <SummaryRow label={t('summary.plan')}>{plan.name}</SummaryRow>}
-          {group && (
+      {isLot && (
+        <LotReview catalog={catalog} items={items} onEdit={onEdit} onRemove={onRemoveLotEntry} />
+      )}
+
+      {!isLot && (
+        <Card className="p-5">
+          <SectionHead
+            title={t('step.review.course_section')}
+            onEdit={() => onEdit('course')}
+            editLabel={t('action.edit')}
+          />
+          <dl className="divide-y divide-line">
+            {course && <SummaryRow label={t('summary.course')}>{course.name}</SummaryRow>}
+            {plan && <SummaryRow label={t('summary.plan')}>{plan.name}</SummaryRow>}
+            {group && (
+              <>
+                <SummaryRow label={t('summary.schedule')}>
+                  {scheduleLines(
+                    group,
+                    (day) => t(`weekday.${day}`),
+                    (vars) => t('time_range', vars),
+                  ).map((line) => (
+                    <span key={line.key} className="block">{`${line.day} — ${line.time}`}</span>
+                  ))}
+                </SummaryRow>
+                <SummaryRow label={t('summary.starts_on')}>
+                  {formatDate(group.startDate, locale)}
+                </SummaryRow>
+              </>
+            )}
+          </dl>
+        </Card>
+      )}
+
+      {!isLot && (
+        <Card className="p-5">
+          <SectionHead
+            title={t('step.review.student_section')}
+            onEdit={() => onEdit('student')}
+            editLabel={t('action.edit')}
+          />
+          <dl className="divide-y divide-line">
+            <SummaryRow label={t('summary.full_name')}>
+              {`${draft.student.firstName} ${draft.student.lastName}`}
+            </SummaryRow>
+            <SummaryRow label={t('summary.document')}>
+              {`${t(`national_id_type.${draft.student.nationalIdType}`)} ${draft.student.nationalId}`}
+            </SummaryRow>
+            <SummaryRow label={t('summary.phone')}>{draft.student.phone}</SummaryRow>
+            <SummaryRow label={t('summary.email')}>{draft.student.email}</SummaryRow>
+            <SummaryRow label={t('summary.birth_date')}>
+              {draft.student.birthDate
+                ? formatDate(draft.student.birthDate, locale)
+                : ''}
+            </SummaryRow>
+          </dl>
+
+          {minorFlow && (
             <>
-              <SummaryRow label={t('summary.schedule')}>
-                {scheduleLines(
-                  group,
-                  (day) => t(`weekday.${day}`),
-                  (vars) => t('time_range', vars),
-                ).map((line) => (
-                  <span key={line.key} className="block">{`${line.day} — ${line.time}`}</span>
-                ))}
-              </SummaryRow>
-              <SummaryRow label={t('summary.starts_on')}>
-                {formatDate(group.startDate, locale)}
-              </SummaryRow>
+              <p className="mt-4 mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('step.review.guardian_section')}
+              </p>
+              <dl className="divide-y divide-line">
+                <SummaryRow label={t('summary.full_name')}>
+                  {`${draft.guardian.firstName} ${draft.guardian.lastName}`}
+                </SummaryRow>
+                <SummaryRow label={t('field.relationship')}>
+                  {t(`relationship.${draft.guardian.relationship}`)}
+                </SummaryRow>
+                <SummaryRow label={t('summary.document')}>
+                  {`${t(`national_id_type.${draft.guardian.nationalIdType}`)} ${draft.guardian.nationalId}`}
+                </SummaryRow>
+                <SummaryRow label={t('summary.phone')}>
+                  {draft.guardian.phone}
+                </SummaryRow>
+                <SummaryRow label={t('summary.email')}>
+                  {draft.guardian.email}
+                </SummaryRow>
+                <SummaryRow label={t('summary.consent')}>
+                  {t('step.review.consent_given', {
+                    version: catalog.settings.consentVersion,
+                  })}
+                </SummaryRow>
+              </dl>
             </>
           )}
-        </dl>
-      </Card>
-
-      <Card className="p-5">
-        <SectionHead
-          title={t('step.review.student_section')}
-          onEdit={() => onEdit('student')}
-          editLabel={t('action.edit')}
-        />
-        <dl className="divide-y divide-line">
-          <SummaryRow label={t('summary.full_name')}>
-            {`${draft.student.firstName} ${draft.student.lastName}`}
-          </SummaryRow>
-          <SummaryRow label={t('summary.document')}>
-            {`${t(`national_id_type.${draft.student.nationalIdType}`)} ${draft.student.nationalId}`}
-          </SummaryRow>
-          <SummaryRow label={t('summary.phone')}>{draft.student.phone}</SummaryRow>
-          <SummaryRow label={t('summary.email')}>{draft.student.email}</SummaryRow>
-          <SummaryRow label={t('summary.birth_date')}>
-            {draft.student.birthDate
-              ? formatDate(draft.student.birthDate, locale)
-              : ''}
-          </SummaryRow>
-        </dl>
-
-        {minorFlow && (
-          <>
-            <p className="mt-4 mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t('step.review.guardian_section')}
-            </p>
-            <dl className="divide-y divide-line">
-              <SummaryRow label={t('summary.full_name')}>
-                {`${draft.guardian.firstName} ${draft.guardian.lastName}`}
-              </SummaryRow>
-              <SummaryRow label={t('field.relationship')}>
-                {t(`relationship.${draft.guardian.relationship}`)}
-              </SummaryRow>
-              <SummaryRow label={t('summary.document')}>
-                {`${t(`national_id_type.${draft.guardian.nationalIdType}`)} ${draft.guardian.nationalId}`}
-              </SummaryRow>
-              <SummaryRow label={t('summary.phone')}>
-                {draft.guardian.phone}
-              </SummaryRow>
-              <SummaryRow label={t('summary.email')}>
-                {draft.guardian.email}
-              </SummaryRow>
-              <SummaryRow label={t('summary.consent')}>
-                {t('step.review.consent_given', {
-                  version: catalog.settings.consentVersion,
-                })}
-              </SummaryRow>
-            </dl>
-          </>
-        )}
-      </Card>
+        </Card>
+      )}
 
       <Card className="p-5">
         <SectionHead
@@ -230,7 +253,7 @@ export function StepReview({
           )}
           {plan && (
             <SummaryRow label={t('summary.total')} strong>
-              {formatMoney(plan.amountCents, plan.currency, locale)}
+              {formatMoney(totalCents, plan.currency, locale)}
             </SummaryRow>
           )}
         </dl>
@@ -269,7 +292,8 @@ export function StepReview({
           {t('step.review.invalid_fields')}
           <ul className="mt-1.5 list-disc pl-5">
             {submitError.fields.map((field) => {
-              const [scope, name = ''] = field.path.split('.')
+              // A lot names the person first (`people.1.student.email`).
+              const [scope, name = ''] = field.path.replace(/^people\.\d+\./, '').split('.')
               const labelKey = FIELD_LABELS[name]
               const label = labelKey ? t(labelKey) : t('step.review.other_field')
               return (
@@ -323,5 +347,116 @@ function SectionHead({
         {editLabel}
       </button>
     </div>
+  )
+}
+
+/**
+ * A lot (OOC-158), reviewed as a whole: every course with whom it is for, then
+ * every person once. A settled course is taken out from here; the one filled
+ * last is edited through its steps, like a single course.
+ */
+function LotReview({
+  catalog,
+  items,
+  onEdit,
+  onRemove,
+}: {
+  catalog: PublicCatalog
+  items: CheckoutItem[]
+  onEdit: (step: StepId) => void
+  onRemove: (index: number) => void
+}) {
+  const t = useTranslations('enrollment')
+  const locale = useLocale() as Locale
+  const last = items.length - 1
+
+  const people: CheckoutItem[] = []
+  const seen = new Set<string>()
+  for (const item of items) {
+    const key = personKey(item.student)
+    if (seen.has(key)) continue
+    seen.add(key)
+    people.push(item)
+  }
+
+  return (
+    <>
+      <Card className="p-5">
+        <p className="mb-3 text-sm font-semibold text-ink">{t('lot.review_courses', { count: items.length })}</p>
+        <ul className="divide-y divide-line">
+          {items.map((item, index) => {
+            const course = courseById(catalog, item.course.courseId)
+            const group = groupById(catalog, item.course.classGroupId)
+            const plan = planOfCourse(catalog, item.course.courseId)
+            return (
+              <li key={index} className="py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ink">{course?.name}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {`${item.student.firstName} ${item.student.lastName}`}
+                      {plan ? ` · ${plan.name}` : ''}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => (index === last ? onEdit('course') : onRemove(index))}
+                    className="shrink-0 text-xs font-semibold text-brand-blue transition hover:text-brand-blue-deep"
+                  >
+                    {index === last ? t('action.edit') : t('lot.remove_short')}
+                  </button>
+                </div>
+                <dl className="mt-1 divide-y divide-line">
+                  {group && (
+                    <>
+                      <SummaryRow label={t('summary.schedule')}>
+                        {scheduleLines(
+                          group,
+                          (day) => t(`weekday.${day}`),
+                          (vars) => t('time_range', vars),
+                        ).map((line) => (
+                          <span key={line.key} className="block">{`${line.day} — ${line.time}`}</span>
+                        ))}
+                      </SummaryRow>
+                      <SummaryRow label={t('summary.starts_on')}>{formatDate(group.startDate, locale)}</SummaryRow>
+                    </>
+                  )}
+                  {plan && (
+                    <SummaryRow label={t('lot.price')}>{formatMoney(plan.amountCents, plan.currency, locale)}</SummaryRow>
+                  )}
+                </dl>
+              </li>
+            )
+          })}
+        </ul>
+      </Card>
+
+      <Card className="p-5">
+        <SectionHead
+          title={t('lot.review_people', { count: people.length })}
+          onEdit={() => onEdit('student')}
+          editLabel={t('action.edit')}
+        />
+        <ul className="divide-y divide-line">
+          {people.map((person) => (
+            <li key={personKey(person.student)} className="py-3">
+              <p className="text-sm font-semibold text-ink">{`${person.student.firstName} ${person.student.lastName}`}</p>
+              <dl className="divide-y divide-line">
+                <SummaryRow label={t('summary.document')}>
+                  {`${t(`national_id_type.${person.student.nationalIdType}`)} ${person.student.nationalId}`}
+                </SummaryRow>
+                <SummaryRow label={t('summary.email')}>{person.student.email}</SummaryRow>
+                <SummaryRow label={t('summary.phone')}>{person.student.phone}</SummaryRow>
+                {person.guardian.consentAccepted && (
+                  <SummaryRow label={t('step.review.guardian_section')}>
+                    {`${person.guardian.firstName} ${person.guardian.lastName} · ${person.guardian.email}`}
+                  </SummaryRow>
+                )}
+              </dl>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </>
   )
 }

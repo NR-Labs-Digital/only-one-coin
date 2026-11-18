@@ -4,7 +4,14 @@ import { useMemo, useRef, useState } from 'react'
 import { requestReceiptUpload } from '@/lib/enrollment/receipt-upload'
 import { useLocale, useTranslations } from 'next-intl'
 import type { CheckoutDraft, PublicCatalog } from '@/lib/enrollment/types'
-import { hasErrors, planOfCourse, validatePayment } from '@/lib/enrollment/checkout'
+import {
+  checkoutItems,
+  checkoutTotalCents,
+  courseById,
+  hasErrors,
+  planOfCourse,
+  validatePayment,
+} from '@/lib/enrollment/checkout'
 import { formatFileSize, formatMoney, type Locale } from '@/lib/format'
 import { paymentMethodLabel } from '@/lib/payment-method'
 import {
@@ -84,6 +91,9 @@ export function StepPayment({
   const attemptRef = useRef(0)
 
   const plan = planOfCourse(catalog, draft.course.courseId)
+  // Several courses, one receipt (OOC-158): the sum of every plan price in force.
+  const items = checkoutItems(draft)
+  const totalCents = checkoutTotalCents(catalog, draft)
   const errors = useMemo(() => validatePayment(draft.payment), [draft.payment])
   const ready = !hasErrors(errors)
   const show = touched
@@ -199,10 +209,29 @@ export function StepPayment({
             {t('step.payment.amount_label')}
           </p>
           <p className="mt-1 text-3xl font-bold tracking-tight text-ink">
-            {formatMoney(plan.amountCents, plan.currency, locale)}
+            {formatMoney(totalCents, plan.currency, locale)}
           </p>
+          {items.length > 1 && (
+            <ul className="mt-3 divide-y divide-brand-blue/10 border-y border-brand-blue/10">
+              {items.map((item, index) => {
+                const itemPlan = planOfCourse(catalog, item.course.courseId)
+                return (
+                  <li key={index} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
+                    <span className="min-w-0 truncate text-ink">
+                      {`${item.student.firstName} · ${courseById(catalog, item.course.courseId)?.name ?? ''}`}
+                    </span>
+                    {itemPlan && (
+                      <span className="shrink-0 font-semibold tabular-nums text-ink">
+                        {formatMoney(itemPlan.amountCents, itemPlan.currency, locale)}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {t('step.payment.amount_hint')}
+            {items.length > 1 ? t('lot.amount_hint', { count: items.length }) : t('step.payment.amount_hint')}
           </p>
         </Card>
       )}

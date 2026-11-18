@@ -34,6 +34,7 @@ import {
   type RereadOutcome,
 } from './receipt-review-dialog'
 import { CASE_SHORTCUTS, QUEUE_SHORTCUTS, ShortcutList, isTypingTarget } from './shortcuts'
+import { LotLine } from '../payment-lot'
 
 /** Long enough to finish a word, short enough to feel like typing. */
 const SEARCH_DEBOUNCE_MS = 350
@@ -479,9 +480,13 @@ export function ReviewQueueView({
                           <span className="block truncate text-xs text-muted-foreground">
                             {item.classGroupName}
                           </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
-                          </span>
+                          {item.lot.length > 0 ? (
+                            <LotLine payment={item} />
+                          ) : (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
+                            </span>
+                          )}
                           {item.overCapacity && (
                             <span className="block truncate text-xs font-semibold text-amber-700">
                               {t('payment_over_capacity.badge')}

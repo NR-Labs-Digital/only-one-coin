@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CheckoutDraft, HoldOutcome, PublicCatalog, SeatHold, StepId } from './types'
 import { STEP_ORDER } from './types'
-import { emptyDraft, sameOfferGroups } from './checkout'
+import { emptyDraft, MAX_LOT_ITEMS, sameOfferGroups } from './checkout'
 
 /**
  * Where a half-filled checkout survives a reload. `sessionStorage`, not
@@ -79,6 +79,21 @@ export interface CheckoutController {
   settleHold: () => void
   /** The server said the hold is gone (submit refused it): end the attempt. */
   expireHold: () => void
+  /**
+   * The hold the receipt is uploaded against: the lot's first (OOC-158), or the
+   * only one. The submit's receipt has to belong to it.
+   */
+  receiptHoldId: string | null
+  /**
+   * Settles the item being filled into the lot, with the seat it holds, and
+   * opens a new item for the next course — for the same person by default.
+   * False when there is no seat to carry or the lot is full.
+   */
+  addAnotherCourse: () => boolean
+  /** Undoes the last `addAnotherCourse`: that item is the one being filled again. */
+  cancelAnotherCourse: () => void
+  /** Takes one settled item out of the lot and gives its seat back. */
+  removeLotEntry: (index: number) => void
 }
 
 /** The API's error envelope — only `reason` matters here. */
@@ -139,6 +154,11 @@ export function useCheckout(
   const [holdError, setHoldError] = useState<CheckoutController['holdError']>(null)
   /** The same hold, readable from inside an async claim without a stale closure. */
   const holdRef = useRef<SeatHold | null>(null)
+  /** The draft, readable from inside a callback without a stale closure. */
+  const draftRef = useRef(initialDraft)
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
   const sourceRef = useRef(initialDraft.source)
 
   /** State for the screen, ref for the async claim, storage for a reload. */
@@ -187,6 +207,9 @@ export function useCheckout(
         course,
         student: { ...fallback.student, ...stored.student },
         guardian: { ...fallback.guardian, ...stored.guardian },
+        // A draft stored before lots existed (OOC-158) has neither.
+        lot: stored.lot ?? [],
+        samePersonAs: stored.samePersonAs ?? null,
         // The object URL from the previous page life is dead; the file
         // description survives so the reader sees what they attached.
         payment: {
@@ -248,17 +271,26 @@ export function useCheckout(
     if (restored) writeStored(DRAFT_KEY, draft)
   }, [draft, restored])
 
+  /** Every seat the checkout holds: the lot's (OOC-158) and the current one. */
+  const heldSeats = useMemo(
+    () => [...draft.lot.map((entry) => entry.hold), ...(hold ? [hold] : [])],
+    [draft.lot, hold],
+  )
+
   /** The countdown only runs while a seat is actually being held. */
+  const holdingAny = heldSeats.length > 0
   useEffect(() => {
-    if (!hold) return
+    if (!holdingAny) return
     const id = window.setInterval(() => setNow(Date.now()), TICK_MS)
     return () => window.clearInterval(id)
-  }, [hold])
+  }, [holdingAny])
 
+  /** The countdown runs to the first seat to run out — it is one checkout. */
   const holdSecondsLeft = useMemo(() => {
-    if (!hold || now === null) return null
-    return Math.max(0, Math.round((Date.parse(hold.expiresAt) - now) / 1000))
-  }, [hold, now])
+    if (heldSeats.length === 0 || now === null) return null
+    const first = Math.min(...heldSeats.map((seat) => Date.parse(seat.expiresAt)))
+    return Math.max(0, Math.round((first - now) / 1000))
+  }, [heldSeats, now])
 
   /**
    * The server says the hold is no longer a reservation — the checkout let go
@@ -405,8 +437,9 @@ export function useCheckout(
 
   const restart = useCallback(() => {
     // Starting over from the success screen finds no hold (the submit consumed
-    // it); starting over mid-checkout gives the seat back.
+    // it); starting over mid-checkout gives every seat back, the lot's too.
     if (holdRef.current) releaseOnServer(holdRef.current.id)
+    for (const entry of draftRef.current.lot) releaseOnServer(entry.hold.id)
     clearCheckoutStorage()
     bootstrapped.current = true
     setDraftState(emptyDraft(arrival.current.source))
@@ -424,6 +457,72 @@ export function useCheckout(
     },
     [],
   )
+
+  /*
+   * The lot (OOC-158). Every change to it drops the attached receipt: the
+   * amount to pay changed with it, and a receipt for the old amount is one the
+   * review would have to refuse. The payment method stays — it is a choice,
+   * not a fact about the money.
+   */
+  const addAnotherCourse = useCallback((): boolean => {
+    const current = holdRef.current
+    if (!current || draftRef.current.lot.length + 1 >= MAX_LOT_ITEMS) return false
+    // The seat moves into the lot — never given back: it is one of the
+    // enrollments this checkout pays for.
+    setHold(null)
+    setDraftState((prev) => {
+      const lot = [
+        ...prev.lot,
+        { course: prev.course, student: prev.student, guardian: prev.guardian, hold: current },
+      ]
+      return {
+        ...prev,
+        lot,
+        // The next course is for the same person until the reader says otherwise.
+        samePersonAs: lot.length - 1,
+        course: { languageId: prev.course.languageId, courseId: null, startDate: null, classGroupId: null },
+        payment: { ...prev.payment, receipt: null },
+      }
+    })
+    return true
+  }, [setHold])
+
+  const cancelAnotherCourse = useCallback(() => {
+    const last = draftRef.current.lot.at(-1)
+    if (!last) return
+    // A seat claimed for the course being abandoned goes back now.
+    if (holdRef.current) releaseOnServer(holdRef.current.id)
+    setHold(last.hold)
+    setDraftState((prev) => ({
+      ...prev,
+      lot: prev.lot.slice(0, -1),
+      samePersonAs: null,
+      course: last.course,
+      student: last.student,
+      guardian: last.guardian,
+      payment: { ...prev.payment, receipt: null },
+    }))
+  }, [setHold])
+
+  const removeLotEntry = useCallback((index: number) => {
+    const entry = draftRef.current.lot[index]
+    if (!entry) return
+    releaseOnServer(entry.hold.id)
+    setDraftState((prev) => {
+      const samePersonAs =
+        prev.samePersonAs === null || prev.samePersonAs === index
+          ? null
+          : prev.samePersonAs > index
+            ? prev.samePersonAs - 1
+            : prev.samePersonAs
+      return {
+        ...prev,
+        lot: prev.lot.filter((_, at) => at !== index),
+        samePersonAs,
+        payment: { ...prev.payment, receipt: null },
+      }
+    })
+  }, [])
 
   const goTo = useCallback((target: StepId) => {
     if (!STEP_ORDER.includes(target)) return
@@ -445,6 +544,10 @@ export function useCheckout(
     settleHold,
     expireHold,
     restart,
+    receiptHoldId: draft.lot[0]?.hold.id ?? hold?.id ?? null,
+    addAnotherCourse,
+    cancelAnotherCourse,
+    removeLotEntry,
   }
 }
 

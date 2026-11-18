@@ -202,7 +202,9 @@
       "receipt_upload_failed": "El envío falló. Revisa tu conexión e inténtalo de nuevo.",
       "fix_fields": "Revisa los campos marcados antes de continuar.",
       "too_long": "Es demasiado largo. Acórtalo un poco.",
-      "invalid": "Revisa este dato."
+      "invalid": "Revisa este dato.",
+      "lot_same_course": "Esta persona ya tiene este curso en el pedido. Elige otro curso.",
+      "lot_same_person": "Esta persona ya está en el pedido. Elígela arriba en lugar de escribir sus datos de nuevo."
     },
     "submitted": {
       "title": "Recibimos tu matrícula",
@@ -227,6 +229,24 @@
       "online_note": "Todas nuestras clases son 100% en línea, por Google Meet y Google Classroom. No necesitas ir a ninguna sede.",
       "back_to_site": "Volver al sitio",
       "new_enrollment": "Matricular a otra persona"
+    },
+    "lot": {
+      "panel_title": "Cursos en este pedido ({count})",
+      "panel_subtitle": "Se pagan todos juntos, con un solo comprobante, en el paso de pago.",
+      "starts_on": "inicio {date}",
+      "remove": "Quitar {course} del pedido",
+      "remove_short": "Quitar",
+      "cancel_add": "Volver sin agregar otro curso",
+      "who_title": "¿Para quién es este curso?",
+      "who_new": "Otra persona",
+      "who_new_meta": "Por ejemplo, otro hijo. Completas sus datos abajo.",
+      "add_course": "+ Agregar otro curso a este pedido",
+      "add_course_hint": "Para este mismo alumno o para otra persona, como otro hijo. Pagas todo junto, con un solo comprobante.",
+      "amount_hint": "Es la suma de los precios vigentes de los {count} cursos. No aplicamos descuentos.",
+      "review_courses": "Cursos de este pedido ({count})",
+      "review_people": "Alumnos ({count})",
+      "price": "Precio",
+      "submitted_summary": "Tus {count} matrículas"
     }
   }
 }

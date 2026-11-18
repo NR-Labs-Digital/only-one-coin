@@ -154,6 +154,22 @@ a prova**:
 - Tela de sucesso diz o que acontece agora: comprovante em análise, credenciais
   por e-mail quando aprovado, prazo.
 
+### 2.2 Vários cursos, um comprovante (OOC-158)
+
+- No passo 2, *Agregar otro curso* guarda o curso preenchido com a vaga dele
+  e volta ao passo 1 para o próximo. O curso seguinte é para alguém que já
+  está no pedido (os dados são copiados, nunca redigitados — um documento, uma
+  pessoa) ou para outra pessoa, como outro filho: o apoderado vem
+  pré-preenchido e o consentimento é dado de novo, porque é por filho.
+- Cada curso do pedido segura a própria vaga, e o contador corre até a
+  primeira delas vencer. Tirar um curso do pedido devolve a vaga na hora.
+- O passo 3 pede a **soma** dos preços vigentes, com o detalhe por curso, e um
+  comprovante só — subido contra a vaga do primeiro curso. Mudar o pedido tira
+  o comprovante já anexado, porque o valor mudou.
+- A revisão lista os cursos e os alunos; o envio é um só, e o servidor grava
+  tudo ou nada. Regras e mecanismo: raiz §1 e `apps/api/CLAUDE.md`, "Vários
+  cursos num comprovante".
+
 ---
 
 ## 3. A vaga: dois relógios

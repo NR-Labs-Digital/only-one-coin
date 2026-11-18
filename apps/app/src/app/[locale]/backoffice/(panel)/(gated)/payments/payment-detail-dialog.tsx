@@ -9,6 +9,7 @@ import { formatPaymentMethod } from '@/lib/payment-method'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { LotBadge, LotEnrollments } from './payment-lot'
 import {
   Dialog,
   DialogContent,
@@ -87,10 +88,13 @@ export function PaymentDetailDialog({
                 {payment.overCapacity && (
                   <StatusBadge tone="warning" label={t('payment_over_capacity.badge')} />
                 )}
+                <LotBadge payment={payment} />
               </div>
             </DialogHeader>
 
             <div className="flex flex-col gap-6 p-5">
+              <LotEnrollments payment={payment} />
+
               <section>
                 <SectionTitle icon="doc">
                   {t('receipt_review.image_title')}
