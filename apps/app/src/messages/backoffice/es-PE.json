@@ -192,6 +192,7 @@
       "col_status": "Estado",
       "col_courses": "Cursos activos",
       "minor": "Menor de edad",
+      "consent_pending": "Consentimiento pendiente",
       "empty_title": "Sin resultados",
       "empty_body": "Prueba con otro nombre, documento o correo, o quita el filtro de edad.",
       "page_prev": "Anteriores",
@@ -291,6 +292,7 @@
         "student_updated": "Datos del alumno editados",
         "guardian_added": "Apoderado agregado",
         "guardian_updated": "Datos del apoderado editados",
+        "guardian_consent_accepted": "Consentimiento aceptado por el apoderado",
         "student_directory_exported": "Padrón de alumnos exportado",
         "enrollment_created": "Matrícula abierta por el panel",
         "enrollment_moved": "Matrícula movida de aula",
@@ -502,7 +504,9 @@
       "consent_given": "Consentimiento firmado",
       "consent_detail": "Versión {version} · {date} · IP {ip}",
       "consent_missing": "Falta consentimiento",
-      "consent_missing_detail": "El alumno es menor de edad y el apoderado aún no acepta el texto vigente.",
+      "consent_missing_detail": "El alumno es menor de edad y el apoderado aún no acepta el texto vigente. Lo acepta al entrar al portal con su correo; «Enviar acceso al portal» le manda su acceso.",
+      "consent_not_required": "No requerido",
+      "consent_not_required_detail": "El alumno es mayor de edad: el consentimiento del apoderado es solo para menores.",
       "no_guardian_title": "Sin apoderado registrado",
       "no_guardian_body": "El alumno es mayor de edad, así que no requiere apoderado.",
       "no_guardian_minor_body": "El alumno es menor de edad y no tiene apoderado registrado. Agrégalo: el consentimiento lo da el apoderado.",
@@ -563,6 +567,13 @@
         "email_conflict": "El correo de esta ficha ya pertenece a otra cuenta, así que no creamos el acceso. Hace falta corregir el correo del alumno antes de volver a enviarlo.",
         "activation_resent": "Reenviamos el enlace para crear la contraseña.",
         "reset_sent": "Enviamos un enlace para que el alumno cree una contraseña nueva."
+      },
+      "portal_access_guardian_outcome": {
+        "created": "También creamos la cuenta del apoderado y le enviamos su enlace: acepta el consentimiento al entrar.",
+        "linked": "La cuenta que el apoderado ya tenía ahora ve esta ficha: acepta el consentimiento al entrar.",
+        "activation_resent": "Reenviamos al apoderado el enlace para crear su contraseña: acepta el consentimiento al entrar.",
+        "active": "El apoderado ya tiene su contraseña: el consentimiento lo espera cuando entre al portal.",
+        "conflict": "El correo del apoderado pertenece a una cuenta del equipo o bloqueada, así que no le abrimos acceso. Corrige el correo del apoderado."
       },
       "portal_access_error": {
         "no_confirmed_enrollment": "El acceso al portal se envía solo a alumnos con una matrícula confirmada.",
@@ -2140,6 +2151,7 @@
       "student_updated": "Datos del alumno editados",
       "guardian_added": "Apoderado agregado",
       "guardian_updated": "Datos del apoderado editados",
+      "guardian_consent_accepted": "Consentimiento aceptado por el apoderado",
       "enrollment_created": "Matrícula abierta por el panel",
       "enrollment_moved": "Matrícula movida de aula",
       "payment_approved": "Pago aprobado",

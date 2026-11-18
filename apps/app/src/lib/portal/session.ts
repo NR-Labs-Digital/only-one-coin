@@ -59,6 +59,8 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
     profiles: overview.profiles ?? [],
     student: overview.student,
     passingGrade: overview.passingGrade,
+    // An API from before OOC-72 says nothing: no gate, no notice.
+    guardianConsent: overview.guardianConsent ?? { state: 'not_required', canAccept: false, version: '' },
     enrollments,
     requests: overview.requests.map(toRequest),
     procedures: overview.procedures.map(toProcedure),

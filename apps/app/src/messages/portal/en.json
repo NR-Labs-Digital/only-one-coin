@@ -296,7 +296,7 @@
       "consent_title": "Guardian consent",
       "consent_accepted": "Accepted on {date}",
       "consent_version": "Version {version}",
-      "consent_none": "Registration pending.",
+      "consent_none": "Pending: your guardian accepts it when signing in to the portal with their e-mail.",
       "edit_note": "Padlocked details are corrected by the coordination — message us on WhatsApp.",
       "locked_hint": "Only the coordination can correct this.",
       "preferences_title": "Preferences",
@@ -310,6 +310,18 @@
       "heading": "Profiles on your account",
       "trigger_label": "{name}'s profile. Switch profile",
       "current": "Current profile"
+    },
+    "guardian_consent": {
+      "title": "Guardian consent",
+      "body": "As {name}'s guardian, we need your authorization to process their personal data (Peru's Law 29733) before showing you their information in the portal.",
+      "version_note": "Consent text version {version}. We keep the date, time and IP address of your acceptance.",
+      "submit": "I accept",
+      "submitting": "Saving…",
+      "error_generic": "We couldn't save your acceptance. Please try again in a few minutes.",
+      "error_outdated": "The consent text changed. Reload the page to read the current one.",
+      "footnote": "If you have other children in the portal, you can switch profiles at the top.",
+      "notice_title": "Your guardian's consent is missing",
+      "notice_body": "Your guardian needs to sign in to the portal with their e-mail and accept it. Meanwhile, your classes and payments carry on as usual."
     }
   }
 }

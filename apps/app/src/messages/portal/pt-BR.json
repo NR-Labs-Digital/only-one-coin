@@ -296,7 +296,7 @@
       "consent_title": "Consentimento do responsável",
       "consent_accepted": "Aceito em {date}",
       "consent_version": "Versão {version}",
-      "consent_none": "Registro pendente.",
+      "consent_none": "Pendente: o responsável aceita ao entrar no portal com o e-mail dele.",
       "edit_note": "Os dados com cadeado só são corrigidos pela coordenação — fale conosco pelo WhatsApp.",
       "locked_hint": "Este dado só é corrigido pela coordenação.",
       "preferences_title": "Preferências",
@@ -310,6 +310,18 @@
       "heading": "Perfis da sua conta",
       "trigger_label": "Perfil de {name}. Trocar de perfil",
       "current": "Perfil atual"
+    },
+    "guardian_consent": {
+      "title": "Consentimento do responsável",
+      "body": "Como responsável por {name}, precisamos da sua autorização para o tratamento dos dados pessoais dele(a) (Lei 29733 do Peru) antes de mostrar as informações no portal.",
+      "version_note": "Texto de consentimento versão {version}. Guardamos a data, a hora e o endereço IP do seu aceite.",
+      "submit": "Aceito",
+      "submitting": "Salvando…",
+      "error_generic": "Não conseguimos salvar o seu aceite. Tente de novo em alguns minutos.",
+      "error_outdated": "O texto do consentimento mudou. Recarregue a página para ler o vigente.",
+      "footnote": "Se você tem outros filhos no portal, pode trocar de perfil na parte de cima.",
+      "notice_title": "Falta o consentimento do seu responsável",
+      "notice_body": "O seu responsável precisa entrar no portal com o e-mail dele e aceitar. Enquanto isso, suas aulas e pagamentos seguem normalmente."
     }
   }
 }

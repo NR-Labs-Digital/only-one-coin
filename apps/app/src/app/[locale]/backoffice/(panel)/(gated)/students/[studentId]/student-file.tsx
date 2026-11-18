@@ -362,13 +362,23 @@ export function StudentFile({
                         })}
                       </span>
                     </div>
-                  ) : (
+                  ) : student.isMinor ? (
                     <div className="flex flex-wrap items-center gap-2 text-xs text-amber-800">
                       <StatusBadge
                         tone="warning"
                         label={t('student_file.consent_missing')}
                       />
                       <span>{t('student_file.consent_missing_detail')}</span>
+                    </div>
+                  ) : (
+                    /* Consent is a minor's matter (OOC-72), the same as in
+                       the checkout: an adult's optional guardian owes none. */
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <StatusBadge
+                        tone="neutral"
+                        label={t('student_file.consent_not_required')}
+                      />
+                      <span>{t('student_file.consent_not_required_detail')}</span>
                     </div>
                   )}
                 </div>

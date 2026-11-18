@@ -130,7 +130,7 @@ export function StudentsTable({
   }
 
   const { items: pageRows, total, pageSize, counts } = directory
-  const activeFilters = query.minor ? 1 : 0
+  const activeFilters = (query.minor ? 1 : 0) + (query.consentPending ? 1 : 0)
   const tabCount: Record<StudentDirectoryTab, number> = {
     active: counts.active,
     former: counts.former,
@@ -210,6 +210,24 @@ export function StudentsTable({
                 {counts.minors}
               </span>
             </button>
+            {/* Who still owes the guardian's consent (OOC-72): the guardian
+                accepts in the portal, and the file's "send portal access"
+                asks again. An API from before it sends no count. */}
+            <button
+              type="button"
+              onClick={() => navigate({ consentPending: !query.consentPending })}
+              aria-pressed={query.consentPending}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                query.consentPending
+                  ? 'bg-brand-blue text-white'
+                  : 'border border-line bg-white text-muted-foreground hover:bg-cream hover:text-ink'
+              }`}
+            >
+              {t('students.consent_pending')}
+              <span className={query.consentPending ? 'text-white/70' : 'text-slate-400'}>
+                {counts.consentPending ?? 0}
+              </span>
+            </button>
           </FiltersDropdown>
 
           {/* The exception path, not the way in: most students arrive by
@@ -256,7 +274,7 @@ export function StudentsTable({
             // The new file is the newest row of the no-enrollment tab —
             // registering somebody does not enroll them. Back to its first
             // page, read from the server like every other row.
-            navigate({ page: 1, q: '', status: 'no_enrollment', minor: false })
+            navigate({ page: 1, q: '', status: 'no_enrollment', minor: false, consentPending: false })
             setSearchText('')
             router.refresh()
           }}

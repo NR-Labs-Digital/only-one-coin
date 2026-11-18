@@ -1,4 +1,5 @@
 import type {
+  GuardianConsentView,
   Enrollment,
   NextClassOccurrence,
   Payment,
@@ -81,6 +82,8 @@ export interface OverviewResponse {
   enrollments: ApiEnrollment[]
   /** `platform_settings.passing_grade` (OOC-41); null when the API could not read it. */
   passingGrade: number | null
+  /** Optional until every API in the air answers it (OOC-72). */
+  guardianConsent?: GuardianConsentView
   procedures: { kind: ProcedureCatalogItem['type']; priceCents: number; currency: 'PEN'; eligible: ProcedureCatalogItem['eligible'] }[]
   requests: ApiProcedureRequest[]
 }
