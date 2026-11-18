@@ -3,6 +3,7 @@ import {
   normalizeEmail,
   normalizeNationalId,
   Student,
+  type GuardianAccessOutcome,
   type PortalAccessOutcome,
   type PortalAccountProvisioning,
   type PortalGuardianProvisioning,
@@ -105,6 +106,17 @@ async function accountByEmail(tx: Tx, email: string): Promise<ExistingAccount | 
   return result.rows[0] ?? null;
 }
 
+/** Who opens the guardian's door: the file, the staff member (or the
+ * settlement's actor) and the instant, for the audit lines. */
+type GuardianDoorRequest = Pick<PortalAccountProvisioning, "studentId" | "actorId" | "at">;
+
+/** What the guardian's door did, and the guardian's account when it reaches
+ * the file (`linked`, `already_linked`). */
+export interface GuardianDoorResult {
+  outcome: GuardianAccessOutcome;
+  userId: string | null;
+}
+
 /**
  * The guardian's account reaches the minor's file as one more profile
  * (OOC-147): created in the guardian's address — with its own activation
@@ -117,58 +129,61 @@ async function accountByEmail(tx: Tx, email: string): Promise<ExistingAccount | 
  * later keeps the link it got, and the link only opens while the guardian on
  * file still has this address (`reachableStudentIdsSql`).
  */
-async function provisionGuardianAccess(
+export async function provisionGuardianAccess(
   tx: Tx,
-  request: PortalAccountProvisioning,
+  request: GuardianDoorRequest,
   guardianRequest: PortalGuardianProvisioning,
-): Promise<void> {
+): Promise<GuardianDoorResult> {
+  const nothing: GuardianDoorResult = { outcome: "not_applicable", userId: null };
   const [file] = await tx
     .select({ userId: students.userId, birthDate: students.birthDate })
     .from(students)
     .where(eq(students.id, request.studentId));
-  if (!file || !Student.isMinorBornOn(file.birthDate)) return;
+  if (!file || !Student.isMinorBornOn(file.birthDate)) return nothing;
   const [guardian] = await tx
     .select({ email: guardians.email, firstName: guardians.firstName, lastName: guardians.lastName })
     .from(guardians)
     .where(and(eq(guardians.studentId, request.studentId), isNull(guardians.deletedAt)))
     .limit(1);
-  if (!guardian) return;
+  if (!guardian) return nothing;
 
   const email = normalizeEmail(guardian.email);
   let account = await accountByEmail(tx, email);
   // The guardian typed the child's own address: that account already reaches
   // the file, and there is nobody else to let in.
-  if (account && account.id === file.userId) return;
+  if (account && account.id === file.userId) return nothing;
 
   if (!account) {
     try {
       await tx.transaction((sp) =>
         createGuardianAccount(sp, request, guardianRequest, { email, name: `${guardian.firstName} ${guardian.lastName}` }),
       );
-      return;
+      return { outcome: "created", userId: null };
     } catch (error) {
       if (!isUniqueViolation(error, USER_EMAIL_CONSTRAINT)) throw error;
       // A sibling's approval created it first: join that one.
       account = await accountByEmail(tx, email);
-      if (!account) return;
+      if (!account) return nothing;
     }
   }
 
   if (account.role !== "student" || account.banned) {
     await audit(tx, request, "portal_access.guardian_conflict", {});
-    return;
+    return { outcome: "conflict", userId: null };
   }
   const linked = await tx
     .insert(guardianPortalLinks)
     .values({ userId: account.id, studentId: request.studentId })
     .onConflictDoNothing()
     .returning({ id: guardianPortalLinks.id });
-  if (linked.length > 0) await audit(tx, request, "portal_access.linked_guardian", { userId: account.id });
+  if (linked.length === 0) return { outcome: "already_linked", userId: account.id };
+  await audit(tx, request, "portal_access.linked_guardian", { userId: account.id });
+  return { outcome: "linked", userId: account.id };
 }
 
 async function createGuardianAccount(
   tx: Tx,
-  request: PortalAccountProvisioning,
+  request: GuardianDoorRequest,
   guardianRequest: PortalGuardianProvisioning,
   account: { email: string; name: string },
 ): Promise<void> {
@@ -188,7 +203,7 @@ async function createGuardianAccount(
   await audit(tx, request, "portal_access.guardian_created", { userId });
 }
 
-async function audit(tx: Tx, request: PortalAccountProvisioning, action: string, metadata: Record<string, string>): Promise<void> {
+async function audit(tx: Tx, request: GuardianDoorRequest, action: string, metadata: Record<string, string>): Promise<void> {
   await tx.insert(auditLog).values({ actorId: request.actorId, action, targetId: request.studentId, metadata, createdAt: request.at });
 }
 

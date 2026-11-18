@@ -1,5 +1,5 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, auditLog, classGroups, courses, enrollments, planPrices, plans, students } from "@ooc/db";
+import { academicPeriods, auditLog, classGroups, consents, courses, enrollments, guardians, planPrices, plans, students } from "@ooc/db";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -191,10 +191,50 @@ describe("student directory", () => {
       expect(minors.items.every((row) => row.isMinor)).toBe(true);
 
       // The tabs and chips ignore those filters themselves — same answer either way.
-      expect(minors.counts).toEqual({ all: 5, active: 2, former: 1, noEnrollment: 2, minors: 1 });
+      expect(minors.counts).toEqual({ all: 5, active: 2, former: 1, noEnrollment: 2, minors: 1, consentPending: 1 });
       expect(active.counts).toEqual(minors.counts);
       expect(former.counts).toEqual(minors.counts);
       expect(active.total).toBe(2);
+    });
+  });
+
+  it("lists the minors still waiting for their guardian's consent (OOC-72)", async () => {
+    await rolledBack(async (tx) => {
+      const query = new ListStudentsQuery(tx as unknown as Db);
+      const idOf = await seed(tx);
+      const child = idOf.get("Confirmada")!;
+      const adult = idOf.get("SinMatricula")!;
+      const guardianOf = async (studentId: string, n: number) => {
+        const [row] = await tx
+          .insert(guardians)
+          .values({
+            studentId,
+            firstName: "Rosa",
+            lastName: SURNAME,
+            relationship: "mother",
+            nationalIdType: "DNI",
+            nationalId: `DIRGUARD${n}`,
+            email: `rosa.${n}@hotmail.com`,
+            phone: "+51900000001",
+          })
+          .returning({ id: guardians.id });
+        return row!.id;
+      };
+
+      // A minor with no guardian yet is pending; an adult never is, guardian or not.
+      await guardianOf(adult, 1);
+      let pending = await query.directory({ q: SURNAME, consentPending: true });
+      expect(pending.items.map((row) => row.id)).toEqual([child]);
+      expect(pending.counts.consentPending).toBe(1);
+
+      // A guardian with no consent keeps it pending; the consent clears it.
+      const guardianId = await guardianOf(child, 2);
+      pending = await query.directory({ q: SURNAME, consentPending: true });
+      expect(pending.total).toBe(1);
+      await tx.insert(consents).values({ guardianId, version: "v1", acceptedAt: new Date(), ip: "127.0.0.1" });
+      pending = await query.directory({ q: SURNAME, consentPending: true });
+      expect(pending.total).toBe(0);
+      expect(pending.counts.consentPending).toBe(0);
     });
   });
 
@@ -377,7 +417,7 @@ describe("directory export", () => {
         .where(and(eq(auditLog.actorId, ACTOR), eq(auditLog.action, "student.directory_exported")));
 
       expect(entry?.targetId).toBe(STUDENT_DIRECTORY_TARGET);
-      expect(entry?.metadata).toEqual({ status: "active", minor: false, searched: true, sort: "newest", rowCount: 2 });
+      expect(entry?.metadata).toEqual({ status: "active", minor: false, consentPending: false, searched: true, sort: "newest", rowCount: 2 });
       expect(JSON.stringify(entry?.metadata)).not.toContain(SURNAME);
       expect(exported.rowCount).toBe(2);
     });

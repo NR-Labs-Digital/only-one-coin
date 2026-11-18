@@ -73,6 +73,7 @@ import {
   GetTeachingSummaryUseCase,
   UpdateStudentUseCase,
   SaveGuardianUseCase,
+  AcceptGuardianConsentUseCase,
   RenamePlanUseCase,
   ReleaseSeatHoldUseCase,
   RequestPortalPasswordResetUseCase,
@@ -164,6 +165,7 @@ import { DrizzleUserRoleRepository } from "./infra/identity/DrizzleUserRoleRepos
 import { DrizzleUserPreferenceRepository } from "./infra/identity/DrizzleUserPreferenceRepository.js";
 import { createDb, type Db } from "./infra/db/client.js";
 import { DrizzlePortalAccessRepository } from "./infra/persistence/portal/DrizzlePortalAccessRepository.js";
+import { DrizzleGuardianConsentRepository } from "./infra/persistence/portal/DrizzleGuardianConsentRepository.js";
 import { DrizzleStudentRepository } from "./infra/persistence/student/DrizzleStudentRepository.js";
 import { DrizzleGuardianRepository } from "./infra/persistence/student/DrizzleGuardianRepository.js";
 import { DrizzleEnrollmentRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
@@ -326,6 +328,7 @@ export interface AppUseCases {
     register: RegisterStudentUseCase;
     update: UpdateStudentUseCase;
     saveGuardian: SaveGuardianUseCase;
+    acceptGuardianConsent: AcceptGuardianConsentUseCase;
   };
   enrollment: {
     createManual: CreateManualEnrollmentUseCase;
@@ -617,6 +620,7 @@ function buildContainer(): AppContainer {
   const registerStudent = new RegisterStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const updateStudent = new UpdateStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const saveGuardian = new SaveGuardianUseCase(studentRepository, guardianRepository, auditLogRepository);
+  const acceptGuardianConsent = new AcceptGuardianConsentUseCase(new DrizzleGuardianConsentRepository(db), auditLogRepository);
   const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
@@ -969,6 +973,7 @@ function buildContainer(): AppContainer {
         register: registerStudent,
         update: updateStudent,
         saveGuardian,
+        acceptGuardianConsent,
       },
       enrollment: {
         createManual: createManualEnrollment,

@@ -14,6 +14,7 @@ import {
   refineGmail,
   refineNationalId,
   UnableToProcessEntryError,
+  CURRENT_CONSENT_VERSION,
   type SubmitPublicEnrollmentInput,
 } from "@ooc/domain";
 import type { FastifyReply, FastifyRequest } from "fastify";
@@ -23,10 +24,9 @@ import { RATE_LIMITS, perLotLeadHold, perSeatHold } from "@/shared/http/rateLimi
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 
-// Version the guardian is agreeing to — CLAUDE.md §8, Ley 29733. Same
-// provisional constant GetPublicCatalogRoute sends as `settings.
-// consentVersion`; no `settings` table yet to read it from instead.
-const CONSENT_VERSION = "v1";
+// Version the guardian is agreeing to — CLAUDE.md §8, Ley 29733. The one
+// constant the catalog sends and the portal stamps too (OOC-72).
+const CONSENT_VERSION = CURRENT_CONSENT_VERSION;
 
 // Same field rules as the entity (normalized, then checked — fields.ts), plus
 // the checkout's own Gmail gate. A refusal is a 400 naming each field and its

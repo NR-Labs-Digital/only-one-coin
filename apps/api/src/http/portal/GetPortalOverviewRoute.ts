@@ -1,4 +1,4 @@
-import { ForbiddenError, ProcedureKindSchema, type ProcedureRequestStatus } from "@ooc/domain";
+import { CURRENT_CONSENT_VERSION, ForbiddenError, ProcedureKindSchema, type ProcedureRequestStatus } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -83,6 +83,18 @@ const PortalOverviewSchema = z.object({
   enrollments: z.array(PortalEnrollmentSchema),
   /** The pass mark the screen compares a grade with (OOC-41); null when it could not be read. */
   passingGrade: z.number().int().nullable(),
+  /**
+   * The guardian's consent for this profile (OOC-72): `not_required` for a
+   * student of age. `canAccept` — the signed-in account is the guardian on
+   * file and the consent is pending: the portal opens this profile on the
+   * consent text. The student's own account never accepts.
+   */
+  guardianConsent: z.object({
+    state: z.enum(["accepted", "pending", "not_required"]),
+    canAccept: z.boolean(),
+    /** The text version the screen prints and sends back. */
+    version: z.string(),
+  }),
   procedures: z.array(
     z.object({
       kind: ProcedureKindSchema,
@@ -218,6 +230,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
           : null,
       })),
       passingGrade: overview.passingGrade,
+      guardianConsent: { ...overview.guardianConsent, version: CURRENT_CONSENT_VERSION },
       procedures: overview.procedures.map((procedure) => ({ ...procedure, currency: "PEN" as const })),
       requests: overview.requests.map((item) => ({
         id: item.id,

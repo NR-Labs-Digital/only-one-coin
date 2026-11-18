@@ -2,9 +2,11 @@ import * as schema from "@ooc/db";
 import {
   academicPeriods,
   classGroups,
+  consents,
   courses,
   enrollments,
   grades,
+  guardianPortalLinks,
   guardians,
   payments,
   planPrices,
@@ -188,6 +190,20 @@ describe("StudentPortalQuery.overview", () => {
 
     expect(overview?.student).toMatchObject({ id: NEW_FILE, firstName: "Nueva", isMinor: true });
     expect(overview?.student.guardian).toMatchObject({ firstName: "Madre", consent: null });
+  });
+
+  it("says the guardian's consent is pending, and that only the guardian's account may accept it (OOC-72)", async () => {
+    // The student's own account: pending, but never theirs to accept.
+    expect((await query.overview(USER))?.guardianConsent).toEqual({ state: "pending", canAccept: false });
+
+    // The guardian's account, reaching the file through its link.
+    const mother = await insertPasswordlessUser(db, { email: "Madre@Example.com", name: "Madre", role: "student" });
+    await db.insert(guardianPortalLinks).values({ userId: mother, studentId: NEW_FILE });
+    expect((await query.overview(mother))?.guardianConsent).toEqual({ state: "pending", canAccept: true });
+
+    const [guardian] = await db.select({ id: guardians.id }).from(guardians).where(eq(guardians.studentId, NEW_FILE));
+    await db.insert(consents).values({ guardianId: guardian!.id, version: "v1", acceptedAt: new Date(), ip: "127.0.0.1" });
+    expect((await query.overview(mother))?.guardianConsent).toEqual({ state: "accepted", canAccept: false });
   });
 
   it("lists the live enrollments of every file on the account, newest first — never a stranger's", async () => {

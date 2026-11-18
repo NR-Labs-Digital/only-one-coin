@@ -1,5 +1,7 @@
-import { enrollments, portalAccessTokens, students } from "@ooc/db";
+import { consents, enrollments, guardians, portalAccessTokens, students } from "@ooc/db";
+import { Student } from "@ooc/domain";
 import type {
+  GuardianAccessOutcome,
   IPortalAccessRepository,
   IssuePortalTokenRequest,
   PortalAccessOutcome,
@@ -9,11 +11,12 @@ import type {
   PortalAccount,
   PortalIdentifier,
   PortalIdentity,
+  PortalGuardianAccessRequest,
 } from "@ooc/domain";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
-import { provisionPortalAccount } from "./provisionPortalAccount.js";
+import { provisionGuardianAccess, provisionPortalAccount } from "./provisionPortalAccount.js";
 import { pickProfile, profilesOfAccount } from "./accountProfiles.js";
 import { reachableStudentIdsSql } from "./reachableStudents.js";
 
@@ -39,6 +42,31 @@ export class DrizzlePortalAccessRepository implements IPortalAccessRepository {
           where s."id" = ${studentId} and u."role" = 'student' limit 1`,
     );
     return result.rows[0] ? toAccount(result.rows[0]) : null;
+  }
+
+  async openGuardianAccess(
+    request: PortalGuardianAccessRequest,
+  ): Promise<{ outcome: GuardianAccessOutcome; account: PortalAccount | null }> {
+    const door = await this.db.transaction((tx) => provisionGuardianAccess(tx, request, request.guardian));
+    if (!door.userId) return { outcome: door.outcome, account: null };
+    const result = await this.db.execute<AccountRow>(sql`select ${ACCOUNT_COLUMNS} from "user" u where u."id" = ${door.userId} limit 1`);
+    return { outcome: door.outcome, account: result.rows[0] ? toAccount(result.rows[0]) : null };
+  }
+
+  async guardianConsentPending(studentId: string): Promise<boolean> {
+    const [file] = await this.db
+      .select({
+        birthDate: students.birthDate,
+        guardianId: guardians.id,
+        consentGiven: sql<boolean>`exists (select 1 from ${consents} c where c."guardian_id" = ${guardians.id})`,
+      })
+      .from(students)
+      .leftJoin(guardians, and(eq(guardians.studentId, students.id), isNull(guardians.deletedAt)))
+      .where(eq(students.id, studentId))
+      .limit(1);
+    // No guardian is pending too, but there is nobody to let in: the file
+    // flags it, and staff adds the guardian first.
+    return Boolean(file?.guardianId) && Student.isMinorBornOn(file!.birthDate) && !file!.consentGiven;
   }
 
   async findAccountByIdentifier(identifier: PortalIdentifier): Promise<PortalAccount | null> {

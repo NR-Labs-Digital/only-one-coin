@@ -9,14 +9,18 @@ export const issuePortalAccessRoute = RouteBuilder.post("/students/:studentId/po
   .docs({
     tags: ["Students"],
     summary: "Send the student their portal access",
-    description: "Creates the account, re-sends the activation, or sends a reset link — whichever applies.",
+    description:
+      "Creates the account, re-sends the activation, or sends a reset link — whichever applies. Opens the guardian's account with a new student account, and on an existing one while a minor's consent is pending (OOC-72); `guardian` says what that did.",
   })
   .roles("master", "admin", "enrollment_supervisor")
   .params(z.object({ studentId: z.string().uuid() }))
   .body(z.object({}))
   .response(
     200,
-    z.object({ outcome: z.enum(["created", "linked_existing", "already_linked", "email_conflict", "activation_resent", "reset_sent"]) }),
+    z.object({
+      outcome: z.enum(["created", "linked_existing", "already_linked", "email_conflict", "activation_resent", "reset_sent"]),
+      guardian: z.enum(["created", "linked", "activation_resent", "active", "conflict"]).nullable(),
+    }),
   )
   .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {

@@ -69,7 +69,7 @@ describe("GET /students/export", () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("application/x-ndjson");
     expect(response.headers["x-row-count"]).toBe("3");
-    expect(exportDirectory).toHaveBeenCalledWith({ q: "quispe", status: "former", minor: true, sort: "newest" }, "u1");
+    expect(exportDirectory).toHaveBeenCalledWith({ q: "quispe", status: "former", minor: true, consentPending: false, sort: "newest" }, "u1");
 
     const lines = response.body.trimEnd().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
     expect(lines.map((line) => line.firstName)).toEqual(["Rosa", "Ana", "Luz"]);
@@ -96,6 +96,6 @@ describe("GET /students/export", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toBe("");
-    expect(exportDirectory).toHaveBeenCalledWith({ q: undefined, status: undefined, minor: false, sort: "newest" }, "u1");
+    expect(exportDirectory).toHaveBeenCalledWith({ q: undefined, status: undefined, minor: false, consentPending: false, sort: "newest" }, "u1");
   });
 });

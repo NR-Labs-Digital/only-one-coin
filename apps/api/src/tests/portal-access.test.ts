@@ -23,6 +23,7 @@ import {
   type PortalAccessToken,
   type PortalAccount,
   type PortalAccountProvisioning,
+  type PortalGuardianAccessRequest,
   type PortalIdentifier,
 } from "@ooc/domain";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -154,6 +155,19 @@ class FakePortalRepository implements IPortalAccessRepository {
   }
   async accessState() {
     return "none" as const;
+  }
+  public consentPending = false;
+  public guardianDoors: PortalGuardianAccessRequest[] = [];
+  public guardianDoor: Awaited<ReturnType<IPortalAccessRepository["openGuardianAccess"]>> = { outcome: "not_applicable", account: null };
+  async openGuardianAccess(request: PortalGuardianAccessRequest) {
+    this.guardianDoors.push(request);
+    if (this.guardianDoor.outcome === "created") {
+      this.outbox.push(...request.guardian.notify({ userId: "usr_mom", email: "mama@hotmail.com", name: "Rosa Quispe", hasPassword: false }, "tok_mom"));
+    }
+    return this.guardianDoor;
+  }
+  async guardianConsentPending() {
+    return this.consentPending;
   }
 }
 
@@ -294,35 +308,91 @@ describe("IssuePortalAccessUseCase", () => {
 
   it("creates the account when there is none", async () => {
     const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
-    expect(result).toEqual({ outcome: "created" });
+    expect(result).toEqual({ outcome: "created", guardian: null });
     expect(repo.outbox.map((m) => m.templateKey)).toEqual(["portal_credentials"]);
     expect(audit.entries).toEqual([expect.objectContaining({ action: "portal_access.issued", targetId: STUDENT, metadata: { outcome: "created" } })]);
+    // The guardian's door opens with the student's account, as on an approval (OOC-147).
+    expect(repo.guardianDoors).toHaveLength(1);
+  });
+
+  it("opens the guardian's account with a new student account and says so", async () => {
+    repo.guardianDoor = { outcome: "created", account: null };
+    const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+    expect(result).toEqual({ outcome: "created", guardian: "created" });
+    expect(repo.outbox.map((m) => m.to)).toEqual(["ana@gmail.com", "mama@hotmail.com"]);
+    expect(audit.entries[0]?.metadata).toEqual({ outcome: "created", guardian: "created" });
+  });
+
+  describe("on a file that already has an account (OOC-72)", () => {
+    const MOM: PortalAccount = { userId: "usr_mom", email: "mama@hotmail.com", name: "Rosa Quispe", hasPassword: false };
+
+    beforeEach(() => {
+      repo.accounts.set(STUDENT, ACCOUNT);
+    });
+
+    it("leaves the guardian alone once the consent is given", async () => {
+      repo.guardianDoor = { outcome: "created", account: null };
+      const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+      expect(result).toEqual({ outcome: "activation_resent", guardian: null });
+      expect(repo.guardianDoors).toEqual([]);
+    });
+
+    it("opens the guardian's account while a minor's consent is pending", async () => {
+      repo.consentPending = true;
+      repo.guardianDoor = { outcome: "created", account: null };
+      const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+      expect(result).toEqual({ outcome: "activation_resent", guardian: "created" });
+      expect(repo.outbox.map((m) => m.to)).toEqual([ACCOUNT.email, "mama@hotmail.com"]);
+    });
+
+    it("re-sends the guardian's activation when their account has no password yet", async () => {
+      repo.consentPending = true;
+      repo.guardianDoor = { outcome: "already_linked", account: MOM };
+      const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+      expect(result.guardian).toBe("activation_resent");
+      expect(repo.tokens.filter((t) => t.userId === MOM.userId).map((t) => t.purpose)).toEqual(["activation"]);
+    });
+
+    it("never resets the guardian's password: an active guardian accepts at the next sign-in", async () => {
+      repo.consentPending = true;
+      repo.guardianDoor = { outcome: "already_linked", account: { ...MOM, hasPassword: true } };
+      const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+      expect(result.guardian).toBe("active");
+      expect(repo.tokens.filter((t) => t.userId === MOM.userId)).toEqual([]);
+    });
+
+    it("reports a guardian address held by staff", async () => {
+      repo.consentPending = true;
+      repo.guardianDoor = { outcome: "conflict", account: null };
+      const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
+      expect(result.guardian).toBe("conflict");
+    });
   });
 
   it("re-sends the activation to an account still without a password", async () => {
     repo.accounts.set(STUDENT, ACCOUNT);
     const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
-    expect(result).toEqual({ outcome: "activation_resent" });
+    expect(result).toEqual({ outcome: "activation_resent", guardian: null });
     expect(repo.tokens.map((t) => t.purpose)).toEqual(["activation"]);
   });
 
   it("sends a reset link to an active account", async () => {
     repo.accounts.set(STUDENT, WITH_PASSWORD);
     const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
-    expect(result).toEqual({ outcome: "reset_sent" });
+    expect(result).toEqual({ outcome: "reset_sent", guardian: null });
     expect(repo.outbox.map((m) => m.templateKey)).toEqual(["portal_password_reset"]);
   });
 
   it("e-mails the account a duplicate file was just linked to", async () => {
     repo.provisionOutcome = "linked_existing";
     const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
-    expect(result).toEqual({ outcome: "reset_sent" });
+    expect(result).toEqual({ outcome: "reset_sent", guardian: null });
   });
 
   it("reports an e-mail conflict and sends nothing", async () => {
     repo.provisionOutcome = "email_conflict";
     const result = await new IssuePortalAccessUseCase(repo, new FakeLinks(), audit).run({ actorId: "usr_admin", studentId: STUDENT });
-    expect(result).toEqual({ outcome: "email_conflict" });
+    expect(result).toEqual({ outcome: "email_conflict", guardian: null });
     expect(repo.outbox).toEqual([]);
   });
 
