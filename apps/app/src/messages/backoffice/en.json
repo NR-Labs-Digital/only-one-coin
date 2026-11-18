@@ -137,6 +137,9 @@
       "deadline_overdue": "Overdue",
       "approved_toast": "Payment approved. The enrollment is now active.",
       "rejected_toast": "Payment rejected. The seat went back to the class group.",
+      "approved_lot_toast": "Payment approved. Every enrollment of the payment is now active.",
+      "approved_lot_portal_conflict_toast": "Payment approved, but we did not create the portal account of a student in the payment: their e-mail already belongs to another account. The e-mail has to be corrected before the access is sent.",
+      "rejected_lot_toast": "Payment rejected. Every seat of the payment went back to its class group.",
       "load_error_title": "The review queue could not be loaded",
       "load_error_body": "The system did not respond. Reload the page; if nothing changes, tell the tech team.",
       "approved_portal_conflict_toast": "Payment approved, but we did not create the portal account: the student's e-mail already belongs to another account. The e-mail has to be corrected before the access is sent."

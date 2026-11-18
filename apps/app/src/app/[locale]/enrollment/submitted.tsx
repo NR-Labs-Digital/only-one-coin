@@ -124,9 +124,12 @@ export function Submitted({
                   {t(`submitted.timeline.${step}.title`)}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {t(`submitted.timeline.${step}.body`, {
-                    days: catalog.settings.reservationDays,
-                  })}
+                  {/* A lot (OOC-158) holds several seats. */}
+                  {step === 'received' && items.length > 1
+                    ? t('lot.timeline_received_body')
+                    : t(`submitted.timeline.${step}.body`, {
+                        days: catalog.settings.reservationDays,
+                      })}
                 </span>
               </span>
             </li>

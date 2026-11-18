@@ -137,6 +137,9 @@
       "deadline_overdue": "Plazo vencido",
       "approved_toast": "Pago aprobado. La matrícula quedó activa.",
       "rejected_toast": "Pago rechazado. La vacante volvió a la sección.",
+      "approved_lot_toast": "Pago aprobado. Todas las matrículas del pago quedaron activas.",
+      "approved_lot_portal_conflict_toast": "Pago aprobado, pero no creamos la cuenta del portal de algún alumno del pago: su correo ya pertenece a otra cuenta. Hay que corregir el correo antes de enviar el acceso.",
+      "rejected_lot_toast": "Pago rechazado. Todas las vacantes del pago volvieron a sus secciones.",
       "load_error_title": "No se pudo cargar la cola de revisión",
       "load_error_body": "El sistema no respondió. Recarga la página; si sigue igual, avisa al equipo técnico.",
       "approved_portal_conflict_toast": "Pago aprobado, pero no creamos la cuenta del portal: el correo del alumno ya pertenece a otra cuenta. Hay que corregir el correo antes de enviar el acceso."

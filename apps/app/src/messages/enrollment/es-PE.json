@@ -246,7 +246,9 @@
       "review_courses": "Cursos de este pedido ({count})",
       "review_people": "Alumnos ({count})",
       "price": "Precio",
-      "submitted_summary": "Tus {count} matrículas"
+      "submitted_summary": "Tus {count} matrículas",
+      "what_happens": "Al enviar, tus vacantes quedan reservadas y tu comprobante entra a revisión. Tienes hasta {days} días para que se apruebe el pago; te avisamos por correo en cuanto esté listo.",
+      "timeline_received_body": "Tus vacantes quedaron reservadas."
     }
   }
 }
