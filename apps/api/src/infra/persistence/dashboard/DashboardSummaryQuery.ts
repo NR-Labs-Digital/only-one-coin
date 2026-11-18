@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { currentPeriod } from "@/infra/persistence/catalog/currentPeriod.js";
 
 /** The home's headline numbers, each next to the same figure for yesterday. */
 export interface DashboardSummary {
@@ -10,6 +11,12 @@ export interface DashboardSummary {
   activeStudents: number;
   /** The same count as it stood at the end of yesterday, Lima time. */
   activeStudentsYesterday: number;
+  /**
+   * Seats held and seats offered across the current period's class groups
+   * (OOC-160). `taken` counts the seats above capacity too (OOC-155), the
+   * same "30 / 30 +2" Académico shows, so it can pass `capacity`.
+   */
+  seatOccupancy: { taken: number; capacity: number };
 }
 
 interface SummaryRow extends Record<string, unknown> {
@@ -109,10 +116,36 @@ export class DashboardSummaryQuery {
 
     const row = result.rows[0]!;
     return {
+      seatOccupancy: await this.seatOccupancy(now),
       enrollmentsToday: Number(row.enrollments_today),
       enrollmentsYesterday: Number(row.enrollments_yesterday),
       activeStudents: Number(row.active_now),
       activeStudentsYesterday: Number(row.active_yesterday),
     };
+  }
+
+  /**
+   * Summed by Postgres over the current period (the most recent one already
+   * started and not retired, as the Payments and Enrollments headers), never
+   * over the catalog list: that list stops at 500 class groups without a
+   * period, so the figure went wrong without anyone seeing once there were
+   * more (OOC-160). Only the class groups Académico rolls up as current —
+   * enrolling or in progress, the "vigente" of OOC-113 — and not retired: a
+   * draft holds no seat, and a finished one is not filling any more.
+   */
+  private async seatOccupancy(now: Date): Promise<{ taken: number; capacity: number }> {
+    const period = await currentPeriod(this.db, now);
+    if (!period) return { taken: 0, capacity: 0 };
+    const result = await this.db.execute<{ taken: number | string; capacity: number | string }>(sql`
+      select
+        coalesce(sum(g.seats_taken + g.seats_over), 0) as taken,
+        coalesce(sum(g.capacity), 0) as capacity
+      from class_groups g
+      where g.academic_period_id = ${period.id}
+        and g.deleted_at is null
+        and g.status in ('enrolling', 'in_progress')
+    `);
+    const row = result.rows[0];
+    return { taken: Number(row?.taken ?? 0), capacity: Number(row?.capacity ?? 0) };
   }
 }

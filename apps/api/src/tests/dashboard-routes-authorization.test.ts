@@ -49,7 +49,7 @@ describe("GET /dashboard/summary", () => {
     "serves %s",
     async (role) => {
       signIn(role);
-      const summary = { enrollmentsToday: 3, enrollmentsYesterday: 5, activeStudents: 120, activeStudentsYesterday: 118 };
+      const summary = { enrollmentsToday: 3, enrollmentsYesterday: 5, activeStudents: 120, activeStudentsYesterday: 118, seatOccupancy: { taken: 32, capacity: 30 } };
       vi.spyOn(container.queries.dashboardSummary, "run").mockResolvedValue(summary);
 
       const response = await app.inject({ method: "GET", url: URL, cookies: { [SESSION_COOKIE_NAME]: "token" } });
