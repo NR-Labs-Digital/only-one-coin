@@ -428,6 +428,13 @@
       "when": 1795031501693,
       "tag": "0060_payment_lots",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1795040842194,
+      "tag": "0061_module_group_meet_url",
+      "breakpoints": true
     }
   ]
 }
