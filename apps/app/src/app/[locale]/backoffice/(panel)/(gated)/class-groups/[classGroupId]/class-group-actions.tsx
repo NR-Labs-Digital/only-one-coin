@@ -48,6 +48,7 @@ function editBaseline(group: ClassGroupItem): string {
     group.module,
     group.fullCourse,
     group.classroomLinksByModule,
+    group.meetUrl,
     group.slots,
     group.capacity,
     group.seatsTaken,

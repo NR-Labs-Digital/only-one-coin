@@ -9,15 +9,16 @@
  * host, nothing else. A `javascript:` or look-alike URL is refused here
  * instead of rendered.
  */
-export type ClassLinkKind = 'classroom' | 'drive'
+export type ClassLinkKind = 'classroom' | 'drive' | 'meet'
 
 /**
- * `classroom` mirrors `CLASSROOM_HOST` and `drive` `MODULE_MATERIAL_HOSTS` in
- * `@ooc/domain` — the API refuses what this lets through.
+ * `classroom` mirrors `CLASSROOM_HOST`, `drive` `MODULE_MATERIAL_HOSTS` and
+ * `meet` `MEET_HOST` in `@ooc/domain` — the API refuses what this lets through.
  */
 const HOSTS: Record<ClassLinkKind, readonly string[]> = {
   classroom: ['classroom.google.com'],
   drive: ['drive.google.com', 'docs.google.com'],
+  meet: ['meet.google.com'],
 }
 
 /**
@@ -69,4 +70,21 @@ export function classroomUrlOf(raw: string): string | null | 'invalid' {
   const parsed = parseClassLink(raw, 'classroom')
   if (parsed === null) return 'invalid'
   return parsed === '' ? null : parsed
+}
+
+/**
+ * The same for a module group's Google Meet (OOC-159): normalized, `null` for
+ * an empty field (clears it), `'invalid'` while it is not a Meet link. The API
+ * checks again (`normalizeMeetUrl` in `@ooc/domain`).
+ */
+export function meetUrlOf(raw: string): string | null | 'invalid' {
+  const parsed = parseClassLink(raw, 'meet')
+  if (parsed === null) return 'invalid'
+  return parsed === '' ? null : parsed
+}
+
+/** A stored Meet link that passes the host check, or null — never an unchecked `href`. */
+export function safeMeetUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  return parseClassLink(raw, 'meet') || null
 }

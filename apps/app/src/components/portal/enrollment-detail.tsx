@@ -83,8 +83,8 @@ export async function EnrollmentDetail({
                   </Link>
                 )}
             </div>
-          ) : classGroup.classroomLinks.length > 0 ? (
-            <ClassroomQuickLinks links={classGroup.classroomLinks} />
+          ) : classGroup.classroomLinks.length > 0 || classGroup.meetUrl ? (
+            <ClassroomQuickLinks links={classGroup.classroomLinks} meetUrl={classGroup.meetUrl} />
           ) : (
             <p className="inline-flex items-center gap-2 rounded-xl bg-brand-yellow/10 px-3.5 py-2.5 text-xs font-medium text-ink">
               <span className="text-brand-yellow-deep">

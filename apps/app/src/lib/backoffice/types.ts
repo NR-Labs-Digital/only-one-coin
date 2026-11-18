@@ -487,6 +487,8 @@ export interface ClassGroupModuleItem {
   classroomLinksByModule: Record<string, string>
   classroomLinks: ClassroomLink[]
   classroomMissing: boolean
+  /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
+  meetUrl: string | null
   /** Confirmed seats in the run now. */
   students: number
 }
@@ -528,6 +530,8 @@ export interface ClassGroupItem {
   classroomLinks: ClassroomLink[]
   /** Some run of the class group is missing a Classroom — the "Sin Classroom" warning. */
   classroomMissing: boolean
+  /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
+  meetUrl: string | null
   /** Some run of the class group has no teacher yet. */
   teacherMissing: boolean
   /**
@@ -731,6 +735,7 @@ export type CatalogErrorKey =
   | 'module_materials_incomplete'
   | 'module_material_invalid'
   | 'classroom_url_invalid'
+  | 'meet_url_invalid'
   | 'class_group_module_out_of_range'
   | 'class_group_module_not_found'
   | 'class_group_module_taken'

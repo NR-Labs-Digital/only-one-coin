@@ -168,6 +168,11 @@ export function ModuleRunsCard({
                   tone={run.classroomMissing ? 'warning' : 'success'}
                   label={t(run.classroomMissing ? 'class_group_runs.classroom_missing' : 'class_group_runs.classroom_ok')}
                 />
+                {/* The module group's Meet (OOC-159): warns, never blocks. */}
+                <StatusBadge
+                  tone={run.meetUrl ? 'success' : 'warning'}
+                  label={t(run.meetUrl ? 'class_group_runs.meet_ok' : 'class_group_runs.meet_missing')}
+                />
               </span>
               <span className="text-xs font-medium tabular-nums text-muted-foreground">
                 {t('class_group_runs.students', { count: run.students })}

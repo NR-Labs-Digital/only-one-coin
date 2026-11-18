@@ -393,6 +393,7 @@
         "module_materials": "Module materials",
         "classroom_url": "Classroom link",
         "classroom_links": "Classroom links per module",
+        "meet_url": "Meet link",
         "module": "Module",
         "total_hours": "Total hours",
         "certificate_rule": "Certificate rule",
@@ -1230,7 +1231,11 @@
       "step_intro_teacher": "Assign the teacher and the Classroom now, or continue and do it later.",
       "step_intro_review": "Check the details. You can go back to any step by tapping its number above.",
       "teacher_optional_title": "This step is optional: you can continue without a teacher",
-      "teacher_many_hint": "You are opening {count} class groups, each with its own teacher and Classroom. They are assigned later, on each one: once seats close they show up under Courses & groups → Pending."
+      "teacher_many_hint": "You are opening {count} class groups, each with its own teacher and Classroom. They are assigned later, on each one: once seats close they show up under Courses & groups → Pending.",
+      "field_meet": "Google Meet",
+      "meet_placeholder": "https://meet.google.com/…",
+      "meet_invalid": "Paste an https://meet.google.com/… link",
+      "meet_missing": "No Meet"
     },
     "periods": {
       "label": "Enrollment period",
@@ -2133,7 +2138,8 @@
       "class_group_module_last": "The class group needs at least one module group.",
       "class_group_module_has_students": "Students are still in this group. Move them before retiring it.",
       "class_group_module_ambiguous": "The class group has several module groups: edit the teacher, schedule and Classroom on each group.",
-      "class_group_full_course_split": "A full course opens one group per module; each group teaches one module."
+      "class_group_full_course_split": "A full course opens one group per module; each group teaches one module.",
+      "meet_url_invalid": "The link is not from Google Meet."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2151,7 +2157,8 @@
     },
     "class_links": {
       "classroom": "Open Classroom",
-      "classroom_module": "Classroom · Module {module}"
+      "classroom_module": "Classroom · Module {module}",
+      "meet": "Open Meet"
     },
     "grade_report": {
       "download": "Download report",
@@ -2406,7 +2413,9 @@
       "options_how": "Prices and plans are on the Plans tab. To take the course off the catalog, use the take-off-catalog card on this tab.",
       "course_name_what": "The name the student sees for the course.",
       "course_language_what": "The course's language. It groups the course on the enrollment form and decides which teachers can be assigned to its class groups.",
-      "course_level_what": "The course's level, for example B2 or Basic. It shows next to the name."
+      "course_level_what": "The course's level, for example B2 or Basic. It shows next to the name.",
+      "meet_what": "This module group's Google Meet link. The teacher sees it in their portal, and a student with a confirmed seat in theirs, next to the Classroom.",
+      "meet_how": "Copy the meeting link from Meet and paste it here. It is optional and can be done later."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -2569,7 +2578,9 @@
       "count": "{count, plural, one {# module group} other {# module groups}}",
       "module_short": "Mod. {number}",
       "full_short": "Full",
-      "unset_short": "No mod."
+      "unset_short": "No mod.",
+      "meet_ok": "Meet ready",
+      "meet_missing": "No Meet"
     },
     "progression": {
       "title": "Move on a module",
