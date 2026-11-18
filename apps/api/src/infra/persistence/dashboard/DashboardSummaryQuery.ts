@@ -60,11 +60,13 @@ export class DashboardSummaryQuery {
           ${at}::timestamptz as now
       ),
       first_approvals as (
-        select p.enrollment_id, min(a.created_at) as approved_at
+        -- Every enrollment the approved payment pays for: a lot's approval
+        -- counts each of its enrollments (OOC-158).
+        select c.enrollment_id, min(a.created_at) as approved_at
         from audit_log a
-        join payments p on p.id::text = a.target_id
+        join payment_coverage c on c.payment_id::text = a.target_id
         where a.action = 'payment.approved'
-        group by p.enrollment_id
+        group by c.enrollment_id
       ),
       group_ends as (
         select g.id, g.status,

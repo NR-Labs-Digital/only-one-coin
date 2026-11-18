@@ -232,3 +232,29 @@ export class EnrollmentMoveConflictError extends ConflictError {
     super({ reason: "enrollment.move_conflict", message: "The enrollment changed while it was being moved.", ...params });
   }
 }
+
+/**
+ * A lot (OOC-158) names the same person twice — two entries of the checkout's
+ * people with the same document. One document is one person (CLAUDE.md §1):
+ * the checkout sends one entry and points every item of theirs at it.
+ */
+export class LotDuplicatePersonError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "enrollment.lot_duplicate_person",
+      message: "The same document appears in more than one person of the lot.",
+      ...params,
+    });
+  }
+}
+
+/** A lot (OOC-158) enrolls the same person twice in the same course. */
+export class LotDuplicateCourseError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "enrollment.lot_duplicate_course",
+      message: "The lot enrolls the same person in the same course twice.",
+      ...params,
+    });
+  }
+}

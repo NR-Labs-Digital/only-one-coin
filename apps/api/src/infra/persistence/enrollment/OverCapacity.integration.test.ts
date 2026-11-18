@@ -217,11 +217,9 @@ async function submitParams(tx: Db, holdId: string): Promise<SubmitPublicEnrollm
     operationNumber: `OC155${holdId.slice(0, 6)}`,
   });
   return {
-    seatHoldId: holdId,
-    student,
-    guardian: null,
+    people: [{ student, guardian: null }],
+    items: [{ seatHoldId: holdId, person: 0, enrollment }],
     consent: null,
-    enrollment,
     payment,
     receiptUploadId: upload!.id,
     notifications: [],
@@ -279,8 +277,8 @@ describe("an expired checkout hold that comes back paid (OOC-155, case 1)", () =
 
       const result = await new DrizzlePublicEnrollmentRepository(tx).submit(await submitParams(tx, late));
 
-      expect(result.enrollment.classGroupId).toBe(GROUP_A);
-      expect(result.enrollment.overCapacity).toBe(true);
+      expect(result.enrollments[0]!.classGroupId).toBe(GROUP_A);
+      expect(result.enrollments[0]!.overCapacity).toBe(true);
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 1 });
       const [hold] = await tx.select({ status: seatHolds.status }).from(seatHolds).where(eq(seatHolds.id, late));
       expect(hold!.status).toBe("consumed");
@@ -296,8 +294,8 @@ describe("an expired checkout hold that comes back paid (OOC-155, case 1)", () =
 
       const result = await new DrizzlePublicEnrollmentRepository(tx).submit(await submitParams(tx, late));
 
-      expect(result.enrollment.classGroupId).toBe(GROUP_B);
-      expect(result.enrollment.overCapacity).toBe(false);
+      expect(result.enrollments[0]!.classGroupId).toBe(GROUP_B);
+      expect(result.enrollments[0]!.overCapacity).toBe(false);
       expect(await counters(tx, GROUP_B)).toEqual({ taken: 1, over: 0 });
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
     });
@@ -311,7 +309,7 @@ describe("an expired checkout hold that comes back paid (OOC-155, case 1)", () =
 
       const result = await new DrizzlePublicEnrollmentRepository(tx).submit(await submitParams(tx, late));
 
-      expect(result.enrollment.overCapacity).toBe(false);
+      expect(result.enrollments[0]!.overCapacity).toBe(false);
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });
     });
   });
@@ -341,12 +339,12 @@ describe("a class group above capacity", () => {
       // The regular seat is rejected in Pagos and goes back.
       await new DrizzlePaymentSettlementRepository(tx).settle({
         paymentId: regular.paymentId,
-        origin: { kind: "enrollment", enrollmentId: regular.enrollmentId, classGroupId: GROUP_A, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId: regular.enrollmentId, classGroupId: GROUP_A, seatStatus: "reserved", lot: [] },
         to: "rejected",
         decision: { by: STAFF, at: new Date(), rejectionReason: "other" },
         notifications: [],
         audit: { actorId: STAFF, action: "payment.rejected", targetId: regular.paymentId, at: new Date() },
-        portalAccess: null,
+        portalAccess: [],
       });
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 0, over: 1 });
 
@@ -366,12 +364,12 @@ describe("a class group above capacity", () => {
 
       await new DrizzlePaymentSettlementRepository(tx).settle({
         paymentId: over.paymentId,
-        origin: { kind: "enrollment", enrollmentId: over.enrollmentId, classGroupId: GROUP_A, seatStatus: "reserved" },
+        origin: { kind: "enrollment", enrollmentId: over.enrollmentId, classGroupId: GROUP_A, seatStatus: "reserved", lot: [] },
         to: "rejected",
         decision: { by: STAFF, at: new Date(), rejectionReason: "other" },
         notifications: [],
         audit: { actorId: STAFF, action: "payment.rejected", targetId: over.paymentId, at: new Date() },
-        portalAccess: null,
+        portalAccess: [],
       });
 
       expect(await counters(tx, GROUP_A)).toEqual({ taken: 1, over: 0 });

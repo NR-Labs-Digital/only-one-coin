@@ -189,7 +189,7 @@ const settle = (tx: Tx, paymentId: string, procedureRequestId: string, to: "appr
     decision: { by: REVIEWER, at: AT, rejectionReason: to === "rejected" ? "illegible" : null },
     notifications: [],
     audit: audit(paymentId, to === "approved" ? "payment.approved" : "payment.rejected"),
-    portalAccess: null,
+    portalAccess: [],
   });
 
 async function seat(tx: Tx, enrollmentId: string) {
@@ -387,7 +387,7 @@ describe("an operation number after a rejection", () => {
       decision: { by: REVIEWER, at: AT, rejectionReason: reason },
       notifications: [],
       audit: audit(paymentId, "payment.rejected"),
-      portalAccess: null,
+      portalAccess: [],
     });
     return operationNumber;
   }
@@ -435,7 +435,7 @@ describe("settling a procedure's payment", () => {
 
       const result = await settle(tx, paymentId, request.id, "approved");
 
-      expect(result).toEqual({ seatStatus: null, portalAccess: null });
+      expect(result).toEqual({ seatStatus: null, portalAccess: [] });
       const [row] = await tx.select().from(procedureRequests).where(eq(procedureRequests.id, request.id));
       expect(row!.status).toBe("paid");
       expect(await seat(tx, seeded.enrollmentId)).toEqual(before);

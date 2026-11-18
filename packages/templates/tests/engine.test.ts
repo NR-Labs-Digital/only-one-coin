@@ -24,7 +24,7 @@ const contract = defineTemplateKind({
   }),
   sample: {
     teacher: { fullName: "Ana Quispe", nationalId: "12345678", region: null },
-    org: { legalName: "INGLES POR UN SOL S.A.C.", ruc: "20613918028" },
+    org: { legalName: "ONLY ONE ACADEMY SAC", ruc: "20615261271" },
     contract: { startsOn: "2026-11-01", endsOn: "2026-12-31", feeCents: 150000 },
     groups: [
       { code: "ENG-A1-01", schedule: "Lun y Mié 19:00" },
@@ -110,7 +110,7 @@ describe("render", () => {
       { ...contract.sample, teacher: { fullName: "<script>x</script>", nationalId: "1", region: null } },
       { locale: "es-PE" },
     );
-    expect(html).toBe("<p>&lt;script&gt;x&lt;/script&gt; · RUC 20613918028</p>");
+    expect(html).toBe("<p>&lt;script&gt;x&lt;/script&gt; · RUC 20615261271</p>");
   });
 
   it("does not escape a text kind", async () => {

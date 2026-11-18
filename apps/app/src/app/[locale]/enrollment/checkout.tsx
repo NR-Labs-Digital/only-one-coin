@@ -10,7 +10,14 @@ import type {
   StepId,
 } from '@/lib/enrollment/types'
 import { clearCheckoutStorage, useCheckout } from '@/lib/enrollment/use-checkout'
-import { phoneNumberOf, planOfCourse } from '@/lib/enrollment/checkout'
+import {
+  checkoutItems,
+  MAX_LOT_ITEMS,
+  personKey,
+  phoneNumberOf,
+  planOfCourse,
+  type CheckoutItem,
+} from '@/lib/enrollment/checkout'
 import { Stepper } from '@/components/enrollment/stepper'
 import { HoldTimer } from '@/components/enrollment/hold-timer'
 import { CheckoutIcon } from '@/components/enrollment/icons'
@@ -20,6 +27,7 @@ import { StepPayment } from './step-payment'
 import { StepReview, type SubmitOutcome } from './step-review'
 import { Submitted } from './submitted'
 import { Expired } from './expired'
+import { LotPanel } from './lot-panel'
 
 // A resend that finds the first attempt still running (409
 // `idempotency.in_progress`, OOC-24) waits this long and tries again — the
@@ -79,6 +87,10 @@ export function Checkout({
     settleHold,
     expireHold,
     restart,
+    receiptHoldId,
+    addAnotherCourse,
+    cancelAnotherCourse,
+    removeLotEntry,
   } = useCheckout(catalog, initialDraft)
 
   const stepLabels: Record<StepId, string> = {
@@ -99,51 +111,82 @@ export function Checkout({
     if (outcome === 'held') goTo('student')
   }
 
+  /** Several courses, one receipt (OOC-158): this course joins the lot and
+   * the next one starts at step 1. */
+  function addCourse() {
+    if (addAnotherCourse()) goTo('course')
+  }
+
   async function submit(captchaToken: string): Promise<SubmitOutcome> {
-    const plan = planOfCourse(catalog, draft.course.courseId)
+    const items = checkoutItems(draft)
+    const holds = [...draft.lot.map((entry) => entry.hold.id), holdId]
+    const plans = items.map((item) => planOfCourse(catalog, item.course.courseId))
     const receiptUploadId = draft.payment.receipt?.receiptUploadId ?? null
-    if (!draft.course.classGroupId || !plan || !draft.payment.method || !holdId || !receiptUploadId) {
+    if (
+      !draft.payment.method ||
+      !receiptUploadId ||
+      holds.some((id) => !id) ||
+      plans.some((plan) => !plan) ||
+      items.some((item) => !item.course.classGroupId)
+    ) {
       throw new Error('Checkout draft is missing a required field at submit')
+    }
+
+    // One entry per person (one document, one person — CLAUDE.md §1), each
+    // item pointing at theirs by index.
+    const people: CheckoutItem[] = []
+    const personIndex = new Map<string, number>()
+    for (const item of items) {
+      const key = personKey(item.student)
+      if (!personIndex.has(key)) {
+        personIndex.set(key, people.length)
+        people.push(item)
+      }
     }
 
     const payload = JSON.stringify({
       // Turnstile (OOC-24): checked by the API before anything is written.
       captchaToken,
-      // The seat and the channel travel as this one id: the server reads
-      // both off the hold, never off this body.
-      holdId,
       // Minted and confirmed in step 3 (RequestReceiptUploadRoute,
-      // ConfirmReceiptUploadRoute) — the server checks it belongs to this
-      // same hold and actually landed in the bucket.
+      // ConfirmReceiptUploadRoute) against the first item's hold — the server
+      // checks it belongs to that hold and actually landed in the bucket.
       receiptUploadId,
-      classGroupId: draft.course.classGroupId,
-      planId: plan.id,
-      student: {
-        firstName: draft.student.firstName,
-        lastName: draft.student.lastName,
-        nationalIdType: draft.student.nationalIdType,
-        nationalId: draft.student.nationalId,
-        email: draft.student.email,
-        phone: phoneNumberOf(draft.student.phone),
-        birthDate: draft.student.birthDate,
-        // Peru only — the public form has no country selector
-        // (StudentDraft doc comment, lib/enrollment/types.ts).
-        country: 'PE',
-        region: draft.student.region,
-        city: draft.student.city,
-      },
-      guardian: draft.guardian.consentAccepted
-        ? {
-            firstName: draft.guardian.firstName,
-            lastName: draft.guardian.lastName,
-            relationship: draft.guardian.relationship,
-            nationalIdType: draft.guardian.nationalIdType,
-            nationalId: draft.guardian.nationalId,
-            email: draft.guardian.email,
-            phone: phoneNumberOf(draft.guardian.phone),
-            consentAccepted: true as const,
-          }
-        : null,
+      people: people.map(({ student, guardian }) => ({
+        student: {
+          firstName: student.firstName,
+          lastName: student.lastName,
+          nationalIdType: student.nationalIdType,
+          nationalId: student.nationalId,
+          email: student.email,
+          phone: phoneNumberOf(student.phone),
+          birthDate: student.birthDate,
+          // Peru only — the public form has no country selector
+          // (StudentDraft doc comment, lib/enrollment/types.ts).
+          country: 'PE',
+          region: student.region,
+          city: student.city,
+        },
+        guardian: guardian.consentAccepted
+          ? {
+              firstName: guardian.firstName,
+              lastName: guardian.lastName,
+              relationship: guardian.relationship,
+              nationalIdType: guardian.nationalIdType,
+              nationalId: guardian.nationalId,
+              email: guardian.email,
+              phone: phoneNumberOf(guardian.phone),
+              consentAccepted: true as const,
+            }
+          : null,
+      })),
+      // The seat and the channel travel as each hold's id: the server reads
+      // both off the hold, never off this body.
+      items: items.map((item, index) => ({
+        holdId: holds[index],
+        classGroupId: item.course.classGroupId,
+        planId: plans[index]!.id,
+        person: personIndex.get(personKey(item.student)),
+      })),
       // The e-mails about this enrollment are written in this language.
       locale: apiLocale[locale],
       payment: {
@@ -155,7 +198,7 @@ export function Checkout({
     })
 
     const post = () =>
-      fetch('/api/v1/enrollments/public', {
+      fetch('/api/v1/enrollments/public/lot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
@@ -275,6 +318,19 @@ export function Checkout({
         </div>
       )}
 
+      {step !== 'review' && (
+        <LotPanel
+          catalog={catalog}
+          draft={draft}
+          onRemove={removeLotEntry}
+          // Stepping back from a course being added — only before its seat.
+          onCancelAdd={step === 'course' ? () => {
+            cancelAnotherCourse()
+            goTo('student')
+          } : undefined}
+        />
+      )}
+
       {step === 'course' && (
         <StepCourse
           catalog={catalog}
@@ -293,6 +349,7 @@ export function Checkout({
           setDraft={setDraft}
           onBack={() => goTo('course')}
           onContinue={() => goTo('payment')}
+          onAddCourse={draft.lot.length + 1 < MAX_LOT_ITEMS ? addCourse : undefined}
         />
       )}
 
@@ -301,7 +358,7 @@ export function Checkout({
           catalog={catalog}
           draft={draft}
           setDraft={setDraft}
-          holdId={holdId}
+          holdId={receiptHoldId}
           onBack={() => goTo('student')}
           onContinue={() => goTo('review')}
         />
@@ -314,6 +371,7 @@ export function Checkout({
           onEdit={goTo}
           onBack={() => goTo('payment')}
           onSubmit={submit}
+          onRemoveLotEntry={removeLotEntry}
         />
       )}
     </Shell>

@@ -11,6 +11,12 @@ import type { EmailTemplateVars } from "@ooc/domain";
  * a sample button that opened a real portal page would be a link to nowhere
  * with the platform's name on it.
  */
+/** A mother's two children in one lot (OOC-158). */
+const LOT_SAMPLE_ITEMS = [
+  { studentName: "María Fernanda Quispe Rojas", courseName: "Inglés Básico", startsOn: "2026-11-09T05:00:00.000Z" },
+  { studentName: "Diego Quispe Rojas", courseName: "Inglés Kids", startsOn: "2026-11-16T05:00:00.000Z" },
+];
+
 export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
   enrollment_received: {
     recipientName: "María Fernanda",
@@ -35,6 +41,10 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
   },
+  lot_enrollment_received: { recipientName: "Rosa", items: LOT_SAMPLE_ITEMS, amountCents: 13980 },
+  lot_payment_under_review: { recipientName: "Rosa", items: LOT_SAMPLE_ITEMS },
+  lot_payment_approved: { recipientName: "Rosa", items: LOT_SAMPLE_ITEMS },
+  lot_payment_rejected: { recipientName: "Rosa", items: LOT_SAMPLE_ITEMS },
   procedure_payment_under_review: {
     recipientName: "María Fernanda",
     studentName: "María Fernanda Quispe Rojas",

@@ -37,6 +37,7 @@ const ROW = {
   verdict: null,
   submittedAt: new Date("2026-11-01T12:00:00.000Z"),
   reviewDeadline: new Date("2026-11-06T12:00:00.000Z"),
+  lot: [],
 };
 
 let app: FastifyInstance;

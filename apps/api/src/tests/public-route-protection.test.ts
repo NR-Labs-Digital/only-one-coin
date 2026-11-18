@@ -307,9 +307,9 @@ describe("POST /enrollments/public — captcha and idempotency", () => {
     stubEdge(attempt);
     const verify = vi.spyOn(container.edge.captcha, "verify").mockResolvedValue("passed");
     const run = vi.spyOn(container.useCases.enrollment.submitPublic, "run").mockResolvedValue({
-      enrollment: { id: RESULT.enrollmentId },
+      enrollments: [{ id: RESULT.enrollmentId }],
       payment: { id: RESULT.paymentId },
-    } as Awaited<ReturnType<typeof container.useCases.enrollment.submitPublic.run>>);
+    } as unknown as Awaited<ReturnType<typeof container.useCases.enrollment.submitPublic.run>>);
 
     const response = await app.inject({
       method: "POST",
@@ -335,5 +335,80 @@ describe("POST /enrollments/public — captcha and idempotency", () => {
     expect(run).toHaveBeenCalledWith(expect.objectContaining({ consent: { version: "v1", ip: "198.51.100.7" } }));
     expect(attempt.complete).toHaveBeenCalledWith(RESULT);
     expect(attempt.abandon).not.toHaveBeenCalled();
+  });
+
+  it("takes a lot: every person and item to the usecase, the guardian's consent stamped once (OOC-158)", async () => {
+    const attempt = freshAttempt();
+    stubEdge(attempt);
+    vi.spyOn(container.edge.captcha, "verify").mockResolvedValue("passed");
+    const run = vi.spyOn(container.useCases.enrollment.submitPublic, "run").mockResolvedValue({
+      enrollments: [{ id: RESULT.enrollmentId }, { id: "018f2b5c-5000-7000-8000-0000000000e2" }],
+      payment: { id: RESULT.paymentId },
+    } as unknown as Awaited<ReturnType<typeof container.useCases.enrollment.submitPublic.run>>);
+    const guardian = {
+      firstName: "Ana",
+      lastName: "Quispe",
+      relationship: "mother",
+      nationalIdType: "DNI",
+      nationalId: "40123456",
+      email: "ana@hotmail.com",
+      phone: "987654321",
+      consentAccepted: true,
+    };
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/enrollments/public/lot",
+      headers: { "x-forwarded-for": "198.51.100.7" },
+      payload: {
+        captchaToken: BODY.captchaToken,
+        receiptUploadId: BODY.receiptUploadId,
+        locale: "es-PE",
+        payment: BODY.payment,
+        people: [
+          { student: BODY.student, guardian },
+          { student: { ...BODY.student, nationalId: "70123457", email: "luis.quispe@gmail.com" }, guardian },
+        ],
+        items: [
+          { holdId: BODY.holdId, classGroupId: BODY.classGroupId, planId: BODY.planId, person: 0 },
+          { holdId: "018f2b5c-5000-7000-8000-000000000009", classGroupId: BODY.classGroupId, planId: BODY.planId, person: 1 },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      enrollmentIds: [RESULT.enrollmentId, "018f2b5c-5000-7000-8000-0000000000e2"],
+      paymentId: RESULT.paymentId,
+    });
+    const input = run.mock.calls[0]![0];
+    expect(input.items.map((item) => [item.seatHoldId, item.person])).toEqual([
+      [BODY.holdId, 0],
+      ["018f2b5c-5000-7000-8000-000000000009", 1],
+    ]);
+    expect(input.people).toHaveLength(2);
+    expect(input.people[1]!.guardian).not.toHaveProperty("consentAccepted");
+    expect(input.consent).toEqual({ version: "v1", ip: "198.51.100.7" });
+  });
+
+  it("refuses a lot past the ceiling before anything runs (OOC-158)", async () => {
+    stubEdge(freshAttempt());
+    const run = vi.spyOn(container.useCases.enrollment.submitPublic, "run");
+    const item = { holdId: BODY.holdId, classGroupId: BODY.classGroupId, planId: BODY.planId, person: 0 };
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/enrollments/public/lot",
+      payload: {
+        captchaToken: BODY.captchaToken,
+        receiptUploadId: BODY.receiptUploadId,
+        payment: BODY.payment,
+        people: [{ student: BODY.student, guardian: null }],
+        items: Array.from({ length: 11 }, () => item),
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(run).not.toHaveBeenCalled();
   });
 });

@@ -21,9 +21,16 @@ export const EMAIL_DELIVERY_LIST_LIMIT = 200;
  * a portal row's user id from ever reaching a `::uuid`, and it leaves the
  * comparison on the bare primary key, so each lookup is an index probe.
  *
+ * A lot's e-mail (OOC-158) names the student in the key's fourth part — one
+ * address, one file, even when the lot is several people's.
+ *
  * `o` is the outbox row's alias in the query this goes into.
  */
 export const deliveryStudentIdSql: SQL = sql`coalesce(
+  (select s.id from students s
+    where s.id = case when o.template_key in ('lot_enrollment_received', 'lot_payment_under_review',
+                                              'lot_payment_approved', 'lot_payment_rejected')
+                      then split_part(o.dedupe_key, ':', 4)::uuid end),
   (select e.student_id from enrollments e
     where e.id = case when o.template_key = 'enrollment_received'
                       then split_part(o.dedupe_key, ':', 2)::uuid end),

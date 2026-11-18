@@ -202,7 +202,9 @@
       "receipt_upload_failed": "The upload failed. Check your connection and try again.",
       "fix_fields": "Please check the highlighted fields before continuing.",
       "too_long": "This is too long. Please shorten it.",
-      "invalid": "Please check this."
+      "invalid": "Please check this.",
+      "lot_same_course": "This person already has this course in the order. Pick another course.",
+      "lot_same_person": "This person is already in the order. Pick them above instead of typing their details again."
     },
     "submitted": {
       "title": "We have your enrolment",
@@ -227,6 +229,26 @@
       "online_note": "All our classes are 100% online, on Google Meet and Google Classroom. You never need to travel to a campus.",
       "back_to_site": "Back to the site",
       "new_enrollment": "Enrol somebody else"
+    },
+    "lot": {
+      "panel_title": "Courses in this order ({count})",
+      "panel_subtitle": "They are paid together, with a single receipt, at the payment step.",
+      "starts_on": "starts {date}",
+      "remove": "Remove {course} from the order",
+      "remove_short": "Remove",
+      "cancel_add": "Go back without adding another course",
+      "who_title": "Who is this course for?",
+      "who_new": "Someone else",
+      "who_new_meta": "Another child, for example. You fill in their details below.",
+      "add_course": "+ Add another course to this order",
+      "add_course_hint": "For this same student or someone else, like another child. You pay for everything together, with a single receipt.",
+      "amount_hint": "It is the sum of the current prices of the {count} courses. We do not apply discounts.",
+      "review_courses": "Courses in this order ({count})",
+      "review_people": "Students ({count})",
+      "price": "Price",
+      "submitted_summary": "Your {count} enrollments",
+      "what_happens": "When you send, your seats are held and your receipt goes to review. You have up to {days} days for the payment to be approved; we will email you as soon as it is.",
+      "timeline_received_body": "Your seats are held."
     }
   }
 }

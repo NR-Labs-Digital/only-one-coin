@@ -39,6 +39,18 @@ const ReadingSchema = z.discriminatedUnion("state", [
   }),
 ]);
 
+/** The other enrollments of a lot (OOC-158), in lot order — empty for an
+ * ordinary payment. */
+const LotItemSchema = z.object({
+  enrollmentId: z.string().uuid(),
+  studentId: z.string().uuid(),
+  studentName: z.string(),
+  courseName: z.string(),
+  classGroupName: z.string(),
+  planName: z.string(),
+  expectedAmountCents: z.number().int(),
+});
+
 const ItemSchema = z.object({
   id: z.string().uuid(),
   enrollmentId: z.string().uuid(),
@@ -56,6 +68,7 @@ const ItemSchema = z.object({
   operationNumber: z.string().nullable(),
   expectedAmountCents: z.number().int(),
   overCapacity: z.boolean(),
+  lot: z.array(LotItemSchema),
   currency: z.literal("PEN"),
   receipt: z.enum(["missing", "uploading", "ready", "refused"]),
   fraudSignals: z.array(z.enum(RECEIPT_FRAUD_SIGNAL_KINDS)),

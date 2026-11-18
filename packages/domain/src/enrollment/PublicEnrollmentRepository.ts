@@ -12,6 +12,7 @@ import type { Payment } from "./Payment.js";
  * already chose, never lists anything.
  */
 export interface PublicEnrollmentContext {
+  courseId: string;
   courseMinAge: number;
   planPriceId: string;
   amountCents: number;
@@ -20,24 +21,40 @@ export interface PublicEnrollmentContext {
   classGroupStartsOn: Date;
 }
 
-export interface SubmitPublicEnrollmentParams {
-  /** Consumed in the same transaction: it must still be `active`, unexpired
-   * on the database clock and for the same class group, or the submit fails
-   * with `SeatHoldExpiredError` and writes nothing. No e-mail proof is
-   * required since OOC-141 (06/11/2026). */
-  seatHoldId: string;
+/** One person of the checkout (OOC-158: a lot may carry several). */
+export interface PublicEnrollmentPersonToWrite {
+  /** Who the form says this is — a proposal; the document decides who it is
+   * (see the interface below). */
   student: Student;
   guardian: Guardian | null;
-  /** Present only when `guardian` is — the guardian is who accepts,
+}
+
+/** One enrollment of the checkout: a seat hold, the person it is for, and the
+ * enrollment to write. */
+export interface PublicEnrollmentItemToWrite {
+  /** Consumed in the same transaction: still `active` (or `expired`, which
+   * is seated again — OOC-155) and for the enrollment's class group, or the
+   * submit fails with `SeatHoldExpiredError` and writes nothing. */
+  seatHoldId: string;
+  /** Index into `people`. */
+  person: number;
+  enrollment: Enrollment;
+}
+
+export interface SubmitPublicEnrollmentParams {
+  people: PublicEnrollmentPersonToWrite[];
+  /** Every enrollment the payment pays for, in lot order. The first is the
+   * payment's own (`payment.enrollmentId`); the others, when there are any,
+   * are the lot's (OOC-158, `payment_lot_enrollments`). */
+  items: PublicEnrollmentItemToWrite[];
+  /** Appended for every person with a guardian — the guardian is who accepts,
    * timestamped and IP'd server-side (CLAUDE.md §8), never client-supplied. */
   consent: { version: string; acceptedAt: Date; ip: string } | null;
-  enrollment: Enrollment;
   payment: Payment;
-  /** The receipt the checkout uploaded before submit — must belong to this
-   * same seat hold and be at least `uploaded` (OOC-19), or the submit fails
-   * with `ReceiptNotReadyError` and writes nothing. Linked to the new
-   * payment in the same transaction, the way `seat_holds.enrollment_id`
-   * is filled. */
+  /** The receipt the checkout uploaded before submit — must belong to the
+   * first item's seat hold and be at least `uploaded` (OOC-19), or the submit
+   * fails with `ReceiptNotReadyError` and writes nothing. Linked to the new
+   * payment in the same transaction. */
   receiptUploadId: string;
   /** Written to the outbox in the same transaction. An idempotent retry
    * writes nothing: the first attempt already did. */
@@ -45,9 +62,10 @@ export interface SubmitPublicEnrollmentParams {
 }
 
 export interface SubmitPublicEnrollmentResult {
-  student: Student;
-  guardian: Guardian | null;
-  enrollment: Enrollment;
+  /** The resolved people, in the order of `params.people`. */
+  students: Student[];
+  /** In the order of `params.items`. */
+  enrollments: Enrollment[];
   payment: Payment;
 }
 
@@ -56,6 +74,11 @@ export interface SubmitPublicEnrollmentResult {
  * guardian, consent, consuming the seat hold, the enrollment and the payment
  * all succeed together or none of them do — a self-enrollment can never leave
  * a student row behind with no seat to show for it.
+ *
+ * A lot (OOC-158) is the same unit with several items: every person, every
+ * seat and the one payment that pays for all of them commit together — a
+ * refused item leaves nothing of the others behind. The holds are locked in a
+ * fixed order (by id), so two submits sharing a hold cannot deadlock.
  *
  * The seat itself was already taken when the hold was claimed
  * (`ISeatHoldRepository.claim`); the submit passes it to the enrollment and

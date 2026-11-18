@@ -44,6 +44,28 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** A lot (OOC-158): one receipt paying for several enrollments — the same
+   * student in more than one course, several children, or both. One e-mail
+   * per address, listing the enrollments of the lot that address hears about
+   * (`lotRecipients`); `amountCents` is what the whole receipt pays. The
+   * single-enrollment payment keeps the four templates above, unchanged. */
+  lot_enrollment_received: {
+    recipientName: string;
+    items: LotEmailItem[];
+    amountCents: number;
+  };
+  lot_payment_under_review: {
+    recipientName: string;
+    items: LotEmailItem[];
+  };
+  lot_payment_approved: {
+    recipientName: string;
+    items: LotEmailItem[];
+  };
+  lot_payment_rejected: {
+    recipientName: string;
+    items: LotEmailItem[];
+  };
   /** The payment of a paid procedure (OOC-83): its own wording, because the
    * enrollment ones say the seat is confirmed or lost, which is not what
    * deciding a constancia's receipt does. */
@@ -127,6 +149,14 @@ export interface EmailTemplateVars {
     recipientName: string;
     code: string;
   };
+}
+
+/** One enrollment of a lot, as a lot e-mail lists it: who, what, from when
+ * (an ISO date, formatted for the reader when the e-mail is rendered). */
+export interface LotEmailItem {
+  studentName: string;
+  courseName: string;
+  startsOn: string;
 }
 
 export type EmailTemplateKey = keyof EmailTemplateVars;

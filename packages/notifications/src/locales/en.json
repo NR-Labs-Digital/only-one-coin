@@ -41,6 +41,46 @@
         "If you think this is a mistake, please reach out through Only One Coin's support channels."
       ]
     },
+    "lot_enrollment_received": {
+      "subject": "We received your enrollments",
+      "preheader": "We are verifying the payment of {amount}.",
+      "paragraphs": [
+        "We received these enrollments, paid with a single receipt:",
+        "{items}",
+        "We are verifying the payment of {amount}. We will write to you here as soon as it is confirmed.",
+        "The seats stay reserved while we review the payment."
+      ],
+      "item": "{studentName} in {courseName}, with classes starting on {startsOn}."
+    },
+    "lot_payment_under_review": {
+      "subject": "We are reviewing the payment for your enrollments",
+      "preheader": "Our team will check the receipt.",
+      "paragraphs": [
+        "The payment for these enrollments has gone to manual review:",
+        "{items}",
+        "Our team will check the receipt and write to you here with the outcome. There is no need to send it again."
+      ],
+      "item": "{studentName} in {courseName}."
+    },
+    "lot_payment_approved": {
+      "subject": "Enrollments confirmed!",
+      "preheader": "We approved the payment for your enrollments.",
+      "paragraphs": [
+        "We approved the payment. These enrollments are confirmed!",
+        "{items}"
+      ],
+      "item": "{studentName} in {courseName}: classes start on {startsOn}."
+    },
+    "lot_payment_rejected": {
+      "subject": "We could not confirm the payment for your enrollments",
+      "preheader": "The receipt was not approved.",
+      "paragraphs": [
+        "We could not confirm the payment, so these enrollments were not approved:",
+        "{items}",
+        "If you think this is a mistake, please reach out through Only One Coin's support channels."
+      ],
+      "item": "{studentName} in {courseName}."
+    },
     "procedure_payment_under_review": {
       "subject": "We are reviewing the payment for {studentName}'s request",
       "preheader": "Our team will check the receipt.",

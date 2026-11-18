@@ -82,7 +82,7 @@ import {
   requestPortalAttachmentUploadRoute,
 } from "@/http/attachment/PortalAttachmentRoutes.js";
 import { listEnrollmentsRoute } from "@/http/enrollment/ListEnrollmentsRoute.js";
-import { submitPublicEnrollmentRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
+import { submitPublicEnrollmentRoute, submitPublicLotRoute } from "@/http/enrollment/SubmitPublicEnrollmentRoute.js";
 import { claimSeatHoldRoute } from "@/http/enrollment/ClaimSeatHoldRoute.js";
 import { releaseSeatHoldRoute } from "@/http/enrollment/ReleaseSeatHoldRoute.js";
 import { requestReceiptUploadRoute } from "@/http/enrollment/RequestReceiptUploadRoute.js";
@@ -282,6 +282,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(confirmPortalAttachmentUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalAttachmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitPublicEnrollmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(submitPublicLotRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(claimSeatHoldRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(releaseSeatHoldRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(requestReceiptUploadRoute);

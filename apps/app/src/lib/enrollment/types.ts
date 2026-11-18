@@ -275,10 +275,30 @@ export interface PaymentDraft {
   receipt: ReceiptDraft | null
 }
 
+/**
+ * One enrollment already settled in a lot (OOC-158): several courses — one
+ * student's, or several children's — paid with one receipt. The draft's own
+ * `course`/`student`/`guardian` is the item being filled; these are the ones
+ * before it, each with the seat it holds.
+ */
+export interface LotEntry {
+  course: CourseDraft
+  student: StudentDraft
+  guardian: GuardianDraft
+  hold: SeatHold
+}
+
 export interface CheckoutDraft {
   course: CourseDraft
   student: StudentDraft
   guardian: GuardianDraft
+  /** The enrollments before the one being filled — empty for one course. */
+  lot: LotEntry[]
+  /**
+   * The item being filled is for the person of `lot[samePersonAs]` — their
+   * data is copied, not typed again. Null is somebody new (or no lot).
+   */
+  samePersonAs: number | null
   payment: PaymentDraft
   /** Resolved once, on first arrival, and carried to submit. */
   source: EnrollmentSource

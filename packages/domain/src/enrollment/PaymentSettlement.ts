@@ -18,8 +18,23 @@ export type PaymentDecision = { kind: "approve" } | { kind: "reject"; reason: Pa
  * take anybody out of their class.
  */
 export type PaymentOrigin =
-  | { kind: "enrollment"; enrollmentId: string; classGroupId: string; seatStatus: SeatStatus }
+  | {
+      kind: "enrollment";
+      enrollmentId: string;
+      classGroupId: string;
+      seatStatus: SeatStatus;
+      /** The other enrollments of a lot (OOC-158), in lot order — empty for an
+       * ordinary payment. Deciding the payment decides every one of them. */
+      lot: LotSeat[];
+    }
   | { kind: "procedure"; procedureRequestId: string };
+
+/** One more seat a lot payment pays for, besides its own enrollment's. */
+export interface LotSeat {
+  enrollmentId: string;
+  studentId: string;
+  seatStatus: SeatStatus;
+}
 
 export interface PaymentToSettle {
   paymentId: string;
@@ -38,7 +53,8 @@ export interface IPaymentSettlementRepository {
    * confirms a reserved seat and refuses a released one
    * (`PaymentSeatReleasedError`); rejecting releases a reserved seat and gives
    * it back to the class group; a confirmed seat (a monthly module) is left
-   * alone either way. On a procedure, the request moves to `paid` or `rejected`
+   * alone either way. A lot (OOC-158) moves every one of its seats the same
+   * way: all confirmed or none, and a rejection gives them all back. On a procedure, the request moves to `paid` or `rejected`
    * and no seat is touched. Who decided, when and
    * why, the outbox and the audit entry in the same transaction. The portal account, when asked for, in the same
    * transaction.
@@ -52,9 +68,10 @@ export interface IPaymentSettlementRepository {
     decision: { by: string; at: Date; rejectionReason: PaymentRejectionReason | null };
     notifications: EmailNotification[];
     audit: AuditLogEntry;
-    /** Approving only: create the student's portal account in the same
-     * transaction (spec 2026-10-05 §2). Never fails the settlement — an
+    /** Approving only: create each student's portal account in the same
+     * transaction (spec 2026-10-05 §2) — one entry per distinct student the
+     * payment pays for, its own first (OOC-158). Never fails the settlement — an
      * e-mail conflict comes back as an outcome. */
-    portalAccess: PortalAccountProvisioning | null;
-  }): Promise<{ seatStatus: SeatStatus | null; portalAccess: PortalAccessOutcome | null }>;
+    portalAccess: PortalAccountProvisioning[];
+  }): Promise<{ seatStatus: SeatStatus | null; portalAccess: PortalAccessOutcome[] }>;
 }

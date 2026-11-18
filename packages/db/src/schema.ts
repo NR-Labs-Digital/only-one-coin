@@ -1028,6 +1028,44 @@ export const payments = pgTable(
   ],
 );
 
+// A lot (OOC-158): one receipt paying for several enrollments of the public
+// checkout — the same student in more than one course, several children, or
+// both. The payment keeps its own `enrollment_id` (the lot's first item, so
+// payments_origin_check and every read about the money stay as they are);
+// this table lists the OTHER enrollments the same payment pays for, and only
+// for a lot — a payment with no rows here pays for its `enrollment_id` alone.
+// An enrollment belongs to at most one lot (unique `enrollment_id`). Reads
+// about the seat go through `payment_coverage`, never through either one.
+// Append-only: what a payment paid for is history (REVOKE + trigger, 0060).
+export const paymentLotEnrollments = pgTable(
+  "payment_lot_enrollments",
+  {
+    id: uuidPk(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id, { onDelete: "restrict" }),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("payment_lot_enrollments_enrollment_id_uidx").on(table.enrollmentId),
+    index("payment_lot_enrollments_payment_id_idx").on(table.paymentId),
+  ],
+);
+
+// Every enrollment a payment pays for (OOC-158), one row each: the payment's
+// own `enrollment_id`, plus the other items of its lot. A view written by hand
+// in 0060. Every read about the seat that asks "which payment speaks for this
+// enrollment" — the enrollment ledger, the roster, the student's history, the
+// portal — joins this instead of `payments.enrollment_id`, so the second
+// child of a lot is not an enrollment without a payment.
+export const paymentCoverage = pgView("payment_coverage", {
+  paymentId: uuid("payment_id").notNull(),
+  enrollmentId: uuid("enrollment_id").notNull(),
+}).existing();
+
 // Extraction data lives here, never on payments (CLAUDE.md §5). One row per
 // uploaded receipt image — a payment can carry more than one over time (a
 // rejected receipt gets replaced), so this is 1:N off payments, not 1:1.

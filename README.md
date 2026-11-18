@@ -1,6 +1,6 @@
 # Only One Coin — Plataforma Académica Digital
 
-Plataforma académica da **Only One Coin** (`INGLES POR UN SOL S.A.C.`, RUC 20613918028): site público, matrícula com leitura de comprovante por IA, portal do aluno, backoffice e módulo de e-mail.
+Plataforma académica da **Only One Coin** (`ONLY ONE ACADEMY SAC`, RUC 20615261271): site público, matrícula com leitura de comprovante por IA, portal do aluno, backoffice e módulo de e-mail.
 
 **O que está pronto e o que falta:** [`docs/ROADMAP.md`](docs/ROADMAP.md) (por sessão) e [`apps/app/README.md`](apps/app/README.md) (tela a tela). Este arquivo não repete esse estado.
 

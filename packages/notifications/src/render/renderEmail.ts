@@ -11,6 +11,9 @@ interface TemplateCopy {
   paragraphs: string[];
   /** Button label — only on templates listed in ACTION_URL_VAR. */
   action?: string;
+  /** One line of a list (OOC-158, the lot e-mails): written once per entry of
+   * the `items` var, where a paragraph is exactly `{items}`. */
+  item?: string;
 }
 
 export interface LocaleCatalog {
@@ -71,7 +74,7 @@ export class TemplateRenderError extends Error {
  * become "15 de octubre de 2026" and "S/ 250.00" in the reader's locale.
  */
 function placeholderValues(
-  vars: EmailTemplateVars[EmailTemplateKey],
+  vars: EmailTemplateVars[EmailTemplateKey] | Record<string, unknown>,
   locale: Locale,
 ): Record<string, string> {
   const intlLocale = INTL_LOCALE[locale];
@@ -87,6 +90,9 @@ function placeholderValues(
     } else if ((name === "grade" || name === "passingGrade") && typeof value === "number") {
       // A grade as typed, up to two decimals, in the reader's convention (13.5 / 13,5).
       values[name] = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 2 }).format(value);
+    } else if (name === "items") {
+      // A list, written line by line by `listItems` — never a placeholder.
+      continue;
     } else {
       values[name] = String(value);
     }
@@ -94,6 +100,28 @@ function placeholderValues(
 
   return values;
 }
+
+/** The paragraph that stands for the list of a template with an `item` line. */
+const ITEMS_PARAGRAPH = "{items}";
+
+/**
+ * Each entry of the `items` var through the template's `item` line, its
+ * placeholders formatted like any other (a date is a date in the reader's
+ * locale). A template that has the list paragraph and no line, or a list var
+ * that is not a list, is a template bug.
+ */
+function listItems(copy: TemplateCopy, vars: Record<string, unknown>, locale: Locale): string[] {
+  if (!copy.item) throw new TemplateRenderError(`Template has an ${ITEMS_PARAGRAPH} paragraph and no item line`);
+  const items = vars.items;
+  if (!Array.isArray(items)) throw new TemplateRenderError('Var "items" is not a list');
+  return items.map((entry: unknown) => {
+    if (typeof entry !== "object" || entry === null) throw new TemplateRenderError('An entry of "items" is not an object');
+    return interpolate(copy.item!, placeholderValues(entry as Record<string, unknown>, locale));
+  });
+}
+
+/** A paragraph, or the list it stands for. */
+type Block = { kind: "paragraph"; text: string } | { kind: "list"; lines: string[] };
 
 function escapeHtml(value: string): string {
   return value
@@ -137,11 +165,15 @@ export function renderEmail(email: OutgoingEmail): RenderedEmail {
   const subject = email.proof ? `${catalog.proof.subjectPrefix} ${templateSubject}` : templateSubject;
   const preheader = interpolate(copy.preheader, values);
   const greeting = interpolate(catalog.layout.greeting, values);
-  const paragraphs = copy.paragraphs.map((paragraph) => interpolate(paragraph, values));
+  const blocks: Block[] = copy.paragraphs.map((paragraph) =>
+    paragraph === ITEMS_PARAGRAPH
+      ? { kind: "list", lines: listItems(copy, email.vars as Record<string, unknown>, email.locale) }
+      : { kind: "paragraph", text: interpolate(paragraph, values) },
+  );
 
   const text = [
     greeting,
-    ...paragraphs,
+    ...blocks.map((block) => (block.kind === "paragraph" ? block.text : block.lines.map((line) => `• ${line}`).join("\n"))),
     ...(url && copy.action ? [`${copy.action}: ${url}`] : []),
     catalog.layout.signature,
     "—",
@@ -163,7 +195,13 @@ export function renderEmail(email: OutgoingEmail): RenderedEmail {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:32px 28px;line-height:1.5;font-size:16px">
 <tr><td>
 <p style="margin:0 0 16px">${escapeHtml(greeting)}</p>
-${paragraphs.map((paragraph) => `<p style="margin:0 0 16px">${escapeHtml(paragraph)}</p>`).join("\n")}
+${blocks
+  .map((block) =>
+    block.kind === "paragraph"
+      ? `<p style="margin:0 0 16px">${escapeHtml(block.text)}</p>`
+      : `<ul style="margin:0 0 16px;padding-left:20px">${block.lines.map((line) => `<li style="margin:0 0 6px">${escapeHtml(line)}</li>`).join("")}</ul>`,
+  )
+  .join("\n")}
 ${button}
 <p style="margin:24px 0 0">${escapeHtml(catalog.layout.signature)}</p>
 </td></tr>

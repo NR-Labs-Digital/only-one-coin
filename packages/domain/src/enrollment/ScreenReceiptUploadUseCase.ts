@@ -1,8 +1,8 @@
 import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
-import { paymentUnderReviewEmails } from "../notification/enrollmentEmails.js";
+import { underReviewEmailsFor } from "../notification/enrollmentEmails.js";
 import { procedurePaymentUnderReviewEmails } from "../notification/procedureEmails.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
-import type { IEnrollmentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
+import type { IEnrollmentEmailContextLookup, IPaymentEmailContextLookup } from "./EnrollmentEmailContextLookup.js";
 import { exifSignals, routesToHumanReview, type ReceiptFraudSignal } from "./ReceiptScreening.js";
 import type {
   IReceiptScreeningRepository,
@@ -39,6 +39,7 @@ export class ScreenReceiptUploadUseCase extends BaseUseCase<ScreenReceiptUploadI
   constructor(
     private readonly repository: IReceiptScreeningRepository,
     private readonly emailContextLookup: IEnrollmentEmailContextLookup,
+    private readonly paymentEmailLookup: IPaymentEmailContextLookup,
   ) {
     super();
   }
@@ -68,10 +69,14 @@ export class ScreenReceiptUploadUseCase extends BaseUseCase<ScreenReceiptUploadI
   /** What the student never sees is why: the e-mail says a person is
    * checking the receipt, not that it looked like another one. */
   private async underReviewEmails(subject: ReceiptScreeningSubject): Promise<EmailNotification[]> {
+    if (!subject.isProcedure) {
+      // One enrollment or a lot (OOC-158): the facts of every seat it pays for.
+      const facts = await this.paymentEmailLookup.find(subject.paymentId);
+      return facts ? underReviewEmailsFor(facts, DEFAULT_LOCALE) : [];
+    }
     const context = await this.emailContextLookup.find({ studentId: subject.studentId, classGroupId: subject.classGroupId });
     if (!context) return [];
-    const emails = subject.isProcedure ? procedurePaymentUnderReviewEmails : paymentUnderReviewEmails;
-    return emails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE);
+    return procedurePaymentUnderReviewEmails({ paymentId: subject.paymentId, ...context }, DEFAULT_LOCALE);
   }
 }
 
