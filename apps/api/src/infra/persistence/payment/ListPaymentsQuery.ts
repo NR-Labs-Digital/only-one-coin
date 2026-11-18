@@ -3,6 +3,7 @@ import type { PaymentMethod, ProcedureKind } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
+import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, lotMatches, type PaymentLotItem } from "./paymentLot.js";
 
 /**
  * The payment ledger — every payment the institution has received, read for
@@ -78,6 +79,10 @@ export interface PaymentListRow {
    * timestamp moves for reasons other than the decision. */
   decidedAt: Date | null;
   decidedByName: string | null;
+  /** The other enrollments this payment pays for, when it is a lot (OOC-158)
+   * — empty for an ordinary payment. The row's own student and course are
+   * the lot's first item. */
+  lot: PaymentLotItem[];
 }
 
 export interface PaymentListMetrics {
@@ -128,6 +133,7 @@ export function paymentSearchCondition(q: string | undefined): SQL | undefined {
     ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, pattern),
     ilike(courses.name, pattern),
     ilike(payments.operationNumber, pattern),
+    lotMatches(pattern),
   );
 }
 
@@ -162,8 +168,9 @@ export class ListPaymentsQuery {
         firstName: students.firstName,
         lastName: students.lastName,
         courseName: courses.name,
-        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents})`.mapWith(Number),
-        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and ${enrollments.overCapacity}`,
+        // A lot (OOC-158) expects the sum of its enrollments' prices.
+        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents} + ${lotExpectedExtraCents})`.mapWith(Number),
+        overCapacity: sql<boolean>`${payments.procedureRequestId} is null and (${enrollments.overCapacity} or ${lotHasOverCapacity})`,
         decidedAt: payments.decidedAt,
         // "user" is Better Auth's table, not modelled in the Drizzle schema —
         // raw SQL, as in DrizzleStaffUserLookup. A payment decided outside the
@@ -218,6 +225,7 @@ export class ListPaymentsQuery {
       countsPromise,
       this.metrics(),
     ]);
+    const lots = await loadPaymentLots(this.db, rows.map((row) => row.id));
 
     const items = rows.map(
       (row): PaymentListRow => ({
@@ -240,6 +248,7 @@ export class ListPaymentsQuery {
         submittedAt: row.createdAt,
         decidedAt: row.decidedAt,
         decidedByName: row.decidedByName,
+        lot: lots.get(row.id) ?? [],
       }),
     );
 

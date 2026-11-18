@@ -1,5 +1,5 @@
 import { ENROLLMENT_ORIGINS, type EnrollmentOrigin } from "@ooc/domain";
-import { academicPeriods, classGroups, courses, enrollments, payments, planPrices, plans, students } from "@ooc/db";
+import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
@@ -172,16 +172,18 @@ export class ListEnrollmentsQuery {
     // receipt per module (CLAUDE.md §1), and the ledger's money column is
     // about where that seat stands now, not about the first instalment.
     const latestPayment = this.db
-      .selectDistinctOn([payments.enrollmentId], {
-        enrollmentId: payments.enrollmentId,
+      .selectDistinctOn([paymentCoverage.enrollmentId], {
+        enrollmentId: paymentCoverage.enrollmentId,
         status: payments.status,
         method: payments.method,
         methodDetail: payments.methodDetail,
         operationNumber: payments.operationNumber,
         updatedAt: payments.updatedAt,
       })
-      .from(payments)
-      .orderBy(payments.enrollmentId, desc(payments.createdAt))
+      // Every enrollment a payment pays for, a lot's included (OOC-158).
+      .from(paymentCoverage)
+      .innerJoin(payments, eq(payments.id, paymentCoverage.paymentId))
+      .orderBy(paymentCoverage.enrollmentId, desc(payments.createdAt))
       .as("latest_payment");
 
     const scope = and(

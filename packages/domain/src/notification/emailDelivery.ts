@@ -10,8 +10,10 @@ import type { EmailTemplateKey } from "./EmailNotification.js";
  * (`<template>:<subject id>:<recipient kind>`, `insertOutboxEmails`).
  */
 
-/** What the subject id in a template's dedupe key points at. */
-export type DeliverySubject = "enrollment" | "payment" | "student_account";
+/** What the subject id in a template's dedupe key points at. A lot's e-mail
+ * (OOC-158) names the payment and, in a fourth part, the student file the
+ * address belongs to — `lot_payment`. */
+export type DeliverySubject = "enrollment" | "payment" | "lot_payment" | "student_account";
 
 /**
  * The templates about a student, and where their dedupe key leads. The rest
@@ -23,6 +25,10 @@ export const STUDENT_DELIVERY_SUBJECTS = {
   payment_under_review: "payment",
   payment_approved: "payment",
   payment_rejected: "payment",
+  lot_enrollment_received: "lot_payment",
+  lot_payment_under_review: "lot_payment",
+  lot_payment_approved: "lot_payment",
+  lot_payment_rejected: "lot_payment",
   procedure_payment_under_review: "payment",
   procedure_payment_approved: "payment",
   procedure_payment_rejected: "payment",
@@ -49,6 +55,10 @@ const RESENDABLE: ReadonlySet<StudentDeliveryTemplate> = new Set([
   "payment_under_review",
   "payment_approved",
   "payment_rejected",
+  "lot_enrollment_received",
+  "lot_payment_under_review",
+  "lot_payment_approved",
+  "lot_payment_rejected",
 ]);
 
 export function isResendableTemplate(template: string): boolean {

@@ -117,6 +117,13 @@ export class StudentActivityQuery {
           left join "procedure_requests" r on r."id" = p."procedure_request_id"
           join "enrollments" e on e."id" = coalesce(p."enrollment_id", r."enrollment_id")
          where e."student_id" = ${studentId}::uuid
+        union all
+        -- A lot's payment is this student's too when one of its other
+        -- enrollments is theirs (OOC-158).
+        select l."payment_id"::text
+          from "payment_lot_enrollments" l
+          join "enrollments" e on e."id" = l."enrollment_id"
+         where e."student_id" = ${studentId}::uuid
       )
       select
         a."id" as "id",
@@ -132,7 +139,16 @@ export class StudentActivityQuery {
       left join "user" actor on actor."id" = a."actor_id"
       left join "payments" pay on pay."id"::text = a."target_id"
       left join "procedure_requests" req on req."id" = pay."procedure_request_id"
-      left join "enrollments" enr on enr."id"::text = coalesce(pay."enrollment_id"::text, req."enrollment_id"::text, a."target_id")
+      -- On a lot's payment (OOC-158), the course is this student's enrollment
+      -- of the lot, not the lot's first one.
+      left join lateral (
+        select c2."enrollment_id"
+          from "payment_coverage" c2
+          join "enrollments" e2 on e2."id" = c2."enrollment_id"
+         where c2."payment_id" = pay."id" and e2."student_id" = ${studentId}::uuid
+         limit 1
+      ) own on true
+      left join "enrollments" enr on enr."id"::text = coalesce(own."enrollment_id"::text, pay."enrollment_id"::text, req."enrollment_id"::text, a."target_id")
       left join "class_groups" cg on cg."id" = enr."class_group_id"
       left join "courses" c on c."id" = cg."course_id"
       where a."target_id" in (select id from targets)

@@ -1,4 +1,4 @@
-import { classGroups, enrollments, payments, planPrices, plans, students } from "@ooc/db";
+import { classGroups, enrollments, paymentCoverage, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
@@ -45,12 +45,14 @@ export class ClassGroupRosterQuery {
     // monthly enrollment writes one per module (CLAUDE.md §1), and the roster
     // is about where the seat stands now. Same choice as the ledger.
     const latestPayment = this.db
-      .selectDistinctOn([payments.enrollmentId], {
-        enrollmentId: payments.enrollmentId,
+      .selectDistinctOn([paymentCoverage.enrollmentId], {
+        enrollmentId: paymentCoverage.enrollmentId,
         status: payments.status,
       })
-      .from(payments)
-      .orderBy(payments.enrollmentId, desc(payments.createdAt))
+      // Every enrollment a payment pays for, a lot's included (OOC-158).
+      .from(paymentCoverage)
+      .innerJoin(payments, eq(payments.id, paymentCoverage.paymentId))
+      .orderBy(paymentCoverage.enrollmentId, desc(payments.createdAt))
       .as("latest_payment");
 
     const rows = await this.db

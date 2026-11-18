@@ -135,6 +135,7 @@ export type { IPlanPriceLookup } from "./enrollment/PlanPriceLookup.js";
 export type {
   IEnrollmentEmailContextLookup,
   EnrollmentEmailContext,
+  IPaymentEmailContextLookup,
 } from "./enrollment/EnrollmentEmailContextLookup.js";
 
 export {
@@ -146,6 +147,7 @@ export type {
   Locale,
   EmailTemplateKey,
   EmailTemplateVars,
+  LotEmailItem,
   EmailNotification,
 } from "./notification/EmailNotification.js";
 export {
@@ -201,7 +203,15 @@ export {
   paymentUnderReviewEmails,
   paymentApprovedEmails,
   paymentRejectedEmails,
+  lotRecipients,
+  receivedEmailsFor,
+  underReviewEmailsFor,
+  approvedEmailsFor,
+  rejectedEmailsFor,
   type PaymentEmailFacts,
+  type PaymentItemEmailFacts,
+  type PaymentCoverageEmailFacts,
+  type LotRecipient,
   type EnrollmentEmailFacts,
   type EnrollmentRecipient,
   type EnrollmentRecipientKind,
@@ -209,6 +219,8 @@ export {
 export type {
   IPublicEnrollmentRepository,
   PublicEnrollmentContext,
+  PublicEnrollmentPersonToWrite,
+  PublicEnrollmentItemToWrite,
   SubmitPublicEnrollmentParams,
   SubmitPublicEnrollmentResult,
 } from "./enrollment/PublicEnrollmentRepository.js";
@@ -227,6 +239,8 @@ export {
   ReceiptUploadNotFoundError,
   SeatHoldExpiredError,
   StudentBelowMinimumAgeError,
+  LotDuplicatePersonError,
+  LotDuplicateCourseError,
   EmailVerificationAttemptsExhaustedError,
   EmailVerificationCodeExpiredError,
   EmailVerificationCodeInvalidError,
@@ -350,6 +364,9 @@ export {
 } from "./enrollment/CreateManualEnrollmentUseCase.js";
 export {
   SubmitPublicEnrollmentUseCase,
+  MAX_PUBLIC_LOT_ITEMS,
+  type SubmitPublicEnrollmentPerson,
+  type SubmitPublicEnrollmentItem,
   type SubmitPublicEnrollmentInput,
   type SubmitPublicEnrollmentOutput,
 } from "./enrollment/SubmitPublicEnrollmentUseCase.js";
@@ -751,6 +768,7 @@ export {
   type PaymentRejectionReason,
   type PaymentDecision,
   type PaymentOrigin,
+  type LotSeat,
   type PaymentToSettle,
   type IPaymentSettlementRepository,
 } from "./enrollment/PaymentSettlement.js";

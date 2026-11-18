@@ -53,6 +53,13 @@ export const EMAIL_CATALOG = {
   payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
   payment_approved: { audience: "student", stage: "payment_settled", conditional: false, emitted: true },
   payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  /* A lot (OOC-158): several enrollments paid with one receipt. The same four
+     moments as the single enrollment, one e-mail per address listing its
+     enrollments of the lot. */
+  lot_enrollment_received: { audience: "student", stage: "submitted", conditional: true, emitted: true },
+  lot_payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
+  lot_payment_approved: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  lot_payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
   /* A paid procedure's money (OOC-83): the same three moments, without the
      seat the enrollment's wording talks about. */
   procedure_payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },

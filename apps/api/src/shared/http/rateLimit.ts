@@ -108,6 +108,24 @@ export function perSeatHold(name: string, limit: number, field: string): RateLim
 }
 
 /**
+ * The same per-session ceiling for a lot (OOC-158): the session is the hold
+ * of the lot's first item — the one its receipt was uploaded against.
+ */
+export function perLotLeadHold(name: string, limit: number): RateLimitRule {
+  return {
+    name: `${name}:hold`,
+    by: "key",
+    key: (request: FastifyRequest) => {
+      const items = (request.body as Record<string, unknown> | undefined)?.items;
+      const lead = Array.isArray(items) ? (items[0] as Record<string, unknown> | undefined) : undefined;
+      return typeof lead?.holdId === "string" ? lead.holdId : null;
+    },
+    limit,
+    windowSeconds: 10 * MINUTE,
+  };
+}
+
+/**
  * The identifier a portal request names, normalized the way the server reads
  * it — "12.345.678" and "12345678" spend from one counter. Not validated: a
  * malformed one still counts (it is a guess at somebody's account all the

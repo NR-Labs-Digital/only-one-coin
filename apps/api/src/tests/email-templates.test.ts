@@ -10,6 +10,11 @@ import { describe, expect, it } from "vitest";
  * markup into the HTML.
  */
 
+const LOT_ITEMS = [
+  { studentName: "Rosa Quispe", courseName: "Inglés Básico", startsOn: "2026-10-05T05:00:00.000Z" },
+  { studentName: "Luis Quispe", courseName: "Francés Kids", startsOn: "2026-10-12T05:00:00.000Z" },
+];
+
 const SAMPLE_VARS: EmailTemplateVars = {
   enrollment_received: {
     recipientName: "Rosa",
@@ -26,6 +31,10 @@ const SAMPLE_VARS: EmailTemplateVars = {
     startsOn: "2026-10-05T05:00:00.000Z",
   },
   payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  lot_enrollment_received: { recipientName: "Carmen", items: LOT_ITEMS, amountCents: 50000 },
+  lot_payment_under_review: { recipientName: "Carmen", items: LOT_ITEMS },
+  lot_payment_approved: { recipientName: "Carmen", items: LOT_ITEMS },
+  lot_payment_rejected: { recipientName: "Carmen", items: LOT_ITEMS },
   procedure_payment_under_review: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_approved: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
@@ -180,5 +189,33 @@ describe("grade_corrected (OOC-102)", () => {
     expect(renderEmail(sample("grade_corrected", "en")).subject).toBe("Corrected grade for Inglés Básico: 14.25");
     expect(renderEmail(sample("grade_corrected", "pt-BR")).text).toContain("14,25");
     expect(renderEmail(sample("grade_corrected", "es-PE")).text).toContain("corrigió");
+  });
+});
+
+describe("lot e-mails (OOC-158)", () => {
+  it("lists every enrollment of the lot, each with its own formatted date", () => {
+    const es = renderEmail(sample("lot_enrollment_received", "es-PE"));
+    expect(es.text).toContain("• Rosa Quispe en Inglés Básico, con inicio de clases el 5 de octubre de 2026.");
+    expect(es.text).toContain("• Luis Quispe en Francés Kids, con inicio de clases el 12 de octubre de 2026.");
+    expect(es.text).toContain("500.00");
+    expect(es.html.match(/<li /g)).toHaveLength(2);
+
+    const en = renderEmail(sample("lot_payment_approved", "en"));
+    expect(en.text).toContain("Luis Quispe in Francés Kids: classes start on October 12, 2026.");
+  });
+
+  it("escapes the list's vars in the HTML", () => {
+    const email = {
+      ...sample("lot_payment_rejected", "es-PE"),
+      vars: { recipientName: "Carmen", items: [{ studentName: "<b>X</b>", courseName: "A & B", startsOn: LOT_ITEMS[0]!.startsOn }] },
+    } as OutgoingEmail;
+    const { html } = renderEmail(email);
+    expect(html).not.toContain("<b>X</b>");
+    expect(html).toContain("A &amp; B");
+  });
+
+  it("refuses a list var that is not a list", () => {
+    const email = { ...sample("lot_payment_approved", "es-PE"), vars: { recipientName: "Carmen", items: "x" } } as unknown as OutgoingEmail;
+    expect(() => renderEmail(email)).toThrow(TemplateRenderError);
   });
 });

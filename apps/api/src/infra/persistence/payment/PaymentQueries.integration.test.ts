@@ -5,6 +5,7 @@ import {
   classGroups,
   courses,
   enrollments,
+  paymentLotEnrollments,
   payments,
   planPrices,
   plans,
@@ -736,6 +737,69 @@ describe("ListPaymentsQuery", () => {
 
       expect(ledger.metrics.inReview - before).toBe(2);
       expect(ledger.metrics.inReview).toBe(ledger.counts.open);
+    });
+  });
+});
+
+describe("a lot in Payments (OOC-158)", () => {
+  /** A mother's two children paid with one receipt: one payment, two enrollments. */
+  async function seedLot(tx: Tx): Promise<{ paymentId: string; siblingEnrollmentId: string }> {
+    const stamp = Date.now();
+    const people = [];
+    for (const [index, firstName] of ["Primera", "Hermanito"].entries()) {
+      const [student] = await tx
+        .insert(students)
+        .values({
+          firstName,
+          lastName: `Lote${stamp}`,
+          nationalIdType: "DNI",
+          nationalId: `PAYLOT${stamp}${index}`,
+          email: `paylot.${stamp}.${index}@gmail.com`,
+          phone: "+51900000000",
+          birthDate: new Date("2000-01-01T00:00:00.000Z"),
+          country: "PE",
+          city: "Lima",
+        })
+        .returning({ id: students.id });
+      const [enrollment] = await tx
+        .insert(enrollments)
+        .values({ studentId: student!.id, classGroupId: GROUP, planPriceId: PLAN_PRICE, seatStatus: "reserved" })
+        .returning({ id: enrollments.id });
+      people.push(enrollment!.id);
+    }
+    const [payment] = await tx
+      .insert(payments)
+      .values({
+        enrollmentId: people[0]!,
+        idempotencyKey: `payment-queries-lot-${stamp}`,
+        status: "pending",
+        method: "yape",
+        amountCents: 30000,
+        operationNumber: `OPPAYLOT${stamp}`,
+      })
+      .returning({ id: payments.id });
+    await tx.insert(paymentLotEnrollments).values({ paymentId: payment!.id, enrollmentId: people[1]! });
+    return { paymentId: payment!.id, siblingEnrollmentId: people[1]! };
+  }
+
+  it("lists the lot once, expecting the sum, with the other enrollment beside it — and finds it by the sibling", async () => {
+    await rolledBack(async (tx) => {
+      const lot = await seedLot(tx);
+
+      const ledger = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, state: "open" });
+      const row = ledger.items.find((item) => item.id === lot.paymentId);
+      expect(row).toMatchObject({ studentName: expect.stringContaining("Primera"), expectedAmountCents: 30000 });
+      expect(row!.lot).toEqual([
+        expect.objectContaining({ enrollmentId: lot.siblingEnrollmentId, studentName: expect.stringContaining("Hermanito"), expectedAmountCents: 15000 }),
+      ]);
+
+      const found = await new ListPaymentsQuery(tx as unknown as Db).run({ academicPeriodId: PERIOD, q: "Hermanito" });
+      expect(found.items.map((item) => item.id)).toEqual([lot.paymentId]);
+
+      const queue = await reviewQueue(tx).run({ academicPeriodId: PERIOD });
+      const item = queue.items.find((entry) => entry.id === lot.paymentId);
+      expect(item).toMatchObject({ expectedAmountCents: 30000 });
+      expect(item!.lot.map((entry) => entry.enrollmentId)).toEqual([lot.siblingEnrollmentId]);
     });
   });
 });
