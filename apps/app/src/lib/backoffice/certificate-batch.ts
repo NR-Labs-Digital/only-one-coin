@@ -1,4 +1,5 @@
-import { apiFetch } from './api-client'
+// Client-safe: the card imports this file, so nothing here reaches
+// `next/headers` — the server read lives in `certificate-batch-server.ts`.
 
 /**
  * The certificate batch of a module group (OOC-33), as
@@ -35,19 +36,6 @@ export interface CertificateBatch {
   examRequired: boolean
   templatePublished: boolean
   items: CertificateBatchItem[]
-}
-
-/** The batch, read on the server. Null when the API failed or refused. */
-export async function getCertificateBatch(classGroupId: string, moduleId: string): Promise<CertificateBatch | null> {
-  try {
-    const response = await apiFetch(
-      `/api/v1/catalog/class-groups/${encodeURIComponent(classGroupId)}/modules/${encodeURIComponent(moduleId)}/certificates`,
-    )
-    if (!response.ok) return null
-    return (await response.json()) as CertificateBatch
-  } catch {
-    return null
-  }
 }
 
 /** Why a confirmation did not go through, as something the card can say. */
