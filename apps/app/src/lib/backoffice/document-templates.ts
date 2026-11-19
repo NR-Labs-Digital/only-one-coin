@@ -1,8 +1,9 @@
 import { apiFetch } from './api-client'
 import type { DocumentTemplateIssue } from './document-body'
 
-/** The documents the code can produce — one editor each. */
-export const DOCUMENT_KINDS = ['teacher_contract'] as const
+/** The documents the code can produce — one editor each. The issued
+ * documents (OOC-33) are keyed by their kind. */
+export const DOCUMENT_KINDS = ['teacher_contract', 'enrollment_certificate', 'certificate'] as const
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number]
 
 export function isDocumentKind(value: string): value is DocumentKind {

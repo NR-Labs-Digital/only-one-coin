@@ -216,22 +216,26 @@
     "origin": {
       "staff": {
         "portal": "Sent by the student",
-        "backoffice": "Sent by the team"
+        "backoffice": "Sent by the team",
+        "issued": "Issued by the institution"
       },
       "portal": {
         "portal": "Sent by you",
-        "backoffice": "Sent by the coordination"
+        "backoffice": "Sent by the coordination",
+        "issued": "Issued by the institution"
       }
     },
     "filter": {
       "label": "Filter by origin",
       "staff": {
         "all": "All",
+        "issued": "Issued",
         "backoffice": "From the team",
         "portal": "From the student"
       },
       "portal": {
         "all": "All",
+        "issued": "Issued",
         "backoffice": "From the coordination",
         "portal": "Sent by you"
       }
@@ -240,13 +244,21 @@
       "staff": {
         "all": "No documents.",
         "backoffice": "The team hasn't attached documents to this file yet.",
-        "portal": "The student hasn't sent documents from the portal yet."
+        "portal": "The student hasn't sent documents from the portal yet.",
+        "issued": "No enrollment certificate or course certificate has been issued for this student yet."
       },
       "portal": {
         "all": "You don't have any documents yet.",
         "backoffice": "The coordination hasn't attached documents to your file yet.",
-        "portal": "You haven't sent any documents yet."
+        "portal": "You haven't sent any documents yet.",
+        "issued": "You have no enrollment certificate or course certificate issued yet."
       }
-    }
+    },
+    "issued_kind": {
+      "enrollment_certificate": "Enrollment certificate",
+      "certificate": "Course certificate"
+    },
+    "issued_meta": "Code {code} · {date}",
+    "issued_load_error": "We could not load the issued documents."
   }
 }

@@ -54,6 +54,13 @@ const SAMPLE_VARS: EmailTemplateVars = {
     passingGrade: 14,
   },
   grade_corrected_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  enrollment_certificate_issued: {
+    recipientName: "Rosa",
+    studentName: "Rosa Quispe",
+    courseName: "Inglés Básico",
+    code: "OOC-7K4M-9QX2",
+  },
+  certificate_issued: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", code: "OOC-7K4M-9QX2" },
   portal_credentials: {
     recipientName: "Rosa",
     loginEmail: "rosa.quispe@gmail.com",

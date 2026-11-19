@@ -71,14 +71,19 @@ Emissão individual pela ficha do aluno não sobrevive ao volume (`CLAUDE.md` §
 coordenador confirma uma vez e a turma inteira sai.
 
 ```
-turma termina
-  → aparece na lista de turmas com "N por emitir"
-  → coordenação abre a turma, vê a prévia de quem qualifica e quem fica fora (com o motivo)
+aluno chega ao último módulo do curso e recebe a nota
+  → coordenação abre a turma: bloco "Certificados" na sub-turma do último módulo
+  → vê a prévia de quem qualifica e quem fica fora (com o motivo)
   → confirma uma vez
-  → job na fila: gera N PDFs
-  → cada documento emitido grava 1 linha na outbox
+  → numa transação: N documentos (código + versão do modelo + dados congelados),
+    N linhas na outbox e o audit_log
   → worker manda o e-mail (Brevo, template versionado)
 ```
+
+**Como ficou no código (OOC-33, 18/11/2026):** sem fila na emissão — o PDF não
+é gerado ali, e sim montado a cada download a partir do registro, então gravar
+o lote é só escrever linhas. O "N por emitir" na lista de turmas ainda não
+existe.
 
 ### Estado da turma: `finished` ≠ `closed`
 
@@ -112,23 +117,32 @@ certificado para quem abandonou. O sistema deixa a lista pronta e o botão à m�
 
 ### Quem qualifica
 
-Ordem de checagem (o primeiro motivo bloqueante vence), em
-`apps/app/src/lib/backoffice/certificates.ts` no mockup e num usecase de
-`packages/domain` no sistema real — **nunca** no navegador (`CLAUDE.md` §8):
+Decisões de 18/11/2026 (a confirmar com o dono): o certificado é **da
+matrícula**, e o lote fica na **sub-turma do último módulo** do curso — só vaga
+confirmada entra. Ordem de checagem (o primeiro motivo bloqueante vence), em
+`certificateBlockReason` (`packages/domain/src/issuedDocument/`), rodada na API
+na prévia e de novo na confirmação — **nunca** no navegador (`CLAUDE.md` §8):
 
 1. `already_issued` — já emitido
-2. `payment_not_approved` — pagamento sem aprovar
-3. `enrollment_not_completed` — matrícula sem fechar
-4. `auto_failed` — DA, não rendeu exame final
-5. `grade_pending` — nota ainda não fechada
-6. `grade_below_minimum` — nota < **14** (`docs/REGRAS-NEGOCIO.md` §3)
-7. `exam_not_approved` — curso com regra de exame e o aluno não o aprovou
+2. `grade_pending` — sem nota na tentativa atual do último módulo
+3. `did_not_sit` — DA, não rendeu o exame final
+4. `grade_below_minimum` — nota abaixo de `passing_grade` (hoje **14**)
+5. `earlier_module_failed` — um módulo anterior **com nota na plataforma**
+   ficou abaixo da mínima ou em DA. Módulo anterior sem nota não bloqueia: a
+   nota só existe na plataforma desde 09/11/2026 (OOC-38)
+6. `exam_not_approved` — curso com exame de certificação e a coordenação não
+   marcou o exame como aprovado no lote
+
+Frequência não entra: não existe o dado.
 
 ### Exceção: Inglés Básico
 
 `certificateRule: 'exam_required'`. O certificado exige concluir os 4 módulos
 **e** solicitar o exame de certificação (`docs/REGRAS-NEGOCIO.md` §6). Quem não
 o prestou fica fora do lote, com o motivo na tela. Nota mínima **não** basta.
+Como o exame ainda não está na plataforma, **a coordenação marca "exame
+aprovado" no próprio lote**, por aluno; a marca vai no `audit_log`
+(`certificate.batch_issued`).
 
 ### Nota mínima e taxa: configuráveis
 
@@ -162,17 +176,12 @@ exatamente o trabalho manual que o volume torna impossível.
 
 ## 5. Quem pode emitir
 
-| Papel | Emite avulso | Dispara o lote da turma |
-| --- | --- | --- |
-| `admin` | Sim | Sim |
-| `coordinator` | Sim | Sim |
-| `teacher` | Sim, **só nas próprias turmas** | Sim, **só nas próprias turmas** |
-| `treasury` | Não | Não |
-| `mass_approver` | Não | Não |
-
-Na tela, o botão "Nova turma" só aparece para `admin` e `coordinator`
-(`permissions.ts`) — docente conduz turma, não abre turma. Isso é conveniência
-de tela; quem barra de verdade é a rota em `apps/api`.
+No quadro de papéis de 07/09/2026 (`CLAUDE.md` §8), emitem `master`, `admin`,
+`enrollment_supervisor`, `academic_supervisor` e o `teacher` (só nas próprias
+turmas); `billing` não emite. **No ar (OOC-33):** o lote é confirmado por
+`master`, `admin`, `enrollment_supervisor` e `academic_supervisor`; o `analyst`
+vê a prévia; o docente fica para depois. A constancia não tem botão: sai
+sozinha quando o pagamento é aprovado em Pagos. Não existe emissão avulsa.
 
 O escopo do docente é checado no usecase, comparando o `teacher_id` do usuário
 autenticado com o da turma — nunca um filtro montado a partir de input do
@@ -181,21 +190,22 @@ para o `audit_log` append-only.
 
 ---
 
-## 6. Onde isso está no código (fase de mockup)
+## 6. Onde isso está no código (OOC-33)
 
 | Peça | Arquivo |
 | --- | --- |
-| Tipos de domínio | `apps/app/src/lib/backoffice/types.ts` |
-| Elegibilidade + prazo | `apps/app/src/lib/backoffice/certificates.ts` |
-| Gates de tela por papel | `apps/app/src/lib/backoffice/permissions.ts` |
-| Aba Documentos da ficha | `apps/app/src/app/[locale]/backoffice/(panel)/students/[studentId]/student-documents.tsx` |
-| Lista de turmas (busca, filtros, agrupamento) | `apps/app/src/app/[locale]/backoffice/(panel)/class-groups/class-groups-view.tsx` |
-| Turma + lote | `apps/app/src/app/[locale]/backoffice/(panel)/class-groups/[classGroupId]/` |
-| Procedimentos por matrícula (§5 de `REGRAS-NEGOCIO.md`) | `apps/app/src/lib/backoffice/enrollment-procedures.ts` |
-| Catálogo de cursos + opções | `apps/app/src/app/[locale]/backoffice/(panel)/courses/` |
+| Regra do certificado, código de verificação | `packages/domain/src/issuedDocument/` |
+| E-mails da emissão | `packages/domain/src/notification/issuedDocumentEmails.ts` |
+| Tabela `issued_documents` | `packages/db/src/schema.ts`, migration `0062` |
+| Emissão, prévia e impressão | `apps/api/src/documents/IssuedDocumentService.ts` |
+| Modelos (constancia, certificado) | `apps/api/src/documents/kinds/` |
+| Rotas | `apps/api/src/http/issuedDocument/` |
+| Worker da constancia | `apps/api/src/workers/constancia-issue.worker.ts` |
+| Lote na turma | `apps/app/src/app/[locale]/backoffice/(panel)/(gated)/class-groups/[classGroupId]/certificates-card.tsx` |
+| Lista de documentos (ficha e portal) | `apps/app/src/components/attachments/attachments-section.tsx` |
+| Prazo de 25 dias úteis | `apps/app/src/lib/backoffice/certificates.ts` |
 
-Tudo em estado local: não há backend. A escrita real passa por `apps/api`,
-nunca pelo navegador (`CLAUDE.md` §8).
+Mecanismo em `apps/api/CLAUDE.md`, "Documentos emitidos".
 
 ---
 
@@ -203,9 +213,14 @@ nunca pelo navegador (`CLAUDE.md` §8).
 
 - **Prazo de 25 dias úteis** ignora feriados peruanos — falta um calendário de
   feriados. Contar só fins de semana faz o prazo mentir a favor da instituição.
-- **Página pública de validação** (`docs/ROADMAP.md` item 45) substitui o site
-  externo usado hoje (`ooc.asvnets.com/consultar`, busca por DNI). Formato do
-  código de verificação ainda não fechado.
+- **Página pública de validação** (OOC-59, `docs/ROADMAP.md` item 45) substitui
+  o site externo usado hoje (`ooc.asvnets.com/consultar`, busca por DNI). O
+  código já existe em todo documento emitido (`OOC-XXXX-XXXX`, OOC-33), e
+  `normalizeDocumentCode` lê o que a pessoa digitar.
+- **Entidade emissora e redação do certificado** — a moldura imprime a
+  S.A.C.; qual entidade emite e se o certificado se diz "válido a nivel
+  nacional" ou "sem validade para bacharelado" (`docs/REGRAS-NEGOCIO.md` §11)
+  são do dono. O texto é editável em Configuração → Documentos.
 - **Demais procedimentos pagos** (§2) — confirmar se entram na plataforma e se
   compartilham o fluxo de solicitação com pagamento. A tela de turmas já
   registra três deles (mover de turma, congelar, retirar) como **registro do

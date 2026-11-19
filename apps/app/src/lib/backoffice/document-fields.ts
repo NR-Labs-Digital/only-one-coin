@@ -27,6 +27,21 @@ const text = (path: string): DocumentField => ({ path, expression: path })
 const date = (path: string): DocumentField => ({ path, expression: `${path} | local_date` })
 const optional = (path: string): DocumentField => ({ path, expression: `${path} | default: "—"` })
 
+const STUDENT_FIELDS = [
+  text('student.fullName'),
+  text('student.firstName'),
+  text('student.lastName'),
+  text('student.documentType'),
+  text('student.nationalId'),
+]
+const COURSE_FIELDS = [
+  text('course.name'),
+  text('course.language'),
+  text('course.level'),
+  optional('course.totalHours'),
+]
+const ORG_FIELDS = [text('org.legalName'), text('org.ruc'), text('org.address')]
+
 export const DOCUMENT_FIELDS: Record<DocumentKind, DocumentFieldGroup[]> = {
   teacher_contract: [
     {
@@ -55,6 +70,35 @@ export const DOCUMENT_FIELDS: Record<DocumentKind, DocumentFieldGroup[]> = {
       key: 'org',
       fields: [text('org.legalName'), text('org.ruc'), text('org.address')],
     },
+  ],
+  // The issued documents (OOC-33). Their dates always exist (a class group
+  // with seats is never a draft); `level` and the hours may be empty.
+  enrollment_certificate: [
+    { key: 'student', fields: STUDENT_FIELDS },
+    { key: 'course', fields: COURSE_FIELDS },
+    {
+      key: 'class_group',
+      fields: [
+        text('classGroup.code'),
+        optional('classGroup.module'),
+        text('classGroup.schedule'),
+        date('classGroup.startsOn'),
+        date('classGroup.endsOn'),
+        text('period.name'),
+      ],
+    },
+    { key: 'document', fields: [text('document.code'), date('issuedOn')] },
+    { key: 'org', fields: ORG_FIELDS },
+  ],
+  certificate: [
+    { key: 'student', fields: STUDENT_FIELDS },
+    { key: 'course', fields: [...COURSE_FIELDS, text('finalGrade')] },
+    {
+      key: 'class_group',
+      fields: [text('classGroup.code'), date('classGroup.startsOn'), date('classGroup.endsOn')],
+    },
+    { key: 'document', fields: [text('document.code'), date('issuedOn')] },
+    { key: 'org', fields: ORG_FIELDS },
   ],
 }
 

@@ -108,6 +108,29 @@ export {
   type RecordOwnClassGroupGradesInput,
 } from "./teaching/OwnClassGroupGradesUseCases.js";
 export { gradeEmails, correctedGradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
+export { issuedDocumentEmails, type IssuedDocumentEmailFacts } from "./notification/issuedDocumentEmails.js";
+export {
+  ISSUED_DOCUMENT_KINDS,
+  VERIFICATION_CODE_ALPHABET,
+  newDocumentCode,
+  normalizeDocumentCode,
+  type IssuedDocument,
+  type IssuedDocumentKind,
+} from "./issuedDocument/IssuedDocument.js";
+export {
+  CERTIFICATE_BLOCK_REASONS,
+  certificateBlockReason,
+  closesTheCourse,
+  type CertificateBlockReason,
+  type CertificateCandidate,
+  type CertificateGrade,
+  type CertificateRuleContext,
+} from "./issuedDocument/certificateEligibility.js";
+export {
+  CertificateNothingToIssueError,
+  CertificateRunNotLastModuleError,
+  IssuedDocumentNotFoundError,
+} from "./issuedDocument/errors.js";
 export {
   Guardian,
   GuardianPropsSchema,

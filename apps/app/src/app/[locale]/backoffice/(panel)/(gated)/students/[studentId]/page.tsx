@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation'
 import { getStudent, getStudentActivity } from '@/lib/backoffice/students'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getAttachments } from '@/lib/attachments/server'
+import { getIssuedDocuments } from '@/lib/issued-documents/server'
 import {
   canBrowseStudents,
   canEditStudent,
@@ -35,11 +36,13 @@ export default async function StudentDetailPage({
   /* One wave of calls, not two: the file is fetched alongside the session.
      A cargo that may not browse is refused by the API too (403 → null), and
      its answer is never shown. */
-  const [staff, student, activity, attachments] = await Promise.all([
+  const [staff, student, activity, attachments, issuedDocuments] = await Promise.all([
     getStaffSession(),
     getStudent(studentId),
     getStudentActivity(studentId),
     getAttachments({ kind: 'staff', ownerType: 'student', ownerId: studentId }),
+    // The constancia and the certificate (OOC-33), in the same list.
+    getIssuedDocuments({ kind: 'staff', studentId }),
   ])
   if (!canBrowseStudents(staff.role)) notFound()
   if (!student) notFound()
@@ -96,6 +99,7 @@ export default async function StudentDetailPage({
         canEdit={canEditStudent(staff.role)}
         activity={activity}
         attachments={attachments}
+        issuedDocuments={issuedDocuments}
         canManageAttachments={canManageStudentAttachments(staff.role)}
       />
     </div>

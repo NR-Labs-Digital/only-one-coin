@@ -368,7 +368,10 @@
         "attachment_downloaded": "File downloaded",
         "attachment_removed": "File removed",
         "grade_corrected": "Grade corrected",
-        "progression_applied": "Students moved on to the next module"
+        "progression_applied": "Students moved on to the next module",
+        "issued_document_issued": "Document issued",
+        "issued_document_downloaded": "Issued document downloaded",
+        "certificate_batch_issued": "Certificates issued in a batch"
       },
       "field": {
         "first_name": "First name",
@@ -2298,17 +2301,54 @@
           "legalName": "Legal name",
           "ruc": "RUC",
           "address": "Company address"
-        }
+        },
+        "student": {
+          "fullName": "Full name",
+          "firstName": "First names",
+          "lastName": "Last names",
+          "documentType": "Document type",
+          "nationalId": "Document number"
+        },
+        "course": {
+          "name": "Course name",
+          "language": "Language",
+          "level": "Level",
+          "totalHours": "Total hours"
+        },
+        "classGroup": {
+          "code": "Class group code",
+          "module": "Current module",
+          "schedule": "Schedule",
+          "startsOn": "Classes start",
+          "endsOn": "Classes end"
+        },
+        "period": {
+          "name": "Period"
+        },
+        "document": {
+          "code": "Verification code"
+        },
+        "finalGrade": "Final grade"
       },
       "groups": {
         "teacher": "Teacher",
         "contract": "Contract",
-        "org": "Company"
+        "org": "Company",
+        "student": "Student",
+        "course": "Course",
+        "class_group": "Class group",
+        "document": "Document"
       },
       "kind": {
-        "teacher_contract": "Teacher contract"
+        "teacher_contract": "Teacher contract",
+        "enrollment_certificate": "Enrollment certificate",
+        "certificate": "Course certificate"
       },
-      "intro": "Write the text as in any document. Each teacher's details go in with “Insert data” and fill themselves in when the contract is downloaded. The preview shows the PDF as it will come out, with sample data.",
+      "intro": {
+        "teacher_contract": "Write the text as in any document. Each teacher's details go in with “Insert data” and fill themselves in when the contract is downloaded. The preview shows the PDF as it will come out, with sample data.",
+        "enrollment_certificate": "Write the text as in any document. The student's and the enrollment's details go in with “Insert field” and fill themselves in when the enrollment certificate is issued. The verification code prints in every page's footer.",
+        "certificate": "Write the text as in any document. The student's and the course's details go in with “Insert field” and fill themselves in when the certificate is issued. The verification code prints in every page's footer."
+      },
       "editor_label": "Document text",
       "preview_label": "PDF preview",
       "preview_title": "Preview",
@@ -2328,10 +2368,18 @@
       "publish": "Publish",
       "cancel": "Cancel",
       "publish_confirm_title": "Publish the document",
-      "publish_confirm_body": "From now on, every contract downloaded will use this text. Ones already downloaded do not change.",
+      "publish_confirm_body": {
+        "teacher_contract": "From now on, every contract downloaded will use this text. Ones already downloaded do not change.",
+        "enrollment_certificate": "From now on, every enrollment certificate issued will use this text. Ones already issued do not change.",
+        "certificate": "From now on, every certificate issued will use this text. Ones already issued do not change."
+      },
       "publish_confirm": "Yes, publish",
       "notice_saved": "Draft saved.",
-      "notice_published": "Published. New contracts already use this text.",
+      "notice_published": {
+        "teacher_contract": "Published. New contracts already use this text.",
+        "enrollment_certificate": "Published. New enrollment certificates already use this text.",
+        "certificate": "Published. New certificates already use this text."
+      },
       "notice_unchanged": "This text was already the published version.",
       "error_save_failed": "The draft could not be saved. Try again.",
       "error_publish_failed": "It could not be published. Try again.",
@@ -2361,7 +2409,8 @@
       "tab_edit": "Edit",
       "tab_preview": "Preview",
       "load_error_title": "The document could not be opened",
-      "load_error_body": "The system did not respond. Reload the page; if it persists, tell the tech team."
+      "load_error_body": "The system did not respond. Reload the page; if it persists, tell the tech team.",
+      "kinds_label": "Document"
     },
     "catalog_retire": {
       "counting": "Counting the enrollments still running…",
@@ -2641,6 +2690,41 @@
       "offer_stays": "Stays in their class ({code}): the module group changes, the seat does not.",
       "all_full_title": "Every class at this time is full. Go above capacity?",
       "all_full_body": "The seat goes above the capacity of the first class ({code}) and is logged with your name."
+    },
+    "certificates": {
+      "title": "Certificates",
+      "subtitle": "Module {module}, the course's last: this is where the certificate of whoever completed it is issued.",
+      "subtitle_single": "The course's last module: this is where the certificate of whoever completed it is issued.",
+      "load_error": "We could not load the certificates. Reload the page to try again.",
+      "template_missing": "There is no published certificate text yet. Publish it in Settings → Documents to issue.",
+      "exam_hint": "This course requires the certification exam. Mark who passed it: without the mark, the certificate does not go out.",
+      "empty": "No student has a confirmed seat in this group yet.",
+      "col_student": "Student",
+      "col_grade": "Final grade",
+      "col_status": "Certificate",
+      "did_not_sit_mark": "DA",
+      "status_issued": "Issued",
+      "issued_meta": "{code} · {date}",
+      "status_ready": "Ready to issue",
+      "exam_mark": "Certification exam passed",
+      "reason": {
+        "already_issued": "Already issued",
+        "grade_pending": "Grade pending",
+        "did_not_sit": "Did not sit the final exam (DA)",
+        "grade_below_minimum": "Grade below the minimum",
+        "earlier_module_failed": "Failed an earlier module",
+        "exam_not_approved": "Certification exam missing"
+      },
+      "issue": "{count, plural, =0 {Nothing to issue} one {Issue # certificate} other {Issue # certificates}}",
+      "confirm_body": "{count, plural, one {# certificate will be issued} other {# certificates will be issued}} and each student will get an e-mail (and their guardian, if a minor). Issuing cannot be undone.",
+      "confirm": "Yes, issue",
+      "issuing": "Issuing…",
+      "cancel": "Cancel",
+      "issued_toast": "{count, plural, one {# certificate issued} other {# certificates issued}}.",
+      "error_nothing_to_issue": "Nobody on the list can get the certificate now. Reload the page to see the updated list.",
+      "error_not_published": "There is no published certificate text yet.",
+      "error_missing_value": "The certificate text prints a field some student does not have. Check it in Settings → Documents.",
+      "error_failed": "Could not issue. Try again."
     }
   }
 }

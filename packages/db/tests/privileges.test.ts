@@ -182,6 +182,15 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("payment_lot_enrollments"))).toBe(DENIED_BY_GRANT);
   });
 
+  // An issued document is history (OOC-33): its code answers for the text handed out.
+  it("refuses UPDATE on issued_documents", async () => {
+    expect(await answerTo(`update issued_documents set code = code where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on issued_documents", async () => {
+    expect(await answerTo(deleteFrom("issued_documents"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("refuses TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_GRANT);
   });
@@ -316,6 +325,15 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on payment_lot_enrollments", async () => {
     expect(await answerTo(deleteFrom("payment_lot_enrollments"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // An issued document is history (OOC-33): its code answers for the text handed out.
+  it("refuses UPDATE on issued_documents", async () => {
+    expect(await answerTo(`update issued_documents set code = code where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on issued_documents", async () => {
+    expect(await answerTo(deleteFrom("issued_documents"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

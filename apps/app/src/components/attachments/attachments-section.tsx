@@ -19,6 +19,8 @@ import {
   type AttachmentList,
   type AttachmentSource,
 } from '@/lib/attachments/types'
+import { downloadIssuedDocument } from '@/lib/issued-documents/client'
+import type { IssuedDocumentItem, IssuedDocumentScope } from '@/lib/issued-documents/types'
 
 /** What the type list says in the rules line: brand-free, short. */
 const TYPE_LABELS: Record<string, string> = {
@@ -31,20 +33,21 @@ const TYPE_LABELS: Record<string, string> = {
 
 type Notice = { tone: 'ok' | 'error'; key: string; values?: Record<string, string> }
 
-/** Which origin the list shows. `all` is the default; the other two are the
- * two sides that send files (OOC-148). */
-type OriginFilter = 'all' | AttachmentSource
+/** Which origin the list shows. `all` is the default; `issued` is what the
+ * institution issued (OOC-33); the other two are the two sides that send
+ * files (OOC-148). */
+type OriginFilter = 'all' | 'issued' | AttachmentSource
 
-const ORIGIN_FILTERS: readonly OriginFilter[] = ['all', 'backoffice', 'portal']
+const ORIGIN_FILTERS: readonly OriginFilter[] = ['all', 'issued', 'backoffice', 'portal']
 
 /**
  * The student's documents (OOC-143, unified in OOC-148) — one list, the same in
  * the panel's student file and in the student's own portal. Every row carries a
  * label saying who sent it: the team (from the panel) or the student (from the
  * portal), worded for whoever is reading. A filter narrows the list to one side.
- * Still never an issued document — the notice saying so always shows; the
- * constancia and the certificate join this list with their own label when they
- * exist (OOC-33).
+ * The constancia and the certificate the institution issued (OOC-33) join the
+ * same list with their own label and their verification code; they are never
+ * removed. The notice under the list says the attached files carry no code.
  *
  * Presentation only on top of `lib/attachments/client`: every write goes
  * through the API, and the file straight to the bucket.
@@ -55,8 +58,13 @@ export function AttachmentsSection({
   variant,
   canUpload,
   canRemove,
+  issued,
+  issuedScope,
 }: {
   scope: AttachmentScope
+  /** The documents the institution issued about the student (OOC-33); null when unreadable. */
+  issued: IssuedDocumentItem[] | null
+  issuedScope: IssuedDocumentScope
   /** First list, read on the server. Null when the API failed. */
   initial: AttachmentList | null
   /** Which surface's titles and empty state. */
@@ -130,6 +138,13 @@ export function AttachmentsSection({
     window.location.assign(url)
   }
 
+  async function downloadIssued(item: IssuedDocumentItem) {
+    setNotice(null)
+    if (!(await downloadIssuedDocument(issuedScope, item.id, item.code))) {
+      setNotice({ tone: 'error', key: 'download_failed' })
+    }
+  }
+
   async function remove(item: AttachmentItem) {
     setBusy(true)
     const ok = await removeAttachment(item.id)
@@ -144,9 +159,16 @@ export function AttachmentsSection({
   }
 
   const items = list?.items ?? []
+  const issuedItems = issued ?? []
   const countOf = (filter: OriginFilter) =>
-    filter === 'all' ? items.length : items.filter((item) => item.source === filter).length
-  const shown = origin === 'all' ? items : items.filter((item) => item.source === origin)
+    filter === 'all'
+      ? items.length + issuedItems.length
+      : filter === 'issued'
+        ? issuedItems.length
+        : items.filter((item) => item.source === filter).length
+  const shownIssued = origin === 'all' || origin === 'issued' ? issuedItems : []
+  const shown =
+    origin === 'all' ? items : origin === 'issued' ? [] : items.filter((item) => item.source === origin)
 
   const rules = limits
     ? t('rules', {
@@ -248,7 +270,7 @@ export function AttachmentsSection({
         <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {t('load_error')}
         </p>
-      ) : items.length === 0 ? (
+      ) : items.length === 0 && issuedItems.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center">
           <p className="text-sm font-semibold text-ink">{t(`empty_${variant}_title`)}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t(`empty_${variant}_body`)}</p>
@@ -274,12 +296,48 @@ export function AttachmentsSection({
             ))}
           </div>
 
-          {shown.length === 0 ? (
+          {issued === null && (
+            <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              {t('issued_load_error')}
+            </p>
+          )}
+          {shown.length === 0 && shownIssued.length === 0 ? (
             <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-xs text-muted-foreground">
               {t(`empty_filtered.${variant}.${origin}`)}
             </p>
           ) : (
             <ul className="divide-y divide-line">
+              {shownIssued.map((item) => (
+                <li key={`issued-${item.id}`} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0">
+                  <span className="flex min-w-0 flex-1 items-start gap-3">
+                    <span
+                      aria-hidden
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-emerald-50 text-[0.625rem] font-bold tracking-wide text-emerald-800"
+                    >
+                      PDF
+                    </span>
+                    <span className="flex min-w-0 flex-col gap-1 leading-tight">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-ink">{t(`issued_kind.${item.kind}`)}</span>
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-emerald-800">
+                          {t(`origin.${variant}.issued`)}
+                        </span>
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">{item.courseName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t('issued_meta', { code: item.code, date: formatDate(item.issuedAt, locale) })}
+                      </span>
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void downloadIssued(item)}
+                    className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
+                  >
+                    {t('download')}
+                  </button>
+                </li>
+              ))}
               {shown.map((item) => (
                 <li key={item.id} className="flex flex-col gap-2 py-3 first:pt-0">
                   <div className="flex flex-wrap items-start justify-between gap-3">

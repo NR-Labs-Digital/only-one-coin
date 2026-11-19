@@ -142,7 +142,7 @@ describe("GET /emails/flows/:key/preview", () => {
   it("refuses a template nothing sends yet: there are no words to render", async () => {
     signedIn();
 
-    const response = await get("/api/v1/emails/flows/certificate_issued/preview");
+    const response = await get("/api/v1/emails/flows/class_access_ready/preview");
 
     expect(response.statusCode).toBe(400);
   });
@@ -190,7 +190,7 @@ describe("POST /emails/flows/:key/proof (OOC-89)", () => {
     signedIn();
     const send = vi.spyOn(container.useCases.emails.sendProof, "run");
 
-    const response = await post("/api/v1/emails/flows/certificate_issued/proof", { recipients: ["a@x.pe"] });
+    const response = await post("/api/v1/emails/flows/class_access_ready/proof", { recipients: ["a@x.pe"] });
 
     expect(response.statusCode).toBe(400);
     expect(send).not.toHaveBeenCalled();

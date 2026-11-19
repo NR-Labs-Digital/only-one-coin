@@ -196,6 +196,22 @@
         "The academic coordination corrected {studentName}'s result in {courseName}: the module was recorded as DA (failed for not taking the exam).",
         "You can see the result in the student portal."
       ]
+    },
+    "enrollment_certificate_issued": {
+      "subject": "Your {courseName} enrollment certificate is ready",
+      "preheader": "Download it from the student portal.",
+      "paragraphs": [
+        "The enrollment certificate for {studentName} in {courseName} has been issued.",
+        "You can download it from the student portal, under Documents. Its verification code is {code}."
+      ]
+    },
+    "certificate_issued": {
+      "subject": "Your {courseName} certificate is ready",
+      "preheader": "Download it from the student portal.",
+      "paragraphs": [
+        "Congratulations! The certificate for {studentName} for completing {courseName} has been issued.",
+        "You can download it from the student portal, under Documents. Its verification code is {code}."
+      ]
     }
   }
 }

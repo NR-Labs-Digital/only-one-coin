@@ -169,6 +169,20 @@ export function canEditGrades(role: StaffRole): boolean {
  * confirm with the owner): management and both supervisions — the same list
  * as `PROGRESSION_ROLES` in `apps/api`. The teacher does it from the portal.
  */
+/**
+ * Who reads a class group's certificate batch (OOC-33): coordination, and the
+ * `analyst`, who reads and never acts. Mirrors `CERTIFICATE_READ_ROLES` in
+ * `apps/api`, which decides.
+ */
+export function canReadCertificates(role: StaffRole): boolean {
+  return canIssueCertificates(role) || role === 'analyst'
+}
+
+/** Who confirms the batch (OOC-33): mirrors `CERTIFICATE_ISSUE_ROLES`. */
+export function canIssueCertificates(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+}
+
 export function canMoveStudentsOn(role: StaffRole): boolean {
   return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
 }

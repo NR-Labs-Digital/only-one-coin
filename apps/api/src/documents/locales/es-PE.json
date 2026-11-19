@@ -2,7 +2,8 @@
   "frame": {
     "ruc": "RUC",
     "page": "Página",
-    "pageOf": "de"
+    "pageOf": "de",
+    "verificationCode": "Código de verificación"
   },
   "nationalIdTypes": {
     "DNI": "DNI",
@@ -11,5 +12,11 @@
   },
   "teacherContract": {
     "starterBody": "<p style=\"text-align: center\"><strong>[TEXTO DE EJEMPLO — reemplácelo por el modelo de contrato de la institución]</strong></p><h1 style=\"text-align: center\">CONTRATO DE LOCACIÓN DE SERVICIOS</h1><p style=\"text-align: justify\">Conste por el presente documento el contrato de locación de servicios que celebran, de una parte, <strong>{{ org.legalName }}</strong>, con RUC N.º {{ org.ruc }} y domicilio en {{ org.address }}, a quien en adelante se denominará <strong>LA INSTITUCIÓN</strong>; y, de la otra parte, <strong>{{ teacher.fullName }}</strong>, identificado(a) con {{ teacher.documentType }} N.º {{ teacher.nationalId }}, de nacionalidad {{ teacher.nationality }}, con domicilio en {{ teacher.address }}, a quien en adelante se denominará <strong>EL LOCADOR</strong>; en los términos y condiciones siguientes:</p><h2>PRIMERA: OBJETO</h2><p style=\"text-align: justify\">EL LOCADOR se compromete a prestar servicios de enseñanza de {{ teacher.languages }} en las aulas virtuales que LA INSTITUCIÓN le asigne.</p><h2>SEGUNDA: PLAZO</h2><p style=\"text-align: justify\">El presente contrato rige desde el {{ contract.startsOn | local_date }} hasta el {{ contract.endsOn | local_date }}.</p><p style=\"text-align: justify\">Firmado en Lima, el {{ issuedOn | local_date }}.</p><p><br></p><p>______________________________<br>{{ org.legalName }}</p><p><br></p><p>______________________________<br>{{ teacher.fullName }}<br>{{ teacher.documentType }} N.º {{ teacher.nationalId }}</p>"
+  },
+  "enrollmentCertificate": {
+    "starterBody": "<p style=\"text-align: center\"><strong>[TEXTO DE EJEMPLO — reemplácelo por el modelo de constancia de la institución]</strong></p><h1 style=\"text-align: center\">CONSTANCIA DE MATRÍCULA</h1><p style=\"text-align: justify\">{{ org.legalName }}, con RUC N.º {{ org.ruc }}, hace constar que <strong>{{ student.fullName }}</strong>, identificado(a) con {{ student.documentType }} N.º {{ student.nationalId }}, se encuentra matriculado(a) en el curso <strong>{{ course.name }}</strong>, en el aula {{ classGroup.code }} del {{ period.name }}, con clases del {{ classGroup.startsOn | local_date }} al {{ classGroup.endsOn | local_date }}, en el horario {{ classGroup.schedule }}.</p><p style=\"text-align: justify\">Se expide la presente a solicitud del interesado, para los fines que estime convenientes.</p><p style=\"text-align: justify\">Lima, {{ issuedOn | local_date }}.</p><p><br></p><p>______________________________<br>{{ org.legalName }}</p>"
+  },
+  "certificate": {
+    "starterBody": "<p style=\"text-align: center\"><strong>[TEXTO DE EJEMPLO — reemplácelo por el modelo de certificado de la institución]</strong></p><h1 style=\"text-align: center\">CERTIFICADO</h1><p style=\"text-align: center\">{{ org.legalName }} otorga el presente certificado a</p><h2 style=\"text-align: center\">{{ student.fullName }}</h2><p style=\"text-align: center\">identificado(a) con {{ student.documentType }} N.º {{ student.nationalId }}, por haber concluido satisfactoriamente el curso <strong>{{ course.name }}</strong>, con nota final de {{ finalGrade }}.</p><p style=\"text-align: center\">Lima, {{ issuedOn | local_date }}.</p><p><br></p><p style=\"text-align: center\">______________________________<br>{{ org.legalName }}</p>"
   }
 }

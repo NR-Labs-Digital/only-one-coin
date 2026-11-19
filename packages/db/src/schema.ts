@@ -1845,6 +1845,70 @@ export const documentTemplateVersions = pgTable(
   ],
 );
 
+// A document the institution issued (OOC-33): the constancia of a paid
+// procedure request and the course certificate. Never a file anybody uploaded
+// (`documents`, OOC-143) — this one carries a verification code, and the
+// public validation page (OOC-59) reads it. The PDF is never stored: it prints
+// again from the template version and the data frozen here on issue, so a
+// corrected file never rewrites a document already handed out.
+// Append-only (REVOKE + trigger, 0062): an issued document is history.
+// `issued_by` is Better Auth's "user".id — FK written by hand in 0062; null
+// when the platform issued it on its own (the constancia, once its payment is
+// approved).
+export const issuedDocuments = pgTable(
+  "issued_documents",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    code: text("code").notNull(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "restrict" }),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    // The constancia's paid request; null on a certificate.
+    procedureRequestId: uuid("procedure_request_id").references(() => procedureRequests.id, { onDelete: "restrict" }),
+    // The certificate's module group — the course's last module, where the
+    // batch was confirmed; null on a constancia.
+    // FKs named in the table's options below: the generated names pass
+    // Postgres' 63 characters (as 0036's did).
+    classGroupModuleId: uuid("class_group_module_id"),
+    templateVersionId: uuid("template_version_id").notNull(),
+    data: jsonb("data").notNull(),
+    issuedBy: text("issued_by"),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("issued_documents_kind_check", sql`${table.kind} in ('enrollment_certificate', 'certificate')`),
+    check(
+      "issued_documents_source_check",
+      sql`(${table.kind} = 'enrollment_certificate') = (${table.procedureRequestId} is not null)
+        and (${table.kind} = 'certificate') = (${table.classGroupModuleId} is not null)`,
+    ),
+    uniqueIndex("issued_documents_code_uidx").on(table.code),
+    // One constancia per paid request, one certificate per enrollment.
+    uniqueIndex("issued_documents_procedure_request_uidx")
+      .on(table.procedureRequestId)
+      .where(sql`${table.procedureRequestId} is not null`),
+    uniqueIndex("issued_documents_certificate_enrollment_uidx")
+      .on(table.enrollmentId)
+      .where(sql`${table.kind} = 'certificate'`),
+    index("issued_documents_student_id_idx").on(table.studentId),
+    foreignKey({
+      name: "issued_documents_class_group_module_fk",
+      columns: [table.classGroupModuleId],
+      foreignColumns: [classGroupModules.id],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "issued_documents_template_version_fk",
+      columns: [table.templateVersionId],
+      foreignColumns: [documentTemplateVersions.id],
+    }).onDelete("restrict"),
+  ],
+);
+
 // A file someone sent to the platform (OOC-143): one bucket, one key per row,
 // and the key is the row's id (`documents/<id>`) — the name the person gave the
 // file lives only here, never in the bucket. Generic on purpose: `owner_type`

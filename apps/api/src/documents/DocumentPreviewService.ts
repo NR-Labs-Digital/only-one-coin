@@ -78,7 +78,9 @@ export class DocumentPreviewService {
 
   private async dataFor(kind: DocumentKindKey, teacherId: string | undefined): Promise<unknown> {
     const entry = DOCUMENT_KINDS[kind];
-    if (!teacherId) return entry.kind.sample;
+    // A real teacher's file only fills the teacher contract; every other
+    // document previews with its sample.
+    if (!teacherId || kind !== "teacher_contract") return entry.kind.sample;
 
     const teacher = await this.teachers.findById(teacherId);
     if (!teacher) throw new TeacherNotFoundError();
@@ -87,8 +89,33 @@ export class DocumentPreviewService {
     return teacherContractData(teacher, teacherContractKind.sample.contract);
   }
 
+  /**
+   * Whether the template prints this record — the engine only, no PDF. Issuing
+   * (OOC-33) checks every document of a batch this way before recording any,
+   * so a value a template lacks refuses the batch instead of recording
+   * documents nobody can download.
+   */
+  async assertPrintable(kind: DocumentKindKey, body: string, data: unknown): Promise<void> {
+    await this.renderHtml(kind, body, data);
+  }
+
   /** Engine → frame → PDF, with every failure turned into a code. Shared with real generation. */
-  async renderPdf(kind: DocumentKindKey, body: string, data: unknown): Promise<Uint8Array> {
+  async renderPdf(
+    kind: DocumentKindKey,
+    body: string,
+    data: unknown,
+    options: { verificationCode?: string } = {},
+  ): Promise<Uint8Array> {
+    const html = await this.renderHtml(kind, body, data);
+    try {
+      return await this.renderer.render(frameDocument(html, options));
+    } catch (error) {
+      if (error instanceof PdfRenderError) throw new DocumentRenderUnavailableError(error);
+      throw error;
+    }
+  }
+
+  private async renderHtml(kind: DocumentKindKey, body: string, data: unknown): Promise<string> {
     let html: string;
     try {
       html = await this.engine.render(DOCUMENT_KINDS[kind].kind, body, data, { locale: "es-PE" });
@@ -100,12 +127,6 @@ export class DocumentPreviewService {
       }
       throw error;
     }
-
-    try {
-      return await this.renderer.render(frameDocument(html));
-    } catch (error) {
-      if (error instanceof PdfRenderError) throw new DocumentRenderUnavailableError(error);
-      throw error;
-    }
+    return html;
   }
 }

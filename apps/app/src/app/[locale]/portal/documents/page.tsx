@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getPortalView } from '@/lib/portal/session'
 import { Card, PageHeader } from '@/components/portal/ui'
 import { getAttachments } from '@/lib/attachments/server'
+import { getIssuedDocuments } from '@/lib/issued-documents/server'
 import { AttachmentsSection } from '@/components/attachments/attachments-section'
 import {
   RequestsView,
@@ -16,9 +17,8 @@ import {
  * paid procedures (Trámites) — the student asks for the constancia on the same
  * page they will later find it on.
  *
- * The block of issued documents that sat above the list left: it had no
- * backend and always rendered empty. The constancia and the certificate join
- * the same list with their own label when they are issued (OOC-33).
+ * The constancia and the certificate the institution issued (OOC-33) are in
+ * the same list, labelled as issued, with their verification code.
  */
 
 export default async function DocumentsPage({
@@ -30,9 +30,10 @@ export default async function DocumentsPage({
   setRequestLocale(locale)
   const t = await getTranslations('portal')
 
-  const [{ procedures, requests }, attachments] = await Promise.all([
+  const [{ procedures, requests }, attachments, issued] = await Promise.all([
     getPortalView(),
     getAttachments({ kind: 'portal' }),
+    getIssuedDocuments({ kind: 'portal' }),
   ])
 
   const procedureViews: ProcedureView[] = procedures.map((p) => ({
@@ -58,8 +59,8 @@ export default async function DocumentsPage({
       <PageHeader title={t('documents.title')} />
 
       {/* Every document on the student's file — sent by them or attached by
-          the coordination (OOC-143), labelled by origin (OOC-148). Never an
-          issued document. */}
+          the coordination (OOC-143), labelled by origin (OOC-148), and the
+          ones the institution issued (OOC-33). */}
       <Card className="p-5">
         <AttachmentsSection
           scope={{ kind: 'portal' }}
@@ -67,6 +68,8 @@ export default async function DocumentsPage({
           variant="portal"
           canUpload
           canRemove={false}
+          issued={issued}
+          issuedScope={{ kind: 'portal' }}
         />
       </Card>
 
