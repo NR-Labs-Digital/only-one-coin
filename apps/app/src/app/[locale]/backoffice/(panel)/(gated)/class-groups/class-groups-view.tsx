@@ -76,6 +76,7 @@ export function ClassGroupsView({
   teachers,
   selectedPeriodId,
   canManage,
+  canManagePeriods,
   pendingCount,
 }: {
   items: ClassGroupItem[]
@@ -85,6 +86,8 @@ export function ClassGroupsView({
   teachers: TeacherOption[] | null
   selectedPeriodId: string | null
   canManage: boolean
+  /** Opens, edits and duplicates periods — not every class-group writer does (OOC-95). */
+  canManagePeriods: boolean
   /**
    * Class groups waiting for a teacher, every period (OOC-97) — the same
    * number as the Pending tab, so the two screens never disagree. Null when
@@ -279,7 +282,7 @@ export function ClassGroupsView({
       {/* Two rows with two jobs: the period decides what the screen holds,
           next to what you can do with it; search and filters narrow within. */}
       <Toolbar>
-        <PeriodBar periods={periods} selectedId={selectedPeriodId} canManage={canManage} />
+        <PeriodBar periods={periods} selectedId={selectedPeriodId} canManage={canManagePeriods} />
 
         {canManage && (
           <button

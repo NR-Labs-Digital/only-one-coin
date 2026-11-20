@@ -82,12 +82,15 @@ export function ClassGroupActions({
   courses,
   teachers,
   canManage,
+  canRetire,
 }: {
   group: ClassGroupItem
   courses: CourseRow[]
   /** The roster for the edit form's teacher picker; null when unreadable. */
   teachers: TeacherOption[] | null
   canManage: boolean
+  /** Retiring and restoring are not every class-group writer's (OOC-95). */
+  canRetire: boolean
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
@@ -147,6 +150,7 @@ export function ClassGroupActions({
   )
 
   if (!group.active) {
+    if (!canRetire) return null
     return (
       <Card className="p-5">
         {confirming === 'restore' ? (
@@ -207,18 +211,20 @@ export function ClassGroupActions({
           <BoIcon name="edit" size={16} />
           {t('class_group_actions.edit')}
         </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            setError(null)
-            setConfirming('retire')
-          }}
-          className={dangerButtonClass}
-        >
-          <BoIcon name="close" size={16} />
-          {t('class_group_actions.retire')}
-        </button>
+        {canRetire && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setError(null)
+              setConfirming('retire')
+            }}
+            className={dangerButtonClass}
+          >
+            <BoIcon name="close" size={16} />
+            {t('class_group_actions.retire')}
+          </button>
+        )}
       </div>
 
       {next && confirming === 'advance' && (

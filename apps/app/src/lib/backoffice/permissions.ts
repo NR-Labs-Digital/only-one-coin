@@ -60,12 +60,31 @@ function isManagement(role: StaffRole): boolean {
 }
 
 /**
- * Who opens and runs class groups — the same roles the API declares on every
- * catalog write (CATALOG_WRITE_ROLES; CLAUDE.md §1, "quem abre turma é
- * admin/enrollment_supervisor"). The academic supervisor follows the teachers,
- * not the catalog: they read class groups, they do not open or edit them.
+ * Who opens and runs class groups and their module runs — create, edit, move
+ * the status along, assign teacher, Classroom and Meet. The roles the API
+ * declares as CLASS_GROUP_WRITE_ROLES: the enrollment side plus the academic
+ * supervisor (OOC-95, decision of 20/11/2026), who allocates the teachers.
+ * Periods, retiring and the waitlist are not part of it (`canManagePeriods`,
+ * `canRetireCatalogEntry`, `canManageWaitlist`).
  */
 export function canCreateClassGroup(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+}
+
+/**
+ * Who opens, edits and duplicates academic periods — CATALOG_WRITE_ROLES. The
+ * academic supervisor runs class groups inside a period, not the period.
+ */
+export function canManagePeriods(role: StaffRole): boolean {
+  return isManagement(role) || role === 'enrollment_supervisor'
+}
+
+/**
+ * Who reads and runs a class group's waitlist — it carries each person's
+ * national id, so it follows the student file's readers, not who runs the
+ * class group (the API gates it with CATALOG_WRITE_ROLES).
+ */
+export function canManageWaitlist(role: StaffRole): boolean {
   return isManagement(role) || role === 'enrollment_supervisor'
 }
 
