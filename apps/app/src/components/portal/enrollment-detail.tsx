@@ -147,8 +147,9 @@ export async function EnrollmentDetail({
               <SectionTitle>{t('course_detail.modules_title')}</SectionTitle>
               <ul className="mt-3 flex flex-col gap-2">
                 {enrollment.modules.map((m) => {
-                  const modulePayment =
-                    monthly?.payments.find((mp) => mp.moduleId === m.id) ?? null
+                  // The latest purchase of this module, if any (OOC-86).
+                  const bought =
+                    monthly?.bought.filter((item) => item.module === m.sequence).at(-1) ?? null
                   return (
                     <li
                       key={m.id}
@@ -169,18 +170,15 @@ export async function EnrollmentDetail({
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         {monthly !== null &&
-                          modulePayment !== null &&
-                          (modulePayment.payment === null ? (
+                          (bought === null ? (
                             <StatusBadge
                               tone="danger"
                               label={t('course_detail.month_unpaid')}
                             />
                           ) : (
                             <StatusBadge
-                              tone={paymentTone[modulePayment.payment.status]}
-                              label={t(
-                                `payment_status.${modulePayment.payment.status}`,
-                              )}
+                              tone={paymentTone[bought.status]}
+                              label={t(`payment_status.${bought.status}`)}
                             />
                           ))}
                         <StatusBadge
@@ -285,7 +283,9 @@ export async function EnrollmentDetail({
               {monthly !== null ? (
                 <Field label={t('course_detail.module_price')}>
                   <span className="text-lg text-ink">
-                    {formatMoney(monthly.modulePriceCents, monthly.currency, locale)}
+                    {monthly.modulePriceCents === null
+                      ? '—'
+                      : formatMoney(monthly.modulePriceCents, monthly.currency, locale)}
                   </span>
                 </Field>
               ) : (

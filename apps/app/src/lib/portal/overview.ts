@@ -35,6 +35,20 @@ interface ApiPayment {
   hasReceipt: boolean
 }
 
+interface ApiModuleAttempt {
+  module: number
+  attempt: number
+}
+
+interface ApiMonthly {
+  current: ApiModuleAttempt | null
+  lock: 'monthly_payment_due' | 'monthly_payment_in_review' | null
+  modulePriceCents: number | null
+  currency: 'PEN'
+  forSale: ApiModuleAttempt[]
+  bought: (ApiModuleAttempt & { status: 'pending' | 'under_review' | 'approved' })[]
+}
+
 interface ApiEnrollment {
   id: string
   code: string
@@ -61,6 +75,8 @@ interface ApiEnrollment {
   academicPeriodName: string
   plan: { name: string; priceId: string; priceCents: number; currency: 'PEN' }
   payments: ApiPayment[]
+  /** OOC-86; null for a package plan. Optional: an API from before it sends none. */
+  monthly?: ApiMonthly | null
   /** The final grade the teacher posted (OOC-38); `grade` null on a DA. */
   finalGrade: { grade: number | null; didNotSit: boolean; recordedAt: string } | null
 }
@@ -158,15 +174,27 @@ export function toEnrollment(row: ApiEnrollment): Enrollment {
     },
     plan: { name: row.plan.name, priceCents: row.plan.priceCents, currency: row.plan.currency },
     academicPeriod: { name: row.academicPeriodName },
-    // Monthly billing, modules, the class-access lock and progress have no
-    // backend yet (OOC-86, OOC-94/85): every enrollment is a package,
-    // unlocked, with nothing to draw a bar from. The final grade is real
-    // since OOC-38.
-    billingMode: 'package',
-    monthly: null,
+    // Modules and progress have no backend yet (OOC-94/85): nothing to draw a
+    // bar from. The monthly rail and its lock are real since OOC-86, the final
+    // grade since OOC-38.
+    billingMode: row.monthly ? 'monthly' : 'package',
+    monthly: row.monthly
+      ? {
+          current: row.monthly.current,
+          modulePriceCents: row.monthly.modulePriceCents,
+          currency: row.monthly.currency,
+          forSale: row.monthly.forSale,
+          // A receipt waiting for a person is one state from the student's side.
+          bought: row.monthly.bought.map((item) => ({
+            module: item.module,
+            attempt: item.attempt,
+            status: item.status === 'approved' ? 'approved' : 'under_review',
+          })),
+        }
+      : null,
     modules: [],
     payments,
-    classAccessLock: null,
+    classAccessLock: row.monthly?.lock ?? null,
     finalGrade: row.finalGrade
       ? row.finalGrade.didNotSit || row.finalGrade.grade === null
         ? 'did_not_attempt'

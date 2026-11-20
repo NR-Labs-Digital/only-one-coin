@@ -363,6 +363,7 @@
         "language_retired": "Idioma retirado",
         "procedure_request_opened": "Trámite solicitado",
         "procedure_payment_submitted": "Comprobante de trámite enviado",
+        "monthly_payment_submitted": "Comprobante de módulo mensual enviado",
         "procedure_price_created": "Precio de trámite cambiado",
         "attachment_uploaded": "Archivo adjuntado",
         "attachment_downloaded": "Archivo descargado",
@@ -891,6 +892,9 @@
       "procedure_payment_under_review": "Pago de trámite en revisión",
       "procedure_payment_approved": "Pago de trámite aprobado",
       "procedure_payment_rejected": "Pago de trámite rechazado",
+      "monthly_payment_under_review": "Pago de módulo en revisión",
+      "monthly_payment_approved": "Pago de módulo aprobado",
+      "monthly_payment_rejected": "Pago de módulo rechazado",
       "grade_corrected": "Nota final corregida",
       "grade_corrected_did_not_sit": "Resultado corregido a DA"
     },
@@ -917,6 +921,9 @@
       "procedure_payment_under_review": "Cuando el comprobante de un trámite pasa a revisión manual.",
       "procedure_payment_approved": "Cuando el pago de un trámite queda aprobado.",
       "procedure_payment_rejected": "Cuando la revisión rechaza el comprobante de un trámite.",
+      "monthly_payment_under_review": "Cuando el comprobante de un módulo mensual pasa a revisión manual.",
+      "monthly_payment_approved": "Cuando el pago de un módulo mensual queda aprobado.",
+      "monthly_payment_rejected": "Cuando la revisión rechaza el comprobante de un módulo mensual.",
       "grade_corrected": "La supervisión académica corrige una nota registrada",
       "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA"
     },
@@ -944,6 +951,9 @@
       "procedure_payment_under_review": "si es un trámite y va a revisión",
       "procedure_payment_approved": "si es un trámite",
       "procedure_payment_rejected": "si es un trámite y se rechaza",
+      "monthly_payment_under_review": "si es un módulo mensual y va a revisión",
+      "monthly_payment_approved": "si es un módulo mensual",
+      "monthly_payment_rejected": "si es un módulo mensual y se rechaza",
       "grade_corrected": "Solo si una nota registrada se corrige",
       "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)"
     },
@@ -2175,6 +2185,7 @@
       "receipt_viewed": "Comprobante consultado",
       "procedure_request_opened": "Trámite solicitado",
       "procedure_payment_submitted": "Comprobante de trámite enviado",
+      "monthly_payment_submitted": "Comprobante de módulo mensual enviado",
       "procedure_price_created": "Precio de trámite cambiado"
     },
     "class_links": {

@@ -363,6 +363,7 @@
         "language_retired": "Language retired",
         "procedure_request_opened": "Procedure requested",
         "procedure_payment_submitted": "Procedure receipt sent",
+        "monthly_payment_submitted": "Monthly module receipt sent",
         "procedure_price_created": "Procedure price changed",
         "attachment_uploaded": "File attached",
         "attachment_downloaded": "File downloaded",
@@ -891,6 +892,9 @@
       "procedure_payment_under_review": "Procedure payment under review",
       "procedure_payment_approved": "Procedure payment approved",
       "procedure_payment_rejected": "Procedure payment rejected",
+      "monthly_payment_under_review": "Module payment under review",
+      "monthly_payment_approved": "Module payment approved",
+      "monthly_payment_rejected": "Module payment rejected",
       "grade_corrected": "Final grade corrected",
       "grade_corrected_did_not_sit": "Result corrected to DA"
     },
@@ -917,6 +921,9 @@
       "procedure_payment_under_review": "When a procedure's receipt goes to manual review.",
       "procedure_payment_approved": "When a procedure's payment is approved.",
       "procedure_payment_rejected": "When the review rejects a procedure's receipt.",
+      "monthly_payment_under_review": "When the receipt of a monthly module goes to manual review.",
+      "monthly_payment_approved": "When the payment of a monthly module is approved.",
+      "monthly_payment_rejected": "When the review rejects the receipt of a monthly module.",
       "grade_corrected": "The academic supervision corrects a posted grade",
       "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA"
     },
@@ -944,6 +951,9 @@
       "procedure_payment_under_review": "if it is a procedure and goes to review",
       "procedure_payment_approved": "if it is a procedure",
       "procedure_payment_rejected": "if it is a procedure and is rejected",
+      "monthly_payment_under_review": "if it is a monthly module and goes to review",
+      "monthly_payment_approved": "if it is a monthly module",
+      "monthly_payment_rejected": "if it is a monthly module and is rejected",
       "grade_corrected": "Only if a posted grade is corrected",
       "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)"
     },
@@ -2175,6 +2185,7 @@
       "receipt_viewed": "Receipt viewed",
       "procedure_request_opened": "Procedure requested",
       "procedure_payment_submitted": "Procedure receipt sent",
+      "monthly_payment_submitted": "Monthly module receipt sent",
       "procedure_price_created": "Procedure price changed"
     },
     "class_links": {
