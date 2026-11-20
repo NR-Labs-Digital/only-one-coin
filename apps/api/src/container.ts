@@ -25,6 +25,10 @@ import {
   ConfirmManualReceiptUploadUseCase,
   ConfirmReceiptUploadUseCase,
   OpenProcedureRequestUseCase,
+  FreezeEnrollmentUseCase,
+  ListReturnRunsUseCase,
+  ReturnFromFreezeUseCase,
+  SendFreezeReengagementUseCase,
   RequestMonthlyReceiptUploadUseCase,
   ConfirmMonthlyReceiptUploadUseCase,
   SubmitMonthlyPaymentUseCase,
@@ -212,6 +216,8 @@ import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js"
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
+import { DrizzleEnrollmentFreezeRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentFreezeRepository.js";
+import { DrizzleFreezeReengagementRepository } from "./infra/persistence/enrollment/DrizzleFreezeReengagementRepository.js";
 import { DrizzleMonthlyPaymentRepository } from "./infra/persistence/payment/DrizzleMonthlyPaymentRepository.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
@@ -344,6 +350,11 @@ export interface AppUseCases {
   enrollment: {
     createManual: CreateManualEnrollmentUseCase;
     move: MoveEnrollmentUseCase;
+    freeze: FreezeEnrollmentUseCase;
+    listReturnRuns: ListReturnRunsUseCase;
+    returnFromFreeze: ReturnFromFreezeUseCase;
+    /** Run by the `freeze-reengagement` worker, never a route. */
+    sendFreezeReengagement: SendFreezeReengagementUseCase;
     submitPublic: SubmitPublicEnrollmentUseCase;
     claimSeatHold: ClaimSeatHoldUseCase;
     releaseSeatHold: ReleaseSeatHoldUseCase;
@@ -648,6 +659,7 @@ function buildContainer(): AppContainer {
   const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
+  const freezeRepository = new DrizzleEnrollmentFreezeRepository(db);
   const moveEnrollment = new MoveEnrollmentUseCase(
     new DrizzleEnrollmentMoveRepository(db),
     planPriceLookup,
@@ -1023,6 +1035,10 @@ function buildContainer(): AppContainer {
       enrollment: {
         createManual: createManualEnrollment,
         move: moveEnrollment,
+        freeze: new FreezeEnrollmentUseCase(freezeRepository, true),
+        listReturnRuns: new ListReturnRunsUseCase(freezeRepository),
+        returnFromFreeze: new ReturnFromFreezeUseCase(freezeRepository),
+        sendFreezeReengagement: new SendFreezeReengagementUseCase(new DrizzleFreezeReengagementRepository(db)),
         submitPublic: submitPublicEnrollment,
         claimSeatHold,
         releaseSeatHold,

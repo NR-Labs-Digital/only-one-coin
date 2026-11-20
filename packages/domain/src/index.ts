@@ -1019,3 +1019,34 @@ export {
   type SubmitMonthlyPaymentInput,
 } from "./monthly/MonthlyPaymentUseCases.js";
 export { monthlyModuleDueEmails } from "./notification/monthlyEmails.js";
+export { ACADEMIC_STATUSES, academicStatusOf, type AcademicStatus } from "./freeze/academicStatus.js";
+export {
+  EnrollmentFreezeConflictError,
+  EnrollmentFreezeRefusedError,
+  EnrollmentReturnRefusedError,
+  type FreezeRefusal,
+  type FreezeReturnRefusal,
+} from "./freeze/errors.js";
+export {
+  assertFreezable,
+  FREEZE_REASON_MAX_LENGTH,
+  FreezeEnrollmentUseCase,
+  ListReturnRunsUseCase,
+  ReturnFromFreezeUseCase,
+  takesBack,
+  type FreezeEnrollmentInput,
+  type FreezeSource,
+  type IEnrollmentFreezeRepository,
+  type LiveFreeze,
+  type ReturnFromFreezeInput,
+  type ReturnRun,
+} from "./freeze/FreezeUseCases.js";
+export {
+  FREEZE_REENGAGEMENT_MONTHS,
+  freezeReengagementEmails,
+  reengagementMilestone,
+  SendFreezeReengagementUseCase,
+  type FreezeReengagementMonths,
+  type FrozenForReengagement,
+  type IFreezeReengagementRepository,
+} from "./freeze/reengagement.js";

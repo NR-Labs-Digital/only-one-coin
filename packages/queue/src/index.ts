@@ -59,3 +59,5 @@ export {
   scheduleReportRefresh,
   enqueueReportRefreshNow,
 } from "./producers/report-refresh.producer.js";
+export { FREEZE_REENGAGEMENT_QUEUE, FREEZE_REENGAGEMENT_EVERY_MS } from "./jobs/freeze-reengagement.job.js";
+export { createFreezeReengagementQueue, scheduleFreezeReengagement } from "./producers/freeze-reengagement.producer.js";

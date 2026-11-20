@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CatalogClassGroupNotFoundError, type Role } from "@ooc/domain";
+import { ACADEMIC_STATUSES, CatalogClassGroupNotFoundError, type Role } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
@@ -14,6 +14,8 @@ const RosterItemSchema = z.object({
   studentName: z.string(),
   planName: z.string(),
   paymentStatus: z.enum(["pending", "under_review", "approved", "rejected"]).nullable(),
+  // OOC-84: frozen seats of this class group are listed too, marked.
+  academicStatus: z.enum(ACADEMIC_STATUSES),
   // The national id and the contact, only for who reads the student file.
   file: z
     .object({
@@ -49,6 +51,7 @@ export function shapeRoster(role: Role, rows: ClassGroupRosterRow[]): z.infer<ty
       studentName: `${row.firstName} ${row.lastName}`,
       planName: row.planName,
       paymentStatus: row.paymentStatus,
+      academicStatus: row.academicStatus,
       file: full
         ? {
             nationalIdType: row.nationalIdType as "DNI" | "CE" | "passport",
@@ -78,7 +81,7 @@ export const getClassGroupRosterRoute = RouteBuilder.get("/catalog/class-groups/
   .response(200, RosterResponseSchema)
   .response(404, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const rows = await container.queries.classGroupRoster.run(request.params.id);
+    const rows = await container.queries.classGroupRoster.run(request.params.id, { includeFrozen: true });
     if (!rows) throw new CatalogClassGroupNotFoundError();
     reply.status(200).send(shapeRoster(request.currentUser!.role, rows));
   });

@@ -2,10 +2,10 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { EnrollmentOriginSchema } from "@ooc/domain";
+import { ACADEMIC_STATUSES, EnrollmentOriginSchema } from "@ooc/domain";
 
 const EnrollmentStatusSchema = z.enum(["under_review", "active", "completed", "rejected"]);
-const SeatStatusSchema = z.enum(["reserved", "confirmed", "released"]);
+const SeatStatusSchema = z.enum(["reserved", "confirmed", "released", "frozen"]);
 
 // Every filter the ledger screen offers, applied by Postgres. Absent means
 // "all", except the tab, which opens on who is studying now (OOC-115). `q` keeps the same floor as the student search, so a one-letter
@@ -36,6 +36,7 @@ const EnrollmentListRowSchema = z.object({
   classGroupStatus: z.enum(["draft", "enrolling", "in_progress", "finished", "closed"]),
   status: EnrollmentStatusSchema,
   seatStatus: SeatStatusSchema,
+  academicStatus: z.enum(ACADEMIC_STATUSES).nullable(),
   planName: z.string(),
   planPriceId: z.string().uuid(),
   amountCents: z.number().int(),

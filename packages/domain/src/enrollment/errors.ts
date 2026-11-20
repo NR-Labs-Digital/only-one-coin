@@ -218,6 +218,7 @@ export type EnrollmentMoveRefusal =
   | "plan_required"
   | "plan_not_of_course"
   | "plan_not_allowed"
+  | "seat_frozen"
   | "reason_required";
 
 export class EnrollmentMoveRefusedError extends UnableToProcessEntryError {

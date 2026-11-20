@@ -7,7 +7,8 @@ import {
 } from "../shared/base/SoftDeletableModel.js";
 import { EnrollmentOriginSchema, type EnrollmentOrigin } from "./EnrollmentOrigin.js";
 
-export const SeatStatusSchema = z.enum(["reserved", "confirmed", "released"]);
+/** `frozen` (OOC-84): the seat went back to the class group while the student is away. */
+export const SeatStatusSchema = z.enum(["reserved", "confirmed", "released", "frozen"]);
 export type SeatStatus = z.infer<typeof SeatStatusSchema>;
 
 export const EnrollmentPropsSchema = SoftDeletableModelPropsSchema.extend({

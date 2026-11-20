@@ -177,6 +177,7 @@ describe("class group roster", { timeout: 30_000 }, () => {
           phone: "+51900000000",
           planName: "Mensual (roster integration)",
           paymentStatus: "approved",
+          academicStatus: "active",
         },
         expect.objectContaining({ enrollmentId: ids.zapata, studentId: ZAPATA, paymentStatus: "pending" }),
       ]);

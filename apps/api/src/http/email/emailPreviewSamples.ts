@@ -84,6 +84,12 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     courseName: "Inglés Básico",
     module: 2,
   },
+  enrollment_freeze_reengagement: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    months: 3,
+  },
   grade_posted: {
     recipientName: "María Fernanda",
     studentName: "María Fernanda Quispe Rojas",

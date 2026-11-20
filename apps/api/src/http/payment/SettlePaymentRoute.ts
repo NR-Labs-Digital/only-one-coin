@@ -10,7 +10,7 @@ const ResultSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(["approved", "rejected"]),
   // Null for a procedure's payment: it has no seat to move (OOC-83).
-  seatStatus: z.enum(["reserved", "confirmed", "released"]).nullable(),
+  seatStatus: z.enum(["reserved", "confirmed", "released", "frozen"]).nullable(),
   portalAccess: z.enum(["created", "linked_existing", "already_linked", "email_conflict"]).nullable(),
 });
 

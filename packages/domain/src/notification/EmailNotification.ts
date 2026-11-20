@@ -113,6 +113,13 @@ export interface EmailTemplateVars {
     courseName: string;
     module: number;
   };
+  /** A frozen enrollment's re-engagement, 1, 3 or 6 months after the freeze (OOC-84). */
+  enrollment_freeze_reengagement: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    months: number;
+  };
   /** The final grade was posted (OOC-38) — final once posted. `grade` is the
    * 0–20 grade as typed (up to two decimals); `passingGrade` is the pass mark
    * from `platform_settings` at the time, so the e-mail never hardcodes 14. */

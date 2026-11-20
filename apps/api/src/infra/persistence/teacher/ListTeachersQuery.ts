@@ -167,7 +167,7 @@ export class ListTeachersQuery {
           join "class_group_modules" own_run on own_run.id = coalesce(seat.class_group_module_id, seat.class_group_id)
           join "class_groups" own_group on own_group.id = own_run.class_group_id
           where ${running}
-            and seat.seat_status <> 'released'
+            and seat.seat_status not in ('released', 'frozen')
             and seat.deleted_at is null
         )`.mapWith(Number),
         contractId: contract.id,

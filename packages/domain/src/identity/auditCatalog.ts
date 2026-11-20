@@ -103,6 +103,8 @@ export const AUDIT_ACTIONS = {
   // Staff moved the seat to another class group (OOC-84), possibly above its
   // capacity (OOC-155).
   "enrollment.moved": { key: "enrollment_moved", entity: "student", subject: "metadata_student" },
+  "enrollment.frozen": { key: "enrollment_frozen", entity: "student", subject: "metadata_student" },
+  "enrollment.unfrozen": { key: "enrollment_unfrozen", entity: "student", subject: "metadata_student" },
   "portal_access.created": { key: "portal_access_created", entity: "student", subject: "target" },
   "portal_access.issued": { key: "portal_access_issued", entity: "student", subject: "target" },
   "student.email_marked_invalid": { key: "student_email_marked_invalid", entity: "student", subject: "target" },

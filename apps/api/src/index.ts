@@ -11,6 +11,8 @@ import {
   createAttachmentSweepQueue,
   scheduleAttachmentSweep,
   createConstanciaIssueQueue,
+  createFreezeReengagementQueue,
+  scheduleFreezeReengagement,
   scheduleConstanciaIssue,
   createSendEmailQueue,
   scheduleOutboxRelay,
@@ -40,6 +42,7 @@ import { startReceiptValidateWorker } from "./workers/receipt-validate.worker.js
 import { startSeatHoldSweepWorker } from "./workers/seat-hold-sweep.worker.js";
 import { startAttachmentSweepWorker } from "./workers/attachment-sweep.worker.js";
 import { startConstanciaIssueWorker } from "./workers/constancia-issue.worker.js";
+import { startFreezeReengagementWorker } from "./workers/freeze-reengagement.worker.js";
 import { startReportRefreshWorker } from "./workers/report-refresh.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
 
@@ -103,6 +106,12 @@ const attachmentSweepWorker = startAttachmentSweepWorker(connection, logger, {
 const constanciaIssueQueue = createConstanciaIssueQueue(connection);
 await scheduleConstanciaIssue(constanciaIssueQueue);
 const constanciaIssueWorker = startConstanciaIssueWorker(connection, logger, { issued: documents.issued });
+// Frozen enrollments (OOC-84): their 1, 3 and 6 month re-engagement e-mails.
+const freezeReengagementQueue = createFreezeReengagementQueue(connection);
+await scheduleFreezeReengagement(freezeReengagementQueue);
+const freezeReengagementWorker = startFreezeReengagementWorker(connection, logger, {
+  send: container.useCases.enrollment.sendFreezeReengagement,
+});
 // Reports (OOC-40): the aggregation the screen reads is rebuilt every night,
 // and right away when the last build is stale (a missed night, or the first
 // boot with the tables empty) — so a deploy never leaves the screen blank.
@@ -190,7 +199,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, freeze-reengagement, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -222,6 +231,7 @@ async function shutdown() {
   await seatHoldSweepWorker.close();
   await attachmentSweepWorker.close();
   await constanciaIssueWorker.close();
+  await freezeReengagementWorker.close();
   await reportRefreshWorker.close();
   await receiptUploadRelayWorker.close();
   await receiptNormalizeWorker.close();
@@ -234,6 +244,7 @@ async function shutdown() {
   await seatHoldSweepQueue.close();
   await attachmentSweepQueue.close();
   await constanciaIssueQueue.close();
+  await freezeReengagementQueue.close();
   await reportRefreshQueue.close();
   await receiptUploadRelayQueue.close();
   await receiptNormalizeQueue.close();
