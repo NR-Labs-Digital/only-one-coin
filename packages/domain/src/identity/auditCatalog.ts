@@ -128,6 +128,7 @@ export const AUDIT_ACTIONS = {
 
   "procedure_request.opened": { key: "procedure_request_opened", entity: "student", subject: "metadata_student" },
   "procedure_request.payment_submitted": { key: "procedure_payment_submitted", entity: "payment", subject: "target" },
+  "enrollment.monthly_payment_submitted": { key: "monthly_payment_submitted", entity: "payment", subject: "target" },
   "procedure_price.created": { key: "procedure_price_created", entity: "platform", subject: "none" },
 
   // A file sent to a student's file (OOC-143): the target is the file, the

@@ -526,6 +526,25 @@ export interface WaitlistItem {
  * contact — comes only to who reads the student file; the API leaves it out
  * for everyone else, and `view` says which of the two the reader got.
  */
+/**
+ * A monthly seat of a class group on its current module (OOC-86): `paid` —
+ * bought and approved; `in_review` — the receipt waits in Payments; `due` —
+ * nobody bought it, since `dueSince`; `unknown` — the module group has no
+ * module number.
+ */
+export interface ClassGroupMonthlySeat {
+  enrollmentId: string
+  studentId: string
+  studentName: string
+  classGroupModuleId: string
+  module: number | null
+  attempt: number
+  state: 'paid' | 'in_review' | 'due' | 'unknown'
+  dueSince: string | null
+  /** Later modules already bought ahead. */
+  aheadModules: number[]
+}
+
 export interface ClassGroupRoster {
   view: 'full' | 'limited'
   items: ClassGroupRosterItem[]
@@ -864,6 +883,8 @@ export interface PaymentLotItem {
 export interface PaymentRow {
   /** Null is the enrollment's own payment. */
   procedureKind: PaymentProcedureKind | null
+  /** The modules a monthly purchase made later bought (OOC-86); null otherwise. */
+  monthlyModules: number[] | null
   id: string
   enrollmentId: string
   studentId: string
@@ -971,6 +992,8 @@ export interface ReviewVerdict {
 export interface PaymentReviewItem {
   /** Null is the enrollment's own payment. */
   procedureKind: PaymentProcedureKind | null
+  /** The modules a monthly purchase made later bought (OOC-86); null otherwise. */
+  monthlyModules: number[] | null
   id: string
   enrollmentId: string
   studentId: string

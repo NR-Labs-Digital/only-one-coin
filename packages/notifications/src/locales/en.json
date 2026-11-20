@@ -105,6 +105,30 @@
         "You can make the request again from the student portal. If you think this is a mistake, contact us through Only One Coin's support channels."
       ]
     },
+    "monthly_payment_under_review": {
+      "subject": "We are reviewing {studentName}'s payment",
+      "preheader": "Our team will check the receipt.",
+      "paragraphs": [
+        "{studentName}'s payment for module {modules} of {courseName} went to manual review.",
+        "Our team will check the receipt and write to you here with the result. There is no need to send it again. Access to the class opens once the payment is approved."
+      ]
+    },
+    "monthly_payment_approved": {
+      "subject": "We approved {studentName}'s payment",
+      "preheader": "Access to the class is open.",
+      "paragraphs": [
+        "We approved {studentName}'s payment for module {modules} of {courseName}.",
+        "Once the student is in that module, access to the class shows as open in the student portal."
+      ]
+    },
+    "monthly_payment_rejected": {
+      "subject": "We could not confirm {studentName}'s payment",
+      "preheader": "The receipt was not approved.",
+      "paragraphs": [
+        "We could not confirm {studentName}'s payment for module {modules} of {courseName}. The enrollment does not change: this only affects that module.",
+        "You can send the receipt again from Payments, in the student portal. If you think this is a mistake, contact us through Only One Coin’s support channels."
+      ]
+    },
     "portal_credentials": {
       "subject": "Activate your Only One Coin student portal access",
       "preheader": "Create your password to sign in.",
@@ -211,6 +235,14 @@
       "paragraphs": [
         "Congratulations! The certificate for {studentName} for completing {courseName} has been issued.",
         "You can download it from the student portal, under Documents. Its verification code is {code}."
+      ]
+    },
+    "monthly_module_due": {
+      "subject": "Module {module} for {studentName} is not paid yet",
+      "preheader": "Access to the class opens once the payment is approved.",
+      "paragraphs": [
+        "{studentName} is starting module {module} of {courseName}, which has no payment yet.",
+        "You can pay for it from Payments, in the student portal, with Yape, Plin or bank transfer, and send the receipt. Access to the class opens as soon as we approve the payment. This is not a debt: there is no interest and no late fee."
       ]
     }
   }

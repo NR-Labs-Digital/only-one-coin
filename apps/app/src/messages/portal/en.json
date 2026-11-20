@@ -70,6 +70,7 @@
       "monthly": "Monthly (per module)"
     },
     "module_label": "Module {n}",
+    "module_label_repeat": "Module {n} · repeat",
     "module_status": {
       "completed": "Completed",
       "current": "In progress",
@@ -77,7 +78,8 @@
     },
     "access_lock": {
       "monthly_payment_due": "Class access paused: the module payment is missing",
-      "module_failed": "Class access paused: you didn't pass the previous module"
+      "module_failed": "Class access paused: you didn't pass the previous module",
+      "monthly_payment_in_review": "Class access paused: the module payment is under review"
     },
     "request_type": {
       "enrollment_certificate": "Enrollment certificate",
@@ -146,7 +148,8 @@
       "meeting_pending": "The class link will be posted before it starts.",
       "locked": {
         "monthly_payment_due": "Your class access is paused because the current module has no approved payment yet. Upload your receipt and we'll restore it as soon as it's validated. It's not a debt: no interest, no late fees.",
-        "module_failed": "Your class access is paused because you didn't pass the previous module. Message us on WhatsApp to see your options."
+        "module_failed": "Your class access is paused because you didn't pass the previous module. Message us on WhatsApp to see your options.",
+        "monthly_payment_in_review": "Your class access opens as soon as we approve the payment for the current module. We already have your receipt: no need to send it again."
       },
       "locked_cta": "Settle payment",
       "modules_title": "Modules",
@@ -227,7 +230,14 @@
       "col_status": "Status",
       "type_package": "Full package",
       "type_monthly": "Monthly",
-      "type_procedure": "Procedure"
+      "type_procedure": "Procedure",
+      "current_module": "Current module",
+      "error": {
+        "operation_used": "This operation number was already used in another payment. Check the receipt.",
+        "not_for_sale": "These modules can no longer be paid for. We refreshed the list.",
+        "receipt_rejected": "We could not receive the file. Try again with another photo.",
+        "generic": "We could not send your receipt. Try again."
+      }
     },
     "requests": {
       "title": "Requests",

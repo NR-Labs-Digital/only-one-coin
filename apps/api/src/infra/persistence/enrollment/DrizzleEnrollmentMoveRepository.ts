@@ -135,6 +135,7 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
             classGroupModuleId: ownRun.id,
             // A run it took before keeps its grades: this is the next attempt.
             moduleAttempt: nextAttempt(ownRun.id),
+            moduleEnteredAt: sql`now()`,
             updatedAt: sql`now()`,
           })
           .where(
@@ -187,6 +188,7 @@ export class DrizzleEnrollmentMoveRepository implements IEnrollmentMoveRepositor
           classGroupId: target.classGroupId,
           classGroupModuleId: target.id,
           moduleAttempt: nextAttempt(target.id),
+          moduleEnteredAt: sql`now()`,
           overCapacity: seat.overCapacity,
           ...(params.planPriceId ? { planPriceId: params.planPriceId } : {}),
           updatedAt: sql`now()`,

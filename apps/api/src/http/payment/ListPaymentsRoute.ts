@@ -45,6 +45,8 @@ const RowSchema = z.object({
   operationNumber: z.string().nullable(),
   amountCents: z.number().int(),
   expectedAmountCents: z.number().int(),
+  // OOC-86: the modules a later monthly purchase bought; null otherwise.
+  monthlyModules: z.array(z.number().int()).nullable(),
   overCapacity: z.boolean(),
   currency: z.literal("PEN"),
   submittedAt: z.string(),

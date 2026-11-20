@@ -7,6 +7,8 @@ import { ClassroomLinkSchema, WeeklySlotSchema } from "@/http/catalog/CatalogSch
 import type { PortalPaymentRow } from "@/infra/persistence/portal/StudentPortalQuery.js";
 import { PortalProfileQuerySchema, requestedProfile } from "./profileQuery.js";
 
+const ModuleAttemptSchema = z.object({ module: z.number().int(), attempt: z.number().int() });
+
 const NationalIdTypeSchema = z.enum(["DNI", "CE", "passport"]);
 
 const PortalPaymentSchema = z.object({
@@ -49,6 +51,17 @@ const PortalEnrollmentSchema = z.object({
   academicPeriodName: z.string(),
   plan: z.object({ name: z.string(), priceId: z.string().uuid(), priceCents: z.number().int(), currency: z.literal("PEN") }),
   payments: z.array(PortalPaymentSchema),
+  /** The monthly modality (OOC-86); null for a package plan. */
+  monthly: z
+    .object({
+      current: ModuleAttemptSchema.nullable(),
+      lock: z.enum(["monthly_payment_due", "monthly_payment_in_review"]).nullable(),
+      modulePriceCents: z.number().int().nullable(),
+      currency: z.literal("PEN"),
+      forSale: z.array(ModuleAttemptSchema),
+      bought: z.array(ModuleAttemptSchema.extend({ status: z.enum(["pending", "under_review", "approved"]) })),
+    })
+    .nullable(),
   /** The final grade posted by the teacher (OOC-38): `grade` null on a DA; null while nothing is posted. */
   finalGrade: z.object({ grade: z.number().nullable(), didNotSit: z.boolean(), recordedAt: z.string() }).nullable(),
 });
@@ -224,6 +237,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
         academicPeriodName: enrollment.academicPeriodName,
         plan: { ...enrollment.plan, currency: "PEN" as const },
         payments: enrollment.payments.map(toPortalPayment),
+        monthly: enrollment.monthly ? { ...enrollment.monthly, currency: "PEN" as const } : null,
         finalGrade: enrollment.finalGrade
           ? {
               grade: enrollment.finalGrade.score,

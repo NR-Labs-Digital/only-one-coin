@@ -363,6 +363,7 @@
         "language_retired": "Language retired",
         "procedure_request_opened": "Procedure requested",
         "procedure_payment_submitted": "Procedure receipt sent",
+        "monthly_payment_submitted": "Monthly module receipt sent",
         "procedure_price_created": "Procedure price changed",
         "attachment_uploaded": "File attached",
         "attachment_downloaded": "File downloaded",
@@ -891,8 +892,12 @@
       "procedure_payment_under_review": "Procedure payment under review",
       "procedure_payment_approved": "Procedure payment approved",
       "procedure_payment_rejected": "Procedure payment rejected",
+      "monthly_payment_under_review": "Module payment under review",
+      "monthly_payment_approved": "Module payment approved",
+      "monthly_payment_rejected": "Module payment rejected",
       "grade_corrected": "Final grade corrected",
-      "grade_corrected_did_not_sit": "Result corrected to DA"
+      "grade_corrected_did_not_sit": "Result corrected to DA",
+      "monthly_module_due": "Monthly module to pay"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -917,8 +922,12 @@
       "procedure_payment_under_review": "When a procedure's receipt goes to manual review.",
       "procedure_payment_approved": "When a procedure's payment is approved.",
       "procedure_payment_rejected": "When the review rejects a procedure's receipt.",
+      "monthly_payment_under_review": "When the receipt of a monthly module goes to manual review.",
+      "monthly_payment_approved": "When the payment of a monthly module is approved.",
+      "monthly_payment_rejected": "When the review rejects the receipt of a monthly module.",
       "grade_corrected": "The academic supervision corrects a posted grade",
-      "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA"
+      "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA",
+      "monthly_module_due": "When progression takes a monthly student into a module nobody paid for."
     },
     "email_audience": {
       "student": "Student",
@@ -944,8 +953,12 @@
       "procedure_payment_under_review": "if it is a procedure and goes to review",
       "procedure_payment_approved": "if it is a procedure",
       "procedure_payment_rejected": "if it is a procedure and is rejected",
+      "monthly_payment_under_review": "if it is a monthly module and goes to review",
+      "monthly_payment_approved": "if it is a monthly module",
+      "monthly_payment_rejected": "if it is a monthly module and is rejected",
       "grade_corrected": "Only if a posted grade is corrected",
-      "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)"
+      "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)",
+      "monthly_module_due": "if monthly and the module is not paid"
     },
     "email_delivery_reason": {
       "provider_unavailable": "The provider did not answer",
@@ -1387,6 +1400,26 @@
       "no_payment": "No payment recorded",
       "open_file": "Open file",
       "limited_note": "ID document and contact are shown only to management and enrollment supervision."
+    },
+    "monthly": {
+      "title": "Monthly payments",
+      "load_error": "We could not load this class group’s monthly payments.",
+      "owing_count": "{count} of {total} to pay",
+      "note": "Students on a monthly plan and their current module. Owing a module is not a debt: it only closes that class in the portal. Payments are approved in Payments.",
+      "col_student": "Student",
+      "col_module": "Current module",
+      "col_state": "Status",
+      "col_ahead": "Paid ahead",
+      "module": "Module {n}",
+      "module_repeat": "Module {n} · repeat",
+      "due_since": "Since {date}",
+      "ahead": "Modules {modules}",
+      "state": {
+        "paid": "Paid",
+        "in_review": "Under review",
+        "due": "To pay",
+        "unknown": "No module set"
+      }
     },
     "teacher_groups": {
       "not_started": "The class group has not started yet — grades are recorded during the module.",
@@ -2175,6 +2208,7 @@
       "receipt_viewed": "Receipt viewed",
       "procedure_request_opened": "Procedure requested",
       "procedure_payment_submitted": "Procedure receipt sent",
+      "monthly_payment_submitted": "Monthly module receipt sent",
       "procedure_price_created": "Procedure price changed"
     },
     "class_links": {
@@ -2496,7 +2530,8 @@
     },
     "payment_origin": {
       "enrollment": "Enrollment",
-      "enrollment_certificate": "Enrollment certificate"
+      "enrollment_certificate": "Enrollment certificate",
+      "monthly": "Monthly · module {modules}"
     },
     "student_actions": {
       "whatsapp": "Message {name} on WhatsApp",

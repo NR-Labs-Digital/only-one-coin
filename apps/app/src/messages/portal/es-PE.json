@@ -70,6 +70,7 @@
       "monthly": "Mensual (por módulo)"
     },
     "module_label": "Módulo {n}",
+    "module_label_repeat": "Módulo {n} · repite",
     "module_status": {
       "completed": "Completado",
       "current": "En curso",
@@ -77,7 +78,8 @@
     },
     "access_lock": {
       "monthly_payment_due": "Acceso a la clase pausado: falta el pago del módulo",
-      "module_failed": "Acceso a la clase pausado: no aprobaste el módulo anterior"
+      "module_failed": "Acceso a la clase pausado: no aprobaste el módulo anterior",
+      "monthly_payment_in_review": "Acceso a la clase pausado: el pago del módulo está en revisión"
     },
     "request_type": {
       "enrollment_certificate": "Constancia de matrícula",
@@ -146,7 +148,8 @@
       "meeting_pending": "El enlace de la clase se publicará antes del inicio.",
       "locked": {
         "monthly_payment_due": "Tu acceso a la clase está pausado porque el módulo actual aún no tiene pago aprobado. Sube tu comprobante y lo reactivamos apenas se valide. No es una deuda: no hay intereses ni moras.",
-        "module_failed": "Tu acceso a la clase está pausado porque no aprobaste el módulo anterior. Escríbenos por WhatsApp para ver tus opciones."
+        "module_failed": "Tu acceso a la clase está pausado porque no aprobaste el módulo anterior. Escríbenos por WhatsApp para ver tus opciones.",
+        "monthly_payment_in_review": "Tu acceso a la clase se abre apenas aprobemos el pago del módulo actual. Ya recibimos tu comprobante: no necesitas enviarlo de nuevo."
       },
       "locked_cta": "Regularizar pago",
       "modules_title": "Módulos",
@@ -227,7 +230,14 @@
       "col_status": "Estado",
       "type_package": "Paquete completo",
       "type_monthly": "Mensual",
-      "type_procedure": "Trámite"
+      "type_procedure": "Trámite",
+      "current_module": "Módulo actual",
+      "error": {
+        "operation_used": "Este número de operación ya fue usado en otro pago. Revisa el comprobante.",
+        "not_for_sale": "Estos módulos ya no están disponibles para pagar. Actualizamos la lista.",
+        "receipt_rejected": "No pudimos recibir el archivo. Inténtalo de nuevo con otra foto.",
+        "generic": "No pudimos enviar tu comprobante. Inténtalo de nuevo."
+      }
     },
     "requests": {
       "title": "Trámites",

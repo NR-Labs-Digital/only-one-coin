@@ -6,6 +6,7 @@ import {
   enrollments,
   currentGrades,
   paymentCoverage,
+  paymentModules,
   payments,
   platformSettings,
   planPrices,
@@ -17,6 +18,12 @@ import {
 } from "@ooc/db";
 import {
   classroomLinksOf,
+  monthlyAccessLock,
+  purchasableModules,
+  type CoverageStatus,
+  type CoveredModule,
+  type ModuleAttempt,
+  type MonthlyAccessLock,
   guardianConsentStateOf,
   isGuardianAccount,
   type GuardianConsentState,
@@ -71,11 +78,30 @@ export interface PortalEnrollmentRow {
   plan: { name: string; priceId: string; priceCents: number };
   /** Every payment of the enrollment, newest first. */
   payments: PortalPaymentRow[];
+  /** The monthly modality of the enrollment (OOC-86); null for a package plan. */
+  monthly: PortalMonthlyRow | null;
   /**
    * The final grade the teacher posted in this class group (OOC-38) — final
    * once posted. `score` is null on a DA. Null while nothing is posted.
    */
   finalGrade: { score: number | null; didNotSit: boolean; recordedAt: Date } | null;
+}
+
+/**
+ * A monthly enrollment's modules (OOC-86). `current` is the module and attempt
+ * the student is on, null in a run with no module number — then nothing is
+ * for sale and nothing is locked, because nobody knows which module that is.
+ */
+export interface PortalMonthlyRow {
+  current: ModuleAttempt | null;
+  /** Why the class is closed, or null when it is open. */
+  lock: MonthlyAccessLock | null;
+  /** The plan's price for one module in force today — what the next receipt pays per module. */
+  modulePriceCents: number | null;
+  /** What may be bought now, in the order it must be bought (a prefix). */
+  forSale: ModuleAttempt[];
+  /** What was bought with a payment still alive, in module order. */
+  bought: CoveredModule[];
 }
 
 /** A paid procedure the student can start: today's price, and which of their
@@ -166,6 +192,9 @@ export class StudentPortalQuery {
         courseModules: courses.modules,
         academicPeriodName: academicPeriods.name,
         planName: plans.name,
+        planId: plans.id,
+        planBilling: plans.billing,
+        moduleAttempt: enrollments.moduleAttempt,
         planPriceId: planPrices.id,
         planPriceCents: planPrices.amountCents,
         gradeScore: currentGrades.score,
@@ -202,12 +231,15 @@ export class StudentPortalQuery {
       .where(and(inArray(enrollments.studentId, fileIds), isNull(enrollments.deletedAt)))
       .orderBy(desc(enrollments.createdAt), desc(enrollments.id));
 
-    const [paymentsByEnrollment, prices, requests, settings, account] = await Promise.all([
+    const monthlyRows = rows.filter((row) => row.planBilling === "monthly");
+    const [paymentsByEnrollment, prices, requests, settings, account, bought, modulePrices] = await Promise.all([
       this.paymentsOf(rows.map((row) => row.id)),
       this.currentPrices(),
       this.requestsOf(fileIds),
       this.db.select({ passingGrade: platformSettings.passingGrade }).from(platformSettings).limit(1),
       this.db.execute<{ email: string }>(sql`select "email" from "user" where "id" = ${userId} limit 1`),
+      this.boughtModulesOf(monthlyRows.map((row) => row.id)),
+      this.modulePricesOf([...new Set(monthlyRows.map((row) => row.planId))]),
     ]);
 
     const consentState = guardianConsentStateOf({ birthDate: student.birthDate, consentGiven: Boolean(student.guardian?.consent) });
@@ -242,6 +274,10 @@ export class StudentPortalQuery {
         // Same derivation as the ledger and the student file: the newest
         // payment speaks for the seat (StudentEnrollmentHistoryQuery).
         const latestStatus = enrollmentPayments[0]?.status ?? "pending";
+        const monthly = row.planBilling === "monthly" ? monthlyOf(row, bought.get(row.id) ?? [], modulePrices.get(row.planId) ?? null) : null;
+        // The class stays shut on a confirmed seat while the module the student
+        // is on is not bought and approved (decision of 20/11/2026).
+        const classOpen = row.seatStatus === "confirmed" && monthly?.lock == null;
         return {
           id: row.id,
           code: trackingCode(row.id, row.createdAt),
@@ -265,7 +301,7 @@ export class StudentPortalQuery {
             // a reserved or released seat never sees a link (OOC-98, OOC-144,
             // OOC-159).
             classroomLinks:
-              row.seatStatus === "confirmed"
+              classOpen
                 ? classroomLinksOf(
                     {
                       module: row.classGroupModule,
@@ -276,11 +312,12 @@ export class StudentPortalQuery {
                     row.courseModules,
                   )
                 : [],
-            meetUrl: row.seatStatus === "confirmed" ? row.meetUrl : null,
+            meetUrl: classOpen ? row.meetUrl : null,
           },
           academicPeriodName: row.academicPeriodName,
           plan: { name: row.planName, priceId: row.planPriceId, priceCents: row.planPriceCents },
           payments: enrollmentPayments,
+          monthly,
           finalGrade:
             row.gradeRecordedAt !== null
               ? {
@@ -318,6 +355,45 @@ export class StudentPortalQuery {
       )
       .limit(1);
     return row !== undefined;
+  }
+
+  /** What each monthly enrollment bought with a payment still alive, module order. */
+  private async boughtModulesOf(enrollmentIds: string[]): Promise<Map<string, CoveredModule[]>> {
+    const byEnrollment = new Map<string, CoveredModule[]>();
+    if (enrollmentIds.length === 0) return byEnrollment;
+    const rows = await this.db
+      .select({
+        enrollmentId: paymentModules.enrollmentId,
+        module: paymentModules.module,
+        attempt: paymentModules.attempt,
+        status: payments.status,
+      })
+      .from(paymentModules)
+      .innerJoin(payments, eq(payments.id, paymentModules.paymentId))
+      .where(
+        and(
+          inArray(paymentModules.enrollmentId, enrollmentIds),
+          inArray(payments.status, ["pending", "under_review", "approved"]),
+        ),
+      )
+      .orderBy(paymentModules.module, paymentModules.attempt);
+    for (const row of rows) {
+      const list = byEnrollment.get(row.enrollmentId) ?? [];
+      list.push({ module: row.module, attempt: row.attempt, status: row.status as CoverageStatus });
+      byEnrollment.set(row.enrollmentId, list);
+    }
+    return byEnrollment;
+  }
+
+  /** Each plan's price in force today — a module bought later costs today's price, not the frozen one. */
+  private async modulePricesOf(planIds: string[]): Promise<Map<string, number>> {
+    if (planIds.length === 0) return new Map();
+    const rows = await this.db
+      .selectDistinctOn([planPrices.planId], { planId: planPrices.planId, amountCents: planPrices.amountCents })
+      .from(planPrices)
+      .where(and(inArray(planPrices.planId, planIds), lte(planPrices.validFrom, sql`now()`)))
+      .orderBy(planPrices.planId, desc(planPrices.validFrom), desc(planPrices.id));
+    return new Map(rows.map((row) => [row.planId, row.amountCents]));
   }
 
   private async currentPrices(): Promise<{ kind: ProcedureKind; priceCents: number }[]> {
@@ -435,4 +511,23 @@ export class StudentPortalQuery {
     }
     return byEnrollment;
   }
+}
+
+/** The monthly view of one enrollment (OOC-86), from the pure rules in the domain. */
+function monthlyOf(
+  row: { classGroupModule: number | null; moduleAttempt: number; courseModules: number },
+  bought: CoveredModule[],
+  modulePriceCents: number | null,
+): PortalMonthlyRow {
+  if (row.classGroupModule === null) {
+    return { current: null, lock: null, modulePriceCents, forSale: [], bought };
+  }
+  const current = { module: row.classGroupModule, attempt: row.moduleAttempt };
+  return {
+    current,
+    lock: monthlyAccessLock(current, bought),
+    modulePriceCents,
+    forSale: purchasableModules({ current, courseModules: row.courseModules, covered: bought }),
+    bought,
+  };
 }

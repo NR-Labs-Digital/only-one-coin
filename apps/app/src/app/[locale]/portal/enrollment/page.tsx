@@ -7,6 +7,7 @@ import { getFeatureFlags } from '@/lib/feature-flags/server'
 import type {
   Enrollment,
   EnrollmentStatus,
+  Payment,
   PaymentStatus,
 } from '@/lib/portal/types'
 import { Card, EmptyState, PageHeader } from '@/components/portal/ui'
@@ -103,15 +104,20 @@ export default async function EnrollmentPage({
      * amounts and dates stay on the Pagamentos screen, which is where paying
      * actually happens.
      */
-    const payments =
+    const payments: { key: string; label: string; payment: Payment | null }[] =
       e.monthly !== null
-        ? e.monthly.payments.map((mp) => ({
-            key: mp.moduleId,
-            label: t('module_label', {
-              n: e.modules.find((m) => m.id === mp.moduleId)?.sequence ?? 0,
-            }),
-            payment: mp.payment,
-          }))
+        ? [
+            // The module the student is on and has not bought yet (OOC-86):
+            // the one row that waits for them, with the shortcut to Pagos.
+            ...(e.classAccessLock === 'monthly_payment_due' && e.monthly.current
+              ? [{ key: 'due', label: t('module_label', { n: e.monthly.current.module }), payment: null }]
+              : []),
+            ...e.payments.map((payment) => ({
+              key: payment.id,
+              label: t('billing_mode.monthly'),
+              payment,
+            })),
+          ]
         : [
             {
               key: latest?.id ?? e.id,
