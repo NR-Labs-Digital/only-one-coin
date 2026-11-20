@@ -78,6 +78,12 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     courseName: "Inglés Básico",
     modules: "2, 3",
   },
+  monthly_module_due: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    module: 2,
+  },
   grade_posted: {
     recipientName: "María Fernanda",
     studentName: "María Fernanda Quispe Rojas",

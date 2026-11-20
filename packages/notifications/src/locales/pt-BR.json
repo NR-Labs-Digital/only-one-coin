@@ -236,6 +236,14 @@
         "Parabéns! O certificado de {studentName} pela conclusão de {courseName} foi emitido.",
         "Você pode baixá-lo no portal do aluno, em Documentos. O código de verificação é {code}."
       ]
+    },
+    "monthly_module_due": {
+      "subject": "O módulo {module} de {studentName} está para pagar",
+      "preheader": "O acesso à aula abre quando o pagamento for aprovado.",
+      "paragraphs": [
+        "{studentName} começa o módulo {module} de {courseName}, que ainda não tem pagamento.",
+        "Você pode pagá-lo em Pagamentos, no portal do aluno, com Yape, Plin ou transferência, e enviar o comprovante. O acesso à aula abre assim que aprovarmos o pagamento. Não é uma dívida: não há juros nem multa."
+      ]
     }
   }
 }

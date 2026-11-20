@@ -106,6 +106,13 @@ export interface EmailTemplateVars {
     courseName: string;
     modules: string;
   };
+  /** Progression took a monthly student into a module nobody bought (OOC-86). */
+  monthly_module_due: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    module: number;
+  };
   /** The final grade was posted (OOC-38) — final once posted. `grade` is the
    * 0–20 grade as typed (up to two decimals); `passingGrade` is the pass mark
    * from `platform_settings` at the time, so the e-mail never hardcodes 14. */
