@@ -8,6 +8,7 @@ import { formatPaymentMethod } from '@/lib/payment-method'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import {
   enrollmentTone,
+  academicTone,
   paymentTone,
   seatTone,
 } from '@/components/backoffice/status-tone'
@@ -21,10 +22,10 @@ import {
 } from '@/components/ui/dialog'
 
 /**
- * One enrollment, opened from the ledger. Read-only but for one action:
- * moving it to another class group (OOC-84), a free staff tool offered to
- * whoever may manage enrollments (`onMove`). Freezing and withdrawing are
- * still paid procedures (`docs/REGRAS-NEGOCIO.md` §5) recorded elsewhere.
+ * One enrollment, opened from the ledger. Read-only but for the staff's seat
+ * tools (OOC-84), offered to whoever may manage enrollments: moving it to
+ * another class group (`onMove`), freezing it (`onFreeze`) and bringing a
+ * frozen one back (`onReturn`). Withdrawing has no rule yet.
  *
  * It exists so the row can stay a row: the teacher, the modality, the ciclo,
  * the frozen price and the operation number are each worth one look and none
@@ -34,11 +35,16 @@ export function EnrollmentDetailDialog({
   enrollment,
   onClose,
   onMove,
+  onFreeze,
+  onReturn,
 }: {
   enrollment: EnrollmentRow | null
   onClose: () => void
   /** Present only for a role that may move enrollments. */
   onMove?: (enrollment: EnrollmentRow) => void
+  /** The same roles freeze and bring back (OOC-84). */
+  onFreeze?: (enrollment: EnrollmentRow) => void
+  onReturn?: (enrollment: EnrollmentRow) => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -75,6 +81,12 @@ export function EnrollmentDetailDialog({
                   tone={seatTone[enrollment.seatStatus]}
                   label={t(`seat_status.${enrollment.seatStatus}`)}
                 />
+                {enrollment.academicStatus && (
+                  <StatusBadge
+                    tone={academicTone[enrollment.academicStatus]}
+                    label={t(`academic_status.${enrollment.academicStatus}`)}
+                  />
+                )}
                 <StatusBadge
                   tone={paymentTone[enrollment.paymentStatus]}
                   label={t(`payment_status.${enrollment.paymentStatus}`)}
@@ -188,7 +200,27 @@ export function EnrollmentDetailDialog({
                   {t('enrollment_detail.manage_notice')}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
-                  {onMove && enrollment.seatStatus !== 'released' && (
+                  {onReturn && enrollment.seatStatus === 'frozen' && (
+                    <button
+                      type="button"
+                      onClick={() => onReturn(enrollment)}
+                      className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+                    >
+                      <BoIcon name="courses" size={16} />
+                      {t('freeze_enrollment.return')}
+                    </button>
+                  )}
+                  {onFreeze && enrollment.seatStatus === 'confirmed' && (
+                    <button
+                      type="button"
+                      onClick={() => onFreeze(enrollment)}
+                      className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:bg-sky-soft"
+                    >
+                      <BoIcon name="clock" size={16} />
+                      {t('freeze_enrollment.freeze')}
+                    </button>
+                  )}
+                  {onMove && enrollment.seatStatus !== 'released' && enrollment.seatStatus !== 'frozen' && (
                     <button
                       type="button"
                       onClick={() => onMove(enrollment)}

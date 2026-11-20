@@ -130,6 +130,8 @@ export class MoveEnrollmentUseCase extends BaseUseCase<MoveEnrollmentInput, Move
     const source = await this.repository.findSource(input.enrollmentId);
     if (!source) throw new EnrollmentNotFoundError();
     if (source.seatStatus === "released") throw new EnrollmentMoveRefusedError("seat_released");
+    // A frozen seat comes back through its own door, to the module it stopped in (OOC-84).
+    if (source.seatStatus === "frozen") throw new EnrollmentMoveRefusedError("seat_frozen");
     if (source.graded) throw new EnrollmentMoveRefusedError("graded");
     if (source.classGroupModuleId === input.classGroupModuleId) throw new EnrollmentMoveRefusedError("same_class_group");
 

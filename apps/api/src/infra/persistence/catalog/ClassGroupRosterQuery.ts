@@ -1,6 +1,7 @@
 import { classGroups, enrollments, paymentCoverage, payments, planPrices, plans, students } from "@ooc/db";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { academicStatusOf, type AcademicStatus } from "@ooc/domain";
 
 export type RosterPaymentStatus = "pending" | "under_review" | "approved" | "rejected";
 
@@ -16,6 +17,8 @@ export interface ClassGroupRosterRow {
   planName: string;
   /** The most recent payment of the enrollment; null for a seat confirmed without one (seed, legacy import). */
   paymentStatus: RosterPaymentStatus | null;
+  /** OOC-84: active, frozen or completed — derived, never stored. */
+  academicStatus: AcademicStatus;
 }
 
 /**
@@ -34,9 +37,14 @@ export interface ClassGroupRosterRow {
 export class ClassGroupRosterQuery {
   constructor(private readonly db: Db) {}
 
-  async run(classGroupId: string): Promise<ClassGroupRosterRow[] | null> {
+  /**
+   * `includeFrozen` (OOC-84) adds the seats frozen out of this class group:
+   * coordination sees who paused here. The teacher's roster never asks — a
+   * frozen student has no class to attend.
+   */
+  async run(classGroupId: string, options: { includeFrozen?: boolean } = {}): Promise<ClassGroupRosterRow[] | null> {
     const [group] = await this.db
-      .select({ id: classGroups.id })
+      .select({ id: classGroups.id, status: classGroups.status })
       .from(classGroups)
       .where(eq(classGroups.id, classGroupId));
     if (!group) return null;
@@ -67,6 +75,7 @@ export class ClassGroupRosterQuery {
         phone: students.phone,
         planName: plans.name,
         paymentStatus: latestPayment.status,
+        seatStatus: enrollments.seatStatus,
       })
       .from(enrollments)
       .innerJoin(students, eq(students.id, enrollments.studentId))
@@ -76,12 +85,19 @@ export class ClassGroupRosterQuery {
       .where(
         and(
           eq(enrollments.classGroupId, classGroupId),
-          eq(enrollments.seatStatus, "confirmed"),
+          options.includeFrozen
+            ? inArray(enrollments.seatStatus, ["confirmed", "frozen"])
+            : eq(enrollments.seatStatus, "confirmed"),
           isNull(enrollments.deletedAt),
         ),
       )
       .orderBy(asc(students.lastName), asc(students.firstName), asc(enrollments.id));
 
-    return rows.map((row) => ({ ...row, paymentStatus: row.paymentStatus as RosterPaymentStatus | null }));
+    return rows.map(({ seatStatus, ...row }) => ({
+      ...row,
+      paymentStatus: row.paymentStatus as RosterPaymentStatus | null,
+      // Confirmed or frozen by the filter above, so never null here.
+      academicStatus: academicStatusOf(seatStatus, group.status) ?? "active",
+    }));
   }
 }

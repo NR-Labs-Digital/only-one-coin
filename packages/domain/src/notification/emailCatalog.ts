@@ -73,6 +73,9 @@ export const EMAIL_CATALOG = {
   /* Progression took a monthly student into a module nobody bought (OOC-86):
      the class stays closed until it is bought and approved. Never a debt. */
   monthly_module_due: { audience: "student", stage: "access", conditional: true, emitted: true },
+  /* A frozen enrollment (OOC-84): 1, 3 and 6 months after the freeze, then
+     silence — never removal. */
+  enrollment_freeze_reengagement: { audience: "student", stage: "access", conditional: true, emitted: true },
   /* The first approval opens the portal account. */
   portal_credentials: { audience: "student", stage: "access", conditional: false, emitted: true },
   /* The Classroom invitation, three days before the class group starts

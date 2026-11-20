@@ -30,6 +30,7 @@ import {
   enrollmentTone,
   paymentTone,
   seatTone,
+  academicTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { EnrollmentDetailSheet } from './enrollment-detail-sheet'
@@ -471,11 +472,21 @@ export function StudentFile({
                       />
                     </td>
                     <td className={tdClass}>
-                      <StatusBadge
-                        tone={seatTone[item.seatStatus]}
-                        dot={false}
-                        label={t(`seat_status.${item.seatStatus}`)}
-                      />
+                      <span className="flex flex-col items-start gap-1">
+                        <StatusBadge
+                          tone={seatTone[item.seatStatus]}
+                          dot={false}
+                          label={t(`seat_status.${item.seatStatus}`)}
+                        />
+                        {/* Where the student stands academically (OOC-84). */}
+                        {item.academicStatus && (
+                          <StatusBadge
+                            tone={academicTone[item.academicStatus]}
+                            dot={false}
+                            label={t(`academic_status.${item.academicStatus}`)}
+                          />
+                        )}
+                      </span>
                     </td>
                     <td className={tdClass}>
                       <span className="flex flex-col items-start gap-1">

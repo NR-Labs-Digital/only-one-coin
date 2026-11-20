@@ -296,6 +296,8 @@
         "student_directory_exported": "Padrón de alumnos exportado",
         "enrollment_created": "Matrícula abierta por el panel",
         "enrollment_moved": "Matrícula movida de aula",
+        "enrollment_frozen": "Matrícula congelada",
+        "enrollment_unfrozen": "Matrícula descongelada",
         "portal_access_created": "Cuenta del portal creada",
         "portal_access_issued": "Acceso al portal enviado",
         "email_resent": "Correo reenviado",
@@ -835,7 +837,7 @@
       "field_paid_at": "Pagado el",
       "not_paid": "Sin pago acreditado",
       "frozen_price": "Precio congelado al matricularse ({id}). Corregir la tabla de precios no cambia esta matrícula.",
-      "manage_notice": "Congelar o retirar al alumno es un trámite con costo y se registra desde el aula, no desde aquí.",
+      "manage_notice": "Congelar es gratis para el equipo y queda en la bitácora con el motivo: la vacante vuelve al aula, y el alumno retoma después en el módulo en que se quedó. Retirar todavía no tiene regla.",
       "open_student": "Ver la ficha del alumno",
       "open_class_group": "Abrir el aula",
       "field_origin": "Canal",
@@ -886,7 +888,8 @@
     "seat_status": {
       "reserved": "Reservada",
       "confirmed": "Confirmada",
-      "released": "Liberada"
+      "released": "Liberada",
+      "frozen": "Congelada"
     },
     "modality": {
       "online": "En línea",
@@ -921,7 +924,8 @@
       "monthly_payment_rejected": "Pago de módulo rechazado",
       "grade_corrected": "Nota final corregida",
       "grade_corrected_did_not_sit": "Resultado corregido a DA",
-      "monthly_module_due": "Módulo mensual por pagar"
+      "monthly_module_due": "Módulo mensual por pagar",
+      "enrollment_freeze_reengagement": "Recordatorio de matrícula congelada"
     },
     "email_trigger": {
       "enrollment_received": "Al recibir los datos de matrícula, después de que el alumno llena el formulario.",
@@ -951,7 +955,8 @@
       "monthly_payment_rejected": "Cuando la revisión rechaza el comprobante de un módulo mensual.",
       "grade_corrected": "La supervisión académica corrige una nota registrada",
       "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA",
-      "monthly_module_due": "Cuando la progresión lleva a un alumno mensual a un módulo que nadie pagó."
+      "monthly_module_due": "Cuando la progresión lleva a un alumno mensual a un módulo que nadie pagó.",
+      "enrollment_freeze_reengagement": "Al mes, a los 3 y a los 6 meses de congelar una matrícula."
     },
     "email_audience": {
       "student": "Alumno",
@@ -982,7 +987,8 @@
       "monthly_payment_rejected": "si es un módulo mensual y se rechaza",
       "grade_corrected": "Solo si una nota registrada se corrige",
       "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)",
-      "monthly_module_due": "si es mensual y el módulo no está pagado"
+      "monthly_module_due": "si es mensual y el módulo no está pagado",
+      "enrollment_freeze_reengagement": "si la matrícula sigue congelada"
     },
     "email_delivery_reason": {
       "provider_unavailable": "El proveedor no respondió",
@@ -2227,6 +2233,8 @@
       "guardian_consent_accepted": "Consentimiento aceptado por el apoderado",
       "enrollment_created": "Matrícula abierta por el panel",
       "enrollment_moved": "Matrícula movida de aula",
+      "enrollment_frozen": "Matrícula congelada",
+      "enrollment_unfrozen": "Matrícula descongelada",
       "payment_approved": "Pago aprobado",
       "payment_rejected": "Pago rechazado",
       "receipt_viewed": "Comprobante consultado",
@@ -2791,6 +2799,51 @@
       "error_not_published": "Todavía no hay un texto de certificado publicado.",
       "error_missing_value": "El texto del certificado imprime un dato que algún alumno no tiene. Revísalo en Configuración → Documentos.",
       "error_failed": "No se pudo emitir. Inténtalo de nuevo."
+    },
+    "academic_status": {
+      "active": "Cursando",
+      "frozen": "Congelada",
+      "completed": "Concluida"
+    },
+    "freeze_enrollment": {
+      "freeze": "Congelar",
+      "return": "Volver del congelamiento",
+      "freeze_title": "Congelar matrícula",
+      "freeze_subtitle": "{student} deja {from}. La vacante vuelve al aula y la matrícula queda guardada en el módulo en que está.",
+      "return_title": "Volver del congelamiento",
+      "return_subtitle": "{student} retoma en el módulo en que se quedó. Elige el grupo del mismo módulo.",
+      "field_reason": "Motivo",
+      "reason_placeholder": "Por qué se congela (queda en la bitácora)",
+      "field_run": "Grupo de módulo",
+      "run_placeholder": "Elige el grupo",
+      "run_option": "{code} · Módulo {module} · {schedule} · inicio {start}",
+      "run_option_no_module": "{code} · {schedule} · inicio {start}",
+      "no_start": "sin fecha",
+      "seats": "{taken} de {capacity} vacantes ocupadas",
+      "no_runs": "No hay grupos abiertos de este módulo. Abre uno en Académico y vuelve aquí.",
+      "loading": "Cargando grupos…",
+      "load_error": "No pudimos cargar los grupos.",
+      "over_capacity_title": "El aula está llena",
+      "over_capacity_body": "Confirmo que el alumno entra por encima de la capacidad (sobrecupo).",
+      "fee_notice": "La plataforma no cobra nada: si hubo tasa, se resolvió fuera.",
+      "cancel": "Cancelar",
+      "submit_freeze": "Congelar",
+      "submit_return": "Volver",
+      "saving": "Guardando…",
+      "frozen": "Matrícula congelada.",
+      "returned": "El alumno volvió a clases.",
+      "returned_over_capacity": "El alumno volvió a clases por encima de la capacidad.",
+      "error": {
+        "freeze_seat_not_confirmed": "Solo se congela una matrícula con vacante confirmada.",
+        "freeze_course_disallows": "Este curso no permite congelar.",
+        "freeze_class_group_not_running": "El aula ya no está en matrícula ni en curso.",
+        "freeze_reason_required": "Escribe el motivo (hasta 500 caracteres).",
+        "freeze_conflict": "La matrícula cambió mientras tanto. Ciérralo y vuelve a abrirlo.",
+        "return_not_frozen": "La matrícula ya no está congelada.",
+        "return_target_unavailable": "Ese grupo ya no está abierto o no es del módulo del alumno.",
+        "class_group_full": "El aula se llenó. Confirma el sobrecupo para continuar.",
+        "failed": "No pudimos guardar. Inténtalo de nuevo."
+      }
     }
   }
 }

@@ -244,7 +244,8 @@ export class DrizzleClassGroupRepository implements IClassGroupRepository {
               select 1 from ${enrollments}
               where ${enrollments.classGroupId} = ${run.classGroupId}
                 and ${enrollmentInModule(run.id)}
-                and ${enrollments.seatStatus} <> 'released'
+                -- A frozen seat (OOC-84) went back: it holds nobody's place here.
+                and ${enrollments.seatStatus} not in ('released', 'frozen')
                 and ${enrollments.deletedAt} is null
             )`,
           ),

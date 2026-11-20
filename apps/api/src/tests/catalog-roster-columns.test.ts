@@ -20,6 +20,7 @@ const ROW: ClassGroupRosterRow = {
   phone: "+51900000000",
   planName: "Paquete completo",
   paymentStatus: "approved",
+  academicStatus: "active",
 };
 
 const FULL: Role[] = ["master", "admin", "enrollment_supervisor"];
@@ -35,6 +36,7 @@ describe("shapeRoster", () => {
       studentName: "Ana Quispe",
       planName: "Paquete completo",
       paymentStatus: "approved",
+      academicStatus: "active",
       file: { nationalIdType: "DNI", nationalId: "12345678", email: "ana.quispe@gmail.com", phone: "+51900000000" },
     });
   });

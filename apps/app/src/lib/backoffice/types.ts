@@ -220,6 +220,8 @@ export interface EnrollmentHistoryItem {
   code: string
   status: EnrollmentStatus
   seatStatus: SeatStatus
+  /** OOC-84: active, frozen or completed — derived by the API. Optional: an API from before it sends none. */
+  academicStatus?: AcademicStatus | null
   createdAt: string
   courseName: string
   classGroupName: string
@@ -589,6 +591,8 @@ export interface ClassGroupRosterItem {
   planName: string
   /** The enrollment's latest payment; null for a seat confirmed without one (seed, legacy import). */
   paymentStatus: PaymentStatus | null
+  /** OOC-84: frozen seats of the class group are listed too, marked. Optional: an API from before it sends none. */
+  academicStatus?: AcademicStatus
   file: {
     nationalIdType: NationalIdType
     nationalId: string
@@ -1101,6 +1105,9 @@ export type ReviewDecision =
  * the person is already known, and this one is read across the institution,
  * where the person is the first thing the row has to say.
  */
+/** Where an enrollment stands academically (OOC-84). */
+export type AcademicStatus = 'active' | 'frozen' | 'completed'
+
 export interface EnrollmentRow {
   id: string
   /**
@@ -1127,6 +1134,8 @@ export interface EnrollmentRow {
   classGroupStatus: ClassGroupStatus
   status: EnrollmentStatus
   seatStatus: SeatStatus
+  /** OOC-84: active, frozen or completed — derived by the API. Optional: an API from before it sends none. */
+  academicStatus?: AcademicStatus | null
   planName: string
   /** Frozen price version at enrollment time (CLAUDE.md §5). */
   planPriceId: string

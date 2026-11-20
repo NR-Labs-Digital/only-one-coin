@@ -1,4 +1,4 @@
-import { ENROLLMENT_ORIGINS, type EnrollmentOrigin } from "@ooc/domain";
+import { academicStatusOf, ENROLLMENT_ORIGINS, type AcademicStatus, type EnrollmentOrigin } from "@ooc/domain";
 import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -54,6 +54,8 @@ export interface EnrollmentListRow {
   classGroupStatus: ClassGroupListStatus;
   status: EnrollmentListStatus;
   seatStatus: string;
+  /** OOC-84: active, frozen or completed — derived, never stored. */
+  academicStatus: AcademicStatus | null;
   planName: string;
   planPriceId: string;
   amountCents: number;
@@ -76,7 +78,7 @@ export interface EnrollmentListMetrics {
   byOrigin: Record<EnrollmentOrigin, number>;
 }
 
-export type EnrollmentListSeatStatus = "reserved" | "confirmed" | "released";
+export type EnrollmentListSeatStatus = "reserved" | "confirmed" | "released" | "frozen";
 
 /**
  * What the reader narrowed the ledger to. Every field is optional — absent
@@ -158,7 +160,8 @@ const trackingCodeSql = sql<string>`'OOC-' || to_char(${enrollments.createdAt} a
  */
 export function deriveStatus(seatStatus: string, paymentStatus: string): EnrollmentListStatus {
   if (paymentStatus === "rejected" || seatStatus === "released") return "rejected";
-  if (seatStatus === "confirmed" && paymentStatus === "approved") return "active";
+  // A frozen seat (OOC-84) was confirmed before it paused: its money is settled.
+  if ((seatStatus === "confirmed" || seatStatus === "frozen") && paymentStatus === "approved") return "active";
   return "under_review";
 }
 
@@ -197,7 +200,8 @@ export class ListEnrollmentsQuery {
       // or already handed back (payment refused) is settled in Payments and
       // never reaches this list. The seat decides, not the latest payment: a
       // monthly student whose next module is still open is still a student.
-      eq(enrollments.seatStatus, "confirmed"),
+      // A frozen one (OOC-84) is too: it paused, it did not leave.
+      inArray(enrollments.seatStatus, ["confirmed", "frozen"]),
       ...this.filterConditions(filters, latestPayment),
     );
     const where = and(scope, ...this.stateConditions(filters));
@@ -312,6 +316,7 @@ export class ListEnrollmentsQuery {
         classGroupStatus: row.classGroupStatus as ClassGroupListStatus,
         status: deriveStatus(row.seatStatus, paymentStatus),
         seatStatus: row.seatStatus,
+        academicStatus: academicStatusOf(row.seatStatus, row.classGroupStatus),
         planName: row.planName,
         planPriceId: row.planPriceId,
         amountCents: row.amountCents,

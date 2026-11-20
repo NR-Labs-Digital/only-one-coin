@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
-import { NotFoundError } from "@ooc/domain";
+import { ACADEMIC_STATUSES, NotFoundError } from "@ooc/domain";
 import { container } from "@/container.js";
 import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
@@ -24,7 +24,8 @@ const EnrollmentHistoryItemSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
   status: z.enum(["under_review", "active", "completed", "rejected"]),
-  seatStatus: z.enum(["reserved", "confirmed", "released"]),
+  seatStatus: z.enum(["reserved", "confirmed", "released", "frozen"]),
+  academicStatus: z.enum(ACADEMIC_STATUSES).nullable(),
   createdAt: z.string(),
   courseName: z.string(),
   classGroupName: z.string(),

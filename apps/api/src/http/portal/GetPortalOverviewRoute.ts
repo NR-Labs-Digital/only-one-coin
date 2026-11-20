@@ -28,7 +28,7 @@ const PortalEnrollmentSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
   status: z.enum(["under_review", "active", "completed", "rejected"]),
-  seatStatus: z.enum(["reserved", "confirmed", "released"]),
+  seatStatus: z.enum(["reserved", "confirmed", "released", "frozen"]),
   createdAt: z.string(),
   course: z.object({
     name: z.string(),
@@ -220,7 +220,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
         id: enrollment.id,
         code: enrollment.code,
         status: enrollment.status,
-        seatStatus: enrollment.seatStatus as "reserved" | "confirmed" | "released",
+        seatStatus: enrollment.seatStatus as "reserved" | "confirmed" | "released" | "frozen",
         createdAt: enrollment.createdAt.toISOString(),
         course: enrollment.course,
         classGroup: {

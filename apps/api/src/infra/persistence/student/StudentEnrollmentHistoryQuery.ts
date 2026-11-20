@@ -1,6 +1,7 @@
 import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, payments, planPrices, plans } from "@ooc/db";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { academicStatusOf, type AcademicStatus } from "@ooc/domain";
 import { deriveStatus, trackingCode, type EnrollmentListStatus } from "../enrollment/ListEnrollmentsQuery.js";
 import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 
@@ -9,6 +10,8 @@ export interface StudentEnrollmentHistoryRow {
   code: string;
   status: EnrollmentListStatus;
   seatStatus: string;
+  /** OOC-84: active, frozen or completed — derived, never stored. */
+  academicStatus: AcademicStatus | null;
   createdAt: Date;
   courseName: string;
   classGroupName: string;
@@ -68,6 +71,7 @@ export class StudentEnrollmentHistoryQuery {
       .select({
         id: enrollments.id,
         seatStatus: enrollments.seatStatus,
+        classGroupStatus: classGroups.status,
         createdAt: enrollments.createdAt,
         courseName: courses.name,
         classGroupSchedule: classGroups.schedule,
@@ -104,6 +108,7 @@ export class StudentEnrollmentHistoryQuery {
         code: trackingCode(row.id, row.createdAt),
         status: deriveStatus(row.seatStatus, paymentStatus),
         seatStatus: row.seatStatus,
+        academicStatus: academicStatusOf(row.seatStatus, row.classGroupStatus),
         createdAt: row.createdAt,
         courseName: row.courseName,
         classGroupName: row.classGroupCode || row.classGroupSchedule,

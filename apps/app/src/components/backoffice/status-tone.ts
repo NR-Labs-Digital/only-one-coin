@@ -1,5 +1,6 @@
 import type { Tone } from './ui'
 import type {
+  AcademicStatus,
   AuditAction,
   CertificationExamStatus,
   ClassGroupStatus,
@@ -51,6 +52,7 @@ export const seatTone: Record<SeatStatus, Tone> = {
   reserved: 'warning',
   confirmed: 'success',
   released: 'neutral',
+  frozen: 'info',
 }
 
 /** The receipt traffic light (OOC-21) in its own colours. Green still waits
@@ -125,4 +127,11 @@ export function seatPressureTone(taken: number, capacity: number): Tone {
   if (pct >= 100) return 'danger'
   if (pct >= 85) return 'warning'
   return 'info'
+}
+
+/** Where an enrollment stands academically (OOC-84). */
+export const academicTone: Record<AcademicStatus, Tone> = {
+  active: 'success',
+  frozen: 'info',
+  completed: 'neutral',
 }

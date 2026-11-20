@@ -45,7 +45,8 @@ export function RosterCard({ roster }: { roster: ClassGroupRoster | null }) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-5">
         <p className="text-sm font-semibold text-ink">{t('roster.title')}</p>
         <span className="text-sm tabular-nums text-muted-foreground">
-          {t('roster.count', { count: roster.items.length })}
+          {/* The frozen seats went back to the class group (OOC-84): listed, not counted. */}
+          {t('roster.count', { count: roster.items.filter((item) => item.academicStatus !== 'frozen').length })}
         </span>
       </div>
       {!full && <p className="px-5 pt-1 text-xs text-muted-foreground">{t('roster.limited_note')}</p>}
@@ -78,6 +79,12 @@ export function RosterCard({ roster }: { roster: ClassGroupRoster | null }) {
                       </Link>
                     ) : (
                       item.studentName
+                    )}
+                    {/* Paused here (OOC-84): the seat went back, the student is kept. */}
+                    {item.academicStatus === 'frozen' && (
+                      <span className="ml-2 align-middle">
+                        <StatusBadge tone="info" dot={false} label={t('academic_status.frozen')} />
+                      </span>
                     )}
                   </td>
                   {full && item.file && (

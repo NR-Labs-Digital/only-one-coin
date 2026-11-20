@@ -244,6 +244,14 @@
         "{studentName} is starting module {module} of {courseName}, which has no payment yet.",
         "You can pay for it from Payments, in the student portal, with Yape, Plin or bank transfer, and send the receipt. Access to the class opens as soon as we approve the payment. This is not a debt: there is no interest and no late fee."
       ]
+    },
+    "enrollment_freeze_reengagement": {
+      "subject": "We are waiting for you back in {courseName}",
+      "preheader": "Your enrollment is still frozen and kept.",
+      "paragraphs": [
+        "We are still keeping the frozen enrollment of {studentName} in {courseName}. Whenever you want to come back, you pick up in the module you stopped in.",
+        "To come back, write to us through Only One Coin’s support channels and we will help you choose the schedule."
+      ]
     }
   }
 }

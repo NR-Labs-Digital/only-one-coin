@@ -244,6 +244,14 @@
         "{studentName} empieza el módulo {module} de {courseName}, que todavía no tiene pago.",
         "Puedes pagarlo desde Pagos, en el portal del alumno, con Yape, Plin o transferencia, y enviar el comprobante. El acceso a la clase se abre apenas aprobemos el pago. No es una deuda: no hay intereses ni moras."
       ]
+    },
+    "enrollment_freeze_reengagement": {
+      "subject": "Te esperamos de vuelta en {courseName}",
+      "preheader": "Tu matrícula sigue congelada y guardada.",
+      "paragraphs": [
+        "Seguimos guardando la matrícula congelada de {studentName} en {courseName}. Cuando quieras volver, retomas en el módulo en que te quedaste.",
+        "Para volver, escríbenos por los canales de atención de Only One Coin y te ayudamos a elegir el horario."
+      ]
     }
   }
 }
