@@ -2,7 +2,7 @@ import { ClassGroupModuleAmbiguousError, CatalogClassGroupNotFoundError } from "
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
+import { CLASS_GROUP_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema, UpdateClassGroupBodySchema, toDate } from "./CatalogSchemas.js";
 
 /**
@@ -24,7 +24,7 @@ export const updateClassGroupRoute = RouteBuilder.patch("/catalog/class-groups/:
     description:
       "The class group's own fields. Teacher, module, schedule, Classroom and Meet are its module run's (OOC-156, OOC-159): accepted here only on a class group of one run; with more, 422 catalog.class_group_module_ambiguous — edit the run instead.",
   })
-  .roles(...CATALOG_WRITE_ROLES)
+  .roles(...CLASS_GROUP_WRITE_ROLES)
   .params(IdParamsSchema)
   .body(UpdateClassGroupBodySchema)
   .response(200, IdResponseSchema)

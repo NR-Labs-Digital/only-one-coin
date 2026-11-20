@@ -2,7 +2,7 @@ import { ClassGroupStatusSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
+import { CLASS_GROUP_WRITE_ROLES } from "./catalogRoles.js";
 import { CreateClassGroupBodySchema, IdResponseSchema, toDate } from "./CatalogSchemas.js";
 
 /**
@@ -12,7 +12,7 @@ import { CreateClassGroupBodySchema, IdResponseSchema, toDate } from "./CatalogS
  */
 export const createClassGroupRoute = RouteBuilder.post("/catalog/class-groups")
   .docs({ tags: ["Catalog"], summary: "Create a class group" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .roles(...CLASS_GROUP_WRITE_ROLES)
   .body(CreateClassGroupBodySchema)
   .response(201, IdResponseSchema.extend({ status: ClassGroupStatusSchema }))
   .response(400, ErrorResponseSchema)

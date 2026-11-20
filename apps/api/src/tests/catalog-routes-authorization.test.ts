@@ -30,11 +30,12 @@ const CASES: [string, string, Role][] = [
   ["POST", `/api/v1/catalog/periods/${ID}/duplicate`, "academic_supervisor"],
   ["GET", "/api/v1/catalog/class-groups", "teacher"],
   ["GET", `/api/v1/catalog/class-groups/${ID}`, "billing"],
-  ["POST", "/api/v1/catalog/class-groups", "academic_supervisor"],
+  ["POST", "/api/v1/catalog/class-groups", "analyst"],
+  ["POST", "/api/v1/catalog/class-groups", "sales"],
   ["PATCH", `/api/v1/catalog/class-groups/${ID}`, "support"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/status`, "analyst"],
   // Module runs (OOC-156): whoever edits the class group, nobody who only reads it.
-  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "academic_supervisor"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "analyst"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "teacher"],
   ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`, "analyst"],
   ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`, "teacher"],
@@ -50,6 +51,9 @@ const CASES: [string, string, Role][] = [
   // The waitlist carries the national id: only who runs class groups reads it (same as GET /students).
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "analyst"],
+  // The academic supervisor runs class groups (OOC-95) but not the waitlist.
+  ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "academic_supervisor"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/waitlist`, "academic_supervisor"],
   ["POST", `/api/v1/catalog/class-groups/${ID}/waitlist`, "sales"],
   // The roster: a teacher gets their own students through their own scope,
   // never through the catalog; billing sees no academic data.
@@ -58,7 +62,6 @@ const CASES: [string, string, Role][] = [
   // The teacher picker (OOC-80) follows who opens class groups — reading the
   // directory is not enough, and the roster carries no contact.
   ["GET", "/api/v1/catalog/teacher-options", "analyst"],
-  ["GET", "/api/v1/catalog/teacher-options", "academic_supervisor"],
   ["GET", "/api/v1/catalog/teacher-options", "teacher"],
   ["POST", `/api/v1/catalog/waitlist/${ID}/leave`, "support"],
   // Retiring and restoring (CLAUDE.md §1): whoever opens class groups, never
@@ -67,6 +70,8 @@ const CASES: [string, string, Role][] = [
   ["POST", `/api/v1/catalog/plan/${ID}/retire`, "billing"],
   ["POST", `/api/v1/catalog/academic_period/${ID}/retire`, "analyst"],
   ["POST", `/api/v1/catalog/plan/${ID}/restore`, "academic_supervisor"],
+  ["POST", `/api/v1/catalog/class_group/${ID}/retire`, "academic_supervisor"],
+  ["PATCH", `/api/v1/catalog/periods/${ID}`, "academic_supervisor"],
   ["POST", `/api/v1/catalog/academic_period/${ID}/restore`, "sales"],
   ["GET", `/api/v1/catalog/plan/${ID}/state`, "billing"],
   ["GET", `/api/v1/catalog/academic_period/${ID}/state`, "analyst"],
@@ -103,5 +108,42 @@ describe("catalog routes refuse undeclared roles", () => {
     });
 
     expect(response.statusCode).toBe(403);
+  });
+});
+
+/**
+ * The academic supervisor runs class groups and their module runs (OOC-95,
+ * decision of 20/11/2026): the authorization hook lets them through, so the
+ * empty body reaches validation instead of a 403.
+ */
+const ACADEMIC_SUPERVISOR_ALLOWED: [string, string][] = [
+  ["POST", "/api/v1/catalog/class-groups"],
+  ["PATCH", `/api/v1/catalog/class-groups/${ID}`],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/status`],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`],
+  ["PATCH", `/api/v1/catalog/class-groups/${ID}/modules/${ID}`],
+  ["GET", "/api/v1/catalog/teacher-options"],
+];
+
+describe("the academic supervisor runs class groups", () => {
+  it.each(ACADEMIC_SUPERVISOR_ALLOWED)("%s %s lets academic_supervisor through", async (method, url) => {
+    const user: AuthenticatedUser = {
+      id: "u1",
+      email: "x@example.com",
+      name: "X",
+      role: "academic_supervisor",
+      twoFactorEnabled: true,
+    };
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
+
+    const response = await app.inject({
+      method: method as "GET",
+      url,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: method === "GET" ? undefined : {},
+    });
+
+    expect(response.statusCode).not.toBe(401);
+    expect(response.statusCode).not.toBe(403);
   });
 });
