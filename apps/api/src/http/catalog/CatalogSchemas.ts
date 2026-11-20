@@ -30,6 +30,7 @@ export const CourseListItemSchema = z.object({
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
   allowsTransfer: z.boolean(),
+  allowsEnrollmentTransfer: z.boolean(),
   landingKey: LandingCourseKeySchema.nullable(),
   active: z.boolean(),
   classGroupCount: z.number().int(),

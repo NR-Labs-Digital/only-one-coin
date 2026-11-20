@@ -105,6 +105,8 @@ export const AUDIT_ACTIONS = {
   "enrollment.moved": { key: "enrollment_moved", entity: "student", subject: "metadata_student" },
   "enrollment.frozen": { key: "enrollment_frozen", entity: "student", subject: "metadata_student" },
   "enrollment.unfrozen": { key: "enrollment_unfrozen", entity: "student", subject: "metadata_student" },
+  // Staff handed the enrollment to another person (OOC-105); points at the new holder.
+  "enrollment.transferred": { key: "enrollment_transferred", entity: "student", subject: "metadata_student" },
   "portal_access.created": { key: "portal_access_created", entity: "student", subject: "target" },
   "portal_access.issued": { key: "portal_access_issued", entity: "student", subject: "target" },
   "student.email_marked_invalid": { key: "student_email_marked_invalid", entity: "student", subject: "target" },
@@ -292,6 +294,7 @@ export const AUDIT_FIELDS = {
   certificateRule: "certificate_rule",
   allowsFreeze: "allows_freeze",
   allowsTransfer: "allows_transfer",
+  allowsEnrollmentTransfer: "allows_enrollment_transfer",
   landingKey: "landing_key",
   courseId: "course",
   code: "code",

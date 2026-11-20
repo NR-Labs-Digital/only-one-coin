@@ -29,6 +29,7 @@ export function courseFromRow(row: CourseRow): Course {
     certificateRule: row.certificateRule as CertificateRule,
     allowsFreeze: row.allowsFreeze,
     allowsTransfer: row.allowsTransfer,
+    allowsEnrollmentTransfer: row.allowsEnrollmentTransfer,
     landingKey: row.landingKey as LandingCourseKey | null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -56,6 +57,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,
         allowsTransfer: course.allowsTransfer,
+        allowsEnrollmentTransfer: course.allowsEnrollmentTransfer,
         landingKey: course.landingKey,
       })
       .returning()
@@ -96,6 +98,7 @@ export class DrizzleCourseRepository implements ICourseRepository {
         certificateRule: course.certificateRule,
         allowsFreeze: course.allowsFreeze,
         allowsTransfer: course.allowsTransfer,
+        allowsEnrollmentTransfer: course.allowsEnrollmentTransfer,
         landingKey: course.landingKey,
         updatedAt: course.updatedAt,
       })

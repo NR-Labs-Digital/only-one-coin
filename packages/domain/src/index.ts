@@ -1042,6 +1042,23 @@ export {
   type ReturnRun,
 } from "./freeze/FreezeUseCases.js";
 export {
+  EnrollmentTransferConflictError,
+  EnrollmentTransferRefusedError,
+  EnrollmentTransferStudentNotFoundError,
+  type EnrollmentTransferRefusal,
+} from "./transfer/errors.js";
+export {
+  assertReceivable,
+  assertTransferable,
+  TRANSFER_REASON_MAX_LENGTH,
+  TransferEnrollmentUseCase,
+  type IEnrollmentTransferRepository,
+  type TransferDestination,
+  type TransferEnrollmentInput,
+  type TransferEnrollmentOutput,
+  type TransferSource,
+} from "./transfer/TransferEnrollmentUseCase.js";
+export {
   FREEZE_REENGAGEMENT_MONTHS,
   freezeReengagementEmails,
   reengagementMilestone,
