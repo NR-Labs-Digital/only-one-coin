@@ -1,0 +1,1 @@
+ALTER TABLE "courses" ADD COLUMN "allows_enrollment_transfer" boolean DEFAULT true NOT NULL;
