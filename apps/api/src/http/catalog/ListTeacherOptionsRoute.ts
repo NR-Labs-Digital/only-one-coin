@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
+import { CLASS_GROUP_WRITE_ROLES } from "./catalogRoles.js";
 import { WeeklySlotSchema } from "./CatalogSchemas.js";
 
 const TeacherOptionSchema = z.object({
@@ -29,7 +29,7 @@ const TeacherOptionSchema = z.object({
  */
 export const listTeacherOptionsRoute = RouteBuilder.get("/catalog/teacher-options")
   .docs({ tags: ["Catalog"], summary: "Active teachers a class group can be allocated to" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .roles(...CLASS_GROUP_WRITE_ROLES)
   .response(200, z.object({ items: z.array(TeacherOptionSchema) }))
   .handler(async (_request, reply) => {
     reply.status(200).send({ items: await container.queries.listTeacherOptions.run() });

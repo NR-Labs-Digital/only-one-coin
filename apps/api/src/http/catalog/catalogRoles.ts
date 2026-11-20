@@ -19,5 +19,14 @@ export const CATALOG_READ_ROLES = [
 /** Who opens and runs class groups and periods (CLAUDE.md §1, §8). */
 export const CATALOG_WRITE_ROLES = ["master", "admin", "enrollment_supervisor"] as const satisfies readonly Role[];
 
+/**
+ * Who opens and runs class groups and their module runs (OOC-95, decision of
+ * 20/11/2026): the catalog writers plus the academic supervisor, who assigns
+ * the teacher, Classroom and Meet of each run and moves a class group along.
+ * Periods, course options, retiring and the waitlist stay with
+ * CATALOG_WRITE_ROLES.
+ */
+export const CLASS_GROUP_WRITE_ROLES = [...CATALOG_WRITE_ROLES, "academic_supervisor"] as const satisfies readonly Role[];
+
 /** Who opens a course, renames it, and sets money (CLAUDE.md §1 "sem descontos"). */
 export const CATALOG_OWNER_ROLES = ["master", "admin"] as const satisfies readonly Role[];

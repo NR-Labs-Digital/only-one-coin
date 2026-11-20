@@ -587,6 +587,30 @@
         "generic": "We couldn't send the access. Try again."
       }
     },
+    "student_receipts": {
+      "title": "Receipts",
+      "subtitle": "Every payment the student sent — enrollment, modules and procedures — in any state. They are decided in Payments.",
+      "col_submitted": "Sent",
+      "col_for": "For",
+      "col_amount": "Amount",
+      "col_verdict": "Reading",
+      "col_status": "Status",
+      "lot": "Payment for {count} enrollments",
+      "expected": "Expected: {amount}",
+      "read": "Read: {amount}",
+      "no_verdict": "Not read",
+      "decided_at": "Decided on {date}",
+      "no_image": "No image",
+      "open_image": "View receipt",
+      "empty_title": "No receipts",
+      "empty_body": "This student has not sent any payment receipt yet.",
+      "load_error": "The receipts could not be loaded. Reload the page to try again.",
+      "image_title": "Receipt",
+      "image_subtitle": "Sent on {date} · {courses}",
+      "image_loading": "Loading the image…",
+      "image_unavailable": "The receipt image could not be opened.",
+      "image_audit_note": "Every time a receipt is opened it is recorded in the log. The link expires in 5 minutes."
+    },
     "relationship": {
       "mother": "Mother",
       "father": "Father",

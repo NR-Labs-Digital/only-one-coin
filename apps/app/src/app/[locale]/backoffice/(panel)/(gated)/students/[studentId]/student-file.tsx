@@ -8,6 +8,7 @@ import type {
   EnrollmentHistoryItem,
   StudentActivityPage,
   StudentDetail,
+  StudentPaymentItem,
 } from '@/lib/backoffice/types'
 import { paymentLedgerSearchParams } from '@/lib/backoffice/payment-ledger-query'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -81,6 +82,8 @@ export function StudentFile({
   attachments,
   issuedDocuments,
   canManageAttachments,
+  payments,
+  canOpenReceiptImage,
 }: {
   student: StudentDetail
   /** Whether the reader's cargo opens Pagos — decides whether the file links there. */
@@ -94,6 +97,10 @@ export function StudentFile({
   /** The documents the institution issued (OOC-33); null when the API failed. */
   issuedDocuments: IssuedDocumentItem[] | null
   canManageAttachments: boolean
+  /** Every payment and receipt on the file (OOC-62); null when the API failed. */
+  payments: StudentPaymentItem[] | null
+  /** Whether the reader's cargo opens a receipt image (the API decides too). */
+  canOpenReceiptImage: boolean
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -524,6 +531,8 @@ export function StudentFile({
           attachments={attachments}
           issuedDocuments={issuedDocuments}
           canManageAttachments={canManageAttachments}
+          payments={payments}
+          canOpenReceiptImage={canOpenReceiptImage}
         />
       )}
 

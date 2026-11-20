@@ -1,5 +1,5 @@
 import { apiFetch } from './api-client'
-import type { StudentActivityPage, StudentDetail, StudentRow } from './types'
+import type { StudentActivityPage, StudentDetail, StudentPaymentItem, StudentRow } from './types'
 import { studentDirectorySearchParams, type StudentDirectoryQuery } from './student-directory-query'
 
 export {
@@ -59,6 +59,21 @@ export async function getStudentActivity(id: string): Promise<StudentActivityPag
     const response = await apiFetch(`/api/v1/students/${id}/activity`)
     if (!response.ok) return null
     return response.json()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Every payment on the student's file, newest first (OOC-62). `null` means the
+ * API failed: the block says so instead of claiming there are no receipts.
+ */
+export async function getStudentPayments(id: string): Promise<StudentPaymentItem[] | null> {
+  try {
+    const response = await apiFetch(`/api/v1/students/${id}/payments`)
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: StudentPaymentItem[] }
+    return body.items
   } catch {
     return null
   }
