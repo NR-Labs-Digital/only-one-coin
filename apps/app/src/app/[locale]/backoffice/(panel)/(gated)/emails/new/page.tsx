@@ -1,17 +1,12 @@
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
-import {
-  countEmailRecipients,
-  listClassGroups,
-  listCourses,
-} from '@/lib/backoffice/mock-data'
 import { getStaffSession } from '@/lib/backoffice/session'
-import type { EnrollmentStatus } from '@/lib/backoffice/types'
 import { canManageEmail } from '@/lib/backoffice/permissions'
 import { PageHeader } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { NewEmailForm } from './new-email-form'
+import { campaignAudience } from './campaign-audience'
 
 /**
  * A send written by hand — the notice that is nobody's automatic consequence:
@@ -37,29 +32,10 @@ export default async function NewEmailPage({
   const staff = await getStaffSession()
   if (!canManageEmail(staff.role)) notFound()
 
-  /* Catalog data, so the picker offers what exists rather than free text —
-     a segment typed by hand is a segment that matches nobody. Each option
-     carries the count it resolves to, resolved here: the segment is a question
-     for the database, and the browser is not the one holding the register. */
-  const courses = [...new Set(listCourses().map((course) => course.name))]
-    .sort((a, b) => a.localeCompare(b))
-    .map((name) => ({
-      name,
-      count: countEmailRecipients({ kind: 'course', courseName: name }),
-    }))
-
-  const classGroups = listClassGroups().map((group) => ({
-    id: group.id,
-    label: `${group.courseName} · ${group.code}`,
-    count: countEmailRecipients({ kind: 'class_group', classGroupId: group.id, classGroupName: group.code }),
-  }))
-
-  const statuses = (
-    ['under_review', 'active', 'completed', 'rejected'] satisfies EnrollmentStatus[]
-  ).map((status) => ({
-    status,
-    count: countEmailRecipients({ kind: 'enrollment_status', status }),
-  }))
+  /* The segment is a question for the database, answered on the server —
+     the browser is not the one holding the register. No route answers it
+     yet (Fase 5), so the audience is empty, never invented. */
+  const audience = campaignAudience()
 
   return (
     <div className="flex flex-col gap-5">
@@ -74,10 +50,10 @@ export default async function NewEmailPage({
       <PageHeader title={t('new_email.title')} />
 
       <NewEmailForm
-        allCount={countEmailRecipients({ kind: 'all' })}
-        courses={courses}
-        classGroups={classGroups}
-        statuses={statuses}
+        allCount={audience.allCount}
+        courses={audience.courses}
+        classGroups={audience.classGroups}
+        statuses={audience.statuses}
       />
     </div>
   )

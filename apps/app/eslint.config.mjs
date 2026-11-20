@@ -56,4 +56,33 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // OOC-92: the backoffice's mock dataset is gone — every screen reads
+    // `apps/api`, and a screen that has no API yet says so instead of drawing
+    // invented rows (the reports screen showed made-up figures in production
+    // for weeks because of one). No route, component or helper of the staff
+    // surfaces may import a mock again. `*` stands for `[locale]`: a bracket
+    // in a glob is a character class. The campaign screen's empty audience
+    // (`emails/new/campaign-audience.ts`) is not a dataset and is not caught.
+    files: [
+      "src/app/*/backoffice/**/*.{ts,tsx}",
+      "src/app/*/docente/**/*.{ts,tsx}",
+      "src/components/backoffice/**/*.{ts,tsx}",
+      "src/lib/backoffice/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/mock-data", "**/mock-data.*", "**/*mock*"],
+              message:
+                "The backoffice reads apps/api, never a mock dataset (OOC-92). A screen without an API shows an empty state.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
