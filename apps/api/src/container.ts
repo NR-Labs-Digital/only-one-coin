@@ -202,6 +202,7 @@ import { ListStudentsQuery } from "./infra/persistence/student/ListStudentsQuery
 import { GetStudentQuery } from "./infra/persistence/student/GetStudentQuery.js";
 import { StudentEnrollmentHistoryQuery } from "./infra/persistence/student/StudentEnrollmentHistoryQuery.js";
 import { StudentActivityQuery } from "./infra/persistence/student/StudentActivityQuery.js";
+import { StudentPaymentsQuery } from "./infra/persistence/student/StudentPaymentsQuery.js";
 import { DrizzleTeacherRepository } from "./infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeacherContractRepository } from "./infra/persistence/teacher/DrizzleTeacherContractRepository.js";
 import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
@@ -453,6 +454,7 @@ export interface AppQueries {
   studentPortal: StudentPortalQuery;
   studentEnrollmentHistory: StudentEnrollmentHistoryQuery;
   studentActivity: StudentActivityQuery;
+  studentPayments: StudentPaymentsQuery;
   listTeachers: ListTeachersQuery;
   getTeacher: GetTeacherQuery;
   listTeacherOptions: ListTeacherOptionsQuery;
@@ -846,6 +848,7 @@ function buildContainer(): AppContainer {
   const studentPortal = new StudentPortalQuery(db, getStudent);
   const studentEnrollmentHistory = new StudentEnrollmentHistoryQuery(db);
   const studentActivity = new StudentActivityQuery(db);
+  const studentPayments = new StudentPaymentsQuery(db);
   const listEnrollments = new ListEnrollmentsQuery(db);
   const listPayments = new ListPaymentsQuery(db);
   const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db, platformSettingsRepository);
@@ -1084,6 +1087,7 @@ function buildContainer(): AppContainer {
       studentPortal,
       studentEnrollmentHistory,
       studentActivity,
+      studentPayments,
       listTeachers,
       getTeacher,
       listTeacherOptions,
