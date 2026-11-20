@@ -344,9 +344,20 @@ O catálogo e o interruptor de feature flags são coisa de `apps/app` (`apps/app
 
 **Cabeçalho de Pagos e de Matrículas (OOC-151, 12/11/2026).** "Período atual" = o mais recente já iniciado e não aposentado, nas duas telas (`currentPeriod()`, um lugar só desde a OOC-160). Pagos (`ListPaymentsQuery.metrics`): *em revisão* (e o mais antigo) conta **todo** pagamento aberto, de qualquer período — o mesmo número da aba Abertos e da fila da home; aprovados, arrecadado e rejeitados contam o período atual. Matrículas (`ListEnrollmentsQuery.metrics`): *Matrículas* = vagas confirmadas do período atual (até aqui contava todas, desde sempre, com o nome do período ao lado); *Ativas* = vaga confirmada em turma `enrolling`/`in_progress`, de qualquer período — o mesmo número da aba Vigentes (antes contava turma encerrada e tirava o aluno mensual com o módulo seguinte em revisão). Os dois cabeçalhos ignoram os filtros da tela. `periodName` e `oldestOpenHours` seguem na resposta sem leitor na tela.
 
-**Ao vivo de propósito (decisão do dono, 11/10/2026):** os relatórios da Sessão 39 seguem em materialized view noturna, como o contrato pede; a home é a exceção, porque "matrícula de hoje" numa view da madrugada seria sempre zero.
+**Ao vivo de propósito (decisão do dono, 11/10/2026):** os relatórios da Sessão 39 seguem em agregação noturna, como o contrato pede (ver "Relatórios", abaixo); a home é a exceção, porque "matrícula de hoje" numa view da madrugada seria sempre zero.
 
 Custo: uma passada por todas as aprovações já gravadas (`payments.enrollment_id` não tem índice), mais o índice `audit_log (action, created_at)` da `0024`. Se a home ficar lenta, o caminho é foto diária ou materialized view, não mais índice.
+
+## Relatórios (OOC-40, 20/11/2026)
+
+`GET /reports?period=<id|all>&dimension=course|language|teacher` (`REPORT_READ_ROLES`: `master`, `admin`, `analyst`, `enrollment_supervisor`, `academic_supervisor` — os de `canBrowseReports`). Sem `period`, o período atual (`currentPeriod()`), ou o mais novo com dado.
+
+- **Nunca lê o livro ao vivo.** `ReportQuery` lê só as tabelas `report_*` (`0063`) — algumas linhas por sub-turma — e junta os nomes na hora (curso renomeado e docente atribuído aparecem já; os números são da última rodada). O corte é feito em memória por `assembleReport` (puro, `report-assembly.test.ts`). `refreshedAt` diz quando os números foram montados; a tela mostra.
+- **Quem monta é o worker `report-refresh`** (`ReportFactsRefresher`): job scheduler às 04:00 de `America/Lima`, e no boot quando o último refresh tem mais de 26 h ou nunca rodou (deploy depois de noite perdida, primeiro boot). Uma transação: esvazia e regrava as três tabelas e grava `report_refreshes`; quem lê vê a rodada anterior até o commit. Noite que falha deixa a de ontem.
+- **Definições** (no comentário do `ReportFactsRefresher`, a fonte): matrícula = vaga `confirmed` não aposentada; reservada = vaga `reserved`; dinheiro pela `payment_coverage` (lote incluso) — aprovado = arrecadado, `pending`/`under_review` = por cobrar, rejeitado não conta; o valor de um lote é dividido pelas matrículas na proporção do preço congelado de cada uma, em centavos inteiros, com o resto no primeiro item; mês = mês de Lima da primeira aprovação (matrícula) e da aprovação (dinheiro); nota baixa = `current_grades` abaixo de `passing_grade` do momento do refresh, ou DA; vagas = `seats_taken + seats_over` sobre `capacity` das turmas fora de rascunho e não aposentadas. Procedimento pago (constancia) não entra: não tem turma.
+- **Por docente**, a matrícula conta para o docente da sub-turma onde está; a turma conta suas vagas uma vez para cada docente que dá um módulo dela (a vaga é da turma, OOC-156), e o total conta cada turma uma vez. Sub-turma sem docente cai em `no_teacher`.
+- **Fora:** congelados e retirados (esperam o status acadêmico da OOC-84), região, retenção e impacto social do contrato.
+- Prova: `Reports.integration.test.ts` (refresh + leitura num período semeado, com lote, nota baixa, DA e sobrecupo) e `report-routes-authorization.test.ts`.
 
 ## Proteção da rota pública (OOC-24, 03/10/2026)
 
