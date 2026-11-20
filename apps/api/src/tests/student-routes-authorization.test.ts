@@ -23,6 +23,7 @@ const ROUTES: [string, string][] = [
   ["PUT", `/api/v1/students/${ID}`],
   ["PUT", `/api/v1/students/${ID}/guardian`],
   ["GET", `/api/v1/students/${ID}/activity`],
+  ["GET", `/api/v1/students/${ID}/payments`],
 ];
 
 const REFUSED: Role[] = ["support", "sales", "billing", "analyst", "academic_supervisor", "teacher"];
