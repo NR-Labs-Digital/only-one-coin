@@ -1,5 +1,15 @@
 import * as schema from "@ooc/db";
-import { academicPeriods, classGroups, courses, payments, planPrices, plans, receiptUploads, students } from "@ooc/db";
+import {
+  academicPeriods,
+  classGroups,
+  courses,
+  paymentModules,
+  payments,
+  planPrices,
+  plans,
+  receiptUploads,
+  students,
+} from "@ooc/db";
 import { Enrollment, Payment, ReceiptNotReadyError } from "@ooc/domain";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -137,6 +147,44 @@ describe("manual enrollment receipt", { timeout: 30_000 }, () => {
       const [row] = await tx.select({ status: payments.status }).from(payments).where(eq(payments.id, payment.id));
       expect(row?.status).toBe("under_review");
       expect(await seatsTaken(tx)).toBe(1);
+    });
+  });
+
+  it("a monthly plan's first payment buys the module the student enters, first attempt (OOC-86)", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      await tx.update(plans).set({ billing: "monthly" }).where(eq(plans.id, PLAN));
+      await tx.update(classGroups).set({ module: 1 }).where(eq(classGroups.id, GROUP));
+      await tx.execute(sql`update class_group_modules set module = 1 where id = ${GROUP}`);
+      const { receipt } = await seedManualReceipt(tx, "usr_manual_receipt_a");
+
+      const { payment, enrollment } = await new DrizzleEnrollmentRepository(tx).createWithPayment({
+        ...enrollmentFor(ROSA, "MANUALRCPT0006"),
+        notifications: [],
+        receipt,
+      });
+
+      const rows = await tx
+        .select({ enrollmentId: paymentModules.enrollmentId, module: paymentModules.module, attempt: paymentModules.attempt })
+        .from(paymentModules)
+        .where(eq(paymentModules.paymentId, payment.id));
+      expect(rows).toEqual([{ enrollmentId: enrollment.id, module: 1, attempt: 1 }]);
+    });
+  });
+
+  it("a package plan's payment buys no module", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      await seed(tx);
+      await tx.execute(sql`update class_group_modules set module = 1 where id = ${GROUP}`);
+      const { receipt } = await seedManualReceipt(tx, "usr_manual_receipt_a");
+
+      const { payment } = await new DrizzleEnrollmentRepository(tx).createWithPayment({
+        ...enrollmentFor(ROSA, "MANUALRCPT0007"),
+        notifications: [],
+        receipt,
+      });
+
+      expect(await tx.select().from(paymentModules).where(eq(paymentModules.paymentId, payment.id))).toEqual([]);
     });
   });
 
