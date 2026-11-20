@@ -217,6 +217,8 @@ import {
 import { ListPaymentsQuery } from "./infra/persistence/payment/ListPaymentsQuery.js";
 import { ListPaymentReviewQueueQuery } from "./infra/persistence/payment/ListPaymentReviewQueueQuery.js";
 import { DashboardSummaryQuery } from "./infra/persistence/dashboard/DashboardSummaryQuery.js";
+import { ReportFactsRefresher } from "./infra/persistence/report/ReportFactsRefresher.js";
+import { ReportQuery } from "./infra/persistence/report/ReportQuery.js";
 import { PaymentReceiptImageQuery } from "./infra/persistence/payment/PaymentReceiptImageQuery.js";
 import { StudentPortalQuery } from "./infra/persistence/portal/StudentPortalQuery.js";
 import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollmentsQuery.js";
@@ -444,6 +446,8 @@ export interface AppQueries {
   listPayments: ListPaymentsQuery;
   listPaymentReviewQueue: ListPaymentReviewQueueQuery;
   dashboardSummary: DashboardSummaryQuery;
+  /** The reports screen (OOC-40), read from the nightly aggregation. */
+  report: ReportQuery;
   paymentReceiptImage: PaymentReceiptImageQuery;
   getStudent: GetStudentQuery;
   studentPortal: StudentPortalQuery;
@@ -531,6 +535,8 @@ export interface AppContainer {
   notifications: AppNotifications;
   storage: AppStorage;
   documents: AppDocuments;
+  /** Rebuilds the reports' aggregation (OOC-40) — the `report-refresh` worker, never a route. */
+  reportFacts: ReportFactsRefresher;
   edge: AppEdge;
   repositories: AppRepositories;
   useCases: AppUseCases;
@@ -844,6 +850,7 @@ function buildContainer(): AppContainer {
   const listPayments = new ListPaymentsQuery(db);
   const listPaymentReviewQueue = new ListPaymentReviewQueueQuery(db, platformSettingsRepository);
   const dashboardSummary = new DashboardSummaryQuery(db);
+  const report = new ReportQuery(db);
   const paymentReceiptImage = new PaymentReceiptImageQuery(db, receiptObjectStore);
   const listOpenClassGroups = new ListOpenClassGroupsQuery(db);
   const listMoveTargets = new ListMoveTargetsQuery(db);
@@ -897,6 +904,7 @@ function buildContainer(): AppContainer {
     storage: {
       objectStore: receiptObjectStore,
     },
+    reportFacts: new ReportFactsRefresher(db),
     documents: {
       engine: templateEngine,
       compiler: documentCompiler,
@@ -1084,6 +1092,7 @@ function buildContainer(): AppContainer {
       listPayments,
       listPaymentReviewQueue,
       dashboardSummary,
+      report,
       paymentReceiptImage,
       listOpenClassGroups,
       listMoveTargets,
