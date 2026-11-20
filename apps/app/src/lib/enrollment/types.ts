@@ -75,6 +75,11 @@ export interface CatalogPlan {
   id: string
   courseId: string
   name: string
+  /**
+   * OOC-86: `monthly` is a prepaid purchase of one module at a time, and its
+   * price is the price of one module — never an installment of the package.
+   */
+  billing: 'package' | 'monthly'
   planPriceId: string
   amountCents: number
   currency: 'PEN'
@@ -185,6 +190,12 @@ export interface CourseDraft {
    */
   startDate: string | null
   classGroupId: string | null
+  /**
+   * The plan picked when the course sells more than one (OOC-86: the package
+   * or, in English, the monthly). Optional because a draft saved by the app of
+   * before has none; absent or unknown reads as the course's default plan.
+   */
+  planId?: string | null
 }
 
 /**

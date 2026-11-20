@@ -20,6 +20,7 @@ import { splitPhone } from '@/lib/geo'
 import type {
   CatalogClassGroup,
   CatalogCourse,
+  CatalogPlan,
   CheckoutDraft,
   CourseDraft,
   EnrollmentSource,
@@ -293,9 +294,20 @@ export function sameOfferGroups(
   return catalog.classGroups.filter((item) => offerKey(item) === key).sort(byFillOrder)
 }
 
-export function planOfCourse(catalog: PublicCatalog, courseId: string | null) {
-  if (!courseId) return null
-  return catalog.plans.find((plan) => plan.courseId === courseId) ?? null
+/**
+ * The plans a course sells, the package first: it is what every course sells,
+ * and what a student who never touches the choice buys (OOC-86).
+ */
+export function plansOfCourse(catalog: PublicCatalog, courseId: string | null): CatalogPlan[] {
+  if (!courseId) return []
+  const plans = catalog.plans.filter((plan) => plan.courseId === courseId)
+  return [...plans.filter((plan) => plan.billing !== 'monthly'), ...plans.filter((plan) => plan.billing === 'monthly')]
+}
+
+/** The plan picked for the course, or its default when none (or a stale one) is. */
+export function planOfCourse(catalog: PublicCatalog, courseId: string | null, planId?: string | null) {
+  const plans = plansOfCourse(catalog, courseId)
+  return plans.find((plan) => plan.id === planId) ?? plans[0] ?? null
 }
 
 export function courseById(catalog: PublicCatalog, courseId: string | null) {
@@ -534,7 +546,7 @@ export function lotPeople(draft: CheckoutDraft): { index: number; student: Stude
  */
 export function checkoutTotalCents(catalog: PublicCatalog, draft: CheckoutDraft): number {
   return checkoutItems(draft).reduce(
-    (total, item) => total + (planOfCourse(catalog, item.course.courseId)?.amountCents ?? 0),
+    (total, item) => total + (planOfCourse(catalog, item.course.courseId, item.course.planId)?.amountCents ?? 0),
     0,
   )
 }

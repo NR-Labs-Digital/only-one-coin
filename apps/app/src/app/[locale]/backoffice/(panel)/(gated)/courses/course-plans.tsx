@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import type { CatalogErrorKey, PlanDetail } from '@/lib/backoffice/types'
+import type { CatalogErrorKey, PlanBilling, PlanDetail } from '@/lib/backoffice/types'
 import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import { formatDate, formatMoney, type Locale } from '@/lib/format'
@@ -197,6 +197,11 @@ function PlanCard({
         ) : (
           <h3 className="flex-1 text-sm font-semibold text-ink">{plan.name}</h3>
         )}
+        {plan.billing === 'monthly' && (
+          <span className="rounded-full bg-sky px-2 py-0.5 text-xs font-medium text-ink">
+            {t('plans.billing_monthly')}
+          </span>
+        )}
         {!plan.active && (
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {t('plans.inactive')}
@@ -208,6 +213,9 @@ function PlanCard({
         <div>
           <p className="text-lg font-semibold tabular-nums text-ink">
             {formatMoney(current.amountCents, 'PEN', locale)}
+            {plan.billing === 'monthly' && (
+              <span className="ml-1 text-sm font-normal text-muted-foreground">{t('plans.per_module')}</span>
+            )}
           </p>
           <p className="text-xs text-muted-foreground">
             {t('plans.valid_from', { date: formatDate(current.validFrom, locale) })}
@@ -406,12 +414,14 @@ function NewPlanForm({
   const t = useTranslations('bo')
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [billing, setBilling] = useState<PlanBilling>('package')
   const [busy, setBusy] = useState(false)
 
   async function create(amountCents: number, validFrom: string | undefined) {
     setBusy(true)
     const result = await catalogWrite(`/courses/${courseId}/plans`, 'POST', {
       name: name.trim(),
+      billing,
       amountCents,
       validFrom,
     })
@@ -421,6 +431,7 @@ function NewPlanForm({
       return
     }
     setName('')
+    setBilling('package')
     setOpen(false)
     onChanged({ kind: 'created' })
   }
@@ -445,6 +456,20 @@ function NewPlanForm({
           placeholder={t('plans.plan_name_placeholder')}
           className={fieldClass}
         />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className={labelClass}>{t('plans.billing')}</span>
+        <select
+          value={billing}
+          onChange={(event) => setBilling(event.target.value === 'monthly' ? 'monthly' : 'package')}
+          className={fieldClass}
+        >
+          <option value="package">{t('plans.billing_package')}</option>
+          <option value="monthly">{t('plans.billing_monthly')}</option>
+        </select>
+        <span className="text-xs text-muted-foreground">
+          {billing === 'monthly' ? t('plans.billing_monthly_hint') : t('plans.billing_fixed')}
+        </span>
       </label>
       <PriceForm
         busy={busy}

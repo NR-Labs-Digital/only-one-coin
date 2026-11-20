@@ -33,7 +33,13 @@
         "seats_left": "{count, plural, one {# seat left} other {# seats left}}",
         "group_full": "No seats left",
         "summary_label": "Your selection",
-        "single_payment_note": "One single payment. No monthly fees, no instalments."
+        "single_payment_note": "One single payment. No monthly fees, no instalments.",
+        "plan_label": "How you pay",
+        "plan_package_meta": "You pay for the whole course once.",
+        "plan_monthly_meta": "You pay for one module at a time, before it starts.",
+        "per_module": "{price} per module",
+        "total_first_module": "Total · first module",
+        "monthly_payment_note": "You only pay for the first module now. Each following module is paid from your portal before it starts. No installments, interest or debt: if you do not pay for a module, only your access to that class is closed."
       },
       "student": {
         "short": "Details",

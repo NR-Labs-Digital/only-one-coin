@@ -33,7 +33,13 @@
         "seats_left": "{count, plural, one {Queda # vacante} other {Quedan # vacantes}}",
         "group_full": "Sin vacantes",
         "summary_label": "Resumen de tu elección",
-        "single_payment_note": "Pago único. No hay mensualidades ni cuotas."
+        "single_payment_note": "Pago único. No hay mensualidades ni cuotas.",
+        "plan_label": "Modalidad de pago",
+        "plan_package_meta": "Pagas el curso completo una sola vez.",
+        "plan_monthly_meta": "Pagas un módulo a la vez, antes de empezarlo.",
+        "per_module": "{price} por módulo",
+        "total_first_module": "Total · primer módulo",
+        "monthly_payment_note": "Ahora pagas solo el primer módulo. Cada módulo siguiente se paga desde tu portal antes de empezarlo. No hay cuotas, intereses ni deudas: si no pagas un módulo, solo se cierra tu acceso a esa clase."
       },
       "student": {
         "short": "Datos",

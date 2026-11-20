@@ -37,7 +37,7 @@ export function LotPanel({
         {draft.lot.map((entry, index) => {
           const course = courseById(catalog, entry.course.courseId)
           const group = groupById(catalog, entry.course.classGroupId)
-          const plan = planOfCourse(catalog, entry.course.courseId)
+          const plan = planOfCourse(catalog, entry.course.courseId, entry.course.planId)
           return (
             <li key={entry.hold.id} className="flex items-start justify-between gap-3 py-2.5">
               <span className="min-w-0">
