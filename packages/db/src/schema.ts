@@ -765,7 +765,7 @@ export const enrollments = pgTable(
     index("enrollments_class_group_module_id_idx").on(table.classGroupModuleId),
     check(
       "enrollments_seat_status_check",
-      sql`"seat_status" in ('reserved', 'confirmed', 'released')`,
+      sql`"seat_status" in ('reserved', 'confirmed', 'released', 'frozen')`,
     ),
     check("enrollments_origin_check", sql`"origin" in ('whatsapp', 'whatsapp_ai', 'web')`),
     index("enrollments_student_id_idx").on(table.studentId),
@@ -775,6 +775,72 @@ export const enrollments = pgTable(
     index("enrollments_confirmed_class_group_id_idx")
       .on(table.classGroupId)
       .where(sql`${table.seatStatus} = 'confirmed' and ${table.deletedAt} is null`),
+  ],
+);
+
+// A frozen enrollment (OOC-84, CLAUDE.md §1): the seat went back to its class
+// group, and the student comes back later to the module they stopped in. One
+// row per freeze, with where it stopped — class group, module run, module and
+// attempt — so the return knows which module to land on. Append-only: a
+// freeze is history; coming back is a row of its own, below. Both layers
+// (0066), never one.
+export const enrollmentFreezes = pgTable(
+  "enrollment_freezes",
+  {
+    id: uuidPk(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    classGroupModuleId: uuid("class_group_module_id").notNull(),
+    // Null when the run had no module number: the return then takes any run
+    // of the same course with none.
+    module: integer("module"),
+    attempt: integer("attempt").notNull(),
+    // FK to "user" written by hand in the migration, as for decided_by (0027).
+    // The staff account, or the student's account when a paid request from
+    // the portal froze it.
+    frozenBy: text("frozen_by").notNull(),
+    reason: text("reason"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("enrollment_freezes_attempt_check", sql`${table.attempt} > 0`),
+    // Named by hand: the generated name passes Postgres' 63 characters.
+    foreignKey({
+      name: "enrollment_freezes_module_fk",
+      columns: [table.classGroupModuleId],
+      foreignColumns: [classGroupModules.id],
+    }).onDelete("restrict"),
+    index("enrollment_freezes_enrollment_id_idx").on(table.enrollmentId, table.createdAt),
+  ],
+);
+
+// Coming back from a freeze (OOC-84): staff picks a run of the module the
+// student stopped in, and the seat is taken there. One per freeze.
+export const enrollmentFreezeReturns = pgTable(
+  "enrollment_freeze_returns",
+  {
+    id: uuidPk(),
+    freezeId: uuid("freeze_id")
+      .notNull()
+      .references(() => enrollmentFreezes.id, { onDelete: "restrict" }),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    classGroupModuleId: uuid("class_group_module_id").notNull(),
+    returnedBy: text("returned_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("enrollment_freeze_returns_freeze_id_uidx").on(table.freezeId),
+    foreignKey({
+      name: "enrollment_freeze_returns_module_fk",
+      columns: [table.classGroupModuleId],
+      foreignColumns: [classGroupModules.id],
+    }).onDelete("restrict"),
   ],
 );
 
