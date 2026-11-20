@@ -80,8 +80,13 @@ export function PaymentDetailDialog({
                   label={t(`payment_status.${payment.status}`)}
                 />
                 <StatusBadge
-                  tone={payment.procedureKind ? 'info' : 'neutral'}
-                  label={t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)}
+                  tone={payment.procedureKind || payment.monthlyModules ? 'info' : 'neutral'}
+                  label={
+                    // A monthly module bought later (OOC-86) says which modules.
+                    payment.monthlyModules
+                      ? t('payment_origin.monthly', { modules: payment.monthlyModules.join(', ') })
+                      : t(`payment_origin.${payment.procedureKind ?? 'enrollment'}`)
+                  }
                 />
                 {/* The seat is above the class group's capacity (OOC-155):
                     seen before deciding, never a reason the screen decides. */}

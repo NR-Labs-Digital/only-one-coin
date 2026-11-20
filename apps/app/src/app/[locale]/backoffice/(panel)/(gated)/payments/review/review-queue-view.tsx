@@ -492,7 +492,9 @@ export function ReviewQueueView({
                             <LotLine payment={item} />
                           ) : (
                             <span className="block truncate text-xs text-muted-foreground">
-                              {t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
+                              {item.monthlyModules
+                              ? t('payment_origin.monthly', { modules: item.monthlyModules.join(', ') })
+                              : t(`payment_origin.${item.procedureKind ?? 'enrollment'}`)}
                             </span>
                           )}
                           {item.overCapacity && (

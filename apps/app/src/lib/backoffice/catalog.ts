@@ -3,6 +3,7 @@ import { apiFetch } from './api-client'
 import type {
   AcademicPeriodItem,
   ClassGroupItem,
+  ClassGroupMonthlySeat,
   ClassGroupRoster,
   CourseDetail,
   CourseRow,
@@ -136,6 +137,22 @@ export async function getClassGroupRoster(id: string): Promise<ClassGroupRoster 
     )
     if (!response.ok) return null
     return (await response.json()) as ClassGroupRoster
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Where each monthly seat of the class group stands on its current module
+ * (OOC-86). `null` = the API failed — never an empty list that would read as
+ * "everybody is up to date".
+ */
+export async function getClassGroupMonthly(id: string): Promise<ClassGroupMonthlySeat[] | null> {
+  try {
+    const response = await apiFetch(`/api/v1/catalog/class-groups/${encodeURIComponent(id)}/monthly`)
+    if (!response.ok) return null
+    const body = (await response.json()) as { items: ClassGroupMonthlySeat[] }
+    return body.items
   } catch {
     return null
   }

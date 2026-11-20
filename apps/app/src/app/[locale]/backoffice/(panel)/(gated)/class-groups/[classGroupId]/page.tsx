@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import {
   getCatalogClassGroup,
+  getClassGroupMonthly,
   getClassGroupRoster,
   listCatalogCourses,
   listCatalogWaitlist,
@@ -40,6 +41,7 @@ import { ClassGroupActions } from './class-group-actions'
 import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
 import { RosterCard } from './roster-card'
+import { MonthlyCard } from './monthly-card'
 import { GradesCard } from './grades-card'
 import { ModuleRunsCard } from './module-runs-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -78,9 +80,11 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [roster, waitlist, courses, teachers, settings, gradeSheet] = await Promise.all([
+  const [roster, monthly, waitlist, courses, teachers, settings, gradeSheet] = await Promise.all([
     // Every catalog reader gets the roster; which columns is the API's call.
     getClassGroupRoster(group.id),
+    // The same readers as the roster (OOC-86).
+    getClassGroupMonthly(group.id),
     canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
     canManage ? listTeacherOptions() : Promise.resolve(null),
@@ -220,6 +224,8 @@ export default async function ClassGroupDetailPage({
       />
 
       <RosterCard roster={roster} />
+
+      <MonthlyCard seats={monthly} />
 
       {readsGrades && (
         <GradesCard

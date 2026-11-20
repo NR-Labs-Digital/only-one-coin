@@ -40,8 +40,10 @@ export const getStudentSession = cache(async (): Promise<StudentIdentity> => {
  * memoized per request, so the layout and the page share one call. Same
  * guard as `getStudentSession`: any non-OK answer is back to the login.
  *
- * What has no backend yet arrives empty, never as sample data: notices and
- * continuation offers — the screens already have an empty state for each.
+ * What has no backend yet arrives empty, never as sample data: continuation
+ * offers — the screen already has an empty state. The one notice there is
+ * comes from the data itself: a monthly module the student is on and has not
+ * bought (OOC-86).
  * Issued documents (OOC-33) are not here: they will join the student's
  * document list (`GET /portal/attachments`, OOC-148).
  */
@@ -65,7 +67,15 @@ export const getPortalView = cache(async (): Promise<PortalSession> => {
     requests: overview.requests.map(toRequest),
     procedures: overview.procedures.map(toProcedure),
     offers: [],
-    notifications: [],
+    notifications: enrollments
+      .filter((enrollment) => enrollment.classAccessLock === 'monthly_payment_due')
+      .map((enrollment) => ({
+        id: `monthly_payment_due:${enrollment.id}`,
+        kind: 'monthly_payment_due' as const,
+        // The notice is about now: it holds while the lock does.
+        createdAt: new Date().toISOString(),
+        courseName: enrollment.course.name,
+      })),
     nextClass: nextClassOf(enrollments, new Date()),
   }
 })
