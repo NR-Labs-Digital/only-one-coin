@@ -183,9 +183,17 @@ export const plans = pgTable(
       .notNull()
       .references(() => courses.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    // How the plan is paid (OOC-86, CLAUDE.md §1): 'package' is one payment
+    // for the whole plan; 'monthly' is a prepaid purchase of one module at a
+    // time, and the plan's price is the price of one module. A property of the
+    // plan, never of the language: no code asks "is this English".
+    billing: text("billing").notNull().default("package"),
     ...softDeletable(),
   },
-  (table) => [index("plans_course_id_idx").on(table.courseId)],
+  (table) => [
+    index("plans_course_id_idx").on(table.courseId),
+    check("plans_billing_check", sql`${table.billing} in ('package', 'monthly')`),
+  ],
 );
 
 // Append-only: price is versioned, never edited (CLAUDE.md §5) — correcting
@@ -1058,6 +1066,37 @@ export const paymentLotEnrollments = pgTable(
   (table) => [
     uniqueIndex("payment_lot_enrollments_enrollment_id_uidx").on(table.enrollmentId),
     index("payment_lot_enrollments_payment_id_idx").on(table.paymentId),
+  ],
+);
+
+// The modules a payment of a monthly enrollment buys (OOC-86), one row per
+// module and attempt. A student who repeats a module buys it again (decision
+// of 20/11/2026), so the attempt is part of what was bought: paying module 3
+// covers the attempt it was bought for, never the next time through. Paying
+// ahead buys the first attempt of the modules after the current one.
+//
+// Append-only: what a payment bought is history. A rejected payment keeps its
+// rows — coverage reads only rows whose payment is still alive, so the module
+// is open to buy again. Both layers (0064), never one.
+export const paymentModules = pgTable(
+  "payment_modules",
+  {
+    id: uuidPk(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id, { onDelete: "restrict" }),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "restrict" }),
+    module: integer("module").notNull(),
+    attempt: integer("attempt").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("payment_modules_module_check", sql`${table.module} > 0`),
+    check("payment_modules_attempt_check", sql`${table.attempt} > 0`),
+    uniqueIndex("payment_modules_payment_module_uidx").on(table.paymentId, table.enrollmentId, table.module, table.attempt),
+    index("payment_modules_enrollment_id_idx").on(table.enrollmentId, table.module, table.attempt),
   ],
 );
 

@@ -120,7 +120,7 @@ export function Checkout({
   async function submit(captchaToken: string): Promise<SubmitOutcome> {
     const items = checkoutItems(draft)
     const holds = [...draft.lot.map((entry) => entry.hold.id), holdId]
-    const plans = items.map((item) => planOfCourse(catalog, item.course.courseId))
+    const plans = items.map((item) => planOfCourse(catalog, item.course.courseId, item.course.planId))
     const receiptUploadId = draft.payment.receipt?.receiptUploadId ?? null
     if (
       !draft.payment.method ||

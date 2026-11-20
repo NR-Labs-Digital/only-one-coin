@@ -13,6 +13,8 @@ export interface PlanPriceItem {
 export interface PlanDetail {
   id: string;
   name: string;
+  /** OOC-86: a monthly plan's price is the price of one module. */
+  billing: "package" | "monthly";
   active: boolean;
   /** The price in force now — greatest validFrom not after now. Null when every price is still scheduled. */
   currentPriceId: string | null;
@@ -53,6 +55,7 @@ export class GetCourseQuery {
       return {
         id: plan.id,
         name: plan.name,
+        billing: plan.billing === "monthly" ? "monthly" : "package",
         active: plan.deletedAt === null,
         currentPriceId: current?.id ?? null,
         prices: prices.map((price) => ({

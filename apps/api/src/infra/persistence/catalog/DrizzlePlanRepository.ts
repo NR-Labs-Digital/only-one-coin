@@ -8,7 +8,7 @@ export class DrizzlePlanRepository implements IPlanRepository {
 
   async createWithPrice(plan: Plan, price: PlanPrice): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.insert(plans).values({ id: plan.id, courseId: plan.courseId, name: plan.name });
+      await tx.insert(plans).values({ id: plan.id, courseId: plan.courseId, name: plan.name, billing: plan.billing });
       await tx.insert(planPrices).values({
         id: price.id,
         planId: price.planId,
@@ -25,6 +25,7 @@ export class DrizzlePlanRepository implements IPlanRepository {
           id: row.id,
           courseId: row.courseId,
           name: row.name,
+          billing: row.billing === "monthly" ? "monthly" : "package",
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
           deletedAt: row.deletedAt,

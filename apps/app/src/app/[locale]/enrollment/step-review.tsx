@@ -101,7 +101,7 @@ export function StepReview({
 
   const course = courseById(catalog, draft.course.courseId)
   const group = groupById(catalog, draft.course.classGroupId)
-  const plan = planOfCourse(catalog, draft.course.courseId)
+  const plan = planOfCourse(catalog, draft.course.courseId, draft.course.planId)
   const minorFlow = draft.guardian.consentAccepted
   // Several courses, one receipt (OOC-158).
   const items = checkoutItems(draft)
@@ -387,7 +387,7 @@ function LotReview({
           {items.map((item, index) => {
             const course = courseById(catalog, item.course.courseId)
             const group = groupById(catalog, item.course.classGroupId)
-            const plan = planOfCourse(catalog, item.course.courseId)
+            const plan = planOfCourse(catalog, item.course.courseId, item.course.planId)
             return (
               <li key={index} className="py-3">
                 <div className="flex items-start justify-between gap-3">

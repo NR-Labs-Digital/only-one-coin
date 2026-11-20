@@ -5,6 +5,8 @@ import {
   fillTarget,
   lotConflict,
   lotPeople,
+  planOfCourse,
+  plansOfCourse,
   resolvePrefill,
   resolveSource,
   whatsappAiArrivalQuery,
@@ -236,5 +238,29 @@ describe('a lot — several courses, one receipt (OOC-158)', () => {
     expect(lotConflict({ ...draftWith(['course-en'], 'course-fr'), samePersonAs: 0 })).toBeNull()
     expect(lotConflict(draftWith(['course-en'], 'course-fr', '70000001'))).toBeNull()
     expect(lotConflict(draftWith([], 'course-en'))).toBeNull()
+  })
+})
+
+describe('the plan of a course (OOC-86)', () => {
+  const catalog = {
+    plans: [
+      { id: 'monthly', courseId: 'course-en', name: 'Mensual', billing: 'monthly', planPriceId: 'pp-m', amountCents: 12000, currency: 'PEN' },
+      { id: 'package', courseId: 'course-en', name: 'Paquete', billing: 'package', planPriceId: 'pp-p', amountCents: 60000, currency: 'PEN' },
+      { id: 'other', courseId: 'course-fr', name: 'Paquete', billing: 'package', planPriceId: 'pp-o', amountCents: 18000, currency: 'PEN' },
+    ],
+  } as unknown as PublicCatalog
+
+  it('lists the package first', () => {
+    expect(plansOfCourse(catalog, 'course-en').map((plan) => plan.id)).toEqual(['package', 'monthly'])
+  })
+
+  it('defaults to the package when nothing (or a draft of before) picked one', () => {
+    expect(planOfCourse(catalog, 'course-en')?.id).toBe('package')
+    expect(planOfCourse(catalog, 'course-en', null)?.id).toBe('package')
+  })
+
+  it('answers the picked plan, and ignores a plan of another course', () => {
+    expect(planOfCourse(catalog, 'course-en', 'monthly')?.id).toBe('monthly')
+    expect(planOfCourse(catalog, 'course-en', 'other')?.id).toBe('package')
   })
 })

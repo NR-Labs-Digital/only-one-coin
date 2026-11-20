@@ -12,6 +12,7 @@ import {
 } from "@ooc/domain";
 import { enrollments, payments, receiptUploads, waitlistEntries } from "@ooc/db";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { recordMonthlyEntryModules } from "@/infra/persistence/payment/monthlyEntryModule.js";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
@@ -110,6 +111,9 @@ export class DrizzleEnrollmentRepository implements IEnrollmentRepository {
       if (!paymentRow) {
         throw new Error("Insert into payments returned no row");
       }
+
+      // A monthly plan's payment buys the module the student enters (OOC-86).
+      await recordMonthlyEntryModules(tx, paymentRow.id, [enrollmentRow.id]);
 
       // Filled the moment the payment exists, as the checkout does: from
       // here the relay offers the file to the OCR ladder.

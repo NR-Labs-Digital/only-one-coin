@@ -763,7 +763,16 @@ export {
 export type { IWaitlistRepository, WaitlistStudentStanding } from "./catalog/ports/IWaitlistRepository.js";
 export { JoinWaitlistUseCase, type JoinWaitlistInput } from "./catalog/JoinWaitlistUseCase.js";
 export { LeaveWaitlistUseCase, type LeaveWaitlistInput } from "./catalog/LeaveWaitlistUseCase.js";
-export { Plan, PlanPrice, PRICE_PAST_TOLERANCE_MS, type PlanProps, type PlanPriceProps } from "./catalog/Plan.js";
+export {
+  Plan,
+  PlanPrice,
+  PLAN_BILLINGS,
+  PlanBillingSchema,
+  PRICE_PAST_TOLERANCE_MS,
+  type PlanBilling,
+  type PlanProps,
+  type PlanPriceProps,
+} from "./catalog/Plan.js";
 export type { IPlanRepository } from "./catalog/ports/IPlanRepository.js";
 export { CreatePlanUseCase, type CreatePlanInput } from "./catalog/CreatePlanUseCase.js";
 export { RenamePlanUseCase, type RenamePlanInput } from "./catalog/RenamePlanUseCase.js";
@@ -983,3 +992,14 @@ export {
   type RequestAttachmentUploadInput,
   type RequestAttachmentUploadOutput,
 } from "./attachment/AttachmentUseCases.js";
+export {
+  hasClassAccess,
+  monthlyAccessLock,
+  monthlyAmountCents,
+  purchasableModules,
+  selectPrefix,
+  type CoverageStatus,
+  type CoveredModule,
+  type ModuleAttempt,
+  type MonthlyAccessLock,
+} from "./enrollment/monthlyModules.js";

@@ -40,6 +40,7 @@ export const CourseListItemSchema = z.object({
 export const PlanDetailSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  billing: z.enum(["package", "monthly"]),
   active: z.boolean(),
   currentPriceId: z.string().uuid().nullable(),
   prices: z.array(
