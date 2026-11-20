@@ -232,7 +232,10 @@ Mecanismo em `apps/api/CLAUDE.md`, "Documentos emitidos".
   existe. Confirmar com a Asociación antes de tratar isso como fluxo pronto.
 - **Traspaso × cambio de horário.** `docs/REGRAS-NEGOCIO.md` §5 cobra S/10 por
   um e nada pelo outro; `docs/REQUISITOS.md` RF11 já sinaliza que RF11/RF12/RF13
-  podem ser a mesma coisa. A tela mostra S/10 por ora.
+  podem ser a mesma coisa. A tela mostra S/10 por ora. **Resolvido em parte
+  (OOC-105, 20/11/2026):** traspaso é passar a matrícula para **outra pessoa**
+  (Rick), grátis, feito pela equipe no detalhe da matrícula — não é o cambio de
+  horário, que segue pago e não construído (`CLAUDE.md` §1).
 - **Formato do código da turma.** A tela mostra um `code` por turma — no mock,
   três letras do idioma mais uma sequência de 4 dígitos (`ALE-0002`). Nível e
   ciclo saíram do código de propósito: o nome do curso já diz o nível e o
