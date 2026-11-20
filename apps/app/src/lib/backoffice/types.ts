@@ -311,6 +311,38 @@ export interface StudentActivityPage {
   nextCursor: string | null
 }
 
+/**
+ * One payment on a student's file (OOC-62), as `GET /students/:id/payments`
+ * answers it: enrollment, monthly module, paid procedure or lot, in any
+ * state. Metadata only — the image is a separate, audited read.
+ */
+export interface StudentPaymentItem {
+  id: string
+  /** null = the enrollment; a kind = that paid procedure. */
+  procedureKind: PaymentProcedureKind | null
+  /** This student's courses the payment pays for. */
+  courseNames: string[]
+  /** Enrollments the payment pays for in all — above 1 is a lot (OOC-158). */
+  enrollmentCount: number
+  status: PaymentStatus
+  method: PaymentMethod
+  methodDetail: string | null
+  operationNumber: string | null
+  /** What the student declared they paid. */
+  amountCents: number
+  /** The frozen price it is checked against (the whole lot's, for a lot). */
+  expectedAmountCents: number
+  /** What OCR read off the receipt; null when nothing was read. */
+  readAmountCents: number | null
+  verdict: ReceiptVerdict | null
+  rejectionReason: RejectionReason | null
+  /** Whether a processed image exists to be opened. */
+  hasReceipt: boolean
+  currency: 'PEN'
+  submittedAt: string
+  decidedAt: string | null
+}
+
 /** Where a student's portal account stands, as the API derives it. */
 export type PortalAccessState = 'none' | 'pending_activation' | 'active'
 
