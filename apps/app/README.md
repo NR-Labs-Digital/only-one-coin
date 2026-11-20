@@ -67,12 +67,15 @@ sem ficha vê o portal vazio — a API não lhe atribui turma nenhuma.
 src/
   app/          # rotas do App Router — [locale]/portal/*, [locale]/backoffice/*, [locale]/login, [locale]/enrollment
   components/   # componentes de UI (shadcn/ui sobre Tailwind v4) e de layout (AutoGrid, TableShell...)
-  lib/          # clientes de API, permissões (backoffice/permissions.ts), feature flags, dados mock
+  lib/          # clientes de API, permissões (backoffice/permissions.ts), feature flags
   hooks/        # hooks de cliente
   i18n/         # roteamento e mensagens trilíngues (es-PE padrão, pt-BR, en)
   messages/     # arquivos de tradução — es-PE.json / pt-BR.json / en.json
 ```
 
-`src/lib/*/mock-data.ts` é onde vive o dado mockado de cada área — trocar por
-chamada real não deve exigir tocar em nenhum componente que já lê de lá
-(mesmo contrato de dados).
+O backoffice e o portal do docente não têm mais dado mockado (OOC-92): toda
+tela lê `apps/api`, e a que ainda não tem rota mostra estado vazio, nunca
+linhas inventadas. O lint (`eslint.config.mjs`) recusa import de mock nas
+superfícies do staff. A única tela ainda mock, a de campanhas
+(`/backoffice/emails/new`, Fase 5), guarda a audiência vazia ao lado dela
+(`emails/new/campaign-audience.ts`).
