@@ -118,6 +118,16 @@ export function canViewPayments(role: StaffRole): boolean {
 }
 
 /**
+ * Who opens a receipt image — the reviewers and the analyst who observes them.
+ * The image is personal data and every opening is an audited read; `support`
+ * reads payments but never the picture. Mirrors `PAYMENT_RECEIPT_ROLES`
+ * (apps/api/src/http/payment/paymentRoles.ts), which is what enforces it.
+ */
+export function canOpenReceiptImage(role: StaffRole): boolean {
+  return isManagement(role) || role === 'analyst' || role === 'billing'
+}
+
+/**
  * Who may settle a receipt the ladder could not. Management authorizes and
  * billing settles; the analyst sees the queue but never approves — that is the
  * whole definition of the cargo. The enforcing check is the role declared on

@@ -584,6 +584,30 @@
         "generic": "Não conseguimos enviar o acesso. Tente de novo."
       }
     },
+    "student_receipts": {
+      "title": "Comprovantes",
+      "subtitle": "Todos os pagamentos que o aluno enviou — matrícula, módulos e trâmites —, em qualquer estado. A decisão é em Pagamentos.",
+      "col_submitted": "Enviado",
+      "col_for": "Referente a",
+      "col_amount": "Valor",
+      "col_verdict": "Leitura",
+      "col_status": "Status",
+      "lot": "Pagamento de {count} matrículas",
+      "expected": "Esperado: {amount}",
+      "read": "Lido: {amount}",
+      "no_verdict": "Sem leitura",
+      "decided_at": "Decidido em {date}",
+      "no_image": "Sem imagem",
+      "open_image": "Ver comprovante",
+      "empty_title": "Sem comprovantes",
+      "empty_body": "Este aluno ainda não enviou nenhum comprovante de pagamento.",
+      "load_error": "Não foi possível carregar os comprovantes. Recarregue a página para tentar de novo.",
+      "image_title": "Comprovante",
+      "image_subtitle": "Enviado em {date} · {courses}",
+      "image_loading": "Carregando a imagem…",
+      "image_unavailable": "Não foi possível abrir a imagem do comprovante.",
+      "image_audit_note": "Cada abertura de comprovante fica registrada na bitácora. O link expira em 5 minutos."
+    },
     "relationship": {
       "mother": "Mãe",
       "father": "Pai",
