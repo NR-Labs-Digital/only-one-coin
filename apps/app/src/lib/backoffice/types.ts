@@ -637,7 +637,10 @@ export interface CourseRow {
   certificateRule: CertificateRule
   /** Administrative procedures the course offers (`docs/REGRAS-NEGOCIO.md` §5). */
   allowsFreeze: boolean
+  /** "Cambio de aula" — moving to another schedule. */
   allowsTransfer: boolean
+  /** "Traspaso de matrícula" — handing the enrollment to another person (OOC-105). */
+  allowsEnrollmentTransfer: boolean
   /**
    * The landing page whose enroll button opens the checkout on this course
    * (OOC-117). Null: no landing page links here.
@@ -672,6 +675,7 @@ export type CourseOptions = Pick<
   | 'certificateRule'
   | 'allowsFreeze'
   | 'allowsTransfer'
+  | 'allowsEnrollmentTransfer'
   | 'active'
 >
 

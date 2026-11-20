@@ -199,6 +199,7 @@ export function CourseOptionFields({
           [
             ['allowsTransfer', 'course_options.allows_transfer'],
             ['allowsFreeze', 'course_options.allows_freeze'],
+            ['allowsEnrollmentTransfer', 'course_options.allows_enrollment_transfer'],
           ] as const
           /* eslint-enable i18next/no-literal-string */
         ).map(([key, label]) => (
@@ -234,5 +235,7 @@ export const DEFAULT_COURSE_OPTIONS: CourseOptions = {
   certificateRule: 'automatic',
   allowsFreeze: true,
   allowsTransfer: false,
+  // Free and offered unless a course says otherwise (docs/REGRAS-NEGOCIO.md §5).
+  allowsEnrollmentTransfer: true,
   active: true,
 }
