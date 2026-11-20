@@ -77,6 +77,11 @@ import {
 } from "@/http/procedure/PortalProcedureRoutes.js";
 import { listProcedurePricesRoute, setProcedurePriceRoute } from "@/http/procedure/ProcedurePriceRoutes.js";
 import {
+  confirmMonthlyReceiptUploadRoute,
+  requestMonthlyReceiptUploadRoute,
+  submitMonthlyPaymentRoute,
+} from "@/http/monthly/PortalMonthlyRoutes.js";
+import {
   confirmAttachmentUploadRoute,
   downloadAttachmentRoute,
   listAttachmentsRoute,
@@ -139,6 +144,7 @@ import {
 import { listTeacherOptionsRoute } from "@/http/catalog/ListTeacherOptionsRoute.js";
 import { advanceClassGroupStatusRoute } from "@/http/catalog/AdvanceClassGroupStatusRoute.js";
 import { getClassGroupRosterRoute } from "@/http/catalog/GetClassGroupRosterRoute.js";
+import { getClassGroupMonthlyRoute } from "@/http/catalog/GetClassGroupMonthlyRoute.js";
 import { listWaitlistRoute } from "@/http/catalog/ListWaitlistRoute.js";
 import { joinWaitlistRoute } from "@/http/catalog/JoinWaitlistRoute.js";
 import { leaveWaitlistRoute } from "@/http/catalog/LeaveWaitlistRoute.js";
@@ -287,6 +293,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(requestProcedureReceiptUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(confirmProcedureReceiptUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitProcedurePaymentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestMonthlyReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmMonthlyReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(submitMonthlyPaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listProcedurePricesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setProcedurePriceRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listAttachmentsRoute);
@@ -342,6 +351,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listTeacherOptionsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(advanceClassGroupStatusRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupRosterRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupMonthlyRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listWaitlistRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(joinWaitlistRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(leaveWaitlistRoute);

@@ -38,6 +38,10 @@ const SAMPLE_VARS: EmailTemplateVars = {
   procedure_payment_under_review: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_approved: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   procedure_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  monthly_payment_under_review: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", modules: "2, 3" },
+  monthly_payment_approved: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", modules: "2, 3" },
+  monthly_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", modules: "2, 3" },
+  monthly_module_due: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", module: 2 },
   grade_posted: {
     recipientName: "Rosa",
     studentName: "Rosa Quispe",

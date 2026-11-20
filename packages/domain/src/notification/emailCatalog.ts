@@ -65,6 +65,14 @@ export const EMAIL_CATALOG = {
   procedure_payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
   procedure_payment_approved: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
   procedure_payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  /* A monthly module bought from the portal (OOC-86): the same three moments,
+     about the module's class and never the seat. */
+  monthly_payment_under_review: { audience: "student", stage: "payment_pending", conditional: true, emitted: true },
+  monthly_payment_approved: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  monthly_payment_rejected: { audience: "student", stage: "payment_settled", conditional: true, emitted: true },
+  /* Progression took a monthly student into a module nobody bought (OOC-86):
+     the class stays closed until it is bought and approved. Never a debt. */
+  monthly_module_due: { audience: "student", stage: "access", conditional: true, emitted: true },
   /* The first approval opens the portal account. */
   portal_credentials: { audience: "student", stage: "access", conditional: false, emitted: true },
   /* The Classroom invitation, three days before the class group starts

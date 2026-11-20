@@ -25,6 +25,9 @@ import {
   ConfirmManualReceiptUploadUseCase,
   ConfirmReceiptUploadUseCase,
   OpenProcedureRequestUseCase,
+  RequestMonthlyReceiptUploadUseCase,
+  ConfirmMonthlyReceiptUploadUseCase,
+  SubmitMonthlyPaymentUseCase,
   RequestProcedureReceiptUploadUseCase,
   SetProcedurePriceUseCase,
   SubmitProcedurePaymentUseCase,
@@ -209,6 +212,7 @@ import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js"
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
+import { DrizzleMonthlyPaymentRepository } from "./infra/persistence/payment/DrizzleMonthlyPaymentRepository.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
   DrizzleReceiptRereadRepository,
@@ -239,6 +243,7 @@ import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.j
 import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroupsQuery.js";
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
 import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
+import { ClassGroupMonthlyQuery } from "./infra/persistence/catalog/ClassGroupMonthlyQuery.js";
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
 import { DrizzleGradeRepository } from "./infra/persistence/teaching/DrizzleGradeRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
@@ -365,6 +370,11 @@ export interface AppUseCases {
     /** Run by the `attachment-sweep` worker, never a route. */
     expirePending: ExpirePendingAttachmentsUseCase;
   };
+  monthly: {
+    requestReceiptUpload: RequestMonthlyReceiptUploadUseCase;
+    confirmReceiptUpload: ConfirmMonthlyReceiptUploadUseCase;
+    submitPayment: SubmitMonthlyPaymentUseCase;
+  };
   procedure: {
     openRequest: OpenProcedureRequestUseCase;
     requestReceiptUpload: RequestProcedureReceiptUploadUseCase;
@@ -467,6 +477,7 @@ export interface AppQueries {
   listClassGroups: ListClassGroupsQuery;
   listWaitlist: ListWaitlistQuery;
   classGroupRoster: ClassGroupRosterQuery;
+  classGroupMonthly: ClassGroupMonthlyQuery;
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   auditLog: AuditLogQuery;
@@ -669,6 +680,17 @@ function buildContainer(): AppContainer {
     config.RECEIPT_MAX_UPLOAD_BYTES,
   );
   const confirmManualReceiptUpload = new ConfirmManualReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
+  const monthlyPaymentRepository = new DrizzleMonthlyPaymentRepository(db);
+  const monthlyUseCases = {
+    requestReceiptUpload: new RequestMonthlyReceiptUploadUseCase(
+      monthlyPaymentRepository,
+      receiptUploadRepository,
+      receiptStorage,
+      config.RECEIPT_MAX_UPLOAD_BYTES,
+    ),
+    confirmReceiptUpload: new ConfirmMonthlyReceiptUploadUseCase(monthlyPaymentRepository, receiptUploadRepository, receiptStorage),
+    submitPayment: new SubmitMonthlyPaymentUseCase(monthlyPaymentRepository),
+  };
   const procedureRepository = new DrizzleProcedureRepository(db);
   const procedureUseCases = {
     openRequest: new OpenProcedureRequestUseCase(procedureRepository),
@@ -1015,6 +1037,7 @@ function buildContainer(): AppContainer {
         validateReceipt,
       },
       procedure: procedureUseCases,
+      monthly: monthlyUseCases,
       attachment: attachmentUseCases,
       payment: {
         settlePayment,
@@ -1104,6 +1127,7 @@ function buildContainer(): AppContainer {
       listClassGroups,
       listWaitlist,
       classGroupRoster,
+      classGroupMonthly: new ClassGroupMonthlyQuery(db),
       listStaff,
       listStaffRoleChanges,
       auditLog: auditLogQuery,

@@ -71,11 +71,13 @@ export type ModuleStatus = 'completed' | 'current' | 'upcoming'
 /**
  * Why the "join class" option is locked in the portal. The lock IS the portal
  * option, never a Google Classroom integration (out of scope, CLAUDE.md §2):
- * `monthly_payment_due` — the current module's prepaid month wasn't paid;
+ * `monthly_payment_due` — the module the student is on is not bought;
+ * `monthly_payment_in_review` — it is, and the receipt waits for a person in
+ * Payments (only an approved one opens the class, decision of 20/11/2026);
  * `module_failed` — the student didn't pass and doesn't move on with the batch
- * (module progression decision, 02/09/2026).
+ * (module progression decision, 02/09/2026; nothing sets it yet).
  */
-export type ClassAccessLock = 'monthly_payment_due' | 'module_failed' | null
+export type ClassAccessLock = 'monthly_payment_due' | 'monthly_payment_in_review' | 'module_failed' | null
 
 export type DocumentType = 'enrollment_certificate' | 'certificate'
 
@@ -246,25 +248,32 @@ export interface Payment {
 }
 
 /**
- * One prepaid month of a monthly (English) enrollment. `payment` is null until
- * the student uploads the receipt from the portal — that null is exactly what
- * the reminder e-mail and the portal notice point at, and what locks class
- * access once `dueDate` passes. Never a debt (CLAUDE.md §1).
+ * A module of the course and which time through it (OOC-86): a student who
+ * repeats a module buys it again, so the attempt is part of what is bought.
  */
-export interface ModulePayment {
-  moduleId: string
-  dueDate: string
-  payment: Payment | null
+export interface ModuleAttempt {
+  module: number
+  attempt: number
 }
 
+/**
+ * The monthly modality of an enrollment (OOC-86, CLAUDE.md §1): a prepaid
+ * purchase of one module at a time — never an installment, never a debt.
+ */
 export interface MonthlyBilling {
+  /** The module the student is on; null in a run with no module number. */
+  current: ModuleAttempt | null
   /**
-   * Current price of one module — the amount the next receipt must match.
-   * Read-only on every screen: there are no discounts, ever (CLAUDE.md §1).
+   * The price of one module in force today — what each module of the next
+   * receipt costs. Read-only on every screen: no discounts, ever. Null when
+   * the plan has no price in force.
    */
-  modulePriceCents: number
+  modulePriceCents: number | null
   currency: 'PEN'
-  payments: ModulePayment[]
+  /** What may be bought now, in order; the selection is always a prefix of it. */
+  forSale: ModuleAttempt[]
+  /** What was bought with a payment still alive — waiting for review or approved. */
+  bought: (ModuleAttempt & { status: Extract<PaymentStatus, 'under_review' | 'approved'> })[]
 }
 
 export interface Enrollment {
@@ -289,15 +298,13 @@ export interface Enrollment {
   modules: CourseModule[]
   /**
    * Every payment written for this enrollment, newest first — the package, or
-   * a replacement after a rejected receipt. The newest one speaks for the
-   * seat, as on the ledger. Months of a monthly enrollment will live in
-   * `monthly.payments` (OOC-86).
+   * a replacement after a rejected receipt, or each module bought on the
+   * monthly rail (OOC-86). The newest one speaks for the seat, as on the ledger.
    */
   payments: Payment[]
   /**
-   * The portal cadeado on the "join class" option (CLAUDE.md §1). Null until
-   * monthly billing and module progression exist (OOC-86 / OOC-85) — nothing
-   * stored today can lock a class.
+   * The portal cadeado on the "join class" option (CLAUDE.md §1): a monthly
+   * enrollment whose current module is not bought and approved (OOC-86).
    */
   classAccessLock: ClassAccessLock
   /**

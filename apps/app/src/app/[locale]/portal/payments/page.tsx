@@ -25,34 +25,16 @@ export default async function PaymentsPage({
   const { enrollments, requests } = await getPortalView()
 
   /**
-   * Monthly enrollments with something still to pay, one card each. The card
-   * carries the whole module ledger of that enrollment — the ones already
-   * settled and the ones still open — because a student checking what to pay
-   * is also checking what they already paid.
+   * Monthly enrollments with something still for sale, one card each
+   * (OOC-86). The card carries the enrollment's whole module ledger — what is
+   * bought and what is still for sale — because a student checking what to
+   * pay is also checking what they already paid.
    */
   const duePlans = enrollments.flatMap((e) => {
-    if (e.monthly === null) return []
-    const sequenceOf = (moduleId: string) =>
-      e.modules.find((m) => m.id === moduleId)?.sequence ?? 0
-    const settled = e.monthly.payments
-      .filter((mp) => mp.payment !== null)
-      .map((mp) => ({
-        moduleId: mp.moduleId,
-        sequence: sequenceOf(mp.moduleId),
-        // Non-null by the filter above; narrowed here for the card's props.
-        status: mp.payment!.status,
-      }))
-      .sort((a, b) => a.sequence - b.sequence)
-    const pending = e.monthly.payments
-      .filter((mp) => mp.payment === null)
-      .map((mp) => ({
-        moduleId: mp.moduleId,
-        sequence: sequenceOf(mp.moduleId),
-        dueDate: mp.dueDate,
-      }))
-      .sort((a, b) => a.sequence - b.sequence)
-    if (pending.length === 0) return []
-    return [{ enrollment: e, settled, pending }]
+    // Only a confirmed seat buys more modules: the first purchase goes through Pagos first.
+    if (e.seatStatus !== 'confirmed' || e.monthly === null) return []
+    if (e.monthly.forSale.length === 0 || e.monthly.modulePriceCents === null) return []
+    return [{ enrollment: e, monthly: e.monthly }]
   })
 
   /**
@@ -70,27 +52,14 @@ export default async function PaymentsPage({
   }
 
   const history: HistoryRow[] = [
-    ...enrollments.flatMap<HistoryRow>((e) => {
-      if (e.monthly !== null) {
-        return e.monthly.payments.flatMap<HistoryRow>((mp) => {
-          if (mp.payment === null) return []
-          return [
-            {
-              id: mp.payment.id,
-              name: e.course.name,
-              type: 'monthly',
-              payment: mp.payment,
-            },
-          ]
-        })
-      }
-      return e.payments.map<HistoryRow>((payment) => ({
+    ...enrollments.flatMap<HistoryRow>((e) =>
+      e.payments.map<HistoryRow>((payment) => ({
         id: payment.id,
         name: e.course.name,
-        type: 'package',
+        type: e.billingMode,
         payment,
-      }))
-    }),
+      })),
+    ),
     ...requests.map<HistoryRow>((r) => ({
       id: r.payment.id,
       name: t(`request_type.${r.type}`),
@@ -109,14 +78,16 @@ export default async function PaymentsPage({
             <SectionTitle>{t('payments.due_title')}</SectionTitle>
           </div>
           <div className="flex flex-col gap-4">
-            {duePlans.map(({ enrollment, settled, pending }) => (
+            {duePlans.map(({ enrollment, monthly }) => (
               <MonthlyPaymentCard
                 key={enrollment.id}
+                enrollmentId={enrollment.id}
                 courseName={enrollment.course.name}
-                settledModules={settled}
-                modules={pending}
-                modulePriceCents={enrollment.monthly?.modulePriceCents ?? 0}
-                currency={enrollment.monthly?.currency ?? 'PEN'}
+                current={monthly.current}
+                bought={monthly.bought}
+                forSale={monthly.forSale}
+                modulePriceCents={monthly.modulePriceCents ?? 0}
+                currency={monthly.currency}
                 locked={enrollment.classAccessLock === 'monthly_payment_due'}
               />
             ))}

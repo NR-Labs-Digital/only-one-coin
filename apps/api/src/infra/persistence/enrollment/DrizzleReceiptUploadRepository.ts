@@ -42,7 +42,7 @@ export class DrizzleReceiptUploadRepository implements IReceiptUploadRepository,
         id: params.id,
         seatHoldId: params.owner.kind === "seat_hold" ? params.owner.seatHoldId : null,
         procedureRequestId: params.owner.kind === "procedure_request" ? params.owner.procedureRequestId : null,
-        uploadedBy: params.owner.kind === "staff" ? params.owner.userId : null,
+        uploadedBy: params.owner.kind === "staff" || params.owner.kind === "account" ? params.owner.userId : null,
         objectKey: params.objectKey,
         contentType: params.contentType,
       })

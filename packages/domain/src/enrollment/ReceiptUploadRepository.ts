@@ -5,7 +5,10 @@ export type ReceiptUploadOwner =
   | { kind: "seat_hold"; seatHoldId: string }
   | { kind: "procedure_request"; procedureRequestId: string }
   /** The staff account opening a manual enrollment (OOC-146). */
-  | { kind: "staff"; userId: string };
+  | { kind: "staff"; userId: string }
+  /** The student's account buying monthly modules from the portal (OOC-86):
+   * the same column as the staff's — the account that started the upload. */
+  | { kind: "account"; userId: string };
 
 /**
  * File custody rows for checkout receipts. Every transition is guarded on

@@ -310,7 +310,9 @@ export function PaymentsView({
                           <LotLine payment={row} />
                         ) : (
                           <span className="block truncate text-xs text-muted-foreground">
-                            {t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
+                            {row.monthlyModules
+                              ? t('payment_origin.monthly', { modules: row.monthlyModules.join(', ') })
+                              : t(`payment_origin.${row.procedureKind ?? 'enrollment'}`)}
                           </span>
                         )}
                         {row.overCapacity && (

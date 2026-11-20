@@ -70,6 +70,7 @@
       "monthly": "Mensal (por módulo)"
     },
     "module_label": "Módulo {n}",
+    "module_label_repeat": "Módulo {n} · refaz",
     "module_status": {
       "completed": "Concluído",
       "current": "Em andamento",
@@ -77,7 +78,8 @@
     },
     "access_lock": {
       "monthly_payment_due": "Acesso à aula pausado: falta o pagamento do módulo",
-      "module_failed": "Acesso à aula pausado: você não foi aprovada no módulo anterior"
+      "module_failed": "Acesso à aula pausado: você não foi aprovada no módulo anterior",
+      "monthly_payment_in_review": "Acesso à aula pausado: o pagamento do módulo está em revisão"
     },
     "request_type": {
       "enrollment_certificate": "Comprovante de matrícula",
@@ -146,7 +148,8 @@
       "meeting_pending": "O link da aula será publicado antes do início.",
       "locked": {
         "monthly_payment_due": "Seu acesso à aula está pausado porque o módulo atual ainda não tem pagamento aprovado. Envie seu comprovante e reativamos assim que for validado. Não é uma dívida: não há juros nem multa.",
-        "module_failed": "Seu acesso à aula está pausado porque você não foi aprovada no módulo anterior. Fale conosco pelo WhatsApp para ver suas opções."
+        "module_failed": "Seu acesso à aula está pausado porque você não foi aprovada no módulo anterior. Fale conosco pelo WhatsApp para ver suas opções.",
+        "monthly_payment_in_review": "Seu acesso à aula abre assim que aprovarmos o pagamento do módulo atual. Já recebemos seu comprovante: não é preciso enviá-lo de novo."
       },
       "locked_cta": "Regularizar pagamento",
       "modules_title": "Módulos",
@@ -227,7 +230,14 @@
       "col_status": "Estado",
       "type_package": "Pacote completo",
       "type_monthly": "Mensal",
-      "type_procedure": "Trâmite"
+      "type_procedure": "Trâmite",
+      "current_module": "Módulo atual",
+      "error": {
+        "operation_used": "Este número de operação já foi usado em outro pagamento. Confira o comprovante.",
+        "not_for_sale": "Estes módulos não estão mais disponíveis para pagamento. Atualizamos a lista.",
+        "receipt_rejected": "Não conseguimos receber o arquivo. Tente de novo com outra foto.",
+        "generic": "Não conseguimos enviar seu comprovante. Tente de novo."
+      }
     },
     "requests": {
       "title": "Solicitações",

@@ -1,69 +1,101 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { formatDateNumeric, formatMoney, type Locale } from '@/lib/format'
-import type { PaymentStatus } from '@/lib/portal/types'
+import { useRouter } from 'next/navigation'
+import { formatMoney, type Locale } from '@/lib/format'
+import type { ModuleAttempt, MonthlyBilling } from '@/lib/portal/types'
+import { submitMonthlyPayment, type MonthlySubmitFailure } from '@/lib/portal/monthly-payment'
 import { Card, StatusBadge } from '@/components/portal/ui'
 import { Icon } from '@/components/portal/icons'
-import { ReceiptUploadForm } from '@/components/portal/receipt-upload'
+import { ReceiptUploadForm, type ReceiptSubmission } from '@/components/portal/receipt-upload'
 
-export type PendingModule = {
-  moduleId: string
-  /** 1-based order within the course. */
-  sequence: number
-  dueDate: string
-}
-
-export type SettledModule = {
-  moduleId: string
-  sequence: number
-  status: PaymentStatus
-}
+type BoughtModule = MonthlyBilling['bought'][number]
 
 /**
- * The module ledger of a monthly (English) enrollment: what is already settled,
- * the module that is due, and the ones after it, which the student may pay
- * ahead (decision 06/09/2026). Nothing comes pre-picked — the student chooses,
- * and the summary beside the list says what that choice costs before any button
- * is live.
+ * The module ledger of a monthly (English) enrollment (OOC-86): what is
+ * already bought, the module that is due, and the ones after it, which the
+ * student may pay ahead (decision 06/09/2026). The module the student is on,
+ * when it is not bought yet, comes picked and cannot be dropped; the summary
+ * beside the list says what the choice costs before any button is live.
  *
  * The selection is a prefix, never a free pick: modules run in order, so paying
  * the fourth while the third is open is not a thing. Clicking a row picks it
- * and everything before it; clicking the last picked row drops it.
+ * and everything before it; clicking the last picked row drops it. Only the
+ * count leaves the browser — the server works out which modules and charges
+ * that many at today's price.
  *
  * The register is deliberate — this is money. The state is a label ("payment
- * pending"), never a dunning line; numbers are tabular; dates are digits.
- *
- * Mockup: the submit flips local state to the submitted view — in production it
- * creates the payment row and enqueues the same OCR ladder as the enrollment
- * receipt (CLAUDE.md §5).
+ * pending"), never a dunning line; numbers are tabular.
  */
 export function MonthlyPaymentCard({
+  enrollmentId,
   courseName,
-  settledModules,
-  modules,
+  current,
+  bought,
+  forSale,
   modulePriceCents,
   currency,
   locked,
 }: {
+  enrollmentId: string
   courseName: string
-  /** Modules already paid (or under review), in course order. */
-  settledModules: SettledModule[]
-  /** Unpaid modules, in course order; the first is the one that is due. */
-  modules: PendingModule[]
+  /** The module the student is on; it comes picked when it is for sale. */
+  current: ModuleAttempt | null
+  /** Modules already bought (or under review), in course order. */
+  bought: BoughtModule[]
+  /** What may be bought now, in order; the first is the one that is due. */
+  forSale: ModuleAttempt[]
   modulePriceCents: number
   currency: string
   locked: boolean
 }) {
   const t = useTranslations('portal')
   const locale = useLocale() as Locale
+  const router = useRouter()
+  const currentIsDue =
+    current !== null && forSale[0]?.module === current.module && forSale[0]?.attempt === current.attempt
+  const minimum = currentIsDue ? 1 : 0
   const [phase, setPhase] = useState<'due' | 'form' | 'submitted'>('due')
-  const [selectedCount, setSelectedCount] = useState(0)
+  const [selectedCount, setSelectedCount] = useState(minimum)
+  const [sending, setSending] = useState(false)
+  const [failure, setFailure] = useState<MonthlySubmitFailure | null>(null)
+  /* One key per attempt with the same data; a new key only after an answer that
+     says nothing was paid, so a double tap on a bad connection pays once. */
+  const attemptKey = useRef<string | null>(null)
 
-  const selected = modules.slice(0, selectedCount)
+  const selected = forSale.slice(0, selectedCount)
   const total = selectedCount * modulePriceCents
   const hasSelection = selectedCount > 0
+  const label = (item: ModuleAttempt) =>
+    item.attempt > 1 ? t('module_label_repeat', { n: item.module }) : t('module_label', { n: item.module })
+
+  async function submit(submission: ReceiptSubmission) {
+    if (sending || !hasSelection) return
+    setSending(true)
+    setFailure(null)
+    attemptKey.current ??= crypto.randomUUID()
+    const outcome = await submitMonthlyPayment({
+      enrollmentId,
+      moduleCount: selectedCount,
+      file: submission.file,
+      method: submission.method,
+      operationNumber: submission.operationNumber,
+      idempotencyKey: attemptKey.current,
+    })
+    setSending(false)
+    if (!outcome.ok) {
+      setFailure(outcome.reason)
+      if (outcome.reason !== 'generic') attemptKey.current = null
+      // Somebody paid meanwhile — another tab, or a retry that went through:
+      // what is for sale on screen is out of date.
+      if (outcome.reason === 'not_for_sale') router.refresh()
+      return
+    }
+    attemptKey.current = null
+    setPhase('submitted')
+    router.refresh()
+  }
 
   if (phase === 'submitted') {
     return (
@@ -98,7 +130,7 @@ export function MonthlyPaymentCard({
         <>
           <p className="mt-2 text-sm font-semibold text-ink">{courseName}</p>
           <p className="text-sm text-muted-foreground">
-            {selected.map((m) => t('module_label', { n: m.sequence })).join(', ')}
+            {selected.map(label).join(', ')}
           </p>
           <div className="mt-3 border-t border-line pt-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -174,14 +206,17 @@ export function MonthlyPaymentCard({
                 amount, so repeating the total (and the buttons that opened
                 this form) would only ask the same thing twice. */}
             <p className="-mt-3 text-sm text-muted-foreground">
-              {selected.map((m) => t('module_label', { n: m.sequence })).join(', ')}
+              {selected.map(label).join(', ')}
             </p>
             <div className="rounded-lg border border-line p-4">
               <ReceiptUploadForm
                 amountCents={total}
                 currency={currency}
                 submitLabel={t('payments.submit')}
-                onSubmit={() => setPhase('submitted')}
+                onSubmit={(submission) => void submit(submission)}
+                askOperationNumber
+                busy={sending}
+                error={failure ? t(`payments.error.${failure}`) : null}
               />
             </div>
           </div>
@@ -197,16 +232,16 @@ export function MonthlyPaymentCard({
                 {/* What is already settled, first: the ledger reads top to
                     bottom in course order, and a student checking what to pay
                     is also checking what they already paid. Never clickable. */}
-                {settledModules.map((m) => (
+                {bought.map((m) => (
                   <li
-                    key={m.moduleId}
+                    key={`${m.module}:${m.attempt}`}
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-sky-soft/60 px-4 py-3"
                   >
                     <span className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] border border-line bg-line text-muted-foreground">
                       <Icon name="check" size={11} />
                     </span>
                     <span className="min-w-0 flex-1 basis-32 text-sm font-medium text-muted-foreground">
-                      {t('module_label', { n: m.sequence })}
+                      {label(m)}
                     </span>
                     <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                       {t(`payment_status.${m.status}`)}
@@ -216,19 +251,21 @@ export function MonthlyPaymentCard({
                     </span>
                   </li>
                 ))}
-                {modules.map((m, i) => {
+                {forSale.map((m, i) => {
                   const isSelected = i < selectedCount
+                  // The module the student is on stays picked (decision 06/09/2026).
+                  const fixed = i < minimum
                   return (
-                    <li key={m.moduleId}>
+                    <li key={`${m.module}:${m.attempt}`}>
                       <button
                         type="button"
                         role="checkbox"
                         aria-checked={isSelected}
-                        onClick={() =>
-                          setSelectedCount(
-                            isSelected && i === selectedCount - 1 ? i : i + 1,
-                          )
-                        }
+                        aria-disabled={fixed}
+                        onClick={() => {
+                          if (fixed) return
+                          setSelectedCount(isSelected && i === selectedCount - 1 ? i : i + 1)
+                        }}
                         className={`flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left transition ${
                           isSelected ? 'bg-sky-soft' : 'bg-white hover:bg-sky-soft'
                         }`}
@@ -243,13 +280,13 @@ export function MonthlyPaymentCard({
                           <Icon name="check" size={11} />
                         </span>
                         <span className="min-w-0 flex-1 basis-32 text-sm font-medium text-ink">
-                          {t('module_label', { n: m.sequence })}
+                          {label(m)}
                         </span>
-                        <span className="text-[11px] font-medium uppercase tracking-wide tabular-nums text-muted-foreground">
-                          {t('payments.due_short', {
-                            date: formatDateNumeric(m.dueDate, locale),
-                          })}
-                        </span>
+                        {i === 0 && currentIsDue && (
+                          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            {t('payments.current_module')}
+                          </span>
+                        )}
                         <span className="ml-auto whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
                           {formatMoney(modulePriceCents, currency, locale)}
                         </span>

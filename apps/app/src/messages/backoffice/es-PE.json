@@ -363,6 +363,7 @@
         "language_retired": "Idioma retirado",
         "procedure_request_opened": "Trámite solicitado",
         "procedure_payment_submitted": "Comprobante de trámite enviado",
+        "monthly_payment_submitted": "Comprobante de módulo mensual enviado",
         "procedure_price_created": "Precio de trámite cambiado",
         "attachment_uploaded": "Archivo adjuntado",
         "attachment_downloaded": "Archivo descargado",
@@ -891,8 +892,12 @@
       "procedure_payment_under_review": "Pago de trámite en revisión",
       "procedure_payment_approved": "Pago de trámite aprobado",
       "procedure_payment_rejected": "Pago de trámite rechazado",
+      "monthly_payment_under_review": "Pago de módulo en revisión",
+      "monthly_payment_approved": "Pago de módulo aprobado",
+      "monthly_payment_rejected": "Pago de módulo rechazado",
       "grade_corrected": "Nota final corregida",
-      "grade_corrected_did_not_sit": "Resultado corregido a DA"
+      "grade_corrected_did_not_sit": "Resultado corregido a DA",
+      "monthly_module_due": "Módulo mensual por pagar"
     },
     "email_trigger": {
       "enrollment_received": "Al recibir los datos de matrícula, después de que el alumno llena el formulario.",
@@ -917,8 +922,12 @@
       "procedure_payment_under_review": "Cuando el comprobante de un trámite pasa a revisión manual.",
       "procedure_payment_approved": "Cuando el pago de un trámite queda aprobado.",
       "procedure_payment_rejected": "Cuando la revisión rechaza el comprobante de un trámite.",
+      "monthly_payment_under_review": "Cuando el comprobante de un módulo mensual pasa a revisión manual.",
+      "monthly_payment_approved": "Cuando el pago de un módulo mensual queda aprobado.",
+      "monthly_payment_rejected": "Cuando la revisión rechaza el comprobante de un módulo mensual.",
       "grade_corrected": "La supervisión académica corrige una nota registrada",
-      "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA"
+      "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA",
+      "monthly_module_due": "Cuando la progresión lleva a un alumno mensual a un módulo que nadie pagó."
     },
     "email_audience": {
       "student": "Alumno",
@@ -944,8 +953,12 @@
       "procedure_payment_under_review": "si es un trámite y va a revisión",
       "procedure_payment_approved": "si es un trámite",
       "procedure_payment_rejected": "si es un trámite y se rechaza",
+      "monthly_payment_under_review": "si es un módulo mensual y va a revisión",
+      "monthly_payment_approved": "si es un módulo mensual",
+      "monthly_payment_rejected": "si es un módulo mensual y se rechaza",
       "grade_corrected": "Solo si una nota registrada se corrige",
-      "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)"
+      "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)",
+      "monthly_module_due": "si es mensual y el módulo no está pagado"
     },
     "email_delivery_reason": {
       "provider_unavailable": "El proveedor no respondió",
@@ -1387,6 +1400,26 @@
       "no_payment": "Sin pago registrado",
       "open_file": "Ver ficha",
       "limited_note": "Documento y contacto solo los ven administración y supervisión de matrículas."
+    },
+    "monthly": {
+      "title": "Mensualidades",
+      "load_error": "No pudimos cargar las mensualidades de esta aula.",
+      "owing_count": "{count} de {total} por pagar",
+      "note": "Alumnos de plan mensual y su módulo actual. Deber un módulo no es una deuda: solo cierra el acceso a esa clase en el portal. Los pagos se aprueban en Pagos.",
+      "col_student": "Alumno",
+      "col_module": "Módulo actual",
+      "col_state": "Estado",
+      "col_ahead": "Adelantados",
+      "module": "Módulo {n}",
+      "module_repeat": "Módulo {n} · repite",
+      "due_since": "Desde {date}",
+      "ahead": "Módulos {modules}",
+      "state": {
+        "paid": "Pagado",
+        "in_review": "En revisión",
+        "due": "Por pagar",
+        "unknown": "Sin módulo definido"
+      }
     },
     "teacher_groups": {
       "not_started": "El aula todavía no comienza — las notas se registran durante el módulo.",
@@ -2175,6 +2208,7 @@
       "receipt_viewed": "Comprobante consultado",
       "procedure_request_opened": "Trámite solicitado",
       "procedure_payment_submitted": "Comprobante de trámite enviado",
+      "monthly_payment_submitted": "Comprobante de módulo mensual enviado",
       "procedure_price_created": "Precio de trámite cambiado"
     },
     "class_links": {
@@ -2496,7 +2530,8 @@
     },
     "payment_origin": {
       "enrollment": "Matrícula",
-      "enrollment_certificate": "Constancia de matrícula"
+      "enrollment_certificate": "Constancia de matrícula",
+      "monthly": "Mensual · módulo {modules}"
     },
     "student_actions": {
       "whatsapp": "Escribir a {name} por WhatsApp",

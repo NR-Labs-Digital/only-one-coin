@@ -1003,3 +1003,19 @@ export {
   type ModuleAttempt,
   type MonthlyAccessLock,
 } from "./enrollment/monthlyModules.js";
+export { MonthlyEnrollmentNotFoundError, MonthlyModulesNotForSaleError, MonthlyNotPayableError } from "./monthly/errors.js";
+export type {
+  IMonthlyPaymentRepository,
+  MonthlyPaymentSubmitted,
+  SubmitMonthlyPaymentParams,
+} from "./monthly/MonthlyPaymentRepository.js";
+export {
+  ConfirmMonthlyReceiptUploadUseCase,
+  monthlyReceiptObjectKey,
+  RequestMonthlyReceiptUploadUseCase,
+  SubmitMonthlyPaymentUseCase,
+  type ConfirmMonthlyReceiptUploadInput,
+  type RequestMonthlyReceiptUploadInput,
+  type SubmitMonthlyPaymentInput,
+} from "./monthly/MonthlyPaymentUseCases.js";
+export { monthlyModuleDueEmails } from "./notification/monthlyEmails.js";
