@@ -1305,7 +1305,6 @@
       "batch_exam_notice": "Este curso certifica con examen: quien no lo rindió queda fuera del lote.",
       "batch_none": "No hay nadie listo para emitir en esta aula.",
       "batch_not_finished": "El aula todavía no termina. Los certificados se emiten al cierre.",
-      "batch_done_local_only": "Lote emitido solo en pantalla ({time}). Aún no hay servidor conectado.",
       "blocked_title": "Fuera del lote",
       "deadline_title": "Plazo de emisión",
       "deadline_value": "Hasta el {date}",

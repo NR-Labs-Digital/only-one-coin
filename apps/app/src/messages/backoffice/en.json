@@ -1305,7 +1305,6 @@
       "batch_exam_notice": "This course certifies through an exam: whoever did not sit it stays out of the batch.",
       "batch_none": "Nobody is ready to be issued in this class group.",
       "batch_not_finished": "This class group has not finished yet. Certificates go out at the close.",
-      "batch_done_local_only": "Batch issued on screen only ({time}). No server connected yet.",
       "blocked_title": "Left out of the batch",
       "deadline_title": "Issuing deadline",
       "deadline_value": "By {date}",

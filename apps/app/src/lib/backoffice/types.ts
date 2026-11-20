@@ -131,17 +131,6 @@ export interface StaffMemberRow {
 }
 
 /**
- * What the invite form fills in. No password: nobody but the person invited
- * ever holds one — the form generates a one-time invite link instead, and the
- * person sets their own password completing it (CLAUDE.md §8, "a panel that
- * shows somebody else's password is a panel that has it").
- */
-export type NewStaffMember = Pick<
-  StaffMemberRow,
-  'firstName' | 'lastName' | 'email' | 'role' | 'teacherId'
->
-
-/**
  * A teacher file a `teacher` invite can be opened for (OOC-79): on the roster,
  * with no panel account and no invite already open. Name and e-mail fill the
  * invite form; the API checks the same rules again when it is sent.
@@ -253,19 +242,6 @@ export interface EnrollmentHistoryItem {
   operationNumber: string | null
   /** When the payment was credited — null until it is approved. */
   paidAt: string | null
-}
-
-/** Where the e-mail carrying a document currently is (outbox, CLAUDE.md §5). */
-export type EmailDeliveryStatus = 'not_sent' | 'queued' | 'sent' | 'failed'
-
-/**
- * The e-mail is a consequence of issuing the document — one outbox row per
- * emission, never a separate "send" button. A resend is an audited exception.
- */
-export interface DocumentDelivery {
-  status: EmailDeliveryStatus
-  lastSentAt: string | null
-  attempts: number
 }
 
 /**
@@ -400,66 +376,6 @@ export interface LanguageItem extends CourseLanguage {
   courseCount: number
   /** Live teachers cleared for it. */
   teacherCount: number
-}
-
-export interface ClassGroupRow {
-  id: string
-  courseName: string
-  /**
-   * The code the institution prints on paperwork and uses on the phone —
-   * catalog data, not a technical id, which is why it is allowed on screen
-   * (CLAUDE.md §4). Format still to be confirmed with the Asociación.
-   */
-  code: string
-  language: CourseLanguage
-  /** Weekly schedule — the days plus the start time, in America/Lima. */
-  weekdays: Weekday[]
-  startTime: string
-  teacherId: string
-  teacherName: string
-  modality: ClassModality
-  academicPeriodName: string
-  startDate: string
-  endDate: string
-  seatsTaken: number
-  capacity: number
-  status: ClassGroupStatus
-  certificateRule: CertificateRule
-  /**
-   * Which administrative procedures the catalog offers for this class group
-   * (`docs/REGRAS-NEGOCIO.md` §5). Config, not code: freezing is off for
-   * Inglés Intermedio/Avanzado and the schedule change only exists for Inglés
-   * Básico Regular, and neither rule may be inferred from the course name —
-   * nothing language-specific lives in the code (CLAUDE.md §1).
-   */
-  allowsFreeze: boolean
-  allowsTransfer: boolean
-  /** Students who finished and are still waiting for their certificate. */
-  pendingCertificates: number
-  /**
-   * Final grades still open on the roster — what the teacher owes this class
-   * group. A student moved out by a procedure (frozen, transferred, withdrawn)
-   * is not counted: they left the roster, not a grade behind.
-   */
-  pendingGrades: number
-  /**
-   * Where the class happens — every class is online, and the Meet lives
-   * inside the group's Classroom (`docs/REGRAS-NEGOCIO.md` §8). One external
-   * link coordination pastes with the teacher (OOC-98), never an integration
-   * (CLAUDE.md §2). Null while nobody has pasted it yet.
-   */
-  classroomUrl: string | null
-  /**
-   * The module this class group is teaching, 1-based — each class group runs
-   * one module at a time (`docs/REGRAS-NEGOCIO.md` §3). Null when the course
-   * is not split in modules.
-   */
-  moduleNumber: number | null
-  /**
-   * The module's material — a Google Drive link coordination sets once per
-   * module in the backoffice, and every class group on that module reads.
-   */
-  moduleMaterialsUrl: string | null
 }
 
 /** One weekly meeting of a class group, `HH:mm` in America/Lima. */
@@ -770,72 +686,6 @@ export interface CourseDetail {
 }
 
 /**
- * One dated observation the teacher leaves on a student of their class group —
- * "llegó tarde tres veces", "necesita refuerzo en listening". Free text, per
- * student per class group, teacher-authored. Append-only on screen: an
- * observation is a record, and records are corrected by writing another one.
- */
-export interface StudentNote {
-  id: string
-  /** ISO 8601 UTC, rendered in America/Lima. */
-  at: string
-  authorName: string
-  text: string
-}
-
-/** One student as seen from the class group — grade first, money second. */
-export interface ClassGroupStudent {
-  studentId: string
-  fullName: string
-  enrollmentId: string
-  enrollmentStatus: EnrollmentStatus
-  paymentStatus: PaymentStatus
-  /**
-   * The final exam's grade, 0–20 — what the module's prueba gave, kept apart
-   * from the closing grade. Null while not taken (a DA is exactly this exam
-   * missed, `docs/REGRAS-NEGOCIO.md` §3) — and the rezagados exam later
-   * replaces the final grade, not this record of the first sitting.
-   */
-  examGrade: number | null
-  /** 0–20, the Peruvian scale. Null while the teacher has not closed it. */
-  finalGrade: number | null
-  gradeStatus: GradeStatus
-  /** The teacher's observations on this student, newest first. */
-  notes: StudentNote[]
-  /** Null unless the course certifies through an exam. */
-  certificationExam: CertificationExamStatus | null
-  certificateIssuedAt: string | null
-  delivery: DocumentDelivery | null
-  /** Administrative procedure already applied, if any. */
-  procedure: EnrollmentProcedure | null
-}
-
-/**
- * What an administrative procedure did to an enrollment
- * (`docs/REGRAS-NEGOCIO.md` §5). Every one of them is paid and coordinated
- * outside the platform today, which is why the backoffice records the outcome
- * instead of triggering it.
- */
-export type EnrollmentProcedure = 'frozen' | 'transferred' | 'withdrawn'
-
-export type ProcedureAction = 'transfer' | 'freeze' | 'withdraw'
-
-/** Why a procedure is not on the table — a code the locale turns into text. */
-export type ProcedureBlockReason =
-  | 'already_applied'
-  | 'group_not_running'
-  | 'enrollment_not_active'
-  | 'payment_not_approved'
-  | 'not_offered'
-  | 'no_seats_elsewhere'
-
-export interface ClassGroupDetail extends ClassGroupRow {
-  students: ClassGroupStudent[]
-  /** The teacher's notices to the class group, newest first. */
-  notices: ClassGroupNotice[]
-}
-
-/**
  * A notice the teacher posts to the whole class group. It reaches every
  * enrolled student in their portal — the course page and the bell. Free text,
  * the teacher's own words; append-only like an observation: a notice that went
@@ -872,8 +722,8 @@ export type TeacherStatus = 'active' | 'inactive'
 
 /**
  * One window a teacher is free to take a class group in, on a weekday, in
- * America/Lima. `HH:mm`, end exclusive — the same shape as
- * `ClassGroupRow.startTime`, so a class group can be laid over the window it
+ * America/Lima. `HH:mm`, end exclusive — the same shape as a weekly slot
+ * of a class group, so a class group can be laid over the window it
  * was allocated into (`docs/REQUISITOS.md` RF03).
  */
 export interface AvailabilitySlot {
@@ -1249,31 +1099,6 @@ export interface EnrollmentMetrics {
   byOrigin: Record<EnrollmentSource, number>
 }
 
-/** A plan as the enrollment form reads it: the price in force, never editable. */
-export interface PlanPrice {
-  courseName: string
-  planName: string
-  /** Which plan this is — the API resolves the current price server-side
-   * from this id, never from a client-supplied planPriceId (CLAUDE.md §5, §8). */
-  planId: string
-  planPriceId: string
-  amountCents: number
-  currency: 'PEN'
-}
-
-/** What the backoffice form needs to open an enrollment over an existing student. */
-export interface NewEnrollmentInput {
-  studentId: string
-  classGroupId: string
-  method: PaymentMethod
-  /** Only when `method` is `other`: what the operator wrote it was. */
-  methodDetail: string | null
-  operationNumber: string
-  /** The receipt this staff account uploaded and confirmed — mandatory since
-   * OOC-146 (`lib/backoffice/manual-receipt-upload.ts`). */
-  receiptUploadId: string
-}
-
 /* -------------------------------------------------------------------------- */
 /* E-mail                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -1353,25 +1178,6 @@ export interface EmailPreview {
   text: string
 }
 
-/**
- * Who a manual send goes to. A segment is *computed* — the platform asks the
- * database who matches, at the moment of sending, and never keeps a list at the
- * provider (`docs/ROADMAP.md` fase 5). So this is the question, not the answer:
- * the recipients are whatever it resolves to when somebody presses send.
- */
-export type EmailSegment =
-  | { kind: 'all' }
-  | { kind: 'course'; courseName: string }
-  | { kind: 'class_group'; classGroupId: string; classGroupName: string }
-  | { kind: 'enrollment_status'; status: EnrollmentStatus }
-
-/** What a manual send is, while it is still being written. */
-export interface EmailDraft {
-  segment: EmailSegment
-  subject: string
-  body: string
-}
-
 /** Why one delivery did not land. */
 /**
  * Why a send failed, as far as the outbox knows (`deliveryFailureReason`,
@@ -1429,46 +1235,3 @@ export interface EmailDeliveryIssues {
  * role is written only by the dedicated promotion usecase (CLAUDE.md §8), and
  * the rest is administration's to change.
  */
-
-/** The only second factor the panel offers — a code e-mailed at sign-in (OOC-29). */
-export type MfaMethod = 'email'
-
-export interface AccountMfa {
-  enabled: boolean
-  method: MfaMethod
-  /** When the current device was enrolled. Null while the factor is off. */
-  enrolledAt: string | null
-  /** Unused recovery codes left — what is between a lost phone and a lockout. */
-  recoveryCodesLeft: number
-}
-
-export interface AccountSecurity {
-  /** Null when the password is still the one the account was created with. */
-  passwordUpdatedAt: string | null
-  mfa: AccountMfa
-  lastSignInAt: string
-}
-
-/**
- * One open session. Browser and system are proper names, so they stay as they
- * are (CLAUDE.md §4 exception for brand names); the country is a code and gets
- * resolved to a name on screen.
- */
-export interface AccountSession {
-  id: string
-  browser: string
-  os: string
-  ip: string
-  city: string
-  /** ISO 3166-1 alpha-2. */
-  country: string
-  lastActiveAt: string
-  /** The session reading this screen — the one that cannot close itself. */
-  current: boolean
-}
-
-export interface AccountOverview {
-  user: StaffUser
-  security: AccountSecurity
-  sessions: AccountSession[]
-}
