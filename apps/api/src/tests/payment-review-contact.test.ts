@@ -26,6 +26,7 @@ const ROW = {
   methodDetail: null,
   operationNumber: "00012345",
   expectedAmountCents: 25000,
+  monthlyModules: null,
   overCapacity: false,
   currency: "PEN" as const,
   receipt: "ready" as const,

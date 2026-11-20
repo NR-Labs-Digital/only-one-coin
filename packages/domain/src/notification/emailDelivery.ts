@@ -32,6 +32,9 @@ export const STUDENT_DELIVERY_SUBJECTS = {
   procedure_payment_under_review: "payment",
   procedure_payment_approved: "payment",
   procedure_payment_rejected: "payment",
+  monthly_payment_under_review: "payment",
+  monthly_payment_approved: "payment",
+  monthly_payment_rejected: "payment",
   portal_credentials: "student_account",
   portal_password_reset: "student_account",
 } as const satisfies Partial<Record<EmailTemplateKey, DeliverySubject>>;

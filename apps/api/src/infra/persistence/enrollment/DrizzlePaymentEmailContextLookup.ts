@@ -2,6 +2,7 @@ import type { IPaymentEmailContextLookup, PaymentCoverageEmailFacts, PaymentItem
 import { enrollments, paymentLotEnrollments, payments } from "@ooc/db";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { laterMonthlyPurchaseModules } from "@/infra/persistence/payment/monthlyPurchase.js";
 import type { IEnrollmentEmailContextLookup } from "@ooc/domain";
 
 /**
@@ -38,6 +39,8 @@ export class DrizzlePaymentEmailContextLookup implements IPaymentEmailContextLoo
       // others still hear about their money.
       if (context) items.push({ enrollmentId: seat.enrollmentId, studentId: seat.studentId, ...context });
     }
-    return items.length > 0 ? { paymentId, items } : null;
+    if (items.length === 0) return null;
+    // A module bought later is told apart from the enrollment's own payment (OOC-86).
+    return { paymentId, items, modules: await laterMonthlyPurchaseModules(this.db, paymentId) };
   }
 }

@@ -26,6 +26,7 @@ import {
 } from "@ooc/domain";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { laterMonthlyPurchaseModulesSql } from "./monthlyPurchase.js";
 import { OPEN_STATUSES, PAYMENTS_PAGE_SIZE, paymentSearchCondition } from "./ListPaymentsQuery.js";
 import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, type PaymentLotItem } from "./paymentLot.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
@@ -107,6 +108,8 @@ export interface PaymentReviewItem {
   methodDetail: string | null;
   operationNumber: string | null;
   expectedAmountCents: number;
+  /** The module numbers a later monthly purchase bought (OOC-86); null for every other payment. */
+  monthlyModules: number[] | null;
   /** The seat this payment is for sits above the class group's capacity
    * (OOC-155) — the reviewer sees it before deciding. Always false for a
    * procedure's payment, which pays for no seat. */
@@ -360,7 +363,10 @@ export class ListPaymentReviewQueueQuery {
         classGroupSchedule: classGroups.schedule,
         planName: plans.name,
         // A lot (OOC-158) expects the sum of its enrollments' prices.
-        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, ${planPrices.amountCents} + ${lotExpectedExtraCents})`.mapWith(Number),
+        // A monthly module bought later (OOC-86) expects what the submit charged:
+        // n modules at the price in force that day, worked out by the server.
+        expectedAmountCents: sql<number>`coalesce(${procedureRequests.amountCents}, case when ${laterMonthlyPurchaseModulesSql()} is not null then ${payments.amountCents} end, ${planPrices.amountCents} + ${lotExpectedExtraCents})`.mapWith(Number),
+        monthlyModules: laterMonthlyPurchaseModulesSql(),
         overCapacity: sql<boolean>`${payments.procedureRequestId} is null and (${enrollments.overCapacity} or ${lotHasOverCapacity})`,
         uploadStatus: latestUpload.status,
         fraudSignals: latestUpload.fraudSignals,
@@ -458,6 +464,7 @@ export class ListPaymentReviewQueueQuery {
         methodDetail: row.methodDetail,
         operationNumber: row.operationNumber,
         expectedAmountCents: row.expectedAmountCents,
+        monthlyModules: row.monthlyModules ? row.monthlyModules.map(Number) : null,
         overCapacity: row.overCapacity,
         currency: "PEN",
         receipt: receiptState(row.uploadStatus),

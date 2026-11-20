@@ -77,6 +77,11 @@ import {
 } from "@/http/procedure/PortalProcedureRoutes.js";
 import { listProcedurePricesRoute, setProcedurePriceRoute } from "@/http/procedure/ProcedurePriceRoutes.js";
 import {
+  confirmMonthlyReceiptUploadRoute,
+  requestMonthlyReceiptUploadRoute,
+  submitMonthlyPaymentRoute,
+} from "@/http/monthly/PortalMonthlyRoutes.js";
+import {
   confirmAttachmentUploadRoute,
   downloadAttachmentRoute,
   listAttachmentsRoute,
@@ -287,6 +292,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(requestProcedureReceiptUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(confirmProcedureReceiptUploadRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitProcedurePaymentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestMonthlyReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(confirmMonthlyReceiptUploadRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(submitMonthlyPaymentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listProcedurePricesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setProcedurePriceRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listAttachmentsRoute);

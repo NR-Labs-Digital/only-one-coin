@@ -67,6 +67,8 @@ const ItemSchema = z.object({
   methodDetail: z.string().nullable(),
   operationNumber: z.string().nullable(),
   expectedAmountCents: z.number().int(),
+  // OOC-86: the modules a later monthly purchase bought; null otherwise.
+  monthlyModules: z.array(z.number().int()).nullable(),
   overCapacity: z.boolean(),
   lot: z.array(LotItemSchema),
   currency: z.literal("PEN"),

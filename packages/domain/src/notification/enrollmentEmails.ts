@@ -144,6 +144,13 @@ export interface PaymentItemEmailFacts {
 export interface PaymentCoverageEmailFacts {
   paymentId: string;
   items: PaymentItemEmailFacts[];
+  /**
+   * The modules a later monthly purchase bought (OOC-86), in order — null for
+   * every other payment, the first purchase of a monthly enrollment included
+   * (that one is the enrollment's own payment, and its e-mails talk about the
+   * seat as always).
+   */
+  modules?: number[] | null;
 }
 
 /** An address a lot e-mail goes to, and the items of the lot it hears about. */
@@ -249,8 +256,35 @@ export function receivedEmailsFor(
   return only ? enrollmentReceivedEmails({ ...only, amountCents: facts.amountCents }, locale) : [];
 }
 
+type MonthlyTemplate = "monthly_payment_under_review" | "monthly_payment_approved" | "monthly_payment_rejected";
+
+/**
+ * A module bought later (OOC-86) is told apart: the enrollment's e-mails say
+ * the seat was confirmed or lost, and deciding a module's receipt does
+ * neither — it opens that module's class, or not. Same people, keyed by the
+ * payment, so a decision is told once.
+ */
+function monthlyEmails(
+  template: MonthlyTemplate,
+  facts: PaymentCoverageEmailFacts,
+  modules: number[],
+  locale: Locale,
+): EmailNotification[] {
+  const single = singleFacts(facts);
+  if (!single) return [];
+  const studentName = `${single.student.firstName} ${single.student.lastName}`;
+  return enrollmentRecipients(single).map((recipient) => ({
+    templateKey: template,
+    to: recipient.to,
+    locale,
+    vars: { recipientName: recipient.name, studentName, courseName: single.courseName, modules: modules.join(", ") },
+    dedupeKey: `${template}:${facts.paymentId}:${recipient.kind}`,
+  }));
+}
+
 /** The receipt went to a person — for a payment of one enrollment or a lot. */
 export function underReviewEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.modules) return monthlyEmails("monthly_payment_under_review", facts, facts.modules, locale);
   if (facts.items.length > 1) return lotDecisionEmails("lot_payment_under_review", facts, locale);
   const single = singleFacts(facts);
   return single ? paymentUnderReviewEmails(single, locale) : [];
@@ -258,6 +292,7 @@ export function underReviewEmailsFor(facts: PaymentCoverageEmailFacts, locale: L
 
 /** The payment was approved — every seat it pays for is confirmed. */
 export function approvedEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.modules) return monthlyEmails("monthly_payment_approved", facts, facts.modules, locale);
   if (facts.items.length > 1) return lotDecisionEmails("lot_payment_approved", facts, locale);
   const single = singleFacts(facts);
   return single ? paymentApprovedEmails(single, locale) : [];
@@ -265,6 +300,7 @@ export function approvedEmailsFor(facts: PaymentCoverageEmailFacts, locale: Loca
 
 /** The payment was rejected — every seat it held went back. */
 export function rejectedEmailsFor(facts: PaymentCoverageEmailFacts, locale: Locale): EmailNotification[] {
+  if (facts.modules) return monthlyEmails("monthly_payment_rejected", facts, facts.modules, locale);
   if (facts.items.length > 1) return lotDecisionEmails("lot_payment_rejected", facts, locale);
   const single = singleFacts(facts);
   return single ? paymentRejectedEmails(single, locale) : [];

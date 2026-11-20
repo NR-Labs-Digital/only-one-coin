@@ -84,6 +84,28 @@ export interface EmailTemplateVars {
     studentName: string;
     courseName: string;
   };
+  /** A monthly module purchase (OOC-86): its own wording, because the
+   * enrollment ones say the seat is confirmed or lost, and a module bought
+   * later only opens (or not) that module's class. `modules` is the list of
+   * module numbers bought, already joined ("2, 3"). */
+  monthly_payment_under_review: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    modules: string;
+  };
+  monthly_payment_approved: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    modules: string;
+  };
+  monthly_payment_rejected: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    modules: string;
+  };
   /** The final grade was posted (OOC-38) — final once posted. `grade` is the
    * 0–20 grade as typed (up to two decimals); `passingGrade` is the pass mark
    * from `platform_settings` at the time, so the e-mail never hardcodes 14. */

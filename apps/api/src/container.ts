@@ -25,6 +25,9 @@ import {
   ConfirmManualReceiptUploadUseCase,
   ConfirmReceiptUploadUseCase,
   OpenProcedureRequestUseCase,
+  RequestMonthlyReceiptUploadUseCase,
+  ConfirmMonthlyReceiptUploadUseCase,
+  SubmitMonthlyPaymentUseCase,
   RequestProcedureReceiptUploadUseCase,
   SetProcedurePriceUseCase,
   SubmitProcedurePaymentUseCase,
@@ -209,6 +212,7 @@ import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js"
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
 import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
+import { DrizzleMonthlyPaymentRepository } from "./infra/persistence/payment/DrizzleMonthlyPaymentRepository.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
   DrizzleReceiptRereadRepository,
@@ -364,6 +368,11 @@ export interface AppUseCases {
     remove: RemoveAttachmentUseCase;
     /** Run by the `attachment-sweep` worker, never a route. */
     expirePending: ExpirePendingAttachmentsUseCase;
+  };
+  monthly: {
+    requestReceiptUpload: RequestMonthlyReceiptUploadUseCase;
+    confirmReceiptUpload: ConfirmMonthlyReceiptUploadUseCase;
+    submitPayment: SubmitMonthlyPaymentUseCase;
   };
   procedure: {
     openRequest: OpenProcedureRequestUseCase;
@@ -669,6 +678,17 @@ function buildContainer(): AppContainer {
     config.RECEIPT_MAX_UPLOAD_BYTES,
   );
   const confirmManualReceiptUpload = new ConfirmManualReceiptUploadUseCase(receiptUploadRepository, receiptStorage);
+  const monthlyPaymentRepository = new DrizzleMonthlyPaymentRepository(db);
+  const monthlyUseCases = {
+    requestReceiptUpload: new RequestMonthlyReceiptUploadUseCase(
+      monthlyPaymentRepository,
+      receiptUploadRepository,
+      receiptStorage,
+      config.RECEIPT_MAX_UPLOAD_BYTES,
+    ),
+    confirmReceiptUpload: new ConfirmMonthlyReceiptUploadUseCase(monthlyPaymentRepository, receiptUploadRepository, receiptStorage),
+    submitPayment: new SubmitMonthlyPaymentUseCase(monthlyPaymentRepository),
+  };
   const procedureRepository = new DrizzleProcedureRepository(db);
   const procedureUseCases = {
     openRequest: new OpenProcedureRequestUseCase(procedureRepository),
@@ -1015,6 +1035,7 @@ function buildContainer(): AppContainer {
         validateReceipt,
       },
       procedure: procedureUseCases,
+      monthly: monthlyUseCases,
       attachment: attachmentUseCases,
       payment: {
         settlePayment,
