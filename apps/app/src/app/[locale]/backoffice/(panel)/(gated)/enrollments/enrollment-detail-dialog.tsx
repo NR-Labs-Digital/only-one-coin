@@ -25,7 +25,8 @@ import {
  * One enrollment, opened from the ledger. Read-only but for the staff's seat
  * tools (OOC-84), offered to whoever may manage enrollments: moving it to
  * another class group (`onMove`), freezing it (`onFreeze`) and bringing a
- * frozen one back (`onReturn`). Withdrawing has no rule yet.
+ * frozen one back (`onReturn`) — and handing it to another student
+ * (`onTransfer`, the traspaso of OOC-105). Withdrawing has no rule yet.
  *
  * It exists so the row can stay a row: the teacher, the modality, the ciclo,
  * the frozen price and the operation number are each worth one look and none
@@ -37,6 +38,7 @@ export function EnrollmentDetailDialog({
   onMove,
   onFreeze,
   onReturn,
+  onTransfer,
 }: {
   enrollment: EnrollmentRow | null
   onClose: () => void
@@ -45,6 +47,8 @@ export function EnrollmentDetailDialog({
   /** The same roles freeze and bring back (OOC-84). */
   onFreeze?: (enrollment: EnrollmentRow) => void
   onReturn?: (enrollment: EnrollmentRow) => void
+  /** The same roles hand it to another student (OOC-105). */
+  onTransfer?: (enrollment: EnrollmentRow) => void
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -218,6 +222,16 @@ export function EnrollmentDetailDialog({
                     >
                       <BoIcon name="clock" size={16} />
                       {t('freeze_enrollment.freeze')}
+                    </button>
+                  )}
+                  {onTransfer && enrollment.seatStatus === 'confirmed' && (
+                    <button
+                      type="button"
+                      onClick={() => onTransfer(enrollment)}
+                      className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:bg-sky-soft"
+                    >
+                      <BoIcon name="students" size={16} />
+                      {t('transfer_enrollment.open')}
                     </button>
                   )}
                   {onMove && enrollment.seatStatus !== 'released' && enrollment.seatStatus !== 'frozen' && (

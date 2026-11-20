@@ -61,6 +61,7 @@ import {
   LeaveWaitlistUseCase,
   CreateManualEnrollmentUseCase,
   MoveEnrollmentUseCase,
+  TransferEnrollmentUseCase,
   CreatePlanUseCase,
   CreateStaffInviteUseCase,
   CreateStaffPasswordResetUseCase,
@@ -178,6 +179,7 @@ import { DrizzleGuardianRepository } from "./infra/persistence/student/DrizzleGu
 import { DrizzleEnrollmentRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
 import { DrizzleEnrollmentMoveRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentMoveRepository.js";
 import { ListMoveTargetsQuery } from "./infra/persistence/enrollment/ListMoveTargetsQuery.js";
+import { DrizzleEnrollmentTransferRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentTransferRepository.js";
 import { DrizzlePublicEnrollmentRepository } from "./infra/persistence/enrollment/DrizzlePublicEnrollmentRepository.js";
 import { DrizzlePlanPriceLookup } from "./infra/persistence/enrollment/DrizzlePlanPriceLookup.js";
 import { DrizzleEmailVerificationRepository } from "./infra/persistence/enrollment/DrizzleEmailVerificationRepository.js";
@@ -351,6 +353,7 @@ export interface AppUseCases {
   enrollment: {
     createManual: CreateManualEnrollmentUseCase;
     move: MoveEnrollmentUseCase;
+    transfer: TransferEnrollmentUseCase;
     freeze: FreezeEnrollmentUseCase;
     listReturnRuns: ListReturnRunsUseCase;
     returnFromFreeze: ReturnFromFreezeUseCase;
@@ -1038,6 +1041,11 @@ function buildContainer(): AppContainer {
       enrollment: {
         createManual: createManualEnrollment,
         move: moveEnrollment,
+        transfer: new TransferEnrollmentUseCase(
+          new DrizzleEnrollmentTransferRepository(db),
+          portalAccessRepository,
+          portalLinkBuilder,
+        ),
         freeze: new FreezeEnrollmentUseCase(freezeRepository, true),
         listReturnRuns: new ListReturnRunsUseCase(freezeRepository),
         returnFromFreeze: new ReturnFromFreezeUseCase(freezeRepository),

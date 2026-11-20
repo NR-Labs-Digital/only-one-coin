@@ -150,7 +150,11 @@ export const courses = pgTable(
     certificateRule: text("certificate_rule").notNull().default("automatic"),
     // Which paid procedures the course offers (docs/REGRAS-NEGOCIO.md §5).
     allowsFreeze: boolean("allows_freeze").notNull().default(true),
+    // "Cambio de aula" (another schedule) — the name predates the screen's label.
     allowsTransfer: boolean("allows_transfer").notNull().default(false),
+    // "Traspaso de matrícula" (OOC-105): handing the enrollment to another
+    // person. Free and offered by default (docs/REGRAS-NEGOCIO.md §5).
+    allowsEnrollmentTransfer: boolean("allows_enrollment_transfer").notNull().default(true),
     // Which landing page's enroll button opens the checkout on this course
     // (OOC-117) — a key from LANDING_COURSE_KEYS (@ooc/domain), not an id: the
     // landing is static and cannot know a UUID minted per environment. Null

@@ -42,6 +42,7 @@ function optionsOf(course: CourseRow): CourseOptions {
     certificateRule: course.certificateRule,
     allowsFreeze: course.allowsFreeze,
     allowsTransfer: course.allowsTransfer,
+    allowsEnrollmentTransfer: course.allowsEnrollmentTransfer,
     active: course.active,
   }
 }

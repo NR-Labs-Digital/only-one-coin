@@ -38,6 +38,7 @@ import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
 import { MoveEnrollmentDialog } from './move-enrollment-dialog'
 import { FreezeEnrollmentDialog, type FreezeMode } from './freeze-enrollment-dialog'
+import { TransferEnrollmentDialog } from './transfer-enrollment-dialog'
 import { EnrollmentLinks } from './enrollment-links'
 import { NewEnrollmentForm, type StudentSearchResult } from './new-enrollment-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -110,6 +111,7 @@ export function EnrollmentsView({
   const [detail, setDetail] = useState<EnrollmentRow | null>(null)
   const [moving, setMoving] = useState<EnrollmentRow | null>(null)
   const [freezing, setFreezing] = useState<{ row: EnrollmentRow; mode: FreezeMode } | null>(null)
+  const [transferring, setTransferring] = useState<EnrollmentRow | null>(null)
 
   const pathname = usePathname()
   /**
@@ -509,6 +511,31 @@ export function EnrollmentsView({
               }
             : undefined
         }
+        onTransfer={
+          canMove
+            ? (row) => {
+                setDetail(null)
+                setTransferring(row)
+              }
+            : undefined
+        }
+      />
+      <TransferEnrollmentDialog
+        enrollment={transferring}
+        onClose={() => setTransferring(null)}
+        onDone={({ portalAccess }) => {
+          setTransferring(null)
+          setToast(
+            t(
+              portalAccess === 'created'
+                ? 'transfer_enrollment.done_portal_created'
+                : portalAccess === 'email_conflict'
+                  ? 'transfer_enrollment.done_email_conflict'
+                  : 'transfer_enrollment.done',
+            ),
+          )
+          router.refresh()
+        }}
       />
       <FreezeEnrollmentDialog
         enrollment={freezing?.row ?? null}

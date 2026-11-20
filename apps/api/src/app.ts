@@ -61,6 +61,7 @@ import { listStudentPaymentsRoute } from "@/http/student/ListStudentPaymentsRout
 import { issuePortalAccessRoute } from "@/http/student/IssuePortalAccessRoute.js";
 import { createManualEnrollmentRoute } from "@/http/enrollment/CreateManualEnrollmentRoute.js";
 import { listEnrollmentMoveTargetsRoute, moveEnrollmentRoute } from "@/http/enrollment/MoveEnrollmentRoutes.js";
+import { transferEnrollmentRoute } from "@/http/enrollment/TransferEnrollmentRoute.js";
 import {
   freezeEnrollmentRoute,
   listFreezeReturnRunsRoute,
@@ -285,6 +286,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listEnrollmentMoveTargetsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(moveEnrollmentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(transferEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(freezeEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listFreezeReturnRunsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(returnFromFreezeRoute);

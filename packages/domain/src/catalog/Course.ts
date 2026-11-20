@@ -80,7 +80,14 @@ export const CoursePropsSchema = SoftDeletableModelPropsSchema.extend({
   totalHours: z.number().int().nonnegative(),
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
+  /** "Cambio de aula" — moving to another schedule. The name is older than the screen's label. */
   allowsTransfer: z.boolean(),
+  /**
+   * "Traspaso de matrícula" (OOC-105): handing the enrollment to another
+   * person. Free (docs/REGRAS-NEGOCIO.md §5), offered unless a course says
+   * otherwise — hence the default.
+   */
+  allowsEnrollmentTransfer: z.boolean().default(true),
   landingKey: LandingCourseKeySchema.nullable(),
 });
 
@@ -98,6 +105,7 @@ export const CourseOptionsSchema = z.object({
   certificateRule: CertificateRuleSchema,
   allowsFreeze: z.boolean(),
   allowsTransfer: z.boolean(),
+  allowsEnrollmentTransfer: z.boolean(),
 });
 
 /**
@@ -130,6 +138,7 @@ export class Course extends SoftDeletableModel {
   public certificateRule: CertificateRule;
   public allowsFreeze: boolean;
   public allowsTransfer: boolean;
+  public allowsEnrollmentTransfer: boolean;
   public landingKey: LandingCourseKey | null;
 
   constructor(props: CourseProps) {
@@ -146,6 +155,7 @@ export class Course extends SoftDeletableModel {
     this.certificateRule = props.certificateRule;
     this.allowsFreeze = props.allowsFreeze;
     this.allowsTransfer = props.allowsTransfer;
+    this.allowsEnrollmentTransfer = props.allowsEnrollmentTransfer;
     this.landingKey = props.landingKey;
   }
 

@@ -20,6 +20,7 @@ export interface CourseListItem {
   certificateRule: "automatic" | "exam_required";
   allowsFreeze: boolean;
   allowsTransfer: boolean;
+  allowsEnrollmentTransfer: boolean;
   /** The landing page whose enroll button opens the checkout on it (OOC-117). */
   landingKey: LandingCourseKey | null;
   /** Not retired. The backoffice lists both — taking a course off the shelf is reversible. */
@@ -84,6 +85,7 @@ export function toCourseListItem(row: typeof courses.$inferSelect, counts: Cours
     certificateRule: row.certificateRule as CourseListItem["certificateRule"],
     allowsFreeze: row.allowsFreeze,
     allowsTransfer: row.allowsTransfer,
+    allowsEnrollmentTransfer: row.allowsEnrollmentTransfer,
     landingKey: row.landingKey as LandingCourseKey | null,
     active: row.deletedAt === null,
     ...counts,
