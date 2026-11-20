@@ -704,9 +704,13 @@ export interface PlanPriceItem {
   createdAt: string
 }
 
+/** How a plan is paid (OOC-86): a monthly plan's price is the price of one module. */
+export type PlanBilling = 'package' | 'monthly'
+
 export interface PlanDetail {
   id: string
   name: string
+  billing: PlanBilling
   active: boolean
   currentPriceId: string | null
   prices: PlanPriceItem[]

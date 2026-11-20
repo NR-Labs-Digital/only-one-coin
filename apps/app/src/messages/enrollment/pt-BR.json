@@ -33,7 +33,13 @@
         "seats_left": "{count, plural, one {Resta # vaga} other {Restam # vagas}}",
         "group_full": "Sem vagas",
         "summary_label": "Resumo da sua escolha",
-        "single_payment_note": "Pagamento único. Não há mensalidade nem parcelamento."
+        "single_payment_note": "Pagamento único. Não há mensalidade nem parcelamento.",
+        "plan_label": "Modalidade de pagamento",
+        "plan_package_meta": "Você paga o curso completo uma única vez.",
+        "plan_monthly_meta": "Você paga um módulo por vez, antes de começá-lo.",
+        "per_module": "{price} por módulo",
+        "total_first_module": "Total · primeiro módulo",
+        "monthly_payment_note": "Agora você paga só o primeiro módulo. Cada módulo seguinte é pago pelo seu portal antes de começar. Não há parcelas, juros nem dívida: se você não pagar um módulo, só o acesso àquela aula fica fechado."
       },
       "student": {
         "short": "Dados",

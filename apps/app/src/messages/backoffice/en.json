@@ -1594,7 +1594,13 @@
       "retired": "{count, plural, =0 {Plan off sale.} one {Plan off sale. # enrollment is still running.} other {Plan off sale. # enrollments are still running.}}",
       "restored": "Plan back on sale",
       "history_empty_title": "No history yet",
-      "history_empty_body": "When a plan changes price, the previous prices show up here."
+      "history_empty_body": "When a plan changes price, the previous prices show up here.",
+      "billing": "Billing",
+      "billing_package": "Package (single payment)",
+      "billing_monthly": "Monthly (per module)",
+      "billing_monthly_hint": "The price is that of one module. The student pays for each module before taking it.",
+      "billing_fixed": "The billing cannot change after the plan is created.",
+      "per_module": "per module"
     },
     "course_options": {
       "applies_forward": "What you change here applies to class groups opened afterwards. Running ones keep the rule the student enrolled under.",

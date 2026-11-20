@@ -23,6 +23,7 @@ const GetPublicCatalogResponseSchema = z.object({
       id: z.string().uuid(),
       courseId: z.string().uuid(),
       name: z.string(),
+      billing: z.enum(["package", "monthly"]),
       planPriceId: z.string().uuid(),
       amountCents: z.number().int(),
       currency: z.literal("PEN"),

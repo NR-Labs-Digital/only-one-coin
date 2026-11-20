@@ -34,6 +34,7 @@ import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutb
 import { assertOperationNumberUnused } from "./operationNumberGuard.js";
 import { seatForExpiredHold } from "./classGroupOffer.js";
 import { entryModuleIdOf } from "@/infra/persistence/catalog/classGroupModuleSql.js";
+import { recordMonthlyEntryModules } from "@/infra/persistence/payment/monthlyEntryModule.js";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -257,6 +258,13 @@ export class DrizzlePublicEnrollmentRepository implements IPublicEnrollmentRepos
           .insert(paymentLotEnrollments)
           .values(others.map((row) => ({ paymentId: paymentRow.id, enrollmentId: row.id })));
       }
+
+      // A monthly item's payment buys the module the student enters (OOC-86).
+      await recordMonthlyEntryModules(
+        tx,
+        paymentRow.id,
+        enrollmentRows.map((row) => row.id),
+      );
 
       // Filled the moment the payment exists — same moment `seat_holds.
       // enrollment_id` is filled above.

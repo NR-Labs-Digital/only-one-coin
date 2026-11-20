@@ -22,6 +22,8 @@ export interface PublicCatalogPlan {
   id: string;
   courseId: string;
   name: string;
+  /** OOC-86: a monthly plan's price is the price of one module. */
+  billing: "package" | "monthly";
   planPriceId: string;
   amountCents: number;
 }
@@ -92,6 +94,7 @@ export class GetPublicCatalogQuery {
         planId: plans.id,
         courseId: plans.courseId,
         name: plans.name,
+        billing: plans.billing,
         planPriceId: planPrices.id,
         amountCents: planPrices.amountCents,
       })
@@ -105,7 +108,12 @@ export class GetPublicCatalogQuery {
     for (const row of allCurrentPrices) {
       if (seenPlanIds.has(row.planId)) continue;
       seenPlanIds.add(row.planId);
-      planRows.push({ id: row.planId, courseId: row.courseId, name: row.name, planPriceId: row.planPriceId, amountCents: row.amountCents });
+      planRows.push({
+        id: row.planId,
+        courseId: row.courseId,
+        name: row.name,
+        billing: row.billing === "monthly" ? "monthly" : "package",
+        planPriceId: row.planPriceId, amountCents: row.amountCents });
     }
 
     // The schedule sold is the entry run's — where a new student starts

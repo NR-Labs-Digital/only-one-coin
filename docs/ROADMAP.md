@@ -212,7 +212,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 
 | Tema | Tickets | Decisão de origem |
 | --- | --- | --- |
-| Modalidade mensual do inglês e adiantar módulos | OOC-86 | 02/09 e 06/09/2026 |
+| Modalidade mensual do inglês e adiantar módulos | OOC-86 — 🟡 em três PRs empilhados: (1) modelo — plano mensal, módulo comprado por pagamento, escolha de plano no checkout — em PR, 20/11/2026; (2) portal: pagar e adiantar módulos, cadeado da aula; (3) backoffice: pendentes por turma e lembrete por e-mail | 02/09 e 06/09/2026; refazer e cadeado decididos em 20/11/2026 |
 | Equipe: eliminar perfil com o e-mail digitado; convite enviado por e-mail | OOC-136, OOC-138 — feitos 04/11/2026 | 04/11/2026 |
 | *Nueva aula*: passo Docente some ao abrir mais de uma turma | OOC-137 — feito 04/11/2026 | 04/11/2026 |
 | Procedimentos pagos além da matrícula (constancia, congelamento, troca de turma) | OOC-83 (constancia paga — feito 04/11/2026), OOC-84 (trocar de turma, congelar, retirar — 🟡 mover de turma pela equipe em PR, 14/11/2026; o "Cambio de horario" pago do aluno, congelar e retirar a construir), OOC-105 (transferir a matrícula para outro aluno) | 02/09/2026 |

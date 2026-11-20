@@ -1594,7 +1594,13 @@
       "retired": "{count, plural, =0 {Plano fora da venda.} one {Plano fora da venda. # matrícula continua em curso.} other {Plano fora da venda. # matrículas continuam em curso.}}",
       "restored": "Plano de volta à venda",
       "history_empty_title": "Sem histórico ainda",
-      "history_empty_body": "Quando um plano mudar de preço, os preços anteriores aparecem aqui."
+      "history_empty_body": "Quando um plano mudar de preço, os preços anteriores aparecem aqui.",
+      "billing": "Modalidade",
+      "billing_package": "Pacote (pagamento único)",
+      "billing_monthly": "Mensal (por módulo)",
+      "billing_monthly_hint": "O preço é o de um módulo. O aluno paga cada módulo antes de cursá-lo.",
+      "billing_fixed": "A modalidade não muda depois de criar o plano.",
+      "per_module": "por módulo"
     },
     "course_options": {
       "applies_forward": "O que você mudar aqui vale para as turmas abertas depois. As que já estão em andamento mantêm a regra com que o aluno se matriculou.",

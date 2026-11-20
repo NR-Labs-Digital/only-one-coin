@@ -8,6 +8,7 @@ import {
   courseById,
   fillTarget,
   planOfCourse,
+  plansOfCourse,
   scheduleOptionsOnStartDate,
   startDatesOfCourse,
   type ScheduleOption,
@@ -81,7 +82,7 @@ export function StepCourse({
   const t = useTranslations('enrollment')
   const locale = useLocale() as Locale
 
-  const { languageId, courseId, startDate, classGroupId } = draft.course
+  const { languageId, courseId, startDate, classGroupId, planId } = draft.course
   const courses = useMemo(
     () => coursesOfLanguage(catalog, languageId),
     [catalog, languageId],
@@ -95,7 +96,8 @@ export function StepCourse({
     [catalog, courseId, startDate],
   )
   const course = courseById(catalog, courseId)
-  const plan = planOfCourse(catalog, courseId)
+  const plans = plansOfCourse(catalog, courseId)
+  const plan = planOfCourse(catalog, courseId, planId)
   const selectedOption =
     options.find((option) => option.groups.some((group) => group.id === classGroupId)) ?? null
   const selectedGroup =
@@ -123,8 +125,14 @@ export function StepCourse({
         courseId: id,
         startDate: null,
         classGroupId: null,
+        // A plan belongs to its course: the next course starts on its default.
+        planId: null,
       },
     }))
+  }
+
+  function pickPlan(id: string) {
+    setDraft((prev) => ({ ...prev, course: { ...prev.course, planId: id } }))
   }
 
   function pickStartDate(date: string) {
@@ -324,6 +332,37 @@ export function StepCourse({
           <p className="mb-2 text-sm font-semibold text-ink">
             {t('step.course.summary_label')}
           </p>
+          {/* Only a course that sells both shows the choice (OOC-86): the
+              package for everyone, and the monthly, one module at a time. */}
+          {plans.length > 1 && (
+            <div className="mb-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-muted-foreground">{t('step.course.plan_label')}</p>
+              <AutoGrid min="14rem" gap="gap-3">
+                {plans.map((item) => (
+                  <ChoiceCard
+                    key={item.id}
+                    selected={item.id === plan.id}
+                    onSelect={() => pickPlan(item.id)}
+                    title={item.name}
+                    meta={
+                      item.billing === 'monthly'
+                        ? t('step.course.plan_monthly_meta')
+                        : t('step.course.plan_package_meta')
+                    }
+                    aside={
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">
+                        {item.billing === 'monthly'
+                          ? t('step.course.per_module', {
+                              price: formatMoney(item.amountCents, item.currency, locale),
+                            })
+                          : formatMoney(item.amountCents, item.currency, locale)}
+                      </span>
+                    }
+                  />
+                ))}
+              </AutoGrid>
+            </div>
+          )}
           <dl className="divide-y divide-line">
             <SummaryRow label={t('summary.course')}>{course.name}</SummaryRow>
             <SummaryRow label={t('summary.plan')}>{plan.name}</SummaryRow>
@@ -337,12 +376,17 @@ export function StepCourse({
                 ))}
               </span>
             </SummaryRow>
-            <SummaryRow label={t('summary.total')} strong>
+            <SummaryRow
+              label={plan.billing === 'monthly' ? t('step.course.total_first_module') : t('summary.total')}
+              strong
+            >
               {formatMoney(plan.amountCents, plan.currency, locale)}
             </SummaryRow>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            {t('step.course.single_payment_note')}
+            {plan.billing === 'monthly'
+              ? t('step.course.monthly_payment_note')
+              : t('step.course.single_payment_note')}
           </p>
         </Card>
       )}

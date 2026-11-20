@@ -90,7 +90,7 @@ export function StepPayment({
    * newer one (or a drop) has superseded it. */
   const attemptRef = useRef(0)
 
-  const plan = planOfCourse(catalog, draft.course.courseId)
+  const plan = planOfCourse(catalog, draft.course.courseId, draft.course.planId)
   // Several courses, one receipt (OOC-158): the sum of every plan price in force.
   const items = checkoutItems(draft)
   const totalCents = checkoutTotalCents(catalog, draft)
@@ -214,7 +214,7 @@ export function StepPayment({
           {items.length > 1 && (
             <ul className="mt-3 divide-y divide-brand-blue/10 border-y border-brand-blue/10">
               {items.map((item, index) => {
-                const itemPlan = planOfCourse(catalog, item.course.courseId)
+                const itemPlan = planOfCourse(catalog, item.course.courseId, item.course.planId)
                 return (
                   <li key={index} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
                     <span className="min-w-0 truncate text-ink">
