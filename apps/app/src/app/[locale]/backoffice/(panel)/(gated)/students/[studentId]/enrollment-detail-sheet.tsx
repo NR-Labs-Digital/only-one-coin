@@ -11,6 +11,7 @@ import {
   enrollmentTone,
   paymentTone,
   seatTone,
+  academicTone,
 } from '@/components/backoffice/status-tone'
 import {
   Sheet,
@@ -77,6 +78,13 @@ export function EnrollmentDetailSheet({
                   dot={false}
                   label={t(`seat_status.${enrollment.seatStatus}`)}
                 />
+                {enrollment.academicStatus && (
+                  <StatusBadge
+                    tone={academicTone[enrollment.academicStatus]}
+                    dot={false}
+                    label={t(`academic_status.${enrollment.academicStatus}`)}
+                  />
+                )}
               </div>
             </SheetHeader>
 

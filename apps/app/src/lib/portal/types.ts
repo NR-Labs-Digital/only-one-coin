@@ -43,7 +43,8 @@ export type PaymentRail = 'yape' | 'plin' | 'bcp' | 'interbank'
 export type PaymentMethod = PaymentRail | 'other'
 
 /** Seat lifecycle — CLAUDE.md §5: reserved → confirmed → released. */
-export type SeatStatus = 'reserved' | 'confirmed' | 'released'
+/** `frozen` (OOC-84): the seat went back while the student is away. */
+export type SeatStatus = 'reserved' | 'confirmed' | 'released' | 'frozen'
 
 /**
  * Enrollment status shown to the student. `frozen` is the paid congelamento

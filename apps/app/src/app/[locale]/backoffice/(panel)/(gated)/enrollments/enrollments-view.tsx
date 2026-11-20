@@ -37,6 +37,7 @@ import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
 import { MoveEnrollmentDialog } from './move-enrollment-dialog'
+import { FreezeEnrollmentDialog, type FreezeMode } from './freeze-enrollment-dialog'
 import { EnrollmentLinks } from './enrollment-links'
 import { NewEnrollmentForm, type StudentSearchResult } from './new-enrollment-form'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -108,6 +109,7 @@ export function EnrollmentsView({
 
   const [detail, setDetail] = useState<EnrollmentRow | null>(null)
   const [moving, setMoving] = useState<EnrollmentRow | null>(null)
+  const [freezing, setFreezing] = useState<{ row: EnrollmentRow; mode: FreezeMode } | null>(null)
 
   const pathname = usePathname()
   /**
@@ -491,6 +493,40 @@ export function EnrollmentsView({
               }
             : undefined
         }
+        onFreeze={
+          canMove
+            ? (row) => {
+                setDetail(null)
+                setFreezing({ row, mode: 'freeze' })
+              }
+            : undefined
+        }
+        onReturn={
+          canMove
+            ? (row) => {
+                setDetail(null)
+                setFreezing({ row, mode: 'return' })
+              }
+            : undefined
+        }
+      />
+      <FreezeEnrollmentDialog
+        enrollment={freezing?.row ?? null}
+        mode={freezing?.mode ?? 'freeze'}
+        onClose={() => setFreezing(null)}
+        onDone={({ mode, overCapacity }) => {
+          setFreezing(null)
+          setToast(
+            t(
+              mode === 'freeze'
+                ? 'freeze_enrollment.frozen'
+                : overCapacity
+                  ? 'freeze_enrollment.returned_over_capacity'
+                  : 'freeze_enrollment.returned',
+            ),
+          )
+          router.refresh()
+        }}
       />
       <MoveEnrollmentDialog
         enrollment={moving}

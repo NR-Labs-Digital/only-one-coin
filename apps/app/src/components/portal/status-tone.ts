@@ -28,6 +28,7 @@ export const seatTone: Record<SeatStatus, Tone> = {
   reserved: 'warning',
   confirmed: 'success',
   released: 'neutral',
+  frozen: 'neutral',
 }
 
 export const requestTone: Record<RequestStatus, Tone> = {

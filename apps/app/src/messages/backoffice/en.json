@@ -296,6 +296,8 @@
         "student_directory_exported": "Student directory exported",
         "enrollment_created": "Enrollment opened from the panel",
         "enrollment_moved": "Enrollment moved to another class group",
+        "enrollment_frozen": "Enrollment frozen",
+        "enrollment_unfrozen": "Enrollment unfrozen",
         "portal_access_created": "Portal account created",
         "portal_access_issued": "Portal access sent",
         "email_resent": "E-mail resent",
@@ -811,7 +813,7 @@
       "field_paid_at": "Paid on",
       "not_paid": "No payment credited",
       "frozen_price": "Price frozen at enrollment ({id}). Correcting the price table does not change this enrollment.",
-      "manage_notice": "Freezing or withdrawing a student is a paid procedure recorded from the class group, not from here.",
+      "manage_notice": "Freezing is free for the team and goes to the audit log with its reason: the seat goes back to the class group, and the student later picks up in the module they stopped in. Withdrawing has no rule yet.",
       "open_student": "Open the student file",
       "open_class_group": "Open the class group",
       "field_origin": "Channel",
@@ -862,7 +864,8 @@
     "seat_status": {
       "reserved": "Reserved",
       "confirmed": "Confirmed",
-      "released": "Released"
+      "released": "Released",
+      "frozen": "Frozen"
     },
     "modality": {
       "online": "Online",
@@ -897,7 +900,8 @@
       "monthly_payment_rejected": "Module payment rejected",
       "grade_corrected": "Final grade corrected",
       "grade_corrected_did_not_sit": "Result corrected to DA",
-      "monthly_module_due": "Monthly module to pay"
+      "monthly_module_due": "Monthly module to pay",
+      "enrollment_freeze_reengagement": "Frozen enrollment reminder"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -927,7 +931,8 @@
       "monthly_payment_rejected": "When the review rejects the receipt of a monthly module.",
       "grade_corrected": "The academic supervision corrects a posted grade",
       "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA",
-      "monthly_module_due": "When progression takes a monthly student into a module nobody paid for."
+      "monthly_module_due": "When progression takes a monthly student into a module nobody paid for.",
+      "enrollment_freeze_reengagement": "1, 3 and 6 months after an enrollment is frozen."
     },
     "email_audience": {
       "student": "Student",
@@ -958,7 +963,8 @@
       "monthly_payment_rejected": "if it is a monthly module and is rejected",
       "grade_corrected": "Only if a posted grade is corrected",
       "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)",
-      "monthly_module_due": "if monthly and the module is not paid"
+      "monthly_module_due": "if monthly and the module is not paid",
+      "enrollment_freeze_reengagement": "if the enrollment is still frozen"
     },
     "email_delivery_reason": {
       "provider_unavailable": "The provider did not answer",
@@ -2203,6 +2209,8 @@
       "guardian_consent_accepted": "Consent accepted by the guardian",
       "enrollment_created": "Enrollment opened from the panel",
       "enrollment_moved": "Enrollment moved to another class group",
+      "enrollment_frozen": "Enrollment frozen",
+      "enrollment_unfrozen": "Enrollment unfrozen",
       "payment_approved": "Payment approved",
       "payment_rejected": "Payment rejected",
       "receipt_viewed": "Receipt viewed",
@@ -2767,6 +2775,51 @@
       "error_not_published": "There is no published certificate text yet.",
       "error_missing_value": "The certificate text prints a field some student does not have. Check it in Settings → Documents.",
       "error_failed": "Could not issue. Try again."
+    },
+    "academic_status": {
+      "active": "Studying",
+      "frozen": "Frozen",
+      "completed": "Completed"
+    },
+    "freeze_enrollment": {
+      "freeze": "Freeze",
+      "return": "Bring back from freeze",
+      "freeze_title": "Freeze enrollment",
+      "freeze_subtitle": "{student} leaves {from}. The seat goes back to the class group and the enrollment is kept at the module it is on.",
+      "return_title": "Bring back from freeze",
+      "return_subtitle": "{student} picks up in the module they stopped in. Choose a group of the same module.",
+      "field_reason": "Reason",
+      "reason_placeholder": "Why it is frozen (goes to the audit log)",
+      "field_run": "Module group",
+      "run_placeholder": "Choose the group",
+      "run_option": "{code} · Module {module} · {schedule} · starts {start}",
+      "run_option_no_module": "{code} · {schedule} · starts {start}",
+      "no_start": "no date",
+      "seats": "{taken} of {capacity} seats taken",
+      "no_runs": "There is no open group of this module. Open one in Academic and come back here.",
+      "loading": "Loading groups…",
+      "load_error": "We could not load the groups.",
+      "over_capacity_title": "The class group is full",
+      "over_capacity_body": "I confirm the student comes in above capacity.",
+      "fee_notice": "The platform charges nothing: any fee was settled outside.",
+      "cancel": "Cancel",
+      "submit_freeze": "Freeze",
+      "submit_return": "Bring back",
+      "saving": "Saving…",
+      "frozen": "Enrollment frozen.",
+      "returned": "The student is back in class.",
+      "returned_over_capacity": "The student is back in class above capacity.",
+      "error": {
+        "freeze_seat_not_confirmed": "Only an enrollment with a confirmed seat can be frozen.",
+        "freeze_course_disallows": "This course does not allow freezing.",
+        "freeze_class_group_not_running": "The class group is no longer enrolling nor in progress.",
+        "freeze_reason_required": "Write the reason (up to 500 characters).",
+        "freeze_conflict": "The enrollment changed meanwhile. Close and open it again.",
+        "return_not_frozen": "The enrollment is not frozen any more.",
+        "return_target_unavailable": "That group is no longer open or is not of the student’s module.",
+        "class_group_full": "The class group filled up. Confirm the over-capacity seat to continue.",
+        "failed": "We could not save. Try again."
+      }
     }
   }
 }
