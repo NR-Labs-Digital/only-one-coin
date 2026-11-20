@@ -1,56 +1,49 @@
-import type {
-  ClassGroupDetail,
-  ClassGroupRow,
-  CourseLanguage,
-  EnrollmentRow,
-} from './types'
-
 /**
- * Report aggregation, in one place.
+ * The reports screen's data (OOC-40), as `GET /api/v1/reports` serves it.
  *
- * The reports screen does not hold a dataset of its own: it is the enrollment
- * ledger and the class group list read from a different angle. Money comes from
- * the enrollments (approved is collected, open is owed, rejected is neither)
- * and occupancy comes from the class groups — a seat is taken the moment it is
- * reserved, so the seat map is never rebuilt from enrollment history.
+ * Nothing is summed here any more. The numbers are built every night by
+ * `apps/api` (`ReportFactsRefresher`) and read already cut — by course,
+ * language or teacher — so the screen loads in the same time at 20k
+ * enrollments a month as at twenty (CLAUDE.md §1). Definitions live in that
+ * file; the screen only draws them.
  *
- * Paid procedures (the constancia, `docs/REGRAS-NEGOCIO.md` §5) are deliberately
- * out: they are settled in the payments section and carry no academic period to
- * be reported under. The screen says so rather than folding them in silently.
- *
- * UI-side derivation for the mockup — against the real API these numbers are a
- * server query, because the ledger reaches 20k rows a month in peak season
- * (CLAUDE.md §1) and nobody aggregates that in a browser.
+ * Paid procedures (the constancia, `docs/REGRAS-NEGOCIO.md` §5) are out: they
+ * carry no class group to be reported under, and Payments already counts them.
  */
 
 /** How the table is cut. The period is a filter, not a cut — it scopes them all. */
 export type ReportDimension = 'course' | 'language' | 'teacher'
 
-/** Every period, filter included. `all` is a scope, never a period's name. */
+export const REPORT_DIMENSIONS: ReportDimension[] = ['course', 'language', 'teacher']
+
+/** Every period, as a filter value. `all` is a scope, never a period's name. */
 export const ALL_PERIODS = 'all'
 
 /**
- * The row's name is catalogue data — a course, a language, a teacher — and is
- * shown as written (CLAUDE.md §4). The exception is history pointing at a
- * course the catalog dropped: there is no name left to print, and the locale
- * has to say so in words rather than the screen showing an empty cell.
+ * A row's name: catalog data shown as written (CLAUDE.md §4), or — by teacher —
+ * the runs nobody was allocated to, which the locale names in words.
  */
-export type ReportLabel = { kind: 'name'; name: string } | { kind: 'unknown' }
+export type ReportLabel = { kind: 'name'; name: string } | { kind: 'no_teacher' }
+
+export interface ReportPeriod {
+  id: string
+  name: string
+}
 
 export interface ReportRow {
   key: string
   label: ReportLabel
-  /** Second line of the name cell — the language a course belongs to. */
+  /** The language a course belongs to, under its name. */
   sublabel: string | null
+  /** Confirmed seats — the ledger's own count (OOC-55). */
   enrollments: number
-  active: number
-  /** Seats held by an enrollment whose payment is not settled yet. */
+  /** Seats still waiting for their money. */
   reserved: number
-  /** Approved money, integer cents (CLAUDE.md §5). */
+  /** Approved money, integer cents (CLAUDE.md §6). */
   collectedCents: number
-  /** Money still open — pending or under review. Rejected is not owed. */
+  /** Money still open — pending or under review. A rejection is not owed. */
   pendingCents: number
-  currency: 'PEN'
+  /** Seats held, above capacity included (OOC-155). */
   seatsTaken: number
   capacity: number
   classGroups: number
@@ -58,13 +51,11 @@ export interface ReportRow {
 
 export interface ReportTotals {
   enrollments: number
-  active: number
   reserved: number
   collectedCents: number
   pendingCents: number
-  /** How many enrollments make up `pendingCents` — money owed by how many. */
+  /** How many enrollments make up `pendingCents`. */
   pendingCount: number
-  currency: 'PEN'
   seatsTaken: number
   capacity: number
   classGroups: number
@@ -77,421 +68,75 @@ export interface ReportMonth {
   collectedCents: number
 }
 
-export interface ReportData {
+export interface RankedCourse {
+  key: string
+  name: string
+  count: number
+}
+
+export interface TrendSeries {
+  key: string
+  label: ReportLabel
+  /** One value per period, in the order of `Report.trend.periods`. */
+  values: number[]
+}
+
+/**
+ * The rankings the screen can answer today. Frozen and withdrawn enrollments
+ * wait for the academic status of OOC-84 and are not drawn — a chart of zeros
+ * would read as "nobody froze".
+ */
+export type RankingMetric = 'volume' | 'low_grades'
+
+export const RANKING_METRICS: RankingMetric[] = ['volume', 'low_grades']
+
+export interface Report {
+  /** When the figures were built — ISO; `null` = the aggregation never ran. */
+  refreshedAt: string | null
+  /** Every period the figures cover, newest first. */
+  periods: ReportPeriod[]
+  /** The period on screen; `null` = the whole history. */
+  periodId: string | null
+  dimension: ReportDimension
   rows: ReportRow[]
   totals: ReportTotals
-  /** Oldest first, with the empty months in between kept: a gap is a fact. */
+  /** Oldest first, the empty months in between kept. */
   months: ReportMonth[]
+  /** Not scoped by the period: a single ciclo has no trend in it. */
+  trend: { periods: ReportPeriod[]; series: TrendSeries[] }
+  /** Always by course, whatever the cut. */
+  rankings: { volume: RankedCourse[]; lowGrades: RankedCourse[] }
 }
 
-/** Money already in the account. Everything else is either owed or gone. */
-function isCollected(row: EnrollmentRow): boolean {
-  return row.paymentStatus === 'approved'
+export interface ReportQuery {
+  /** A period id, `all`, or `null` for the current period. */
+  period: string | null
+  dimension: ReportDimension
 }
 
-/** Money still expected — a rejected receipt is not a debt, it is a no. */
-function isOwed(row: EnrollmentRow): boolean {
-  return row.paymentStatus === 'pending' || row.paymentStatus === 'under_review'
-}
-
-/** The periods present in the data, newest first — never a list kept by hand. */
-export function listReportPeriods(
-  enrollments: EnrollmentRow[],
-  classGroups: ClassGroupRow[],
-): string[] {
-  const periods = new Set<string>()
-  for (const row of enrollments) periods.add(row.academicPeriodName)
-  for (const group of classGroups) periods.add(group.academicPeriodName)
-  return [...periods].sort((a, b) => b.localeCompare(a))
-}
-
-/**
- * Course name → language, read off the catalogue side. The enrollment carries
- * its own language, but it is resolved through the class group whose roster
- * claims it, and a roster that claims the wrong enrollment files a French
- * student under English. The catalogue is what a course's language actually is,
- * so it wins; the enrollment's copy is only the fallback for a course no class
- * group in the data opens any more.
- *
- * Built from every class group, never from the ones in scope: a course does not
- * change language between periods.
- */
-function languageIndex(classGroups: ClassGroupRow[]): Map<string, CourseLanguage> {
-  return new Map(classGroups.map((group) => [group.courseName, group.language]))
-}
-
-function languageOf(
-  row: EnrollmentRow,
-  index: Map<string, CourseLanguage>,
-): CourseLanguage | null {
-  return index.get(row.courseName) ?? row.language
-}
-
-/** The key both sides of the join agree on, so a course meets its own seats. */
-function enrollmentKey(
-  row: EnrollmentRow,
-  dimension: ReportDimension,
-  language: CourseLanguage | null,
-): string {
-  switch (dimension) {
-    case 'course':
-      return `course:${row.courseName}`
-    case 'language':
-      return language ? `language:${language.id}` : 'language:unknown'
-    case 'teacher':
-      return `teacher:${row.teacherName}`
-  }
-}
-
-function classGroupKey(group: ClassGroupRow, dimension: ReportDimension): string {
-  switch (dimension) {
-    case 'course':
-      return `course:${group.courseName}`
-    case 'language':
-      return `language:${group.language.id}`
-    case 'teacher':
-      return `teacher:${group.teacherName}`
-  }
-}
-
-function enrollmentLabel(
-  row: EnrollmentRow,
-  dimension: ReportDimension,
-  language: CourseLanguage | null,
-): { label: ReportLabel; sublabel: string | null } {
-  switch (dimension) {
-    case 'course':
-      return {
-        label: { kind: 'name', name: row.courseName },
-        sublabel: language?.name ?? null,
-      }
-    case 'language':
-      return {
-        label: language ? { kind: 'name', name: language.name } : { kind: 'unknown' },
-        sublabel: null,
-      }
-    case 'teacher':
-      return { label: { kind: 'name', name: row.teacherName }, sublabel: null }
-  }
-}
-
-function classGroupLabel(
-  group: ClassGroupRow,
-  dimension: ReportDimension,
-): { label: ReportLabel; sublabel: string | null } {
-  switch (dimension) {
-    case 'course':
-      return {
-        label: { kind: 'name', name: group.courseName },
-        sublabel: group.language.name,
-      }
-    case 'language':
-      return { label: { kind: 'name', name: group.language.name }, sublabel: null }
-    case 'teacher':
-      return { label: { kind: 'name', name: group.teacherName }, sublabel: null }
-  }
-}
-
-function emptyRow(
-  key: string,
-  label: ReportLabel,
-  sublabel: string | null,
-): ReportRow {
+/** The screen's query out of the URL; anything unknown falls back to the default. */
+export function parseReportQuery(search: Record<string, string | string[] | undefined>): ReportQuery {
+  const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
+  const period = first(search.period)?.trim() || null
+  const dimension = first(search.dimension)
   return {
-    key,
-    label,
-    sublabel,
-    enrollments: 0,
-    active: 0,
-    reserved: 0,
-    collectedCents: 0,
-    pendingCents: 0,
-    currency: 'PEN',
-    seatsTaken: 0,
-    capacity: 0,
-    classGroups: 0,
+    period,
+    dimension: REPORT_DIMENSIONS.includes(dimension as ReportDimension)
+      ? (dimension as ReportDimension)
+      : 'course',
   }
 }
 
-/** `2026-08` from an ISO instant, as the ledger stores it. */
-function monthOf(iso: string): string {
-  return iso.slice(0, 7)
-}
-
-/** Every month from the first to the last, so a month with nothing reads as a
- *  gap in the line instead of disappearing from it. */
-function monthsBetween(first: string, last: string): string[] {
-  const months: string[] = []
-  let year = Number(first.slice(0, 4))
-  let month = Number(first.slice(5, 7))
-  const end = last
-  for (let guard = 0; guard < 240; guard += 1) {
-    const key = `${year}-${String(month).padStart(2, '0')}`
-    months.push(key)
-    if (key >= end) break
-    month += 1
-    if (month > 12) {
-      month = 1
-      year += 1
-    }
-  }
-  return months
-}
-
-/**
- * One cut of the report: the rows, the totals behind them and the month line.
- *
- * `period` scopes both sides — `ALL_PERIODS` reads the whole history, which is
- * what a course's lifetime figure is, and a single ciclo is what the institution
- * closes against.
- */
-export function buildReport(
-  enrollments: EnrollmentRow[],
-  classGroups: ClassGroupRow[],
-  dimension: ReportDimension,
-  period: string = ALL_PERIODS,
-): ReportData {
-  const inScope = (name: string) => period === ALL_PERIODS || name === period
-
-  const scopedEnrollments = enrollments.filter((row) =>
-    inScope(row.academicPeriodName),
-  )
-  const scopedGroups = classGroups.filter((group) =>
-    inScope(group.academicPeriodName),
-  )
-
-  const languages = languageIndex(classGroups)
-  const rows = new Map<string, ReportRow>()
-
-  for (const row of scopedEnrollments) {
-    const language = languageOf(row, languages)
-    const key = enrollmentKey(row, dimension, language)
-    const { label, sublabel } = enrollmentLabel(row, dimension, language)
-    const entry = rows.get(key) ?? emptyRow(key, label, sublabel)
-    entry.enrollments += 1
-    if (row.status === 'active') entry.active += 1
-    if (row.seatStatus === 'reserved') entry.reserved += 1
-    if (isCollected(row)) entry.collectedCents += row.amountCents
-    if (isOwed(row)) entry.pendingCents += row.amountCents
-    rows.set(key, entry)
-  }
-
-  for (const group of scopedGroups) {
-    const key = classGroupKey(group, dimension)
-    const { label, sublabel } = classGroupLabel(group, dimension)
-    const entry = rows.get(key) ?? emptyRow(key, label, sublabel)
-    // A class group carries the catalogue name; an enrollment of a dropped
-    // course does not. Whichever side has a name wins the cell.
-    if (entry.label.kind === 'unknown') entry.label = label
-    entry.sublabel = sublabel ?? entry.sublabel
-    entry.seatsTaken += group.seatsTaken
-    entry.capacity += group.capacity
-    entry.classGroups += 1
-    rows.set(key, entry)
-  }
-
-  const totals: ReportTotals = {
-    enrollments: scopedEnrollments.length,
-    active: scopedEnrollments.filter((row) => row.status === 'active').length,
-    reserved: scopedEnrollments.filter((row) => row.seatStatus === 'reserved').length,
-    collectedCents: scopedEnrollments
-      .filter(isCollected)
-      .reduce((total, row) => total + row.amountCents, 0),
-    pendingCents: scopedEnrollments
-      .filter(isOwed)
-      .reduce((total, row) => total + row.amountCents, 0),
-    pendingCount: scopedEnrollments.filter(isOwed).length,
-    currency: 'PEN',
-    seatsTaken: scopedGroups.reduce((total, group) => total + group.seatsTaken, 0),
-    capacity: scopedGroups.reduce((total, group) => total + group.capacity, 0),
-    classGroups: scopedGroups.length,
-  }
-
-  return {
-    rows: [...rows.values()],
-    totals,
-    months: buildMonths(scopedEnrollments),
-  }
-}
-
-/** The month line, by the date the enrollment was opened. */
-function buildMonths(enrollments: EnrollmentRow[]): ReportMonth[] {
-  if (enrollments.length === 0) return []
-
-  const byMonth = new Map<string, ReportMonth>()
-  for (const row of enrollments) {
-    const month = monthOf(row.createdAt)
-    const entry = byMonth.get(month) ?? { month, enrollments: 0, collectedCents: 0 }
-    entry.enrollments += 1
-    if (isCollected(row)) entry.collectedCents += row.amountCents
-    byMonth.set(month, entry)
-  }
-
-  const keys = [...byMonth.keys()].sort()
-  return monthsBetween(keys[0], keys[keys.length - 1]).map(
-    (month) => byMonth.get(month) ?? { month, enrollments: 0, collectedCents: 0 },
-  )
+/** The query back into the URL, leaving the defaults out. */
+export function reportSearchParams(query: ReportQuery): URLSearchParams {
+  const params = new URLSearchParams()
+  if (query.period) params.set('period', query.period)
+  if (query.dimension !== 'course') params.set('dimension', query.dimension)
+  return params
 }
 
 /** Occupancy as a whole percentage. No class group open is not zero occupancy. */
 export function occupancyPct(seatsTaken: number, capacity: number): number | null {
   if (capacity === 0) return null
   return Math.round((seatsTaken / capacity) * 100)
-}
-
-
-/* -------------------------------------------------------------------------- */
-/* Rankings and trend — the four counts, drawn                                 */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The four questions coordination asks of a ciclo, in the order they get asked:
- * what sells, what freezes, what fails, what people walk away from.
- *
- * Always by course, whatever cut the table is on: "which course freezes most"
- * is a question about the catalog, and it would stop being one if the answer
- * changed to a teacher's name because a chip was clicked.
- */
-export type RankingMetric = 'volume' | 'frozen' | 'low_grades' | 'withdrawn'
-
-export const RANKING_METRICS: RankingMetric[] = [
-  'volume',
-  'frozen',
-  'low_grades',
-  'withdrawn',
-]
-
-export interface RankedCourse {
-  courseName: string
-  count: number
-}
-
-/**
- * A grade that did not pass: below the minimum, or a DA — the student who never
- * sat the final exam (`docs/REGRAS-NEGOCIO.md` §3). An open grade is not a low
- * one, which is why a ciclo still running reports none.
- */
-function isLowGrade(status: ClassGroupDetail['students'][number]['gradeStatus']): boolean {
-  return status === 'failed' || status === 'auto_failed'
-}
-
-function ranked(counts: Map<string, number>): RankedCourse[] {
-  return [...counts]
-    .filter(([, count]) => count > 0)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([courseName, count]) => ({ courseName, count }))
-}
-
-/**
- * Each count, by course, biggest first — the shape a bar chart is drawn from.
- *
- * Volume is read off the enrollment ledger; the other three are read off the
- * class group rosters, because that is where a grade and an administrative
- * procedure are recorded — a procedure is something coordination registers over
- * an enrollment (`docs/REGRAS-NEGOCIO.md` §5), never something the ledger row
- * carries by itself.
- *
- * An empty list means nothing of the kind happened in the period. That is an
- * answer, not a missing number: a ciclo still enrolling has no closed grades
- * yet, and the chart has to say so instead of drawing courses at zero.
- */
-export function buildRankings(
-  enrollments: EnrollmentRow[],
-  rosters: ClassGroupDetail[],
-  period: string = ALL_PERIODS,
-): Record<RankingMetric, RankedCourse[]> {
-  const inScope = (name: string) => period === ALL_PERIODS || name === period
-
-  const volume = new Map<string, number>()
-  for (const row of enrollments) {
-    if (!inScope(row.academicPeriodName)) continue
-    volume.set(row.courseName, (volume.get(row.courseName) ?? 0) + 1)
-  }
-
-  const frozen = new Map<string, number>()
-  const withdrawn = new Map<string, number>()
-  const lowGrades = new Map<string, number>()
-
-  for (const group of rosters) {
-    if (!inScope(group.academicPeriodName)) continue
-    for (const student of group.students) {
-      if (student.procedure === 'frozen') {
-        frozen.set(group.courseName, (frozen.get(group.courseName) ?? 0) + 1)
-      }
-      if (student.procedure === 'withdrawn') {
-        withdrawn.set(group.courseName, (withdrawn.get(group.courseName) ?? 0) + 1)
-      }
-      if (isLowGrade(student.gradeStatus)) {
-        lowGrades.set(group.courseName, (lowGrades.get(group.courseName) ?? 0) + 1)
-      }
-    }
-  }
-
-  return {
-    volume: ranked(volume),
-    frozen: ranked(frozen),
-    low_grades: ranked(lowGrades),
-    withdrawn: ranked(withdrawn),
-  }
-}
-
-export interface TrendSeries {
-  key: string
-  label: ReportLabel
-  /** One value per period, in the same order as `TrendData.periods`. */
-  values: number[]
-}
-
-export interface TrendData {
-  /** Oldest ciclo first — a trend read right to left is not a trend. */
-  periods: string[]
-  series: TrendSeries[]
-}
-
-/**
- * How each course — or language, or teacher — moved from one ciclo to the next.
- *
- * Deliberately **not** scoped by the period filter: a single ciclo has no
- * trend in it, and a chart that emptied out the moment somebody filtered would
- * be answering a different question than the one it is titled with. It follows
- * the cut, so it stays the same subject as the rest of the screen, and it is
- * capped at `limit` lines — past four, a line chart is a plate of spaghetti.
- */
-export function buildTrend(
-  enrollments: EnrollmentRow[],
-  classGroups: ClassGroupRow[],
-  dimension: ReportDimension,
-  limit: number,
-): TrendData {
-  // Chronological, which is the reverse of how the filter lists them.
-  const periods = listReportPeriods(enrollments, classGroups).reverse()
-  const index = new Map(periods.map((period, position) => [period, position]))
-
-  const languages = languageIndex(classGroups)
-  const series = new Map<string, TrendSeries>()
-
-  for (const row of enrollments) {
-    const position = index.get(row.academicPeriodName)
-    if (position === undefined) continue
-
-    const language = languageOf(row, languages)
-    const key = enrollmentKey(row, dimension, language)
-    const entry =
-      series.get(key) ??
-      ({
-        key,
-        label: enrollmentLabel(row, dimension, language).label,
-        values: periods.map(() => 0),
-      } satisfies TrendSeries)
-    entry.values[position] += 1
-    series.set(key, entry)
-  }
-
-  const total = (item: TrendSeries) =>
-    item.values.reduce((sum, value) => sum + value, 0)
-
-  return {
-    periods,
-    series: [...series.values()].sort((a, b) => total(b) - total(a)).slice(0, limit),
-  }
 }

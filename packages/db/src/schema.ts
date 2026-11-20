@@ -4,6 +4,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -12,6 +13,7 @@ import {
   pgSequence,
   pgTable,
   pgView,
+  primaryKey,
   text,
   time,
   timestamp,
@@ -1971,3 +1973,63 @@ export const documents = pgTable(
     index("documents_pending_idx").on(table.createdAt).where(sql`${table.status} = 'pending'`),
   ],
 );
+
+// The reports' nightly aggregation (OOC-40). Derived data, never a record of
+// anything: the `report-refresh` worker rebuilds all three in one transaction
+// (delete + insert … select), so a reader sees last night's figures or the new
+// ones, never half of each. Keyed by module run — the finest grain a report
+// cuts by (the run carries the teacher, its class group the course and the
+// period) — and holding counts only: names are joined on read, so renaming a
+// course or allocating a teacher shows at once. Money is `bigint` cents
+// because it is a sum of many `amount_cents` (CLAUDE.md §6), never a float.
+
+/** Per run: seats, money and grades as they stood at the refresh. */
+export const reportRunFacts = pgTable("report_run_facts", {
+  classGroupModuleId: uuid("class_group_module_id")
+    .primaryKey()
+    .references(() => classGroupModules.id, { onDelete: "restrict" }),
+  /** Confirmed, unretired seats — the ledger's own count (OOC-55). */
+  enrollments: integer("enrollments").notNull(),
+  /** Seats still held while the payment is open. */
+  reserved: integer("reserved").notNull(),
+  /** Approved money paying for the run's enrollments. */
+  collectedCents: bigint("collected_cents", { mode: "number" }).notNull(),
+  /** Money still open — pending or under review. A rejection is not owed. */
+  pendingCents: bigint("pending_cents", { mode: "number" }).notNull(),
+  /** How many enrollments make up `pending_cents`. */
+  pendingCount: integer("pending_count").notNull(),
+  /** Current grades below the passing grade in force at the refresh, DA included. */
+  lowGrades: integer("low_grades").notNull(),
+});
+
+/** Per run and Lima month: enrollments by first approval, money by decision. */
+export const reportMonthFacts = pgTable(
+  "report_month_facts",
+  {
+    classGroupModuleId: uuid("class_group_module_id")
+      .notNull()
+      .references(() => classGroupModules.id, { onDelete: "restrict" }),
+    /** First day of the month, Lima calendar. */
+    month: date("month", { mode: "string" }).notNull(),
+    enrollments: integer("enrollments").notNull(),
+    collectedCents: bigint("collected_cents", { mode: "number" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.classGroupModuleId, table.month] })],
+);
+
+/** Per class group: the seat counters as they stood at the refresh. */
+export const reportClassGroupFacts = pgTable("report_class_group_facts", {
+  classGroupId: uuid("class_group_id")
+    .primaryKey()
+    .references(() => classGroups.id, { onDelete: "restrict" }),
+  /** `seats_taken + seats_over` — the "30 / 30 +2" of Académico (OOC-155). */
+  seatsTaken: integer("seats_taken").notNull(),
+  capacity: integer("capacity").notNull(),
+});
+
+/** One row per refresh: when the figures above were built. */
+export const reportRefreshes = pgTable("report_refreshes", {
+  id: uuidPk(),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull().defaultNow(),
+  durationMs: integer("duration_ms").notNull(),
+});

@@ -16,6 +16,10 @@ import {
   scheduleOutboxRelay,
   scheduleReceiptUploadRelay,
   scheduleSeatHoldSweep,
+  createReportRefreshQueue,
+  scheduleReportRefresh,
+  enqueueReportRefreshNow,
+  REPORT_REFRESH_STALE_AFTER_MS,
 } from "@ooc/queue";
 import {
   ExtractReceiptUseCase,
@@ -36,6 +40,7 @@ import { startReceiptValidateWorker } from "./workers/receipt-validate.worker.js
 import { startSeatHoldSweepWorker } from "./workers/seat-hold-sweep.worker.js";
 import { startAttachmentSweepWorker } from "./workers/attachment-sweep.worker.js";
 import { startConstanciaIssueWorker } from "./workers/constancia-issue.worker.js";
+import { startReportRefreshWorker } from "./workers/report-refresh.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
 
 const {
@@ -48,6 +53,7 @@ const {
   repositories,
   useCases,
   documents,
+  reportFacts,
 } = container;
 
 const app = await buildApp();
@@ -97,6 +103,16 @@ const attachmentSweepWorker = startAttachmentSweepWorker(connection, logger, {
 const constanciaIssueQueue = createConstanciaIssueQueue(connection);
 await scheduleConstanciaIssue(constanciaIssueQueue);
 const constanciaIssueWorker = startConstanciaIssueWorker(connection, logger, { issued: documents.issued });
+// Reports (OOC-40): the aggregation the screen reads is rebuilt every night,
+// and right away when the last build is stale (a missed night, or the first
+// boot with the tables empty) — so a deploy never leaves the screen blank.
+const reportRefreshQueue = createReportRefreshQueue(connection);
+await scheduleReportRefresh(reportRefreshQueue);
+const reportRefreshWorker = startReportRefreshWorker(connection, logger, { refresher: reportFacts });
+const lastReportRefresh = await reportFacts.lastRefreshedAt();
+if (!lastReportRefresh || Date.now() - lastReportRefresh.getTime() > REPORT_REFRESH_STALE_AFTER_MS) {
+  await enqueueReportRefreshNow(reportRefreshQueue);
+}
 
 // Receipt uploads (OOC-19): confirm flips a row to `uploaded`, the relay
 // offers it to the normalize queue, the worker downscales/greyscales/strips
@@ -174,7 +190,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -206,6 +222,7 @@ async function shutdown() {
   await seatHoldSweepWorker.close();
   await attachmentSweepWorker.close();
   await constanciaIssueWorker.close();
+  await reportRefreshWorker.close();
   await receiptUploadRelayWorker.close();
   await receiptNormalizeWorker.close();
   await receiptScreenWorker.close();
@@ -217,6 +234,7 @@ async function shutdown() {
   await seatHoldSweepQueue.close();
   await attachmentSweepQueue.close();
   await constanciaIssueQueue.close();
+  await reportRefreshQueue.close();
   await receiptUploadRelayQueue.close();
   await receiptNormalizeQueue.close();
   await receiptScreenQueue.close();

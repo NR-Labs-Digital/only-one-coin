@@ -1,24 +1,23 @@
 'use client'
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, useTransition, type ReactNode } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import type {
-  ClassGroupDetail,
-  ClassGroupRow,
-  EnrollmentRow,
-} from '@/lib/backoffice/types'
 import {
   ALL_PERIODS,
-  buildRankings,
-  buildReport,
-  buildTrend,
-  listReportPeriods,
   occupancyPct,
   RANKING_METRICS,
+  REPORT_DIMENSIONS,
+  reportSearchParams,
+  type RankingMetric,
+  type Report,
   type ReportDimension,
+  type ReportLabel,
   type ReportRow,
 } from '@/lib/backoffice/reports'
+import { CSV_BOM, csvLine, downloadCsv } from '@/lib/backoffice/csv'
 import {
+  formatDateTime,
   formatMoney,
   formatMoneyCompact,
   formatMoneyPlain,
@@ -54,10 +53,7 @@ import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 
 /** The cuts, in the order the module was promised in: course first. */
-const DIMENSIONS: ReportDimension[] = ['course', 'language', 'teacher']
-
-/** Where the screen opens — and what the filter button counts as untouched. */
-const DEFAULT_DIMENSION: ReportDimension = 'course'
+const DIMENSIONS: ReportDimension[] = REPORT_DIMENSIONS
 
 /**
  * Two ways of reading the same period, named after what they are: the charts,
@@ -77,6 +73,9 @@ type SortKey = 'collected' | 'enrollments' | 'occupancy' | 'name'
 
 const SORTS: SortKey[] = ['collected', 'enrollments', 'occupancy', 'name']
 
+/** Every amount the report sums is in soles (CLAUDE.md §4). */
+const CURRENCY = 'PEN'
+
 const selectClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
@@ -90,62 +89,47 @@ const selectClass =
  *
  * Nothing here decides anything. The row is not a link into a queue, because a
  * report that ends in a decision stops being read as a report.
+ *
+ * The figures are the API's (`GET /api/v1/reports`, OOC-40), built every night:
+ * the period and the cut are the URL, and changing either is a server render
+ * of an aggregation already done. The stamp beside the filters says when.
  */
-export function ReportsView({
-  enrollments,
-  classGroups,
-  rosters,
-}: {
-  enrollments: EnrollmentRow[]
-  classGroups: ClassGroupRow[]
-  /** The rosters, where a grade and an administrative procedure are recorded. */
-  rosters: ClassGroupDetail[]
-}) {
+export function ReportsView({ report }: { report: Report }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  /* The figures on screen stay, dimmed, while the next cut is read. */
+  const [pending, startTransition] = useTransition()
 
-  const periods = useMemo(
-    () => listReportPeriods(enrollments, classGroups),
-    [enrollments, classGroups],
-  )
-
-  /* The current ciclo is what the institution closes against, so it is where
-     the screen opens — the whole history is one click away. */
-  const defaultPeriod = periods[0] ?? ALL_PERIODS
-  const [period, setPeriod] = useState<string>(defaultPeriod)
-  const [dimension, setDimension] = useState<ReportDimension>(DEFAULT_DIMENSION)
+  const { periods, trend, rankings, dimension } = report
+  /* `null` from the API is the whole history; the chips speak `all`. */
+  const period = report.periodId ?? ALL_PERIODS
   const [sort, setSort] = useState<SortKey>('collected')
   const [tab, setTab] = useState<Tab>('charts')
 
-  /* What the reader moved away from the state the screen opens in — the number
-     on the button, so a filter left on last week is not invisible. */
-  const activeFilters =
-    (period === defaultPeriod ? 0 : 1) + (dimension === DEFAULT_DIMENSION ? 0 : 1)
+  /* What the reader moved away from the state the screen opens in (the current
+     period, by course) — the number on the button, so a filter left on last
+     week is not invisible. */
+  const activeFilters = (searchParams.get('period') ? 1 : 0) + (dimension === 'course' ? 0 : 1)
 
-  const report = useMemo(
-    () => buildReport(enrollments, classGroups, dimension, period),
-    [enrollments, classGroups, dimension, period],
-  )
+  function navigate(next: { period?: string; dimension?: ReportDimension }) {
+    const search = reportSearchParams({
+      period: next.period ?? searchParams.get('period'),
+      dimension: next.dimension ?? dimension,
+    }).toString()
+    startTransition(() => {
+      router.push(search ? `${pathname}?${search}` : pathname, { scroll: false })
+    })
+  }
 
-  /* Always by course, whatever cut the table is on — see `buildRankings`. */
-  const rankings = useMemo(
-    () => buildRankings(enrollments, rosters, period),
-    [enrollments, rosters, period],
-  )
-
-  /* The one chart the period filter does not scope: a single ciclo has no
-     trend inside it. It follows the cut, so it stays the same subject as the
-     rest of the screen, and its own line says which ciclos it covers. */
-  const trend = useMemo(
-    () => buildTrend(enrollments, classGroups, dimension, DONUT_SLICES),
-    [enrollments, classGroups, dimension],
-  )
-
-  const labelOf = useMemo(
-    () => (row: ReportRow) =>
-      row.label.kind === 'name' ? row.label.name : t('reports.unknown_label'),
+  const nameOf = useMemo(
+    () => (label: ReportLabel) =>
+      label.kind === 'name' ? label.name : t('reports.no_teacher_label'),
     [t],
   )
+  const labelOf = useMemo(() => (row: ReportRow) => nameOf(row.label), [nameOf])
 
   const rows = useMemo(() => {
     const sorted = [...report.rows]
@@ -171,9 +155,12 @@ export function ReportsView({
 
   const { totals } = report
   const totalOccupancy = occupancyPct(totals.seatsTaken, totals.capacity)
-  const periodLabel = period === ALL_PERIODS ? t('reports.period_all') : period
+  const periodLabel =
+    report.periodId === null
+      ? t('reports.period_all')
+      : (periods.find((item) => item.id === report.periodId)?.name ?? t('reports.period_empty'))
 
-  const money = (cents: number) => formatMoney(cents, totals.currency, locale)
+  const money = (cents: number) => formatMoney(cents, CURRENCY, locale)
 
   /* The month series, twice: how many came in, and how much of it is already
      approved. Two charts and never one with two scales — the alignment of two
@@ -183,7 +170,7 @@ export function ReportsView({
     const line: SeriesPoint[] = []
     for (const month of report.months) {
       const label = formatMonth(month.month, locale)
-      const amount = formatMoney(month.collectedCents, totals.currency, locale)
+      const amount = formatMoney(month.collectedCents, CURRENCY, locale)
       bars.push({
         key: month.month,
         label,
@@ -204,7 +191,7 @@ export function ReportsView({
       })
     }
     return { bars, line }
-  }, [report.months, locale, t, totals.currency])
+  }, [report.months, locale, t])
 
   /* The donut follows the cut: what share of the ciclo each course — or
      language, or teacher — is. Four slices and a tail, because a donut past
@@ -253,42 +240,43 @@ export function ReportsView({
   const trendLines = useMemo<TrendLine[]>(
     () =>
       trend.series.map((line) => {
-        const label =
-          line.label.kind === 'name' ? line.label.name : t('reports.unknown_label')
+        const label = nameOf(line.label)
         return {
           key: line.key,
           label,
           points: line.values.map((value, index) => ({
-            key: `${line.key}-${trend.periods[index]}`,
-            label: trend.periods[index],
+            key: `${line.key}-${trend.periods[index]?.id}`,
+            label: trend.periods[index]?.name ?? '',
             value,
             caption: String(value),
             hint: t('reports.trend_point_hint', {
               label,
-              period: trend.periods[index],
+              period: trend.periods[index]?.name ?? '',
               count: value,
             }),
           })),
         }
       }),
-    [trend, t],
+    [trend, t, nameOf],
   )
 
-  const rankingItems = useMemo(
-    () =>
-      Object.fromEntries(
-        RANKING_METRICS.map((metric) => [
-          metric,
-          rankings[metric].map<RankedItem>((course) => ({
-            key: course.courseName,
-            label: course.courseName,
-            value: course.count,
-            caption: String(course.count),
-          })),
-        ]),
-      ) as Record<(typeof RANKING_METRICS)[number], RankedItem[]>,
-    [rankings],
-  )
+  const rankingItems = useMemo(() => {
+    const source: Record<RankingMetric, typeof rankings.volume> = {
+      volume: rankings.volume,
+      low_grades: rankings.lowGrades,
+    }
+    return Object.fromEntries(
+      RANKING_METRICS.map((metric) => [
+        metric,
+        source[metric].map<RankedItem>((course) => ({
+          key: course.key,
+          label: course.name,
+          value: course.count,
+          caption: String(course.count),
+        })),
+      ]),
+    ) as Record<RankingMetric, RankedItem[]>
+  }, [rankings])
 
   /**
    * The table as the reader sees it, handed to a spreadsheet. Same rows, same
@@ -296,7 +284,7 @@ export function ReportsView({
    * worse than no export.
    */
   function exportCsv() {
-    const cells: string[][] = [
+    const cells: (string | number)[][] = [
       [
         t(`reports.col_${dimension}`),
         t('reports.col_enrollments'),
@@ -307,39 +295,28 @@ export function ReportsView({
       ],
       ...rows.map((row) => [
         labelOf(row),
-        String(row.enrollments),
+        row.enrollments,
         formatMoneyPlain(row.collectedCents, locale),
         formatMoneyPlain(row.pendingCents, locale),
-        String(row.seatsTaken),
-        String(row.capacity),
+        row.seatsTaken,
+        row.capacity,
       ]),
       [
         t('reports.total_row'),
-        String(totals.enrollments),
+        totals.enrollments,
         formatMoneyPlain(totals.collectedCents, locale),
         formatMoneyPlain(totals.pendingCents, locale),
-        String(totals.seatsTaken),
-        String(totals.capacity),
+        totals.seatsTaken,
+        totals.capacity,
       ],
     ]
-    // Semicolons, because the decimal separator of the three locales is a
-    // comma in two of them — a comma-separated file opens as one column.
-    const csv = cells
-      .map((line) =>
-        line.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(';'),
-      )
-      .join('\r\n')
-    // The BOM is what makes a spreadsheet read the accents as accents.
-    const url = URL.createObjectURL(
-      new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
+    // Through `csv.ts`, like every export of the panel: a course or teacher
+    // name opening with `=` goes out as text, never as a formula (CLAUDE.md
+    // §8). Money is the formatted amount, quoted where its comma needs it.
+    downloadCsv(
+      `${t('reports.export_filename')}-${slug(periodLabel)}.csv`,
+      CSV_BOM + cells.map(csvLine).join(''),
     )
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${t('reports.export_filename')}-${slug(periodLabel)}.csv`
-    document.body.append(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
   }
 
   return (
@@ -359,15 +336,15 @@ export function ReportsView({
             <FilterRow label={t('reports.period_label')}>
               <Chip
                 active={period === ALL_PERIODS}
-                onClick={() => setPeriod(ALL_PERIODS)}
+                onClick={() => navigate({ period: ALL_PERIODS })}
                 label={t('reports.period_all')}
               />
-              {periods.map((name) => (
+              {periods.map((item) => (
                 <Chip
-                  key={name}
-                  active={period === name}
-                  onClick={() => setPeriod(name)}
-                  label={name}
+                  key={item.id}
+                  active={period === item.id}
+                  onClick={() => navigate({ period: item.id })}
+                  label={item.name}
                 />
               ))}
             </FilterRow>
@@ -376,7 +353,7 @@ export function ReportsView({
                 <Chip
                   key={value}
                   active={dimension === value}
-                  onClick={() => setDimension(value)}
+                  onClick={() => navigate({ dimension: value })}
                   label={t(`reports.dimension_${value}`)}
                 />
               ))}
@@ -388,8 +365,20 @@ export function ReportsView({
               group: t(`reports.dimension_${dimension}`),
             })}
           </span>
+          {/* Last night's figures, and the screen says so: a payment approved
+              this morning is not in here yet, and it is in Pagos. */}
+          {report.refreshedAt && (
+            <span className="text-xs text-muted-foreground sm:ml-auto">
+              {t('reports.refreshed_at', { date: formatDateTime(report.refreshedAt, locale) })}
+            </span>
+          )}
         </Toolbar>
       </div>
+
+      <div
+        className={`flex flex-col gap-4 transition-opacity ${pending ? 'opacity-60' : ''}`}
+        aria-busy={pending}
+      >
 
       {/* Not `SectionTabs`: those are real routes, and these two are one
           report read two ways — the same filter, the same period, no URL to
@@ -482,7 +471,7 @@ export function ReportsView({
               <LineSeries
                 points={monthPoints.line}
                 formatTick={(value) =>
-                  formatMoneyCompact(value, totals.currency, locale)
+                  formatMoneyCompact(value, CURRENCY, locale)
                 }
               />
             )}
@@ -505,9 +494,10 @@ export function ReportsView({
           />
         </Card>
       </AutoGrid>
-      {/* The four counts, drawn. A card that spelled out the winner hid the
+      {/* The rankings, drawn. A card that spelled out the winner hid the
           only thing worth reading — the distance between first and second —
-          and a ranking is a bar chart, not a sentence. */}
+          and a ranking is a bar chart, not a sentence. Frozen and withdrawn
+          wait for the academic status of OOC-84 and are not drawn. */}
         <div className="flex flex-col gap-3">
           <Card className="flex flex-col gap-3 p-4">
             <ChartHeading
@@ -522,9 +512,7 @@ export function ReportsView({
             />
           </Card>
 
-          {/* Wide enough for two per row rather than three and a stray: four
-              rankings read as a set, and a set with one orphan below it reads
-              as an accident. */}
+          {/* Wide enough for two per row: the two rankings read as a pair. */}
           <AutoGrid min="26rem" gap="gap-3">
             {RANKING_METRICS.map((metric) => (
               <Card key={metric} className="flex flex-col gap-3 p-4">
@@ -702,6 +690,7 @@ export function ReportsView({
 
         </>
       )}
+      </div>
     </div>
   )
 }
