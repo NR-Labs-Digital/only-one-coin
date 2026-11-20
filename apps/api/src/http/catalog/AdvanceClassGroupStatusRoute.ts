@@ -3,7 +3,7 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
+import { CLASS_GROUP_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -12,7 +12,7 @@ import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const advanceClassGroupStatusRoute = RouteBuilder.post("/catalog/class-groups/:id/status")
   .docs({ tags: ["Catalog"], summary: "Advance a class group to its next status" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .roles(...CLASS_GROUP_WRITE_ROLES)
   .params(IdParamsSchema)
   .body(z.object({ to: ClassGroupStatusSchema }))
   .response(200, IdResponseSchema.extend({ status: ClassGroupStatusSchema }))

@@ -20,7 +20,9 @@ import {
   canMoveStudentsOn,
   canReadGrades,
   canIssueCertificates,
+  canManageWaitlist,
   canReadCertificates,
+  canRetireCatalogEntry,
 } from '@/lib/backoffice/permissions'
 import { getClassGroupGradeSheet } from '@/lib/backoffice/grades'
 import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
@@ -73,6 +75,8 @@ export default async function ClassGroupDetailPage({
   if (!group) notFound()
 
   const canManage = canCreateClassGroup(staff.role)
+  // The waitlist carries national ids: not every class-group writer reads it (OOC-95).
+  const managesWaitlist = canManageWaitlist(staff.role)
   /* The grade sheet is the supervision's (OOC-102). Who cannot read it never
      asks — the card is not there, as with the waitlist. */
   const readsGrades = canReadGrades(staff.role)
@@ -85,7 +89,7 @@ export default async function ClassGroupDetailPage({
     getClassGroupRoster(group.id),
     // The same readers as the roster (OOC-86).
     getClassGroupMonthly(group.id),
-    canManage ? listCatalogWaitlist(group.id) : Promise.resolve(null),
+    managesWaitlist ? listCatalogWaitlist(group.id) : Promise.resolve(null),
     listCatalogCourses(),
     canManage ? listTeacherOptions() : Promise.resolve(null),
     getPlatformSettings(),
@@ -213,6 +217,7 @@ export default async function ClassGroupDetailPage({
         teachers={teachers}
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
+        canRetire={canRetireCatalogEntry(staff.role)}
       />
 
       <ModuleRunsCard
@@ -253,7 +258,7 @@ export default async function ClassGroupDetailPage({
         <WaitlistCard
           group={group}
           entries={waitlist}
-          canManage={canManage}
+          canManage={managesWaitlist}
           canEnroll={canCreateEnrollment(staff.role)}
         />
       )}
