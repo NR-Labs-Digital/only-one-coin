@@ -243,6 +243,7 @@ import { ListPeriodsQuery } from "./infra/persistence/catalog/ListPeriodsQuery.j
 import { ListClassGroupsQuery } from "./infra/persistence/catalog/ListClassGroupsQuery.js";
 import { ListWaitlistQuery } from "./infra/persistence/catalog/ListWaitlistQuery.js";
 import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRosterQuery.js";
+import { ClassGroupMonthlyQuery } from "./infra/persistence/catalog/ClassGroupMonthlyQuery.js";
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
 import { DrizzleGradeRepository } from "./infra/persistence/teaching/DrizzleGradeRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
@@ -476,6 +477,7 @@ export interface AppQueries {
   listClassGroups: ListClassGroupsQuery;
   listWaitlist: ListWaitlistQuery;
   classGroupRoster: ClassGroupRosterQuery;
+  classGroupMonthly: ClassGroupMonthlyQuery;
   listStaff: ListStaffQuery;
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   auditLog: AuditLogQuery;
@@ -1125,6 +1127,7 @@ function buildContainer(): AppContainer {
       listClassGroups,
       listWaitlist,
       classGroupRoster,
+      classGroupMonthly: new ClassGroupMonthlyQuery(db),
       listStaff,
       listStaffRoleChanges,
       auditLog: auditLogQuery,

@@ -55,3 +55,22 @@ describe("the portal's monthly routes", () => {
     expect((await post(url, false)).statusCode).toBe(401);
   });
 });
+
+describe("a class group's monthly seats", () => {
+  // The roster's readers: billing settles money in Payments and sees no class
+  // group, the teacher reads their own runs in /teaching, the student their portal.
+  it.each(["billing", "teacher", "student"] as Role[])("GET refuses %s", async (role) => {
+    signInAs(role);
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/catalog/class-groups/${ENROLLMENT}/monthly`,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+    });
+    expect(response.statusCode).toBe(403);
+  });
+
+  it("GET refuses a request without a session", async () => {
+    const response = await app.inject({ method: "GET", url: `/api/v1/catalog/class-groups/${ENROLLMENT}/monthly` });
+    expect(response.statusCode).toBe(401);
+  });
+});

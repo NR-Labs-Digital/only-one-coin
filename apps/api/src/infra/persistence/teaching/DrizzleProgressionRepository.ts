@@ -2,6 +2,7 @@ import { auditLog, classGroupModules, classGroups, courses, currentGrades, enrol
 import type { GradeValue, IProgressionRepository, ProgressionRun, ProgressionSeat } from "@ooc/domain";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { queueMonthlyDueReminders } from "@/infra/persistence/payment/monthlyReminders.js";
 import { enrollmentInModule } from "../catalog/classGroupModuleSql.js";
 
 class ProgressionConflict extends Error {
@@ -113,6 +114,7 @@ export class DrizzleProgressionRepository implements IProgressionRepository {
                 where earlier.enrollment_id = ${seat.enrollmentId}
                   and coalesce(earlier.class_group_module_id, earlier.class_group_id) = ${params.toRunId}
               )`,
+              moduleEnteredAt: sql`now()`,
               updatedAt: sql`now()`,
             })
             .where(stillHere(seat.enrollmentId, seat.attempt))
@@ -123,13 +125,17 @@ export class DrizzleProgressionRepository implements IProgressionRepository {
         for (const seat of params.repeat) {
           const repeated = await tx
             .update(enrollments)
-            .set({ moduleAttempt: seat.attempt + 1, updatedAt: sql`now()` })
+            .set({ moduleAttempt: seat.attempt + 1, moduleEnteredAt: sql`now()`, updatedAt: sql`now()` })
             .where(stillHere(seat.enrollmentId, seat.attempt))
             .returning({ id: enrollments.id });
           if (repeated.length === 0) conflicts.push(seat.enrollmentId);
         }
 
         if (conflicts.length > 0) throw new ProgressionConflict(conflicts);
+
+        // A monthly seat now in a module nobody bought hears about it, in this
+        // same transaction (OOC-86).
+        await queueMonthlyDueReminders(tx, [...params.advance, ...params.repeat].map((seat) => seat.enrollmentId));
 
         await tx.insert(auditLog).values({
           actorId: params.audit.actorId,

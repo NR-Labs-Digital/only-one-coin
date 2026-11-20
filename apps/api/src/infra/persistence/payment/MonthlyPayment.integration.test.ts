@@ -5,6 +5,7 @@ import {
   classGroups,
   courses,
   enrollments,
+  outbox,
   paymentModules,
   payments,
   planPrices,
@@ -28,6 +29,8 @@ import { DrizzlePaymentEmailContextLookup } from "@/infra/persistence/enrollment
 import { StudentPortalQuery } from "@/infra/persistence/portal/StudentPortalQuery.js";
 import { GetStudentQuery } from "@/infra/persistence/student/GetStudentQuery.js";
 import { DrizzleMonthlyPaymentRepository } from "./DrizzleMonthlyPaymentRepository.js";
+import { queueMonthlyDueReminders } from "./monthlyReminders.js";
+import { ClassGroupMonthlyQuery } from "@/infra/persistence/catalog/ClassGroupMonthlyQuery.js";
 import { ListPaymentsQuery } from "./ListPaymentsQuery.js";
 
 /**
@@ -346,6 +349,49 @@ describe("monthly modules bought from the portal (OOC-86)", { timeout: 30_000 },
 
       expect(byId.get(bought.paymentId)).toMatchObject({ expectedAmountCents: 2 * TODAY_CENTS, monthlyModules: [2, 3] });
       expect(byId.get(seeded.entryPaymentId)).toMatchObject({ expectedAmountCents: ENTRY_CENTS, monthlyModules: null });
+    });
+  });
+
+  it("the class group view says who is up to date, in review and owing, and since when", async () => {
+    await rolledBack(async (tx, seeded) => {
+      const query = new ClassGroupMonthlyQuery(tx as unknown as Db);
+      expect((await query.run(GROUP))![0]).toMatchObject({ module: 1, state: "paid", dueSince: null, aheadModules: [] });
+
+      await enterModule2(tx, seeded.enrollmentId);
+      const entered = new Date("2026-04-01T15:00:00.000Z");
+      await tx.update(enrollments).set({ moduleEnteredAt: entered }).where(eq(enrollments.id, seeded.enrollmentId));
+      expect((await query.run(GROUP))![0]).toMatchObject({ module: 2, state: "due", dueSince: entered });
+
+      await buy(tx, seeded, 2);
+      expect((await query.run(GROUP))![0]).toMatchObject({ module: 2, state: "in_review", dueSince: null, aheadModules: [3] });
+    });
+  });
+
+  it("entering a module nobody bought writes the reminder once; one bought ahead does not", async () => {
+    await rolledBack(async (tx, seeded) => {
+      const reminders = () =>
+        tx
+          .select({ template: outbox.templateKey, key: outbox.dedupeKey })
+          .from(outbox)
+          .where(sql`${outbox.templateKey} = 'monthly_module_due' and ${outbox.dedupeKey} like ${`%${seeded.enrollmentId}%`}`);
+
+      await enterModule2(tx, seeded.enrollmentId);
+      await queueMonthlyDueReminders(tx, [seeded.enrollmentId]);
+      await queueMonthlyDueReminders(tx, [seeded.enrollmentId]);
+      expect(await reminders()).toEqual([
+        { template: "monthly_module_due", key: `monthly_module_due:${seeded.enrollmentId}:2:1:student` },
+      ]);
+
+      // Module 3 bought ahead: entering it says nothing.
+      await buy(tx, seeded, 2);
+      await tx.update(enrollments).set({ moduleAttempt: 1 }).where(eq(enrollments.id, seeded.enrollmentId));
+      await tx.execute(sql`insert into class_group_modules (id, class_group_id, module) values ('018f2b5c-8600-7000-8000-000000000007', ${GROUP}, 3)`);
+      await tx
+        .update(enrollments)
+        .set({ classGroupModuleId: "018f2b5c-8600-7000-8000-000000000007" })
+        .where(eq(enrollments.id, seeded.enrollmentId));
+      await queueMonthlyDueReminders(tx, [seeded.enrollmentId]);
+      expect(await reminders()).toHaveLength(1);
     });
   });
 });

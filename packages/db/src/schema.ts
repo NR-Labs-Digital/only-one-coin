@@ -749,6 +749,10 @@ export const enrollments = pgTable(
     // a DA. A grade belongs to one attempt, so repeating never collides with
     // the grade of the time before.
     moduleAttempt: integer("module_attempt").notNull().default(1),
+    // When the student entered the run and attempt they are on (OOC-86): set
+    // on insert, by progression (advance or repeat) and by moving the seat to
+    // another run. It is what "owes module N since" reads for a monthly seat.
+    moduleEnteredAt: timestamp("module_entered_at", { withTimezone: true }).notNull().defaultNow(),
     ...softDeletable(),
   },
   (table) => [

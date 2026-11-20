@@ -236,6 +236,14 @@
         "Congratulations! The certificate for {studentName} for completing {courseName} has been issued.",
         "You can download it from the student portal, under Documents. Its verification code is {code}."
       ]
+    },
+    "monthly_module_due": {
+      "subject": "Module {module} for {studentName} is not paid yet",
+      "preheader": "Access to the class opens once the payment is approved.",
+      "paragraphs": [
+        "{studentName} is starting module {module} of {courseName}, which has no payment yet.",
+        "You can pay for it from Payments, in the student portal, with Yape, Plin or bank transfer, and send the receipt. Access to the class opens as soon as we approve the payment. This is not a debt: there is no interest and no late fee."
+      ]
     }
   }
 }

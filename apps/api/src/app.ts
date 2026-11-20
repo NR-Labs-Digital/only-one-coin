@@ -144,6 +144,7 @@ import {
 import { listTeacherOptionsRoute } from "@/http/catalog/ListTeacherOptionsRoute.js";
 import { advanceClassGroupStatusRoute } from "@/http/catalog/AdvanceClassGroupStatusRoute.js";
 import { getClassGroupRosterRoute } from "@/http/catalog/GetClassGroupRosterRoute.js";
+import { getClassGroupMonthlyRoute } from "@/http/catalog/GetClassGroupMonthlyRoute.js";
 import { listWaitlistRoute } from "@/http/catalog/ListWaitlistRoute.js";
 import { joinWaitlistRoute } from "@/http/catalog/JoinWaitlistRoute.js";
 import { leaveWaitlistRoute } from "@/http/catalog/LeaveWaitlistRoute.js";
@@ -350,6 +351,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listTeacherOptionsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(advanceClassGroupStatusRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupRosterRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getClassGroupMonthlyRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listWaitlistRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(joinWaitlistRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(leaveWaitlistRoute);
