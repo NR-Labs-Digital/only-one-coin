@@ -54,7 +54,7 @@ export class DrizzleCatalogEntryRepository implements ICatalogEntryRepository {
       await this.db
         .update(table)
         .set({ deletedAt: null, updatedAt: new Date() })
-        .where(eq(table.id, id));
+        .where(kind === "class_group" ? and(eq(table.id, id), isNull(classGroups.erasedAt)) : eq(table.id, id));
     } catch (error) {
       // A retired course let go of its landing key; if another live course
       // took it meanwhile, bringing this one back would put two courses
@@ -70,7 +70,9 @@ export class DrizzleCatalogEntryRepository implements ICatalogEntryRepository {
     return this.db
       .select({ id: table.id, deletedAt: table.deletedAt })
       .from(table)
-      .where(eq(table.id, id))
+      // An erased class group is no catalog entry any more: it neither
+      // retires nor comes back (23/11/2026).
+      .where(kind === "class_group" ? and(eq(table.id, id), isNull(classGroups.erasedAt)) : eq(table.id, id))
       .limit(1);
   }
 

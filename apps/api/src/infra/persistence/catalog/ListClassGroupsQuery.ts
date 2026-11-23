@@ -139,6 +139,8 @@ export class ListClassGroupsQuery {
   async run(filter: ClassGroupFilter): Promise<ClassGroupItem[]> {
     const term = filter.q?.trim();
     const conditions: (SQL | undefined)[] = [
+      // Erased class groups (23/11/2026) are gone from every catalog screen.
+      isNull(classGroups.erasedAt),
       filter.id ? eq(classGroups.id, filter.id) : undefined,
       filter.periodId ? eq(classGroups.academicPeriodId, filter.periodId) : undefined,
       filter.courseId ? eq(classGroups.courseId, filter.courseId) : undefined,

@@ -5,8 +5,8 @@ import type {
 } from "./ports/IClassGroupDeletionRepository.js";
 
 /**
- * Why a class group cannot be deleted, only retired. Each one is a record that
- * points at it and must keep pointing (CLAUDE.md §6):
+ * Why a class group cannot be deleted for real, only erased. Each one is a
+ * record that points at it and must keep pointing (CLAUDE.md §6):
  *
  * - `enrollments` — someone was enrolled in it, whatever happened next
  *   (released seats, freezes, grades and issued documents included).
@@ -32,13 +32,14 @@ export interface DeleteClassGroupsInput {
 export type DeleteClassGroupsResult = { id: string } & ClassGroupDeleteOutcome;
 
 /**
- * Deletes, for good, the class groups that never touched a person — the
- * exception to "Catálogo sai do ar, não some" (decided with the owner,
- * 23/11/2026): a class group opened by mistake, or a test one, that nobody
- * bought, waited for or copied. Anything with a trace keeps the old path:
- * retire it.
+ * Takes class groups out of the catalog for good — the exception to
+ * "Catálogo sai do ar, não some" (decided with the owner, 23/11/2026). One
+ * that never touched a person is deleted for real, with its module runs. One
+ * with history (enrollments, a waitlist, a copy) cannot be: it is erased —
+ * hidden from every catalog screen, never restored — while its enrollments
+ * and payments stay.
  *
- * Each class group is its own transaction, so one refusal never undoes the
+ * Each class group is its own transaction, so one failure never undoes the
  * others; the answer says, per id, what happened. A repeated id is deleted
  * once. Nothing here undoes a delete — the confirmation on screen is the
  * last step.
