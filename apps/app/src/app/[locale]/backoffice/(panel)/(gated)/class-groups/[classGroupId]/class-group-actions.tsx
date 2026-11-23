@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type {
   CatalogErrorKey,
-  ClassGroupDeleteBlocker,
   ClassGroupItem,
   ClassGroupStatus,
   CourseRow,
@@ -102,7 +101,7 @@ export function ClassGroupActions({
   const [error, setError] = useState<CatalogErrorKey | null>(null)
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  const [deleteRefusal, setDeleteRefusal] = useState<ClassGroupDeleteBlocker | 'generic' | null>(null)
+  const [deleteFailed, setDeleteFailed] = useState(false)
 
   if (!canManage) return null
 
@@ -147,23 +146,24 @@ export function ClassGroupActions({
     router.refresh()
   }
 
-  /* Deleting is for a class group nobody ever touched (CLAUDE.md §1,
-     exception of 23/11/2026); anything with history only retires. */
-  const deletable = canRetire && group.deleteBlocker === null
+  /* Deleting takes the class group out for good (CLAUDE.md §1, exception of
+     23/11/2026): erased from the platform when nobody ever touched it, out of
+     every catalog screen when it has history. */
+  const deletable = canRetire
 
   async function remove() {
     setPending(true)
     setError(null)
     const answer = await deleteClassGroups([group.id])
     setPending(false)
-    const result = answer.results[0]
-    if (result?.outcome === 'deleted' || result?.outcome === 'not_found') {
+    const outcome = answer.results[0]?.outcome
+    if (outcome === 'deleted' || outcome === 'erased' || outcome === 'not_found') {
       localeRouter.push('/backoffice/class-groups')
       router.refresh()
       return
     }
     setConfirming(null)
-    setDeleteRefusal(result?.outcome === 'blocked' ? result.blocker : 'generic')
+    setDeleteFailed(true)
   }
 
   const deleteButton = deletable && (
@@ -172,7 +172,7 @@ export function ClassGroupActions({
       disabled={pending}
       onClick={() => {
         setError(null)
-        setDeleteRefusal(null)
+        setDeleteFailed(false)
         setConfirming('delete')
       }}
       className={dangerButtonClass}
@@ -184,20 +184,23 @@ export function ClassGroupActions({
 
   const deleteConfirmation = confirming === 'delete' && (
     <Confirmation
-      text={t('class_group_actions.confirm_delete', { code: group.code })}
+      text={
+        group.deleteBlocker === null
+          ? t('class_group_actions.confirm_delete', { code: group.code })
+          : t('class_group_actions.confirm_erase', {
+              code: group.code,
+              reason: t(`class_groups.delete_blocker_${group.deleteBlocker}`),
+            })
+      }
       pending={pending}
       onConfirm={() => void remove()}
       onCancel={() => setConfirming(null)}
     />
   )
 
-  const deleteRefusalLine = deleteRefusal && (
+  const deleteRefusalLine = deleteFailed && (
     <p role="alert" className="mt-3 text-sm text-red-700">
-      {deleteRefusal === 'generic'
-        ? t('catalog_errors.generic')
-        : t('class_group_actions.delete_refused', {
-            reason: t(`class_groups.delete_blocker_${deleteRefusal}`),
-          })}
+      {t('catalog_errors.generic')}
     </p>
   )
 

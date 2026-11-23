@@ -53,9 +53,10 @@ export interface BulkOutcome {
 
 /**
  * The bar above the list while class groups are ticked: retire them from the
- * catalog, or delete the ones nobody ever touched (CLAUDE.md §1, exception of
- * 23/11/2026). Both confirm first and say what will happen to each part of
- * the selection before anything is sent.
+ * catalog, or delete them for good (CLAUDE.md §1, exception of 23/11/2026) —
+ * the untouched ones are erased from the platform, the ones with history leave
+ * every catalog screen while their enrollments and payments stay. Both
+ * confirm first and say what will happen to each part of the selection.
  */
 export function ClassGroupSelectionBar({
   rows,
@@ -72,6 +73,7 @@ export function ClassGroupSelectionBar({
   const [pending, setPending] = useState(false)
 
   const retirable = rows.filter((row) => row.active)
+  /* Deleted for real (nobody ever touched them) or erased (they have history). */
   const deletable = rows.filter((row) => row.deleteBlocker === null)
   const kept = rows.filter((row) => row.deleteBlocker !== null)
   /* Seats still held on what is about to leave the catalog — the warning
@@ -93,11 +95,12 @@ export function ClassGroupSelectionBar({
 
   async function remove() {
     setPending(true)
-    const answer = await deleteClassGroups(deletable.map((row) => row.id))
-    const done = answer.results.filter((result) => result.outcome === 'deleted').length
+    const answer = await deleteClassGroups(rows.map((row) => row.id))
+    // Counted by name: an API older than the erase answers `blocked`, which is not done.
+    const done = answer.results.filter((result) => result.outcome === 'deleted' || result.outcome === 'erased').length
     setPending(false)
     setConfirming(null)
-    onDone({ action: 'delete', done, left: deletable.length - done })
+    onDone({ action: 'delete', done, left: rows.length - done })
   }
 
   return (
@@ -119,40 +122,13 @@ export function ClassGroupSelectionBar({
           <BoIcon name="close" size={16} />
           {t('class_groups.bulk_retire', { count: retirable.length })}
         </button>
-        <button
-          type="button"
-          disabled={deletable.length === 0}
-          onClick={() => setConfirming('delete')}
-          className={dangerButtonClass}
-        >
+        <button type="button" onClick={() => setConfirming('delete')} className={dangerButtonClass}>
           <BoIcon name="trash" size={16} />
-          {t('class_groups.bulk_delete', { count: deletable.length })}
+          {t('class_groups.bulk_delete', { count: rows.length })}
         </button>
         <button type="button" onClick={onClear} className={secondaryButtonClass}>
           {t('class_groups.selection_cancel')}
         </button>
-        {/* Why the delete count is lower than the selection, before anyone
-            clicks — a disabled "Delete (0)" alone reads as a broken button. */}
-        {kept.length > 0 && (
-          <details className="basis-full text-sm text-ink">
-            <summary className="flex cursor-pointer list-none items-start gap-2 [&::-webkit-details-marker]:hidden">
-              <BoIcon name="alert" size={14} className="mt-0.5 shrink-0 text-amber-700" />
-              <span>
-                {t('class_groups.selection_kept', { count: kept.length })}{' '}
-                <span className="font-semibold text-brand-blue underline">
-                  {t('class_groups.selection_kept_show')}
-                </span>
-              </span>
-            </summary>
-            <ul className="mt-1.5 max-h-40 overflow-y-auto pl-6 text-xs text-muted-foreground">
-              {kept.map((row) => (
-                <li key={row.id} className="tabular-nums">
-                  {`${row.code} · ${row.courseName} · ${t(`class_groups.delete_blocker_${row.deleteBlocker!}`)}`}
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
       </div>
 
       <Dialog open={confirming !== null} onOpenChange={(open) => !open && !pending && setConfirming(null)}>
@@ -208,18 +184,23 @@ export function ClassGroupSelectionBar({
             <>
               <DialogHeader>
                 <DialogTitle>
-                  {t('class_groups.bulk_delete_title', {
-                    count: deletable.length,
-                  })}
+                  {t('class_groups.bulk_delete_title', { count: rows.length })}
                 </DialogTitle>
                 <DialogDescription>{t('class_groups.bulk_delete_body')}</DialogDescription>
               </DialogHeader>
               <div className="flex min-h-0 flex-col gap-3 overflow-y-auto px-4">
-                <ul className="max-h-40 overflow-y-auto text-sm text-ink">
-                  {deletable.map((row) => (
-                    <li key={row.id} className="tabular-nums">{`${row.code} · ${row.courseName}`}</li>
-                  ))}
-                </ul>
+                {deletable.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-sm font-semibold text-ink">
+                      {t('class_groups.bulk_delete_gone', { count: deletable.length })}
+                    </p>
+                    <ul className="max-h-40 overflow-y-auto pl-6 text-xs text-muted-foreground">
+                      {deletable.map((row) => (
+                        <li key={row.id} className="tabular-nums">{`${row.code} · ${row.courseName}`}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {kept.length > 0 && (
                   <div className="flex flex-col gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                     <p className="flex items-start gap-2 text-sm text-ink">
@@ -231,7 +212,7 @@ export function ClassGroupSelectionBar({
                     <ul className="max-h-32 overflow-y-auto pl-6 text-xs text-muted-foreground">
                       {kept.map((row) => (
                         <li key={row.id} className="tabular-nums">
-                          {`${row.code} · ${t(`class_groups.delete_blocker_${row.deleteBlocker!}`)}`}
+                          {`${row.code} · ${row.courseName} · ${t(`class_groups.delete_blocker_${row.deleteBlocker!}`)}`}
                         </li>
                       ))}
                     </ul>
@@ -253,9 +234,7 @@ export function ClassGroupSelectionBar({
                   onClick={() => void remove()}
                   className={solidDangerButtonClass}
                 >
-                  {t('class_groups.bulk_delete_confirm', {
-                    count: deletable.length,
-                  })}
+                  {t('class_groups.bulk_delete_confirm', { count: rows.length })}
                 </button>
               </DialogFooter>
             </>
