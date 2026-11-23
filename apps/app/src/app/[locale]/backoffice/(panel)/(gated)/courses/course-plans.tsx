@@ -416,9 +416,9 @@ function NewPlanForm({
   const [name, setName] = useState('')
   const [billing, setBilling] = useState<PlanBilling>('package')
   const [busy, setBusy] = useState(false)
-  // OOC-185: `busy` only disables the button after React re-renders, so a
-  // double click landed two POSTs and the course got two identical plans.
-  // The ref is set synchronously and holds until the request settles.
+  // `busy` only disables the button after React re-renders; the ref is set
+  // synchronously and holds until the request settles, so a double click
+  // never sends two POSTs (OOC-185).
   const inFlight = useRef(false)
 
   async function create(amountCents: number, validFrom: string | undefined) {
