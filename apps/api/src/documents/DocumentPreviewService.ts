@@ -104,7 +104,7 @@ export class DocumentPreviewService {
     kind: DocumentKindKey,
     body: string,
     data: unknown,
-    options: { verificationCode?: string } = {},
+    options: { verificationCode?: string; verification?: { url: string; qrDataUri: string } } = {},
   ): Promise<Uint8Array> {
     const html = await this.renderHtml(kind, body, data);
     try {

@@ -151,3 +151,57 @@ describe("portal: the account's own issued documents", () => {
     expect(container.documents.issued.download).toHaveBeenCalledWith({ actorId: "u1", documentId: DOC, portalAccount: true });
   });
 });
+
+describe("staff: revoking an issued document (OOC-59)", () => {
+  const allowed: Role[] = ["master", "admin", "enrollment_supervisor"];
+  const url = `/api/v1/issued-documents/${DOC}/revoke`;
+  const payload = { reason: "Nombre mal escrito" };
+
+  it("refuses without a session", async () => {
+    expect((await app.inject({ method: "POST", url, payload })).statusCode).toBe(401);
+  });
+
+  it.each(others(allowed))("refuses %s", async (role) => {
+    signIn(role);
+    expect((await app.inject({ method: "POST", url, cookies, payload })).statusCode).toBe(403);
+  });
+
+  it.each(allowed)("lets %s revoke, with the session as the actor", async (role) => {
+    signIn(role);
+    vi.spyOn(container.documents.issued, "revoke").mockResolvedValue({ revocationId: RUN });
+    const response = await app.inject({ method: "POST", url, cookies, payload });
+    expect(response.statusCode).toBe(201);
+    expect(container.documents.issued.revoke).toHaveBeenCalledWith({ actorId: "u1", documentId: DOC, reason: payload.reason });
+  });
+});
+
+describe("public: verifying a code (OOC-59)", () => {
+  const found = {
+    kind: "certificate" as const,
+    status: "valid" as const,
+    studentName: "María Quispe",
+    courseName: "Inglés Básico",
+    startsOn: "2026-09-01",
+    endsOn: "2026-11-30",
+    issuedAt: new Date("2026-11-19T15:00:00Z"),
+    revokedAt: null,
+  };
+
+  it("answers without a session, public fields only", async () => {
+    vi.spyOn(container.documents.issued, "verify").mockResolvedValue(found);
+    const response = await app.inject({ method: "GET", url: "/api/v1/public/issued-documents/ooc-2222-2222" });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(Object.keys(response.json() as object).sort()).toEqual(
+      ["courseName", "endsOn", "issuedAt", "kind", "revokedAt", "startsOn", "status", "studentName"].sort(),
+    );
+    expect(container.documents.issued.verify).toHaveBeenCalledWith("ooc-2222-2222");
+  });
+
+  it("answers a code nobody issued with the generic 404", async () => {
+    // The real service: a malformed code never reaches the database.
+    const response = await app.inject({ method: "GET", url: "/api/v1/public/issued-documents/not-a-code" });
+    expect(response.statusCode).toBe(404);
+    expect((response.json() as { reason: string }).reason).toBe("issued_document.not_found");
+  });
+});

@@ -4,11 +4,15 @@ import {
   CertificateNothingToIssueError,
   CertificateRunNotLastModuleError,
   DocumentTemplateNotPublishedError,
+  IssuedDocumentAlreadyRevokedError,
   IssuedDocumentNotFoundError,
+  IssuedDocumentRevocationReasonRequiredError,
+  REVOCATION_REASON_MAX_LENGTH,
   certificateBlockReason,
   closesTheCourse,
   issuedDocumentEmails,
   newDocumentCode,
+  normalizeDocumentCode,
   type CertificateBlockReason,
   type IAuditLogRepository,
   type IDocumentTemplateRepository,
@@ -23,6 +27,7 @@ import {
   type DrizzleIssuedDocumentRepository,
   type GradeRead,
   type PendingConstancia,
+  type PublicIssuedDocument,
 } from "@/infra/persistence/document/DrizzleIssuedDocumentRepository.js";
 import { scheduleTextFromSlots } from "@/infra/persistence/catalog/scheduleText.js";
 import { DocumentMissingValueError, type DocumentPreviewService } from "./DocumentPreviewService.js";
@@ -30,6 +35,7 @@ import type { CertificateData } from "./kinds/certificate.js";
 import type { EnrollmentCertificateData } from "./kinds/enrollmentCertificate.js";
 import { issuedCourse, issuedStudent, limaDay, org } from "./kinds/issuedDocumentData.js";
 import { todayInLima } from "./kinds/teacherContract.js";
+import { verificationQrDataUri, verificationUrl } from "./verificationQr.js";
 
 /** How many times a write that hit a unique index is tried again with fresh codes. */
 const MAX_ATTEMPTS = 3;
@@ -80,6 +86,8 @@ export class IssuedDocumentService {
     private readonly issued: DrizzleIssuedDocumentRepository,
     private readonly settings: IPlatformSettingsRepository,
     private readonly auditLog: IAuditLogRepository,
+    /** The portal's origin: the validation page every document's QR points at (OOC-59). */
+    private readonly portalOrigin: string,
   ) {}
 
   /**
@@ -294,6 +302,8 @@ export class IssuedDocumentService {
       studentId: seat.studentId,
       enrollmentId: seat.enrollmentId,
       data,
+      // Issued again after a revocation (OOC-59): the new one points at the old.
+      replacesId: seat.revokedId,
       emails: issuedDocumentEmails(
         { documentId: id, kind: "certificate", code, student: seat, guardian: seat.guardian, courseName: run.course.name },
         "es-PE",
@@ -312,21 +322,57 @@ export class IssuedDocumentService {
    * The PDF of an issued document, printed from its template version and its
    * frozen data, with its code in the frame. Staff reach any document; a
    * portal account only one about a file it reaches — anything else is the
-   * same 404. Every print is audited.
+   * same 404. Every print is audited. A portal account prints only a document
+   * that still holds (OOC-59): a revoked or replaced one is the record's, not
+   * a paper to hand out again — staff still print it.
    */
   async download(params: { actorId: string; documentId: string; portalAccount: boolean }): Promise<IssuedPdf> {
     const document = params.portalAccount
       ? await this.issued.findForAccount(params.actorId, params.documentId)
       : await this.issued.findById(params.documentId);
     if (!document) throw new IssuedDocumentNotFoundError();
+    if (params.portalAccount && (await this.issued.statusOf(document.id)) !== "valid") {
+      throw new IssuedDocumentNotFoundError();
+    }
     return this.print(document, params.actorId);
+  }
+
+  /**
+   * Revokes a document (OOC-59 — proposal, to confirm with the owner): a
+   * person, with a reason. From then on the validation page answers "revoked"
+   * for its code. Not undone: a certificate is issued again by the batch, and
+   * the new one replaces this one.
+   */
+  async revoke(params: { actorId: string; documentId: string; reason: string }): Promise<{ revocationId: string }> {
+    const reason = params.reason.trim();
+    if (reason.length === 0 || reason.length > REVOCATION_REASON_MAX_LENGTH) {
+      throw new IssuedDocumentRevocationReasonRequiredError();
+    }
+    const document = await this.issued.findById(params.documentId);
+    if (!document) throw new IssuedDocumentNotFoundError();
+    if ((await this.issued.statusOf(document.id)) !== "valid") throw new IssuedDocumentAlreadyRevokedError();
+    return this.issued.revoke({ actorId: params.actorId, document, reason });
+  }
+
+  /**
+   * The public validation page's answer for a typed code (OOC-59): the public
+   * fields alone. A code that cannot be one and a code nobody issued are the
+   * same 404 — the page never says which.
+   */
+  async verify(rawCode: string): Promise<PublicIssuedDocument> {
+    const code = normalizeDocumentCode(rawCode);
+    const found = code ? await this.issued.findPublicByCode(code) : null;
+    if (!found) throw new IssuedDocumentNotFoundError();
+    return found;
   }
 
   private async print(document: IssuedDocument, actorId: string): Promise<IssuedPdf> {
     const version = await this.templates.findVersion(document.kind, document.templateVersionId);
     if (!version) throw new IssuedDocumentNotFoundError();
+    const url = verificationUrl(this.portalOrigin, document.code);
     const pdf = await this.documents.renderPdf(document.kind, version.body, document.data, {
       verificationCode: document.code,
+      verification: { url, qrDataUri: await verificationQrDataUri(url) },
     });
     await this.auditLog.append({
       actorId,

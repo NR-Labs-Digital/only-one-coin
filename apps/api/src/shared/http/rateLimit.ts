@@ -64,6 +64,10 @@ export const RATE_LIMITS = {
   probe: { name: "probe:ip", by: "ip", limit: 120, windowSeconds: MINUTE },
   /** Public reads rendered on every page (catalog, feature-flag state). */
   publicRead: { name: "public-read:ip", by: "ip", limit: 600, windowSeconds: 5 * MINUTE },
+  /** The public validation page (OOC-59): one code per look, so a person
+   * checking a stack of certificates stays far below it; a script walking
+   * the ~40-bit code space gets nowhere at this pace. */
+  documentVerify: { name: "document-verify:ip", by: "ip", limit: 60, windowSeconds: 10 * MINUTE },
   /** The staff invite and password-reset links, read and completed. */
   staffLink: { name: "staff-link:ip", by: "ip", limit: 30, windowSeconds: 10 * MINUTE },
   /** "Forgot my password" — sends an e-mail. */

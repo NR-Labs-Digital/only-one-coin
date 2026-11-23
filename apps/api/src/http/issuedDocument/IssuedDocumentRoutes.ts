@@ -3,8 +3,12 @@ import { StudentNotFoundError } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { ISSUED_DOCUMENT_STAFF_ROLES } from "./issuedDocumentRoles.js";
-import { IssuedDocumentListSchema, serializeIssuedDocuments } from "./issuedDocumentSchemas.js";
+import { ISSUED_DOCUMENT_REVOKE_ROLES, ISSUED_DOCUMENT_STAFF_ROLES } from "./issuedDocumentRoles.js";
+import {
+  IssuedDocumentListSchema,
+  RevokeIssuedDocumentBodySchema,
+  serializeIssuedDocuments,
+} from "./issuedDocumentSchemas.js";
 
 /** The documents the institution issued about a student (OOC-33), newest first. */
 export const listStudentIssuedDocumentsRoute = RouteBuilder.get("/students/:studentId/issued-documents")
@@ -49,4 +53,27 @@ export const downloadIssuedDocumentRoute = RouteBuilder.get("/issued-documents/:
       .header("Cache-Control", "no-store")
       .header("X-Document-Code", code)
       .send(Buffer.from(pdf));
+  });
+
+/**
+ * Revokes an issued document (OOC-59): from now on the validation page says
+ * "revoked" for its code. A reason is required; the revocation is never undone.
+ */
+export const revokeIssuedDocumentRoute = RouteBuilder.post("/issued-documents/:id/revoke")
+  .docs({ tags: ["Documents"], summary: "Revoke an issued document" })
+  .roles(...ISSUED_DOCUMENT_REVOKE_ROLES)
+  .params(z.object({ id: z.string().uuid() }))
+  .body(RevokeIssuedDocumentBodySchema)
+  .response(201, z.object({ revocationId: z.string().uuid() }))
+  .response(400, ErrorResponseSchema)
+  .response(404, ErrorResponseSchema)
+  .response(409, ErrorResponseSchema)
+  .response(422, ErrorResponseSchema)
+  .handler(async (request, reply) => {
+    const result = await container.documents.issued.revoke({
+      actorId: request.currentUser!.id,
+      documentId: request.params.id,
+      reason: request.body.reason,
+    });
+    reply.status(201).send(result);
   });

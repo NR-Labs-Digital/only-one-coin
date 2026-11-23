@@ -145,6 +145,7 @@ export const AUDIT_ACTIONS = {
   // the student travels in metadata; the batch targets its module group.
   "issued_document.issued": { key: "issued_document_issued", entity: "student", subject: "metadata_student" },
   "issued_document.downloaded": { key: "issued_document_downloaded", entity: "student", subject: "metadata_student" },
+  "issued_document.revoked": { key: "issued_document_revoked", entity: "student", subject: "metadata_student" },
   "certificate.batch_issued": { key: "certificate_batch_issued", entity: "class_group", subject: "metadata_class_group" },
 
   "payment.approved": { key: "payment_approved", entity: "payment", subject: "target" },

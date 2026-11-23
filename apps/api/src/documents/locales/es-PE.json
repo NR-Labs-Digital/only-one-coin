@@ -3,7 +3,8 @@
     "ruc": "RUC",
     "page": "Página",
     "pageOf": "de",
-    "verificationCode": "Código de verificación"
+    "verificationCode": "Código de verificación",
+    "verifyAt": "Verifíquelo en"
   },
   "nationalIdTypes": {
     "DNI": "DNI",

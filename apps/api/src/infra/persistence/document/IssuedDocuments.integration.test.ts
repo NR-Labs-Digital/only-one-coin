@@ -108,6 +108,7 @@ function serviceOn(tx: Db) {
       repository,
       new DrizzlePlatformSettingsRepository(tx),
       new DrizzleAuditLogRepository(tx),
+      "https://portal.test",
     ),
   };
 }
@@ -406,6 +407,7 @@ describe("the constancia of a paid request (OOC-33)", () => {
         repository,
         new DrizzlePlatformSettingsRepository(tx),
         new DrizzleAuditLogRepository(tx),
+        "https://portal.test",
       );
       expect(await service.issuePendingConstancias()).toEqual({ issued: 0, unprintable: 0 });
     });
@@ -447,6 +449,108 @@ describe("printing an issued document (OOC-33)", () => {
       expect(await repository.findForAccount(ACCOUNT, id)).toMatchObject({ id });
       expect(await repository.findForAccount(STRANGER, id)).toBeNull();
       expect((await repository.listForStudents([ID(21)])).map((item) => item.id)).toEqual([id]);
+    });
+  });
+});
+
+describe("revoking and verifying (OOC-59)", () => {
+  async function issueFor(tx: Db): Promise<{ id: string; code: string }> {
+    await serviceOn(tx).service.issueCertificates({
+      actorId: STAFF,
+      classGroupId: GROUP,
+      moduleId: MODULE_2,
+      enrollmentIds: [PASSED],
+      examApprovedEnrollmentIds: [],
+    });
+    const rows = await tx
+      .select({ id: issuedDocuments.id, code: issuedDocuments.code, replacesId: issuedDocuments.replacesId })
+      .from(issuedDocuments)
+      .where(eq(issuedDocuments.enrollmentId, PASSED));
+    const latest = rows.find((row) => !rows.some((other) => other.replacesId === row.id))!;
+    return { id: latest.id, code: latest.code };
+  }
+
+  it("answers a code with the public fields of the frozen data, and nothing else", async () => {
+    await seeded(async (tx) => {
+      const { code } = await issueFor(tx);
+      const found = await serviceOn(tx).service.verify(code.toLowerCase().replace(/-/g, " "));
+      expect(found).toEqual({
+        kind: "certificate",
+        status: "valid",
+        studentName: "Nombre21 Apellido21",
+        courseName: expect.any(String),
+        startsOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        endsOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        issuedAt: expect.any(Date),
+        revokedAt: null,
+      });
+      await expect(serviceOn(tx).service.verify("OOC-2222-2222")).rejects.toMatchObject({
+        reason: "issued_document.not_found",
+      });
+    });
+  });
+
+  it("revokes once, with a reason, and the page and lists say so", async () => {
+    await seeded(async (tx) => {
+      const { service, repository } = serviceOn(tx);
+      const { id, code } = await issueFor(tx);
+      await expect(service.revoke({ actorId: STAFF, documentId: id, reason: "  " })).rejects.toMatchObject({
+        reason: "issued_document.revocation_reason_required",
+      });
+      await service.revoke({ actorId: STAFF, documentId: id, reason: "Nombre mal escrito" });
+      await expect(service.revoke({ actorId: STAFF, documentId: id, reason: "otra vez" })).rejects.toMatchObject({
+        reason: "issued_document.already_revoked",
+      });
+
+      expect(await service.verify(code)).toMatchObject({ status: "revoked", revokedAt: expect.any(Date) });
+      expect((await repository.listForStudents([ID(21)]))[0]).toMatchObject({ id, status: "revoked" });
+      const [entry] = await tx
+        .select({ metadata: auditLog.metadata })
+        .from(auditLog)
+        .where(and(eq(auditLog.action, "issued_document.revoked"), eq(auditLog.targetId, id)));
+      // Ids only: the reason is free text about a person.
+      expect(entry!.metadata).toMatchObject({ kind: "certificate", studentId: ID(21), enrollmentId: PASSED });
+      expect(JSON.stringify(entry!.metadata)).not.toContain("Nombre mal");
+
+      // The portal no longer prints it; staff still does.
+      await expect(service.download({ actorId: ACCOUNT, documentId: id, portalAccount: true })).rejects.toMatchObject({
+        reason: "issued_document.not_found",
+      });
+      await expect(service.download({ actorId: STAFF, documentId: id, portalAccount: false })).resolves.toMatchObject({ code });
+    });
+  });
+
+  it("issues the certificate again in place of the revoked one, which then reads as replaced", async () => {
+    await seeded(async (tx) => {
+      const { service } = serviceOn(tx);
+      const first = await issueFor(tx);
+      await service.revoke({ actorId: STAFF, documentId: first.id, reason: "Nombre mal escrito" });
+
+      const preview = await service.previewCertificates({ classGroupId: GROUP, moduleId: MODULE_2 });
+      expect(reasonOf(preview.items, PASSED)).toBeNull();
+
+      const second = await issueFor(tx);
+      expect(second.id).not.toBe(first.id);
+      const [row] = await tx.select().from(issuedDocuments).where(eq(issuedDocuments.id, second.id));
+      expect(row!.replacesId).toBe(first.id);
+
+      expect(await service.verify(first.code)).toMatchObject({ status: "replaced" });
+      expect(await service.verify(second.code)).toMatchObject({ status: "valid" });
+      const again = await service.previewCertificates({ classGroupId: GROUP, moduleId: MODULE_2 });
+      expect(reasonOf(again.items, PASSED)).toBe("already_issued");
+    });
+  });
+
+  it("prints the validation address and its QR in the frame", async () => {
+    await seeded(async (tx) => {
+      const { id, code } = await issueFor(tx);
+      printed.length = 0;
+      await serviceOn(tx).service.download({ actorId: STAFF, documentId: id, portalAccount: false });
+      // The footer prints the page to type the code into; the QR carries the code itself.
+      expect(printed[0]).toContain(`${code}\\a Verifíquelo en portal.test/verificar"`);
+      const qr = /url\("data:image\/svg\+xml;base64,([^"]+)"\)/.exec(printed[0]!);
+      expect(qr).not.toBeNull();
+      expect(Buffer.from(qr![1]!, "base64").toString()).toContain("<svg");
     });
   });
 });

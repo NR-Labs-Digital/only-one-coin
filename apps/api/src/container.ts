@@ -970,6 +970,7 @@ function buildContainer(): AppContainer {
         issuedDocumentRepository,
         platformSettingsRepository,
         auditLogRepository,
+        config.PORTAL_PUBLIC_URL,
       ),
     },
     repositories: {

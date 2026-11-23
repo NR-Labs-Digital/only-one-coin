@@ -15,7 +15,8 @@
     "./password-policy": "./src/identity/StudentPasswordPolicy.ts",
     "./audit-catalog": "./src/identity/auditCatalog.ts",
     "./email-catalog": "./src/notification/emailCatalog.ts",
-    "./class-group-offer": "./src/catalog/classGroupOffer.ts"
+    "./class-group-offer": "./src/catalog/classGroupOffer.ts",
+    "./issued-document": "./src/issuedDocument/IssuedDocument.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
