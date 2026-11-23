@@ -113,16 +113,17 @@ export async function readCatalogEntryState(
 /** What the delete answered for one class group. */
 export type ClassGroupDeleteResult =
   | { id: string; outcome: 'deleted' | 'not_found' }
-  | { id: string; outcome: 'blocked'; blocker: ClassGroupDeleteBlocker }
+  | { id: string; outcome: 'erased'; reason: ClassGroupDeleteBlocker }
 
 /** The API's own cap on one request; more ids go in several. */
 const DELETE_CHUNK = 100
 
 /**
- * Deletes, for good, the class groups that never touched a person (CLAUDE.md
- * §1, exception of 23/11/2026). Each id answers on its own: one with history
- * comes back `blocked` and stays, the others still go. A request that failed
- * as a whole answers `ok: false`, with whatever earlier chunks already did.
+ * Takes class groups out of the catalog for good (CLAUDE.md §1, exception of
+ * 23/11/2026): `deleted` when nobody ever touched one, `erased` when it has
+ * history — hidden everywhere, its enrollments and payments kept. A request
+ * that failed as a whole answers `ok: false`, with whatever earlier chunks
+ * already did.
  */
 export async function deleteClassGroups(
   ids: string[],

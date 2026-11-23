@@ -20,11 +20,13 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleClassGroupDeletionRepository } from "./DrizzleClassGroupDeletionRepository.js";
+import { DrizzleCatalogEntryRepository } from "./DrizzleCatalogEntryRepository.js";
 import { ListClassGroupsQuery } from "./ListClassGroupsQuery.js";
 
 /**
- * The one physical delete of the catalog (23/11/2026), against a real,
- * migrated Postgres: the blocker list is SQL the typechecker cannot vouch for,
+ * Taking a class group out of the catalog for good (23/11/2026) — deleted
+ * when untouched, erased when it has history — against a real, migrated
+ * Postgres: the blocker list is SQL the typechecker cannot vouch for,
  * and the delete order has to satisfy every foreign key — a wrong one compiles
  * and fails only here.
  *
@@ -185,41 +187,79 @@ describe("deleting a class group nobody touched", () => {
   });
 });
 
-describe("a class group with history stays", () => {
-  it("refuses one somebody was enrolled in, even with the seat released", async () => {
+/** Erased: still in the database, retired, out of every catalog read, never restored. */
+async function expectErased(tx: Tx, id: string): Promise<void> {
+  const [row] = await tx
+    .select({ erasedAt: classGroups.erasedAt, deletedAt: classGroups.deletedAt })
+    .from(classGroups)
+    .where(eq(classGroups.id, id));
+  expect(row?.erasedAt).toBeInstanceOf(Date);
+  expect(row?.deletedAt).toBeInstanceOf(Date);
+  const listed = await new ListClassGroupsQuery(tx as unknown as Db).run({ periodId: PERIOD });
+  expect(listed.map((item) => item.id)).not.toContain(id);
+  expect(await new DrizzleCatalogEntryRepository(tx as unknown as Db).find("class_group", id)).toBeNull();
+  const [entry] = await tx
+    .select()
+    .from(auditLog)
+    .where(and(eq(auditLog.action, "catalog.class_group.erased"), eq(auditLog.targetId, id)));
+  expect(entry?.actorId).toBe(ACTOR);
+}
+
+describe("a class group with history is erased, not deleted", () => {
+  it("erases one somebody was enrolled in, keeping the enrollment", async () => {
     await rolledBack(async (tx, repository) => {
-      await tx.insert(enrollments).values({
-        studentId: await student(tx),
-        classGroupId: GROUP,
-        classGroupModuleId: GROUP,
-        planPriceId: PRICE,
-        seatStatus: "released",
-      });
-      expect(await delete_(repository)).toEqual({ outcome: "blocked", blocker: "enrollments" });
-      expect(await exists(tx, GROUP)).toBe(true);
+      const [enrollment] = await tx
+        .insert(enrollments)
+        .values({
+          studentId: await student(tx),
+          classGroupId: GROUP,
+          classGroupModuleId: GROUP,
+          planPriceId: PRICE,
+          seatStatus: "confirmed",
+        })
+        .returning({ id: enrollments.id });
+      expect(await delete_(repository)).toEqual({ outcome: "erased", reason: "enrollments" });
+      await expectErased(tx, GROUP);
+      const kept = await tx.select().from(enrollments).where(eq(enrollments.id, enrollment!.id));
+      expect(kept).toHaveLength(1);
     });
   });
 
-  it("refuses one somebody waited for", async () => {
+  it("keeps the first retirement date of one already retired", async () => {
     await rolledBack(async (tx, repository) => {
+      const retiredAt = new Date("2026-11-01T12:00:00.000Z");
+      await tx.update(classGroups).set({ deletedAt: retiredAt }).where(eq(classGroups.id, GROUP));
       await tx.insert(waitlistEntries).values({ classGroupId: GROUP, studentId: await student(tx) });
-      expect(await delete_(repository)).toEqual({ outcome: "blocked", blocker: "waitlist" });
+      expect(await delete_(repository)).toEqual({ outcome: "erased", reason: "waitlist" });
+      const [row] = await tx.select({ deletedAt: classGroups.deletedAt }).from(classGroups).where(eq(classGroups.id, GROUP));
+      expect(row?.deletedAt?.toISOString()).toBe(retiredAt.toISOString());
     });
   });
 
-  it("refuses one a checkout is holding a seat in right now", async () => {
+  it("erases one a checkout is holding a seat in right now", async () => {
     await rolledBack(async (tx, repository) => {
       await hold(tx, "active");
-      expect(await delete_(repository)).toEqual({ outcome: "blocked", blocker: "checkout" });
+      expect(await delete_(repository)).toEqual({ outcome: "erased", reason: "checkout" });
     });
   });
 
-  it("refuses one a later period was copied from", async () => {
+  it("erases one a later period was copied from, and deletes the copy for real", async () => {
     await rolledBack(async (tx, repository) => {
       await classGroup(tx, OTHER, "A-10602", GROUP);
-      expect(await delete_(repository)).toEqual({ outcome: "blocked", blocker: "copies" });
-      // The copy itself has nothing pointing at it.
+      expect(await delete_(repository)).toEqual({ outcome: "erased", reason: "copies" });
       expect(await delete_(repository, OTHER)).toEqual({ outcome: "deleted" });
+    });
+  });
+
+  it("answers not_found when asked again, and nothing restores it", async () => {
+    await rolledBack(async (tx, repository) => {
+      await hold(tx, "active");
+      await delete_(repository);
+      expect(await delete_(repository)).toEqual({ outcome: "not_found" });
+      const entries = new DrizzleCatalogEntryRepository(tx as unknown as Db);
+      await entries.restore("class_group", GROUP);
+      const [row] = await tx.select({ deletedAt: classGroups.deletedAt }).from(classGroups).where(eq(classGroups.id, GROUP));
+      expect(row?.deletedAt).toBeInstanceOf(Date);
     });
   });
 });

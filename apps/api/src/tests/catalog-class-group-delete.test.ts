@@ -17,10 +17,10 @@ class ScriptedDeletions implements IClassGroupDeletionRepository {
 }
 
 describe("deleting class groups (23/11/2026)", () => {
-  it("answers each id on its own: one refused does not stop the rest", async () => {
+  it("answers each id on its own: deleted, erased or not found", async () => {
     const deletions = new ScriptedDeletions({
       a: { outcome: "deleted" },
-      b: { outcome: "blocked", blocker: "enrollments" },
+      b: { outcome: "erased", reason: "enrollments" },
       c: { outcome: "deleted" },
     });
 
@@ -28,7 +28,7 @@ describe("deleting class groups (23/11/2026)", () => {
 
     expect(results).toEqual([
       { id: "a", outcome: "deleted" },
-      { id: "b", outcome: "blocked", blocker: "enrollments" },
+      { id: "b", outcome: "erased", reason: "enrollments" },
       { id: "c", outcome: "deleted" },
       { id: "d", outcome: "not_found" },
     ]);

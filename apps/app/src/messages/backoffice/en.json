@@ -376,7 +376,8 @@
         "issued_document_issued": "Document issued",
         "issued_document_downloaded": "Issued document downloaded",
         "certificate_batch_issued": "Certificates issued in a batch",
-        "class_group_deleted": "Class group deleted"
+        "class_group_deleted": "Class group deleted",
+        "class_group_erased": "Class group deleted (with history)"
       },
       "field": {
         "first_name": "First name",
@@ -1311,18 +1312,19 @@
       "bulk_retire_already": "{count, plural, one {# was already off the catalog and stays as it is.} other {# were already off the catalog and stay as they are.}}",
       "bulk_retire_confirm": "Take off {count}",
       "bulk_delete_title": "{count, plural, one {Delete # class group for good?} other {Delete # class groups for good?}}",
-      "bulk_delete_body": "They are erased from the platform with their module groups. This cannot be undone. Only class groups nobody touched are deleted: no enrollment, waitlist or copy.",
-      "bulk_delete_kept": "{count, plural, one {# selected class group has history and is not deleted. To stop selling it, take it off the catalog.} other {# selected class groups have history and are not deleted. To stop selling them, take them off the catalog.}}",
+      "bulk_delete_body": "This cannot be undone, and they cannot be put back later.",
+      "bulk_delete_kept": "{count, plural, one {Has history: leaves every catalog screen for good. Its enrollments and payments stay, in Enrollments and Payments.} other {Have history: leave every catalog screen for good. Their enrollments and payments stay, in Enrollments and Payments.}}",
       "bulk_delete_confirm": "Delete {count}",
       "bulk_retired": "{count, plural, =0 {No class group was taken off the catalog.} one {# class group taken off the catalog.} other {# class groups taken off the catalog.}}",
       "bulk_retire_left": "{count, plural, one {# could not be taken off; try again.} other {# could not be taken off; try again.}}",
       "bulk_deleted": "{count, plural, =0 {No class group was deleted.} one {# class group deleted.} other {# class groups deleted.}}",
-      "bulk_delete_left": "{count, plural, one {# was not deleted because it gained history or failed; check the list.} other {# were not deleted because they gained history or failed; check the list.}}",
+      "bulk_delete_left": "{count, plural, one {# was no longer in the catalog.} other {# were no longer in the catalog.}}",
       "delete_blocker_enrollments": "it had enrollments",
       "delete_blocker_waitlist": "it had a waitlist",
       "delete_blocker_checkout": "an enrollment is in progress",
       "delete_blocker_copies": "another period was copied from it",
-      "delete_blocker_history": "it has history on the platform"
+      "delete_blocker_history": "it has history on the platform",
+      "bulk_delete_gone": "{count, plural, one {Erased from the platform (nobody used it):} other {Erased from the platform (nobody used them):}}"
     },
     "periods": {
       "label": "Enrollment period",
@@ -1430,7 +1432,7 @@
       "restored": "Class group back in the catalog",
       "delete": "Delete",
       "confirm_delete": "Delete class group {code} for good? Nobody enrolled in it. It is erased with its module groups and this cannot be undone.",
-      "delete_refused": "Not deleted: {reason}. Take it off the catalog."
+      "confirm_erase": "Delete class group {code} for good? Since {reason}, it is not erased from the database: it leaves every catalog screen and cannot be put back. Its enrollments and payments stay, in Enrollments and Payments."
     },
     "waitlist": {
       "title": "Waitlist",

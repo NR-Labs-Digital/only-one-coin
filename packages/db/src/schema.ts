@@ -305,6 +305,11 @@ export const classGroups = pgTable(
     // inside the window.
     enrollmentOpensAt: timestamp("enrollment_opens_at", { withTimezone: true }),
     enrollmentClosesAt: timestamp("enrollment_closes_at", { withTimezone: true }),
+    // Erased from the catalog for good (23/11/2026): a class group with
+    // history that someone deleted. It cannot be deleted for real — its
+    // enrollments and payments point at it — so it leaves every catalog
+    // screen instead, and nothing brings it back. Always retired too.
+    erasedAt: timestamp("erased_at", { withTimezone: true }),
     // The class group this one was copied from when a period was duplicated —
     // the trail, and what stops the same copy from running twice.
     sourceClassGroupId: uuid("source_class_group_id").references(
@@ -349,6 +354,8 @@ export const classGroups = pgTable(
       "class_groups_enrollment_window_check",
       sql`${table.enrollmentOpensAt} is null or ${table.enrollmentClosesAt} is null or ${table.enrollmentOpensAt} < ${table.enrollmentClosesAt}`,
     ),
+    // An erased class group is a retired one that can no longer come back.
+    check("class_groups_erased_check", sql`${table.erasedAt} is null or ${table.deletedAt} is not null`),
     index("class_groups_source_class_group_id_idx").on(table.sourceClassGroupId),
     index("class_groups_course_id_idx").on(table.courseId),
     index("class_groups_teacher_id_idx").on(table.teacherId),
