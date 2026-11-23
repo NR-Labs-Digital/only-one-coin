@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import type { CatalogErrorKey, PlanBilling, PlanDetail } from '@/lib/backoffice/types'
@@ -416,14 +416,22 @@ function NewPlanForm({
   const [name, setName] = useState('')
   const [billing, setBilling] = useState<PlanBilling>('package')
   const [busy, setBusy] = useState(false)
+  // OOC-185: `busy` only disables the button after React re-renders, so a
+  // double click landed two POSTs and the course got two identical plans.
+  // The ref is set synchronously and holds until the request settles.
+  const inFlight = useRef(false)
 
   async function create(amountCents: number, validFrom: string | undefined) {
+    if (inFlight.current) return
+    inFlight.current = true
     setBusy(true)
     const result = await catalogWrite(`/courses/${courseId}/plans`, 'POST', {
       name: name.trim(),
       billing,
       amountCents,
       validFrom,
+    }).finally(() => {
+      inFlight.current = false
     })
     setBusy(false)
     if (!result.ok) {
