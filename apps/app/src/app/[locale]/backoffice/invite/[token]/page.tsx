@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { AuthBannerLayout } from '@/components/auth/auth-banner-layout'
 import { apiFetch } from '@/lib/backoffice/api-client'
 import { isInviteExpired } from '@/lib/backoffice/invite'
 import { requireFeature } from '@/lib/feature-flags/server'
+import { staffDoorOnHost } from '@/lib/hosts'
 import type { StaffRole } from '@/lib/backoffice/types'
 import { CheckCircleIcon, ShieldIcon } from '@/components/backoffice/auth-icons'
 import { InviteCompletionForm } from './invite-completion-form'
@@ -33,6 +35,7 @@ export default async function InviteCompletionPage({
   setRequestLocale(locale)
 
   await requireFeature('backoffice.staff')
+  const door = staffDoorOnHost((await headers()).get('host') ?? '')
 
   const t = await getTranslations('backoffice')
   const tRole = await getTranslations('bo')
@@ -76,7 +79,7 @@ export default async function InviteCompletionPage({
             {t(state === 'expired' ? 'invite_expired_body' : 'invite_invalid_body')}
           </p>
           <Link
-            href="/backoffice"
+            href={door}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-blue px-4 py-3 text-sm font-bold text-white shadow-[0_16px_30px_-14px_rgba(47,107,255,0.9)] transition hover:bg-brand-yellow hover:text-ink"
           >
             {t('invite_back_to_login')}

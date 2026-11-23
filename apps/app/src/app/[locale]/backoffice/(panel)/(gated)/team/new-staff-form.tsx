@@ -6,6 +6,7 @@ import { getPathname } from '@/i18n/navigation'
 import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { canHoldMaster } from '@/lib/backoffice/permissions'
 import { buildInvitePath } from '@/lib/backoffice/invite'
+import { staffAccountOrigin } from '@/lib/hosts'
 import { Card, RequiredMark } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
@@ -167,7 +168,7 @@ export function NewStaffForm({
       }
 
       const path = getPathname({ href: buildInvitePath(result.token), locale })
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const origin = typeof window !== 'undefined' ? staffAccountOrigin(window.location.origin, role) : ''
 
       setCreated({ member, link: `${origin}${path}` })
       setCopied(false)

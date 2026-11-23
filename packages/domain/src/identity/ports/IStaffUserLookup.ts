@@ -1,3 +1,5 @@
+import type { Role } from "../Role.js";
+
 /**
  * Narrow read against Better Auth's own "user" table — just enough to stop an
  * invite being sent to an e-mail that already has an account, without pulling
@@ -14,6 +16,8 @@ export interface ResettableStaffUser {
   id: string;
   name: string;
   email: string;
+  /** Picks the door the reset link opens on (a teacher has their own). */
+  role: Role;
 }
 
 export interface IStaffUserLookup {

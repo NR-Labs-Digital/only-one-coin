@@ -106,6 +106,7 @@ describe("DrizzleStaffUserLookup.findResettableStaffByEmail", () => {
         id: STAFF,
         name: "Rosa Quispe",
         email: STAFF_EMAIL,
+        role: "admin",
       });
       expect(await lookup.findResettableStaffByEmail("ooc30.student@example.com")).toBeNull();
       expect(await lookup.findResettableStaffByEmail("ooc30.banned@example.com")).toBeNull();

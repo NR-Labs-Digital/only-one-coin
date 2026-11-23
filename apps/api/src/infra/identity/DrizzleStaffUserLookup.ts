@@ -25,7 +25,7 @@ export class DrizzleStaffUserLookup implements IStaffUserLookup {
     // Same staff definition as ListStaffQuery (any cargo but student/guardian);
     // "banned" is how removing panel access is recorded (DrizzleStaffAccessRepository).
     const result = await this.db.execute<ResettableStaffUser & Record<string, unknown>>(
-      sql`select "id", "name", "email" from "user"
+      sql`select "id", "name", "email", "role" from "user"
           where lower("email") = ${email}
             and "role" not in ('student', 'guardian')
             and "banned" = false
