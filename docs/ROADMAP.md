@@ -212,6 +212,7 @@ Escopo que nasceu das decisões de negócio de setembro e outubro (`CLAUDE.md` �
 
 | Tema | Tickets | Decisão de origem |
 | --- | --- | --- |
+| Pagos utilizável em produção | OOC-184 — 🟡 em PR (23/11/2026): a `0068` tira da fila os 3.910 pagamentos abertos da importação legada (rejeitados sem motivo, vaga devolvida, nada apagado). OOC-185 — 🟡 em PR: o *Crear plan* trava o segundo clique (causa provável dos dois planos idênticos do coreano); o plano repetido sai pela tela (*Retirar*) | Feedback do cliente de 23/11/2026 |
 | Modalidade mensual do inglês e adiantar módulos | OOC-86 — 🟡 em três PRs empilhados: (1) modelo — plano mensal, módulo comprado por pagamento, escolha de plano no checkout — em PR, 20/11/2026; (2) portal: pagar e adiantar módulos, cadeado da aula, e-mails do pagamento de módulo — em PR, 20/11/2026; (3) backoffice: mensualidades por turma, rótulo do módulo em Pagos e lembrete por e-mail — em PR, 20/11/2026 | 02/09 e 06/09/2026; refazer e cadeado decididos em 20/11/2026 |
 | Equipe: eliminar perfil com o e-mail digitado; convite enviado por e-mail | OOC-136, OOC-138 — feitos 04/11/2026 | 04/11/2026 |
 | *Nueva aula*: passo Docente some ao abrir mais de uma turma | OOC-137 — feito 04/11/2026 | 04/11/2026 |
