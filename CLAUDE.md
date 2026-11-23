@@ -295,7 +295,7 @@ Cada um tem um mecanismo. O mecanismo é obrigatório, não a boa intenção.
 | --- | --- |
 | Local | Postgres local |
 | Staging | `staging.aula.onlyonecoin.edu.pe` · Postgres gerenciado (Neon, branch de staging) |
-| Produção | `student.onlyonecoin.edu.pe` (portal) · `backoffice.onlyonecoin.edu.pe` (backoffice) · Postgres gerenciado (Neon) |
+| Produção | `student.onlyonecoin.edu.pe` (portal) · `backoffice.onlyonecoin.edu.pe` (backoffice) · `teacher.onlyonecoin.edu.pe` (portal do docente, 23/11/2026) · Postgres gerenciado (Neon) |
 
 - `apps/landing`/`apps/app`: Vercel, deploy automático a cada push em `main` via GitHub Actions (`.github/workflows/deploy-vercel.yml`); PR gera deploy preview nativo da Vercel. `apps/api`: Fly.io, mesmo gatilho (`deploy-api.yml`), sempre checagem de secrets → backup → migration → deploy, nessa ordem. **Variável obrigatória nova no `config.ts` = `fly secrets set` antes do merge**: o job `check-secrets` compara o `ConfigSchema` (`pnpm --filter @ooc/api env:required`) com o Fly e para tudo se faltar alguma. O deploy é **blue-green** (`fly.toml`): release que não passa no `/health` falha e a máquina antiga segue no ar — sem isso, uma release que cai no boot deixava a API parada até um `fly machine start` (incidente de 03/10/2026)
 - Variáveis de ambiente **por projeto/ambiente** na Vercel e como secret do repo no GitHub (o que `apps/api` lê em runtime vem do Fly.io)
