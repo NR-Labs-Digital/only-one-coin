@@ -1,4 +1,5 @@
-import type { IStaffPasswordResetLinkBuilder, Locale } from "@ooc/domain";
+import type { IStaffPasswordResetLinkBuilder, Locale, Role } from "@ooc/domain";
+import { type StaffDoorOrigins, staffDoorOrigin } from "./StaffDoorOrigins.js";
 
 /**
  * apps/app routes on short locale codes with the default one unprefixed
@@ -12,14 +13,15 @@ export const APP_LOCALE_PREFIX: Record<Locale, string> = {
 
 /**
  * Builds the same URL the team screen copies for an admin-generated link
- * (`/[locale]/backoffice/reset-password/[token]`), on the panel's public
- * origin. The `/backoffice` segment stays even on backoffice.* — the app's
- * middleware leaves a path that already carries it alone.
+ * (`/[locale]/backoffice/reset-password/[token]`), on the public origin of
+ * the door the cargo uses. The `/backoffice` segment stays even on
+ * backoffice.* and teacher.* — the app's middleware serves this screen as is
+ * on both.
  */
 export class BackofficePasswordResetLinkBuilder implements IStaffPasswordResetLinkBuilder {
-  constructor(private readonly backofficeOrigin: string) {}
+  constructor(private readonly origins: StaffDoorOrigins) {}
 
-  build(token: string, locale: Locale): string {
-    return `${this.backofficeOrigin}${APP_LOCALE_PREFIX[locale]}/backoffice/reset-password/${encodeURIComponent(token)}`;
+  build(token: string, locale: Locale, role: Role): string {
+    return `${staffDoorOrigin(this.origins, role)}${APP_LOCALE_PREFIX[locale]}/backoffice/reset-password/${encodeURIComponent(token)}`;
   }
 }

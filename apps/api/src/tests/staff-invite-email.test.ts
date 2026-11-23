@@ -9,6 +9,7 @@ import { FakeTeacherRepository } from "./fakes/teacher.js";
 /** OOC-138: inviting somebody to the panel e-mails them the link. */
 
 const ORIGIN = "https://backoffice.test";
+const TEACHER_ORIGIN = "https://teacher.test";
 
 function setup() {
   const invites = new FakeStaffInviteRepository();
@@ -17,7 +18,7 @@ function setup() {
     invites,
     new FakeTeacherRepository(),
     new FakeAuditLogRepository(),
-    new BackofficeInviteLinkBuilder(ORIGIN),
+    new BackofficeInviteLinkBuilder({ backoffice: ORIGIN, teacher: TEACHER_ORIGIN }),
   );
   return { invites, useCase };
 }

@@ -33,6 +33,21 @@ export const ConfigSchema = z
       .string()
       .url()
       .transform((val) => new URL(val).origin),
+    // The origin the teacher portal is served from (its own domain, apps/app
+    // CLAUDE.md "Três domínios, um deploy"), for the staff links of a
+    // `teacher` account — invite and password reset — so the session they
+    // start lives on the host the portal is read from. Production:
+    // https://teacher.onlyonecoin.edu.pe. Optional: unset, those links open on
+    // BACKOFFICE_PUBLIC_URL as before, and the teacher signs in once more when
+    // the panel sends them on to their portal.
+    TEACHER_PUBLIC_URL: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z
+        .string()
+        .url()
+        .transform((val) => new URL(val).origin)
+        .optional(),
+    ),
     // The origin the student portal is served from, for the links in the
     // portal e-mails (activation and reset). Production:
     // https://student.onlyonecoin.edu.pe; locally the apps/app origin.

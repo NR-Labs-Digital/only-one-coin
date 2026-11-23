@@ -75,7 +75,7 @@ export class RequestStaffPasswordResetUseCase extends BaseUseCase<RequestStaffPa
           locale: input.locale,
           vars: {
             recipientName: user.name,
-            resetUrl: this.linkBuilder.build(issued.token, input.locale),
+            resetUrl: this.linkBuilder.build(issued.token, input.locale, user.role),
           },
           // Same reset, new request, new e-mail: the request instant is what
           // tells two sends of the same link apart. A retry of the very same

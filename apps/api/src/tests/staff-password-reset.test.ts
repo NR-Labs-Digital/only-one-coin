@@ -26,7 +26,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * against Postgres in DrizzleStaffPasswordResetRepository.integration.test.ts.
  */
 
-const STAFF: ResettableStaffUser = { id: "usr_staff", name: "Rosa Quispe", email: "rosa@onlyonecoin.edu.pe" };
+const STAFF: ResettableStaffUser = { id: "usr_staff", name: "Rosa Quispe", email: "rosa@onlyonecoin.edu.pe", role: "admin" };
 
 class FakeLookup implements IStaffUserLookup {
   public asked: string[] = [];
