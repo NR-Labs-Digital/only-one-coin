@@ -159,6 +159,8 @@ export const AUDIT_ACTIONS = {
   "catalog.class_group.module_retired": { key: "class_group_module_retired", entity: "class_group", subject: "target" },
   // Deleted for good (23/11/2026): no page left to link to.
   "catalog.class_group.deleted": { key: "class_group_deleted", entity: "class_group", subject: "none" },
+  // Erased (23/11/2026): a class group with history, out of every catalog screen.
+  "catalog.class_group.erased": { key: "class_group_erased", entity: "class_group", subject: "none" },
   "catalog.class_group.status_changed": {
     key: "class_group_status_changed",
     entity: "class_group",

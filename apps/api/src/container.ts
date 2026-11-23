@@ -753,12 +753,16 @@ function buildContainer(): AppContainer {
     paymentEmailContextLookup,
   );
   const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
+  const staffDoorOrigins = {
+    backoffice: config.BACKOFFICE_PUBLIC_URL,
+    teacher: config.TEACHER_PUBLIC_URL ?? config.BACKOFFICE_PUBLIC_URL,
+  };
   const createInvite = new CreateStaffInviteUseCase(
     staffUserLookup,
     staffInviteRepository,
     teacherRepository,
     auditLogRepository,
-    new BackofficeInviteLinkBuilder(config.BACKOFFICE_PUBLIC_URL),
+    new BackofficeInviteLinkBuilder(staffDoorOrigins),
   );
   const renewInvite = new RenewStaffInviteUseCase(staffInviteRepository, auditLogRepository);
   const cancelInvite = new CancelStaffInviteUseCase(staffInviteRepository, auditLogRepository);
@@ -788,7 +792,7 @@ function buildContainer(): AppContainer {
   const requestPasswordReset = new RequestStaffPasswordResetUseCase(
     staffUserLookup,
     staffPasswordResetRepository,
-    new BackofficePasswordResetLinkBuilder(config.BACKOFFICE_PUBLIC_URL),
+    new BackofficePasswordResetLinkBuilder(staffDoorOrigins),
     auditLogRepository,
   );
   const changeOwnPassword = new ChangeOwnPasswordUseCase(

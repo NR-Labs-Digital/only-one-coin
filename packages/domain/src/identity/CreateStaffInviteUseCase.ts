@@ -94,7 +94,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
           locale: DEFAULT_LOCALE,
           vars: {
             recipientName: `${created.firstName} ${created.lastName}`,
-            accessUrl: this.linkBuilder.build(created.token, DEFAULT_LOCALE),
+            accessUrl: this.linkBuilder.build(created.token, DEFAULT_LOCALE, input.role),
           },
           dedupeKey: `staff_invite:${created.id}:staff`,
         },

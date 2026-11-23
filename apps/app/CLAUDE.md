@@ -198,19 +198,38 @@ Um **único backend de auth** (um só provedor de auth, um só registro de usuá
 
 - **Portal do aluno** — `/` ou `/portal`, linkado da landing, indexável, sem MFA. **Sem auto-cadastro**: a aprovação do pagamento cria a conta e o aluno recebe por e-mail um link para definir a senha, não se registra. **Sessão real (05/10/2026):** toda página de `/portal` chama `getStudentSession` (`lib/portal/session.ts` → `GET /api/v1/portal/me`) e qualquer não-OK, inclusive sessão de staff, volta a `/login`. Telas `/login` (proxy same-origin para `/api/v1/portal/sign-in`), `/forgot-password` e `/access/[token]`; logout real por `lib/auth/sign-out.ts`, compartilhado com o backoffice. **Dados reais (OOC-32, 07/10/2026):** as telas leem `getPortalView` (`GET /api/v1/portal/overview`, memoizado por requisição); o que ainda não tem backend chega vazio, nunca como persona de exemplo — não existe mais mock no portal. Para o aluno, `pending` e `under_review` são um estado só (`lib/portal/overview.ts`): "pendente" ao lado de dinheiro já enviado vira "pague de novo", e a diferença é veredito do semáforo, que é do revisor.
 - **Backoffice** — path interno `/backoffice`, **nunca linkado na landing nem indexável**, MFA no fluxo (OOC-29): depois da senha, a tela pede o código enviado ao e-mail (ou um código de recuperação); conta de `master`/`admin`/`billing` sem o fator cai no passo de ativação (`/backoffice?mfa=setup`, para onde `getStaffSession` manda quem a API recusa com `auth.mfa_enrollment_required`). Ativar, regenerar códigos e desligar (só onde é opcional) ficam em *Mi cuenta*. A tela só guia — quem exige é a API. Esse caminho todo é defesa em profundidade, não a defesa. **Quem já tem sessão válida não vê o login, aqui e em `/docente`:** a porta pergunta ao `/me` (`isStaffSignedIn`, nunca só olha o cookie) e manda para a home dela; API fora do ar mostra o formulário, nunca erro, e `?mfa=` fica de fora porque é o meio de um login. Qual porta é a certa continua sendo decidido pelo cargo no shell de cada uma. O `/login` do aluno ainda não faz isso.
-- **Portal do docente** — `/docente`, **porta própria** (antes o docente entrava pelo backoffice com o menu estreitado): login próprio, shell próprio, nunca linkado na landing nem indexável. Mesmo Better Auth, mesmo `/me` e o mesmo formulário de login (`components/backoffice/staff-login-form.tsx`, com os passos de MFA), que termina em `/docente/home` — a separação é o cargo lido no servidor, em `lib/backoffice/session.ts`: `teacher` em `/backoffice` vai para `/docente/home` (`getBackofficeSession()`, a única linha do backoffice que nomeia o cargo `teacher`), qualquer outro cargo em `/docente` volta para `/backoffice/home` (`getTeacherSession()`). **Quem decide a porta é só o cargo, nunca o vínculo com a ficha:** conta `teacher` sem ficha (`teacherId: null`, aberta antes da OOC-79) fica no portal com escopo vazio — mandá-la ao backoffice criaria um loop de redirect, porque o backoffice devolve todo docente pra cá. **Dado real desde a OOC-82:** as telas leem `lib/docente/teaching.ts` (`/api/v1/teaching/*`), que não manda id de docente nenhum — o escopo é o usecase da API, que compara a ficha da sessão com a turma; a tela não filtra nada. A turma abre no próprio endereço (`/docente/class-groups/[id]`), e o de outro docente é 404. A ficha de notas (`teacher.grades`) grava na API desde a OOC-38 e está ligada: a nota confirmada vai primeiro para uma fila no aparelho (`lib/docente/grade-outbox.ts`, `localStorage`) e dali para `POST /teaching/class-groups/:id/grades`, de novo a cada volta da conexão e a cada 20 s enquanto não houver resposta — o reenvio é seguro porque a API toma a mesma nota como já feita; o rascunho do lote também fica no aparelho. As observações do PR #136 saíram da ficha (sem API). Os avisos (`teacher.notices`) continuam sem backend e desligados em produção — nada "salvo só nesta tela" chega a um docente. Os acessos da turma (`teacher.class_links`) são leitura real desde a OOC-98 e estão ligados: o Classroom de cada módulo que a turma dá (OOC-144) e, desde a OOC-100, o material do módulo que a turma dá vêm de `/teaching/*` — a tela não escolhe o link, só o confere contra o host do Google antes de virar `href`. O portal inteiro responde à flag `teacher`.
+- **Portal do docente** — `/docente`, em produção no domínio `teacher.onlyonecoin.edu.pe` (abaixo, "Três domínios, um deploy"), **porta própria** (antes o docente entrava pelo backoffice com o menu estreitado): login próprio, shell próprio, nunca linkado na landing nem indexável. Mesmo Better Auth, mesmo `/me` e o mesmo formulário de login (`components/backoffice/staff-login-form.tsx`, com os passos de MFA), que termina em `/docente/home` — a separação é o cargo lido no servidor, em `lib/backoffice/session.ts`: `teacher` em `/backoffice` vai para `/docente/home` (`getBackofficeSession()`, a única linha do backoffice que nomeia o cargo `teacher`), qualquer outro cargo em `/docente` volta para `/backoffice/home` (`getTeacherSession()`). **Quem decide a porta é só o cargo, nunca o vínculo com a ficha:** conta `teacher` sem ficha (`teacherId: null`, aberta antes da OOC-79) fica no portal com escopo vazio — mandá-la ao backoffice criaria um loop de redirect, porque o backoffice devolve todo docente pra cá. **Dado real desde a OOC-82:** as telas leem `lib/docente/teaching.ts` (`/api/v1/teaching/*`), que não manda id de docente nenhum — o escopo é o usecase da API, que compara a ficha da sessão com a turma; a tela não filtra nada. A turma abre no próprio endereço (`/docente/class-groups/[id]`), e o de outro docente é 404. A ficha de notas (`teacher.grades`) grava na API desde a OOC-38 e está ligada: a nota confirmada vai primeiro para uma fila no aparelho (`lib/docente/grade-outbox.ts`, `localStorage`) e dali para `POST /teaching/class-groups/:id/grades`, de novo a cada volta da conexão e a cada 20 s enquanto não houver resposta — o reenvio é seguro porque a API toma a mesma nota como já feita; o rascunho do lote também fica no aparelho. As observações do PR #136 saíram da ficha (sem API). Os avisos (`teacher.notices`) continuam sem backend e desligados em produção — nada "salvo só nesta tela" chega a um docente. Os acessos da turma (`teacher.class_links`) são leitura real desde a OOC-98 e estão ligados: o Classroom de cada módulo que a turma dá (OOC-144) e, desde a OOC-100, o material do módulo que a turma dá vêm de `/teaching/*` — a tela não escolhe o link, só o confere contra o host do Google antes de virar `href`. O portal inteiro responde à flag `teacher`.
 - **Redirect por `role` sempre server-side.** O cliente nunca escolhe "sou aluno/sou admin"; o `role` vem do banco, lido por `apps/api`.
 
-### Dois domínios, um deploy (decisão 29/09/2026)
+### Três domínios, um deploy (decisão 29/09/2026; o do docente em 23/11/2026)
 
-`student.onlyonecoin.edu.pe` e `backoffice.onlyonecoin.edu.pe` são dois domínios
-custom apontados pro **mesmo projeto Vercel** (`apps/app`) — não tem deploy
-separado por superfície. `student.*` não precisa de tratamento: a raiz do app
-já é o portal. `backoffice.*` precisa cair sob `/backoffice`, e isso é feito
-por **rewrite baseado em host** em `src/middleware.ts`, antes do
-`next-intl` resolver o locale (senão `/en` vira `/backoffice/en` em vez de
-`/en/backoffice`) — é rewrite, não redirect: a URL que o navegador mostra
-continua no domínio do backoffice, nunca expõe o path interno.
+`student.onlyonecoin.edu.pe`, `backoffice.onlyonecoin.edu.pe` e
+`teacher.onlyonecoin.edu.pe` são três domínios custom apontados pro **mesmo
+projeto Vercel** (`apps/app`) — não tem deploy separado por superfície.
+`student.*` não precisa de tratamento: a raiz do app já é o portal.
+`backoffice.*` cai sob `/backoffice` e `teacher.*` sob `/docente`, por
+**rewrite baseado em host** no `src/middleware.ts`, antes do `next-intl`
+resolver o locale (senão `/en` vira `/backoffice/en` em vez de
+`/en/backoffice`). É rewrite, não redirect: a URL que o navegador mostra
+continua no domínio dedicado. A regra é pura e testada em
+`lib/host-routing.ts`.
+
+**O portal do docente tem um endereço só (23/11/2026).** `/docente` em
+`student.*` ou `backoffice.*` redireciona (307) para `teacher.*`; antes disso o
+portal só abria em `student.*/docente`, e `backoffice.*/docente` era 404 (o
+rewrite o virava `/backoffice/docente`). Cookie de sessão é por host, então:
+- `teacher.*` serve também as duas telas de conta do staff que moram em
+  `/backoffice` (`invite/[token]` e `reset-password/[token]`). O link de
+  convite e de reset de uma conta `teacher` abre ali — a API escolhe a origem
+  pelo cargo (`TEACHER_PUBLIC_URL`, `apps/api/CLAUDE.md`, Gestão de cargos), e
+  a tela de Equipe copia pelo mesmo critério (`staffAccountOrigin`,
+  `lib/hosts.ts`) —, e a senha definida ali abre a sessão no host em que o
+  portal a lê. Depois de definir a senha a tela segue para a porta do host
+  (`staffDoorOnHost`): `/docente/home` em `teacher.*`, `/backoffice/home` no
+  resto; com MFA ligado, `/docente?mfa=challenge`.
+- O resto de `/backoffice` em `teacher.*` vai para `backoffice.*`.
+- Docente que entra pela porta errada (`backoffice.*`) é mandado ao
+  `teacher.*` e faz login de novo lá — é a porta errada, não um caminho.
 
 Domínio dedicado não substitui a defesa real (RBAC em `apps/api`) nem some do
 Certificate Transparency log só por não estar linkado — é só mais uma camada,

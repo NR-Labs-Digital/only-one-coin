@@ -150,7 +150,13 @@ export class DrizzleClassGroupRepository implements IClassGroupRepository {
   }
 
   async findById(id: string): Promise<ClassGroup | null> {
-    const [row] = await this.db.select().from(classGroups).where(eq(classGroups.id, id)).limit(1);
+    // An erased class group (23/11/2026) is gone for every write: no edit,
+    // no status step, no module run.
+    const [row] = await this.db
+      .select()
+      .from(classGroups)
+      .where(and(eq(classGroups.id, id), isNull(classGroups.erasedAt)))
+      .limit(1);
     if (!row) return null;
     const modules = await this.db
       .select()
@@ -261,7 +267,8 @@ export class DrizzleClassGroupRepository implements IClassGroupRepository {
       .select({ group: classGroups, courseDeletedAt: courses.deletedAt })
       .from(classGroups)
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
-      .where(eq(classGroups.academicPeriodId, periodId));
+      // Erased ones are not even "skipped retired": they left the catalog.
+      .where(and(eq(classGroups.academicPeriodId, periodId), isNull(classGroups.erasedAt)));
 
     const live = rows.filter((row) => row.group.deletedAt === null && row.courseDeletedAt === null);
     const ids = live.map((row) => row.group.id);

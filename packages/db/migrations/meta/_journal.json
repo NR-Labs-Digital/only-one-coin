@@ -484,6 +484,13 @@
       "when": 1795471351106,
       "tag": "0068_legacy_review_queue_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795472429744,
+      "tag": "0069_class_group_erased",
+      "breakpoints": true
     }
   ]
 }

@@ -12,18 +12,19 @@ const DeleteClassGroupsResponseSchema = z.object({
   results: z.array(
     z.discriminatedUnion("outcome", [
       z.object({ id: z.string().uuid(), outcome: z.literal("deleted") }),
+      z.object({ id: z.string().uuid(), outcome: z.literal("erased"), reason: z.enum(CLASS_GROUP_DELETE_BLOCKERS) }),
       z.object({ id: z.string().uuid(), outcome: z.literal("not_found") }),
-      z.object({ id: z.string().uuid(), outcome: z.literal("blocked"), blocker: z.enum(CLASS_GROUP_DELETE_BLOCKERS) }),
     ]),
   ),
 });
 
 /**
- * Deletes, for good, the class groups that never touched a person — the one
- * exception to "Catálogo sai do ar, não some" (CLAUDE.md §1, 23/11/2026).
- * One or many: the list screen's selection sends many, the class group page
- * one. Each id answers on its own — a class group with history is refused
- * (`blocked`, with why) and the rest still go.
+ * Takes class groups out of the catalog for good — the exception to
+ * "Catálogo sai do ar, não some" (CLAUDE.md §1, 23/11/2026). One that never
+ * touched a person is deleted for real; one with history is erased: hidden
+ * from every catalog screen and never restored, its enrollments and payments
+ * untouched. One or many: the list's selection sends many, the class group
+ * page one. Each id answers on its own.
  *
  * Same roles that retire a class group (`CATALOG_WRITE_ROLES`): whoever takes
  * one off the catalog can also take back one that should never have been
@@ -32,9 +33,9 @@ const DeleteClassGroupsResponseSchema = z.object({
 export const deleteClassGroupsRoute = RouteBuilder.post("/catalog/class-groups/delete")
   .docs({
     tags: ["Catalog"],
-    summary: "Delete class groups nobody ever touched",
+    summary: "Delete class groups for good",
     description:
-      "Physically deletes each class group with no enrollment, waitlist entry, live checkout hold or copy, with its module runs. Anything else answers `blocked` and stays.",
+      "Physically deletes each class group with no enrollment, waitlist entry, live checkout hold or copy, with its module runs. One with history is erased instead: retired, hidden from every catalog read and never restored.",
   })
   .roles("master", "admin", "enrollment_supervisor")
   .body(DeleteClassGroupsBodySchema)

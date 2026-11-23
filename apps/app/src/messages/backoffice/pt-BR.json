@@ -376,7 +376,8 @@
         "issued_document_issued": "Documento emitido",
         "issued_document_downloaded": "Documento emitido baixado",
         "certificate_batch_issued": "Certificados emitidos em lote",
-        "class_group_deleted": "Turma excluída"
+        "class_group_deleted": "Turma excluída",
+        "class_group_erased": "Turma excluída (com histórico)"
       },
       "field": {
         "first_name": "Nome",
@@ -1311,20 +1312,19 @@
       "bulk_retire_already": "{count, plural, one {# já estava fora do catálogo e fica como está.} other {# já estavam fora do catálogo e ficam como estão.}}",
       "bulk_retire_confirm": "Tirar {count}",
       "bulk_delete_title": "{count, plural, one {Excluir # turma para sempre?} other {Excluir # turmas para sempre?}}",
-      "bulk_delete_body": "São apagadas da plataforma com os grupos por módulo. Não dá para desfazer. Só são excluídas turmas que ninguém tocou: sem matrícula, lista de espera nem cópia.",
-      "bulk_delete_kept": "{count, plural, one {# turma selecionada tem histórico e não é excluída. Para tirá-la da venda, tire-a do catálogo.} other {# turmas selecionadas têm histórico e não são excluídas. Para tirá-las da venda, tire-as do catálogo.}}",
+      "bulk_delete_body": "Não dá para desfazer nem reativar depois.",
+      "bulk_delete_kept": "{count, plural, one {Tem histórico: sai de todas as telas do catálogo e não volta. As matrículas e os pagamentos dela ficam, em Matrículas e Pagos.} other {Têm histórico: saem de todas as telas do catálogo e não voltam. As matrículas e os pagamentos delas ficam, em Matrículas e Pagos.}}",
       "bulk_delete_confirm": "Excluir {count}",
       "bulk_retired": "{count, plural, =0 {Nenhuma turma saiu do catálogo.} one {# turma tirada do catálogo.} other {# turmas tiradas do catálogo.}}",
       "bulk_retire_left": "{count, plural, one {# não pôde ser tirada; tente de novo.} other {# não puderam ser tiradas; tente de novo.}}",
       "bulk_deleted": "{count, plural, =0 {Nenhuma turma foi excluída.} one {# turma excluída.} other {# turmas excluídas.}}",
-      "bulk_delete_left": "{count, plural, one {# não foi excluída porque ganhou histórico ou falhou; confira a lista.} other {# não foram excluídas porque ganharam histórico ou falharam; confira a lista.}}",
+      "bulk_delete_left": "{count, plural, one {# já não estava no catálogo.} other {# já não estavam no catálogo.}}",
       "delete_blocker_enrollments": "teve matrículas",
       "delete_blocker_waitlist": "teve lista de espera",
       "delete_blocker_checkout": "há uma matrícula em andamento",
       "delete_blocker_copies": "outro período foi copiado dela",
       "delete_blocker_history": "tem histórico na plataforma",
-      "selection_kept": "{count, plural, one {# turma selecionada tem histórico (matrículas, lista de espera ou cópia) e só pode sair do catálogo, não ser excluída.} other {# turmas selecionadas têm histórico (matrículas, lista de espera ou cópia) e só podem sair do catálogo, não ser excluídas.}}",
-      "selection_kept_show": "Ver por quê"
+      "bulk_delete_gone": "{count, plural, one {É apagada da plataforma (ninguém a usou):} other {São apagadas da plataforma (ninguém as usou):}}"
     },
     "periods": {
       "label": "Período de matrícula",
@@ -1432,7 +1432,7 @@
       "restored": "Turma de volta ao catálogo",
       "delete": "Excluir",
       "confirm_delete": "Excluir a turma {code} para sempre? Ninguém se matriculou nela. Ela é apagada com os grupos por módulo e não dá para desfazer.",
-      "delete_refused": "Não foi excluída: {reason}. Tire-a do catálogo."
+      "confirm_erase": "Excluir a turma {code} para sempre? Como ela {reason}, não sai do banco: sai de todas as telas do catálogo e não pode ser reativada. As matrículas e os pagamentos dela ficam, em Matrículas e Pagos."
     },
     "waitlist": {
       "title": "Lista de espera",

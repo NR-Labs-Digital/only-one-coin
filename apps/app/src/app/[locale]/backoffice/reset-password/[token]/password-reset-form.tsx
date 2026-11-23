@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
+import { staffDoorOnHost } from '@/lib/hosts'
 import { PASSWORD_MIN_LENGTH } from '@/lib/backoffice/account'
 import {
   CheckCircleIcon,
@@ -63,7 +64,7 @@ export function PasswordResetForm({
           {t('reset_done_title')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('reset_done_body')}</p>
-        <Link href="/backoffice" className={`${primaryButtonClass} mt-6`}>
+        <Link href={staffDoorOnHost(window.location.host)} className={`${primaryButtonClass} mt-6`}>
           {t('reset_done_cta')}
         </Link>
       </div>
@@ -112,7 +113,14 @@ export function PasswordResetForm({
         // With the second factor on, the password opens no session: Better
         // Auth answers `twoFactorRedirect` and the login screen asks the code.
         const body = (await signIn.json().catch(() => null)) as { twoFactorRedirect?: boolean } | null
-        router.push(body?.twoFactorRedirect ? '/backoffice?mfa=challenge' : '/backoffice/home')
+        const door = staffDoorOnHost(window.location.host)
+        router.push(
+          body?.twoFactorRedirect
+            ? { pathname: door, query: { mfa: 'challenge' } }
+            : door === '/docente'
+              ? '/docente/home'
+              : '/backoffice/home',
+        )
         return
       }
 
