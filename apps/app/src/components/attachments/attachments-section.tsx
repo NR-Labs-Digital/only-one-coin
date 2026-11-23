@@ -90,6 +90,9 @@ export function AttachmentsSection({
   const [origin, setOrigin] = useState<OriginFilter>('all')
   const [revoking, setRevoking] = useState<string | null>(null)
   const [revokeReason, setRevokeReason] = useState('')
+  // Revoked here, before the server list catches up: the row changes the
+  // moment the API answers, whatever the refresh does.
+  const [revokedHere, setRevokedHere] = useState<ReadonlySet<string>>(new Set())
   const router = useRouter()
 
   const limits = list?.limits ?? null
@@ -163,6 +166,7 @@ export function AttachmentsSection({
     }
     setRevoking(null)
     setRevokeReason('')
+    setRevokedHere((current) => new Set(current).add(item.id))
     setNotice({ tone: 'ok', key: 'revoked', values: { code: item.code } })
     // The list is read on the server: read it again with the new status.
     router.refresh()
@@ -182,7 +186,9 @@ export function AttachmentsSection({
   }
 
   const items = list?.items ?? []
-  const issuedItems = issued ?? []
+  const issuedItems = (issued ?? []).map((item) =>
+    item.status === 'valid' && revokedHere.has(item.id) ? { ...item, status: 'revoked' as const } : item,
+  )
   const countOf = (filter: OriginFilter) =>
     filter === 'all'
       ? items.length + issuedItems.length
