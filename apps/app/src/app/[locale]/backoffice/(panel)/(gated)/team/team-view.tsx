@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Link, getPathname } from '@/i18n/navigation'
 import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { buildInvitePath, isInviteExpired } from '@/lib/backoffice/invite'
+import { staffAccountOrigin } from '@/lib/hosts'
 import { formatDate, formatDateTime, initials, type Locale } from '@/lib/format'
 import {
   Card,
@@ -293,7 +294,7 @@ export function TeamView({
   async function copyInviteLink(member: StaffMemberRow) {
     if (!member.inviteToken) return
     const path = getPathname({ href: buildInvitePath(member.inviteToken), locale })
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const origin = typeof window !== 'undefined' ? staffAccountOrigin(window.location.origin, member.role) : ''
     try {
       await navigator.clipboard.writeText(`${origin}${path}`)
       setCopiedId(member.id)
@@ -319,7 +320,7 @@ export function TeamView({
       }
       const result = (await response.json()) as { token: string; expiresAt: string }
       const path = getPathname({ href: `/backoffice/reset-password/${result.token}`, locale })
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const origin = typeof window !== 'undefined' ? staffAccountOrigin(window.location.origin, member.role) : ''
       setResetLink({ name: `${member.firstName} ${member.lastName}`, link: `${origin}${path}` })
     } finally {
       setBusyId(null)

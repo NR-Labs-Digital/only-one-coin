@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
+import { staffDoorOnHost } from '@/lib/hosts'
 import { PASSWORD_MIN_LENGTH } from '@/lib/backoffice/account'
 import {
   CheckCircleIcon,
@@ -66,7 +67,7 @@ export function InviteCompletionForm({
           {t('invite_done_title')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('invite_done_body')}</p>
-        <Link href="/backoffice" className={`${primaryButtonClass} mt-6`}>
+        <Link href={staffDoorOnHost(window.location.host)} className={`${primaryButtonClass} mt-6`}>
           {t('invite_done_cta')}
         </Link>
       </div>
@@ -112,7 +113,7 @@ export function InviteCompletionForm({
       })
 
       if (signIn.ok) {
-        router.push('/backoffice/home')
+        router.push(staffDoorOnHost(window.location.host) === '/docente' ? '/docente/home' : '/backoffice/home')
         return
       }
 

@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { AuthBannerLayout } from '@/components/auth/auth-banner-layout'
-import { StaffLoginForm } from '@/components/backoffice/staff-login-form'
+import { StaffLoginForm, type InitialLoginStep } from '@/components/backoffice/staff-login-form'
 import { redirect } from '@/i18n/navigation'
 import { isStaffSignedIn } from '@/lib/backoffice/session'
 
@@ -15,18 +15,32 @@ import { isStaffSignedIn } from '@/lib/backoffice/session'
  * who signs in here lands on the backoffice; a teacher who signs in there
  * lands here (CLAUDE.md §8).
  */
+/**
+ * `?mfa=challenge` opens the form on the code step: a teacher who just set a
+ * password (invite or reset, on the teacher domain) and has the factor on is
+ * sent here with Better Auth holding the session for the code. The teacher
+ * cargo never has to turn the factor on, so `setup` is not a step here.
+ */
+const INITIAL_STEPS: Record<string, InitialLoginStep> = {
+  challenge: 'mfa',
+}
+
 export default async function TeacherLoginPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ mfa?: string | string[] }>
 }) {
   const { locale } = await params
+  const { mfa } = await searchParams
+  const initialStep = typeof mfa === 'string' ? INITIAL_STEPS[mfa] : undefined
   setRequestLocale(locale)
 
   /* A live session has nothing to do on the login. Anybody but a teacher goes on
      to the backoffice from the portal's shell (`getTeacherSession`), the one
      place that decides it. */
-  if (await isStaffSignedIn()) {
+  if (!initialStep && (await isStaffSignedIn())) {
     redirect({ href: '/docente/home', locale })
   }
 
@@ -38,6 +52,7 @@ export default async function TeacherLoginPage({
     <AuthBannerLayout door="teacher" badge={t('badge')}>
       <StaffLoginForm
         homeHref="/docente/home"
+        initialStep={initialStep}
         heading={{ title: t('login_title'), subtitle: t('login_subtitle') }}
       />
     </AuthBannerLayout>
