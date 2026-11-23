@@ -11,6 +11,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canBrowseCatalog,
   canCreateClassGroup,
+  canRetireCatalogEntry,
   canManagePeriods,
 } from '@/lib/backoffice/permissions'
 import { Card, EmptyState, PageHeader } from '@/components/backoffice/ui'
@@ -79,6 +80,7 @@ export default async function ClassGroupsPage({
             selectedPeriodId={selectedPeriodId}
             canManage={canManage}
             canManagePeriods={canManagePeriods(staff.role)}
+            canRetire={canRetireCatalogEntry(staff.role)}
             pendingCount={pending?.length ?? null}
           />
       )}

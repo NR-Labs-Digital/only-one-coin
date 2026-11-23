@@ -507,7 +507,16 @@ export interface ClassGroupItem {
   /** False once retired from the catalog — the row stays, off sale. */
   active: boolean
   waitlistCount: number
+  /** Why it cannot be deleted, only retired; null = nothing ever touched it (23/11/2026). */
+  deleteBlocker: ClassGroupDeleteBlocker | null
 }
+
+/**
+ * What keeps a class group from being deleted — mirrors
+ * `CLASS_GROUP_DELETE_BLOCKERS` in the domain: somebody enrolled, waited, is
+ * checking out now, or a later period was copied from it.
+ */
+export type ClassGroupDeleteBlocker = 'enrollments' | 'waitlist' | 'checkout' | 'copies' | 'history'
 
 /**
  * A teacher the class group form can allocate (OOC-80, `GET /catalog/teacher-options`):

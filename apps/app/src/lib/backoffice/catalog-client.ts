@@ -1,4 +1,4 @@
-import type { CatalogEntryKind, CatalogErrorKey } from './types'
+import type { CatalogEntryKind, CatalogErrorKey, ClassGroupDeleteBlocker } from './types'
 
 export type CatalogWriteResult<T> = { ok: true; data: T } | { ok: false; error: CatalogErrorKey }
 
@@ -108,4 +108,32 @@ export async function readCatalogEntryState(
   } catch {
     return null
   }
+}
+
+/** What the delete answered for one class group. */
+export type ClassGroupDeleteResult =
+  | { id: string; outcome: 'deleted' | 'not_found' }
+  | { id: string; outcome: 'blocked'; blocker: ClassGroupDeleteBlocker }
+
+/** The API's own cap on one request; more ids go in several. */
+const DELETE_CHUNK = 100
+
+/**
+ * Deletes, for good, the class groups that never touched a person (CLAUDE.md
+ * §1, exception of 23/11/2026). Each id answers on its own: one with history
+ * comes back `blocked` and stays, the others still go. A request that failed
+ * as a whole answers `ok: false`, with whatever earlier chunks already did.
+ */
+export async function deleteClassGroups(
+  ids: string[],
+): Promise<{ ok: boolean; results: ClassGroupDeleteResult[] }> {
+  const results: ClassGroupDeleteResult[] = []
+  for (let start = 0; start < ids.length; start += DELETE_CHUNK) {
+    const answer = await catalogWrite<{ results: ClassGroupDeleteResult[] }>('/class-groups/delete', 'POST', {
+      ids: ids.slice(start, start + DELETE_CHUNK),
+    })
+    if (!answer.ok) return { ok: false, results }
+    results.push(...answer.data.results)
+  }
+  return { ok: true, results }
 }

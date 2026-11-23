@@ -1,4 +1,5 @@
 import {
+  CLASS_GROUP_DELETE_BLOCKERS,
   CertificateRuleSchema,
   ClassGroupStatusSchema,
   ClassroomLinkPatchSchema,
@@ -136,6 +137,8 @@ export const ClassGroupItemSchema = z.object({
   status: ClassGroupStatusSchema,
   active: z.boolean(),
   waitlistCount: z.number().int(),
+  /** Why it cannot be deleted, only retired; null = nothing ever touched it (23/11/2026). */
+  deleteBlocker: z.enum(CLASS_GROUP_DELETE_BLOCKERS).nullable(),
 });
 
 export const WaitlistItemSchema = z.object({

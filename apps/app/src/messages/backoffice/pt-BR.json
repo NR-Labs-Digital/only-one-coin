@@ -375,7 +375,8 @@
         "progression_applied": "Alunos avançados de módulo",
         "issued_document_issued": "Documento emitido",
         "issued_document_downloaded": "Documento emitido baixado",
-        "certificate_batch_issued": "Certificados emitidos em lote"
+        "certificate_batch_issued": "Certificados emitidos em lote",
+        "class_group_deleted": "Turma excluída"
       },
       "field": {
         "first_name": "Nome",
@@ -1294,7 +1295,34 @@
       "field_meet": "Google Meet",
       "meet_placeholder": "https://meet.google.com/…",
       "meet_invalid": "Cole um link https://meet.google.com/…",
-      "meet_missing": "Sem Meet"
+      "meet_missing": "Sem Meet",
+      "col_select": "Selecionar",
+      "select_all": "Selecionar todas as turmas desta lista",
+      "select_row": "Selecionar a turma {code}",
+      "selection_label": "Turmas selecionadas",
+      "selection_cancel": "Limpar seleção",
+      "selected_count": "{count, plural, one {# turma selecionada} other {# turmas selecionadas}}",
+      "bulk_retire": "Tirar do catálogo ({count})",
+      "bulk_delete": "Excluir ({count})",
+      "bulk_retire_title": "{count, plural, one {Tirar # turma do catálogo?} other {Tirar # turmas do catálogo?}}",
+      "bulk_retire_body": "Saem da venda e continuam na plataforma. As matrículas que já existem não mudam, e dá para reativar uma por uma.",
+      "bulk_retire_seats": "{count, plural, one {Ainda há # vaga ocupada nessas turmas.} other {Ainda há # vagas ocupadas nessas turmas.}}",
+      "bulk_retire_no_seats": "Nenhuma dessas turmas tem vaga ocupada.",
+      "bulk_retire_already": "{count, plural, one {# já estava fora do catálogo e fica como está.} other {# já estavam fora do catálogo e ficam como estão.}}",
+      "bulk_retire_confirm": "Tirar {count}",
+      "bulk_delete_title": "{count, plural, one {Excluir # turma para sempre?} other {Excluir # turmas para sempre?}}",
+      "bulk_delete_body": "São apagadas da plataforma com os grupos por módulo. Não dá para desfazer. Só são excluídas turmas que ninguém tocou: sem matrícula, lista de espera nem cópia.",
+      "bulk_delete_kept": "{count, plural, one {# turma selecionada tem histórico e não é excluída. Para tirá-la da venda, tire-a do catálogo.} other {# turmas selecionadas têm histórico e não são excluídas. Para tirá-las da venda, tire-as do catálogo.}}",
+      "bulk_delete_confirm": "Excluir {count}",
+      "bulk_retired": "{count, plural, =0 {Nenhuma turma saiu do catálogo.} one {# turma tirada do catálogo.} other {# turmas tiradas do catálogo.}}",
+      "bulk_retire_left": "{count, plural, one {# não pôde ser tirada; tente de novo.} other {# não puderam ser tiradas; tente de novo.}}",
+      "bulk_deleted": "{count, plural, =0 {Nenhuma turma foi excluída.} one {# turma excluída.} other {# turmas excluídas.}}",
+      "bulk_delete_left": "{count, plural, one {# não foi excluída porque ganhou histórico ou falhou; confira a lista.} other {# não foram excluídas porque ganharam histórico ou falharam; confira a lista.}}",
+      "delete_blocker_enrollments": "teve matrículas",
+      "delete_blocker_waitlist": "teve lista de espera",
+      "delete_blocker_checkout": "há uma matrícula em andamento",
+      "delete_blocker_copies": "outro período foi copiado dela",
+      "delete_blocker_history": "tem histórico na plataforma"
     },
     "periods": {
       "label": "Período de matrícula",
@@ -1399,7 +1427,10 @@
       "confirm_retire": "A matrícula deixa de oferecer esta turma. As matrículas já feitas não mudam e continuam no livro.",
       "confirm_restore": "A turma volta ao catálogo com o status que tinha.",
       "retired_notice": "{count, plural, =0 {Turma fora do catálogo.} one {Turma fora do catálogo. # matrícula continua em andamento.} other {Turma fora do catálogo. # matrículas continuam em andamento.}}",
-      "restored": "Turma de volta ao catálogo"
+      "restored": "Turma de volta ao catálogo",
+      "delete": "Excluir",
+      "confirm_delete": "Excluir a turma {code} para sempre? Ninguém se matriculou nela. Ela é apagada com os grupos por módulo e não dá para desfazer.",
+      "delete_refused": "Não foi excluída: {reason}. Tire-a do catálogo."
     },
     "waitlist": {
       "title": "Lista de espera",

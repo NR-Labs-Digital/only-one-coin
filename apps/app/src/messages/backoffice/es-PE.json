@@ -375,7 +375,8 @@
         "progression_applied": "Alumnos pasados de módulo",
         "issued_document_issued": "Documento emitido",
         "issued_document_downloaded": "Documento emitido descargado",
-        "certificate_batch_issued": "Certificados emitidos en lote"
+        "certificate_batch_issued": "Certificados emitidos en lote",
+        "class_group_deleted": "Aula eliminada"
       },
       "field": {
         "first_name": "Nombre",
@@ -1294,7 +1295,34 @@
       "field_meet": "Google Meet",
       "meet_placeholder": "https://meet.google.com/…",
       "meet_invalid": "Pega un enlace https://meet.google.com/…",
-      "meet_missing": "Sin Meet"
+      "meet_missing": "Sin Meet",
+      "col_select": "Seleccionar",
+      "select_all": "Seleccionar todas las aulas de esta lista",
+      "select_row": "Seleccionar el aula {code}",
+      "selection_label": "Aulas seleccionadas",
+      "selection_cancel": "Limpiar selección",
+      "selected_count": "{count, plural, one {# aula seleccionada} other {# aulas seleccionadas}}",
+      "bulk_retire": "Retirar del catálogo ({count})",
+      "bulk_delete": "Eliminar ({count})",
+      "bulk_retire_title": "{count, plural, one {¿Retirar # aula del catálogo?} other {¿Retirar # aulas del catálogo?}}",
+      "bulk_retire_body": "Salen de la venta y quedan en la plataforma. Las matrículas que ya existen no cambian, y se pueden reactivar una por una.",
+      "bulk_retire_seats": "{count, plural, one {Todavía hay # vacante ocupada en estas aulas.} other {Todavía hay # vacantes ocupadas en estas aulas.}}",
+      "bulk_retire_no_seats": "Ninguna de estas aulas tiene vacantes ocupadas.",
+      "bulk_retire_already": "{count, plural, one {# ya estaba retirada y queda como está.} other {# ya estaban retiradas y quedan como están.}}",
+      "bulk_retire_confirm": "Retirar {count}",
+      "bulk_delete_title": "{count, plural, one {¿Eliminar # aula para siempre?} other {¿Eliminar # aulas para siempre?}}",
+      "bulk_delete_body": "Se borran de la plataforma con sus grupos por módulo. No se puede deshacer. Solo se eliminan aulas que nadie tocó: sin matrícula, lista de espera ni copia.",
+      "bulk_delete_kept": "{count, plural, one {# aula seleccionada tiene historial y no se elimina. Para sacarla de la venta, retírala del catálogo.} other {# aulas seleccionadas tienen historial y no se eliminan. Para sacarlas de la venta, retíralas del catálogo.}}",
+      "bulk_delete_confirm": "Eliminar {count}",
+      "bulk_retired": "{count, plural, =0 {Ninguna aula fue retirada.} one {# aula retirada del catálogo.} other {# aulas retiradas del catálogo.}}",
+      "bulk_retire_left": "{count, plural, one {# no se pudo retirar; inténtalo de nuevo.} other {# no se pudieron retirar; inténtalo de nuevo.}}",
+      "bulk_deleted": "{count, plural, =0 {Ninguna aula fue eliminada.} one {# aula eliminada.} other {# aulas eliminadas.}}",
+      "bulk_delete_left": "{count, plural, one {# no se eliminó porque ganó historial o falló; revisa la lista.} other {# no se eliminaron porque ganaron historial o fallaron; revisa la lista.}}",
+      "delete_blocker_enrollments": "tuvo matrículas",
+      "delete_blocker_waitlist": "tuvo lista de espera",
+      "delete_blocker_checkout": "hay una matrícula en curso",
+      "delete_blocker_copies": "otro período se copió de ella",
+      "delete_blocker_history": "tiene historial en la plataforma"
     },
     "periods": {
       "label": "Período de matrícula",
@@ -1399,7 +1427,10 @@
       "confirm_retire": "La matrícula deja de ofrecer esta aula. Las matrículas ya hechas no cambian y siguen en el libro.",
       "confirm_restore": "El aula vuelve al catálogo con el estado que tenía.",
       "retired_notice": "{count, plural, =0 {Aula fuera de catálogo.} one {Aula fuera de catálogo. # matrícula sigue en curso.} other {Aula fuera de catálogo. # matrículas siguen en curso.}}",
-      "restored": "Aula de vuelta en el catálogo"
+      "restored": "Aula de vuelta en el catálogo",
+      "delete": "Eliminar",
+      "confirm_delete": "¿Eliminar el aula {code} para siempre? Nadie se matriculó en ella. Se borra con sus grupos por módulo y no se puede deshacer.",
+      "delete_refused": "No se eliminó: {reason}. Retírala del catálogo."
     },
     "waitlist": {
       "title": "Lista de espera",

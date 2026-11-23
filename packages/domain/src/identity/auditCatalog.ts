@@ -157,6 +157,8 @@ export const AUDIT_ACTIONS = {
   "catalog.class_group.module_added": { key: "class_group_module_added", entity: "class_group", subject: "target" },
   "catalog.class_group.module_updated": { key: "class_group_module_updated", entity: "class_group", subject: "target" },
   "catalog.class_group.module_retired": { key: "class_group_module_retired", entity: "class_group", subject: "target" },
+  // Deleted for good (23/11/2026): no page left to link to.
+  "catalog.class_group.deleted": { key: "class_group_deleted", entity: "class_group", subject: "none" },
   "catalog.class_group.status_changed": {
     key: "class_group_status_changed",
     entity: "class_group",

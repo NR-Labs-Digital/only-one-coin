@@ -65,6 +65,7 @@ export type BoIconName =
   | 'undo'
   | 'redo'
   | 'tag'
+  | 'trash'
 
 const paths: Record<BoIconName, ReactElement> = {
   dashboard: <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" />,
@@ -166,6 +167,7 @@ const paths: Record<BoIconName, ReactElement> = {
   undo: <path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />,
   redo: <path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />,
   tag: <path d="M3 12V4h8l9 9-8 8zM7.5 7.5h.01" />,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" />,
 }
 
 export function BoIcon({

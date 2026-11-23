@@ -90,6 +90,7 @@ import {
   ResolvePortalSignInEmailUseCase,
   ScreenReceiptUploadUseCase,
   RetireCatalogEntryUseCase,
+  DeleteClassGroupsUseCase,
   GetCatalogEntryStateUseCase,
   CreateLanguageUseCase,
   RenameLanguageUseCase,
@@ -238,6 +239,7 @@ import { ListEnrollmentsQuery } from "./infra/persistence/enrollment/ListEnrollm
 import { ListOpenClassGroupsQuery } from "./infra/persistence/catalog/ListOpenClassGroupsQuery.js";
 import { GetPublicCatalogQuery } from "./infra/persistence/catalog/GetPublicCatalogQuery.js";
 import { DrizzleCatalogEntryRepository } from "./infra/persistence/catalog/DrizzleCatalogEntryRepository.js";
+import { DrizzleClassGroupDeletionRepository } from "./infra/persistence/catalog/DrizzleClassGroupDeletionRepository.js";
 import { DrizzleCourseRepository } from "./infra/persistence/catalog/DrizzleCourseRepository.js";
 import { DrizzleLanguageRepository } from "./infra/persistence/catalog/DrizzleLanguageRepository.js";
 import { ListLanguagesQuery } from "./infra/persistence/catalog/ListLanguagesQuery.js";
@@ -441,6 +443,7 @@ export interface AppUseCases {
   };
   catalog: {
     retire: RetireCatalogEntryUseCase;
+    deleteClassGroups: DeleteClassGroupsUseCase;
     restore: RestoreCatalogEntryUseCase;
     getState: GetCatalogEntryStateUseCase;
     createCourse: CreateCourseUseCase;
@@ -807,6 +810,7 @@ function buildContainer(): AppContainer {
   const updateSettings = new UpdatePlatformSettingsUseCase(platformSettingsRepository);
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
+  const deleteClassGroups = new DeleteClassGroupsUseCase(new DrizzleClassGroupDeletionRepository(db));
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const getCatalogEntryState = new GetCatalogEntryStateUseCase(catalogEntryRepository);
   const createCourse = new CreateCourseUseCase(courseRepository, languageRepository, auditLogRepository);
@@ -1105,6 +1109,7 @@ function buildContainer(): AppContainer {
       },
       catalog: {
         retire: retireCatalogEntry,
+        deleteClassGroups,
         restore: restoreCatalogEntry,
         getState: getCatalogEntryState,
         createCourse,

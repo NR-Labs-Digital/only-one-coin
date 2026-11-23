@@ -1,8 +1,16 @@
 import { academicPeriods, classGroupModules, classGroups, courses, enrollments, teachers, waitlistEntries } from "@ooc/db";
-import { classroomLinksOf, isMissingClassroom, type ClassGroupStatus, type ClassroomLink, type WeeklySlot } from "@ooc/domain";
+import {
+  classroomLinksOf,
+  isMissingClassroom,
+  type ClassGroupDeleteBlocker,
+  type ClassGroupStatus,
+  type ClassroomLink,
+  type WeeklySlot,
+} from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { enrollmentModuleId, MODULE_ORDER } from "./classGroupModuleSql.js";
+import { classGroupDeleteBlockerSql } from "./classGroupDeleteBlocker.js";
 import { pendingTeacherClassGroup } from "./pendingTeacherClassGroup.js";
 
 /** One module run of a class group (OOC-156) — the "sub-turma": its own teacher, schedule and Classroom. */
@@ -94,6 +102,8 @@ export interface ClassGroupItem {
   active: boolean;
   /** People still waiting (left_at is null). */
   waitlistCount: number;
+  /** Why it cannot be deleted, only retired; null = nothing ever touched it (`classGroupDeleteBlockerSql`). */
+  deleteBlocker: ClassGroupDeleteBlocker | null;
 }
 
 export interface ClassGroupFilter {
@@ -171,6 +181,7 @@ export class ListClassGroupsQuery {
         courseModules: courses.modules,
         periodName: academicPeriods.name,
         waitlistCount,
+        deleteBlocker: classGroupDeleteBlockerSql(sql`${classGroups.id}`),
       })
       .from(classGroups)
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
@@ -192,7 +203,7 @@ export class ListClassGroupsQuery {
       new Map(rows.map(({ row, courseModules }) => [row.id, courseModules])),
     );
 
-    return rows.map(({ row, courseName, language, courseDeletedAt, periodName, waitlistCount: waiting }) => {
+    return rows.map(({ row, courseName, language, courseDeletedAt, periodName, waitlistCount: waiting, deleteBlocker }) => {
       const modules = runs.get(row.id) ?? [];
       const first = modules[0];
       return {
@@ -227,6 +238,7 @@ export class ListClassGroupsQuery {
       status: row.status as ClassGroupStatus,
       active: row.deletedAt === null,
       waitlistCount: waiting,
+      deleteBlocker,
       };
     });
   }
