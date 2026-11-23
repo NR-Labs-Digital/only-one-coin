@@ -130,8 +130,7 @@ export function ClassGroupsView({
   const [draftsOpen, setDraftsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  /** Ticking rows to retire or delete them together (23/11/2026). */
-  const [selecting, setSelecting] = useState(false)
+  /** Rows ticked to retire or delete together (23/11/2026). */
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
 
   /**
@@ -251,7 +250,9 @@ export function ClassGroupsView({
      drops the rest without a stale count. */
   const selectedRows = useMemo(() => items.filter((row) => selected.has(row.id)), [items, selected])
 
-  const selection: ClassGroupSelection | null = selecting
+  /* The checkboxes are always there for who can retire — no mode to switch
+     on first. */
+  const selection: ClassGroupSelection | null = canRetire
     ? {
         selected,
         toggle: (id) =>
@@ -272,19 +273,18 @@ export function ClassGroupsView({
           }),
       }
     : null
-  const columnCount = classGroupColumnCount(selecting)
+  const columnCount = classGroupColumnCount(selection !== null)
   /* The header checkbox ticks what is on screen: a folded language stays as it is. */
   const activeVisibleIds = activeByLanguage.flatMap((entry) =>
     narrowed || opened.includes(entry.id) ? entry.groups.map((row) => row.id) : [],
   )
 
-  function stopSelecting() {
-    setSelecting(false)
+  function clearSelection() {
     setSelected(new Set())
   }
 
   function bulkDone(outcome: BulkOutcome) {
-    stopSelecting()
+    clearSelection()
     setToast(
       [
         t(outcome.action === 'retire' ? 'class_groups.bulk_retired' : 'class_groups.bulk_deleted', {
@@ -474,17 +474,6 @@ export function ClassGroupsView({
           {t(sort === 'newest' ? 'class_groups.sort_newest' : 'class_groups.sort_oldest')}
         </button>
 
-        {canRetire && (
-          <button
-            type="button"
-            aria-pressed={selecting}
-            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink aria-pressed:border-brand-blue aria-pressed:text-brand-blue"
-          >
-            <BoIcon name="check" size={16} />
-            {t(selecting ? 'class_groups.selection_cancel' : 'class_groups.select')}
-          </button>
-        )}
       </Toolbar>
 
       {creating &&
@@ -532,6 +521,13 @@ export function ClassGroupsView({
             {t('class_groups.pending_show')}
           </Link>
         </Card>
+      )}
+
+      {/* Right above the lists and pinned under the header while scrolling:
+          where the ticking happens, never at a window edge that may be off
+          screen. */}
+      {selectedRows.length > 0 && (
+        <ClassGroupSelectionBar rows={selectedRows} onClear={clearSelection} onDone={bulkDone} />
       )}
 
       <ClassGroupSelectionContext.Provider value={selection}>
@@ -691,10 +687,6 @@ export function ClassGroupsView({
       </section>
 
       </ClassGroupSelectionContext.Provider>
-
-      {selecting && selectedRows.length > 0 && (
-        <ClassGroupSelectionBar rows={selectedRows} onClear={stopSelecting} onDone={bulkDone} />
-      )}
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
