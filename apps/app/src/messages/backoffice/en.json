@@ -1322,7 +1322,9 @@
       "delete_blocker_waitlist": "it had a waitlist",
       "delete_blocker_checkout": "an enrollment is in progress",
       "delete_blocker_copies": "another period was copied from it",
-      "delete_blocker_history": "it has history on the platform"
+      "delete_blocker_history": "it has history on the platform",
+      "selection_kept": "{count, plural, one {# selected class group has history (enrollments, a waitlist or a copy) and can only be taken off the catalog, not deleted.} other {# selected class groups have history (enrollments, a waitlist or a copy) and can only be taken off the catalog, not deleted.}}",
+      "selection_kept_show": "See why"
     },
     "periods": {
       "label": "Enrollment period",

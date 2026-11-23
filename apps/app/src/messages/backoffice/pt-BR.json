@@ -1322,7 +1322,9 @@
       "delete_blocker_waitlist": "teve lista de espera",
       "delete_blocker_checkout": "há uma matrícula em andamento",
       "delete_blocker_copies": "outro período foi copiado dela",
-      "delete_blocker_history": "tem histórico na plataforma"
+      "delete_blocker_history": "tem histórico na plataforma",
+      "selection_kept": "{count, plural, one {# turma selecionada tem histórico (matrículas, lista de espera ou cópia) e só pode sair do catálogo, não ser excluída.} other {# turmas selecionadas têm histórico (matrículas, lista de espera ou cópia) e só podem sair do catálogo, não ser excluídas.}}",
+      "selection_kept_show": "Ver por quê"
     },
     "periods": {
       "label": "Período de matrícula",
