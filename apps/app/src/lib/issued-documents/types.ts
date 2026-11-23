@@ -15,7 +15,16 @@ export interface IssuedDocumentItem {
   /** Catalog data, allowed on screen (CLAUDE.md §4). */
   courseName: string
   issuedAt: string
+  /** What the public validation page says about it (OOC-59). */
+  status: IssuedDocumentStatus
+  revokedAt: string | null
 }
+
+/** Mirrors `ISSUED_DOCUMENT_STATUSES` in `packages/domain`. */
+export type IssuedDocumentStatus = 'valid' | 'revoked' | 'replaced'
+
+/** Why a revocation did not go through, as the screen words it. */
+export type RevokeFailure = 'reason_required' | 'already_revoked' | 'generic'
 
 /** Where a surface reads its issued documents: the panel names the student,
  * the portal never does — it is the chosen profile (OOC-147). */

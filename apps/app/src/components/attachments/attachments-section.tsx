@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatDate, formatFileSize, type Locale } from '@/lib/format'
 import {
@@ -19,7 +20,7 @@ import {
   type AttachmentList,
   type AttachmentSource,
 } from '@/lib/attachments/types'
-import { downloadIssuedDocument } from '@/lib/issued-documents/client'
+import { downloadIssuedDocument, revokeIssuedDocument } from '@/lib/issued-documents/client'
 import type { IssuedDocumentItem, IssuedDocumentScope } from '@/lib/issued-documents/types'
 
 /** What the type list says in the rules line: brand-free, short. */
@@ -60,6 +61,7 @@ export function AttachmentsSection({
   canRemove,
   issued,
   issuedScope,
+  canRevokeIssued = false,
 }: {
   scope: AttachmentScope
   /** The documents the institution issued about the student (OOC-33); null when unreadable. */
@@ -71,6 +73,8 @@ export function AttachmentsSection({
   variant: 'staff' | 'portal'
   canUpload: boolean
   canRemove: boolean
+  /** Staff only: revoke an issued document, with a reason (OOC-59). */
+  canRevokeIssued?: boolean
 }) {
   const t = useTranslations('attachments')
   const locale = useLocale() as Locale
@@ -84,6 +88,9 @@ export function AttachmentsSection({
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [origin, setOrigin] = useState<OriginFilter>('all')
+  const [revoking, setRevoking] = useState<string | null>(null)
+  const [revokeReason, setRevokeReason] = useState('')
+  const router = useRouter()
 
   const limits = list?.limits ?? null
   const failureNotice = (failure: AttachmentFailure): Notice => ({
@@ -143,6 +150,22 @@ export function AttachmentsSection({
     if (!(await downloadIssuedDocument(issuedScope, item.id, item.code))) {
       setNotice({ tone: 'error', key: 'download_failed' })
     }
+  }
+
+  async function revoke(item: IssuedDocumentItem) {
+    setBusy(true)
+    setNotice(null)
+    const outcome = await revokeIssuedDocument(item.id, revokeReason)
+    setBusy(false)
+    if (!outcome.ok) {
+      setNotice({ tone: 'error', key: `revoke_error.${outcome.failure}` })
+      return
+    }
+    setRevoking(null)
+    setRevokeReason('')
+    setNotice({ tone: 'ok', key: 'revoked', values: { code: item.code } })
+    // The list is read on the server: read it again with the new status.
+    router.refresh()
   }
 
   async function remove(item: AttachmentItem) {
@@ -308,7 +331,8 @@ export function AttachmentsSection({
           ) : (
             <ul className="divide-y divide-line">
               {shownIssued.map((item) => (
-                <li key={`issued-${item.id}`} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0">
+                <li key={`issued-${item.id}`} className="flex flex-col gap-2 py-3 first:pt-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                   <span className="flex min-w-0 flex-1 items-start gap-3">
                     <span
                       aria-hidden
@@ -322,6 +346,11 @@ export function AttachmentsSection({
                         <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-emerald-800">
                           {t(`origin.${variant}.issued`)}
                         </span>
+                        {item.status !== 'valid' && (
+                          <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.6875rem] font-semibold text-red-800">
+                            {t(`issued_status.${item.status}`)}
+                          </span>
+                        )}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">{item.courseName}</span>
                       <span className="text-xs text-muted-foreground">
@@ -329,13 +358,66 @@ export function AttachmentsSection({
                       </span>
                     </span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => void downloadIssued(item)}
-                    className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
-                  >
-                    {t('download')}
-                  </button>
+                  <span className="flex flex-wrap gap-2">
+                    {/* A revoked or replaced document is the record's, not a paper
+                        to hand out again: the portal does not print it (the API
+                        refuses too); staff still does. */}
+                    {(variant === 'staff' || item.status === 'valid') && (
+                      <button
+                        type="button"
+                        onClick={() => void downloadIssued(item)}
+                        className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition hover:bg-sky"
+                      >
+                        {t('download')}
+                      </button>
+                    )}
+                    {canRevokeIssued && item.status === 'valid' && revoking !== item.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRevoking(item.id)
+                          setRevokeReason('')
+                          setNotice(null)
+                        }}
+                        className="inline-flex min-h-tap items-center rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:border-red-200 hover:text-red-700"
+                      >
+                        {t('revoke')}
+                      </button>
+                    )}
+                  </span>
+                  </div>
+                  {revoking === item.id && (
+                    <div className="flex flex-col gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+                      <p className="text-xs text-red-800">{t('revoke_question', { code: item.code })}</p>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-red-900">{t('revoke_reason_label')}</span>
+                        <textarea
+                          value={revokeReason}
+                          onChange={(event) => setRevokeReason(event.target.value)}
+                          maxLength={500}
+                          rows={2}
+                          className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                        />
+                      </label>
+                      <span className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void revoke(item)}
+                          disabled={busy || revokeReason.trim().length === 0}
+                          className="min-h-tap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {t('revoke_confirm')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRevoking(null)}
+                          className="min-h-tap rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </span>
+                    </div>
+                  )}
                 </li>
               ))}
               {shown.map((item) => (

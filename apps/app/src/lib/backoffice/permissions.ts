@@ -277,6 +277,15 @@ export function canManageStudentAttachments(role: StaffRole): boolean {
 }
 
 /**
+ * Who revokes a document the institution issued (OOC-59 — proposal, to confirm
+ * with the owner): the same three who keep the file, from its document list.
+ * Mirrors `ISSUED_DOCUMENT_REVOKE_ROLES` in `apps/api`, which decides.
+ */
+export function canRevokeIssuedDocuments(role: StaffRole): boolean {
+  return canEditStudent(role)
+}
+
+/**
  * Who takes the directory away as a CSV (OOC-121): the same three who keep the
  * file, so nobody exports a document or contact the ficha would not show them.
  * `sales` and `support` answer for one student at a time; the whole base does
