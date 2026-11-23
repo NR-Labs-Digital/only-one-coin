@@ -2000,6 +2000,10 @@ export const issuedDocuments = pgTable(
     data: jsonb("data").notNull(),
     issuedBy: text("issued_by"),
     issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+    // The document this one was issued in place of (OOC-59): a certificate
+    // issued again after the earlier one was revoked. The earlier row never
+    // changes — "replaced" is read from this column.
+    replacesId: uuid("replaces_id").references((): AnyPgColumn => issuedDocuments.id, { onDelete: "restrict" }),
     createdAt: createdAt(),
   },
   (table) => [
@@ -2014,9 +2018,14 @@ export const issuedDocuments = pgTable(
     uniqueIndex("issued_documents_procedure_request_uidx")
       .on(table.procedureRequestId)
       .where(sql`${table.procedureRequestId} is not null`),
-    uniqueIndex("issued_documents_certificate_enrollment_uidx")
+    // One first certificate per enrollment (OOC-33); a reissue (OOC-59)
+    // replaces one document at most once, so the chain stays a line.
+    uniqueIndex("issued_documents_certificate_first_uidx")
       .on(table.enrollmentId)
-      .where(sql`${table.kind} = 'certificate'`),
+      .where(sql`${table.kind} = 'certificate' and ${table.replacesId} is null`),
+    uniqueIndex("issued_documents_replaces_uidx")
+      .on(table.replacesId)
+      .where(sql`${table.replacesId} is not null`),
     index("issued_documents_student_id_idx").on(table.studentId),
     foreignKey({
       name: "issued_documents_class_group_module_fk",
@@ -2028,6 +2037,29 @@ export const issuedDocuments = pgTable(
       columns: [table.templateVersionId],
       foreignColumns: [documentTemplateVersions.id],
     }).onDelete("restrict"),
+  ],
+);
+
+// An issued document withdrawn by a person (OOC-59): the validation page
+// answers "revoked" for its code from then on. Append-only like the document:
+// a revocation is not undone — a certificate is issued again instead, and the
+// new one points at this one (`issued_documents.replaces_id`). The reason is
+// kept here, never in audit_log (it is free text about a person).
+export const issuedDocumentRevocations = pgTable(
+  "issued_document_revocations",
+  {
+    id: uuidPk(),
+    issuedDocumentId: uuid("issued_document_id")
+      .notNull()
+      .references(() => issuedDocuments.id, { onDelete: "restrict" }),
+    reason: text("reason").notNull(),
+    // Better Auth's "user" is not modelled here; FK written by hand in 0071.
+    revokedBy: text("revoked_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("issued_document_revocations_document_uidx").on(table.issuedDocumentId),
+    check("issued_document_revocations_reason_check", sql`length(btrim(${table.reason})) between 1 and 500`),
   ],
 );
 
