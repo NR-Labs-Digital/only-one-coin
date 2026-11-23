@@ -113,6 +113,7 @@ import { confirmEmailVerificationRoute } from "@/http/enrollment/ConfirmEmailVer
 import { listOpenClassGroupsRoute } from "@/http/catalog/ListOpenClassGroupsRoute.js";
 import { getPublicCatalogRoute } from "@/http/catalog/GetPublicCatalogRoute.js";
 import { retireCatalogEntryRoute } from "@/http/catalog/RetireCatalogEntryRoute.js";
+import { deleteClassGroupsRoute } from "@/http/catalog/DeleteClassGroupsRoute.js";
 import { restoreCatalogEntryRoute } from "@/http/catalog/RestoreCatalogEntryRoute.js";
 import { getCatalogEntryStateRoute } from "@/http/catalog/GetCatalogEntryStateRoute.js";
 import { listCoursesRoute } from "@/http/catalog/ListCoursesRoute.js";
@@ -331,6 +332,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listOpenClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPublicCatalogRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(retireCatalogEntryRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(deleteClassGroupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(restoreCatalogEntryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getCatalogEntryStateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listCoursesRoute);

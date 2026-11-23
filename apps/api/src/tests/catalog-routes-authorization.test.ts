@@ -76,6 +76,11 @@ const CASES: [string, string, Role][] = [
   ["GET", `/api/v1/catalog/plan/${ID}/state`, "billing"],
   ["GET", `/api/v1/catalog/academic_period/${ID}/state`, "analyst"],
   ["GET", `/api/v1/catalog/course/${ID}/state`, "support"],
+  // Deleting a class group nobody touched (23/11/2026): the same gate as retiring.
+  ["POST", "/api/v1/catalog/class-groups/delete", "academic_supervisor"],
+  ["POST", "/api/v1/catalog/class-groups/delete", "analyst"],
+  ["POST", "/api/v1/catalog/class-groups/delete", "billing"],
+  ["POST", "/api/v1/catalog/class-groups/delete", "teacher"],
   // The language list (OOC-128): read with the catalog, changed only by who
   // opens a course.
   ["GET", "/api/v1/catalog/languages", "billing"],

@@ -629,6 +629,18 @@ export {
   type CatalogEntryState,
 } from "./catalog/CatalogEntry.js";
 export type { ICatalogEntryRepository } from "./catalog/ports/ICatalogEntryRepository.js";
+export type {
+  IClassGroupDeletionRepository,
+  ClassGroupDeleteOutcome,
+} from "./catalog/ports/IClassGroupDeletionRepository.js";
+export {
+  DeleteClassGroupsUseCase,
+  CLASS_GROUP_DELETE_BLOCKERS,
+  MAX_CLASS_GROUPS_PER_DELETE,
+  type ClassGroupDeleteBlocker,
+  type DeleteClassGroupsInput,
+  type DeleteClassGroupsResult,
+} from "./catalog/DeleteClassGroupsUseCase.js";
 export {
   CatalogEntryNotFoundError,
   CourseNotFoundError,
