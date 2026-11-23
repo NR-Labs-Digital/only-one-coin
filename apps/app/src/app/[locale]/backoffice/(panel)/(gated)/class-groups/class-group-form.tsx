@@ -16,13 +16,14 @@ import type {
 import { catalogWrite } from '@/lib/backoffice/catalog-client'
 import { classroomUrlOf, meetUrlOf } from '@/lib/backoffice/class-links'
 import { allocationWarnings, teachersForLanguage } from '@/lib/backoffice/teacher-allocation'
+import { isoToLimaDate, limaDateToIso } from '@/lib/backoffice/lima-date'
 import {
-  isoToLimaDate,
-  isoToLimaDateTime,
-  limaDateTimeToIso,
-  limaDateToIso,
-} from '@/lib/backoffice/lima-date'
-import { formatDateRange, formatDateTime, type Locale } from '@/lib/format'
+  formatLocalDateTime,
+  isoToLocalDateTime,
+  localDateTimeToIso,
+  viewerTimeZone,
+} from '@/lib/backoffice/local-date-time'
+import { formatDateRange, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { HelpField } from '@/components/backoffice/help-hint'
@@ -123,14 +124,14 @@ function inputsOf(initial: ClassGroupItem | undefined): FormInputs {
     endTime: initial?.slots[0]?.endTime ?? '19:30',
     startsOn: initial?.startsOn ? isoToLimaDate(initial.startsOn) : '',
     endsOn: initial?.endsOn ? isoToLimaDate(initial.endsOn) : '',
-    opensAt: initial?.enrollmentOpensAt ? isoToLimaDateTime(initial.enrollmentOpensAt) : '',
-    closesAt: initial?.enrollmentClosesAt ? isoToLimaDateTime(initial.enrollmentClosesAt) : '',
+    opensAt: initial?.enrollmentOpensAt ? isoToLocalDateTime(initial.enrollmentOpensAt) : '',
+    closesAt: initial?.enrollmentClosesAt ? isoToLocalDateTime(initial.enrollmentClosesAt) : '',
   }
 }
 
-/** Empty input → null; never hands an empty string to the Lima helpers. */
+/** Empty input → null; never hands an empty string to the date helpers. */
 const dateOrNull = (value: string) => (value ? limaDateToIso(value) : null)
-const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : null)
+const dateTimeOrNull = (value: string) => (value ? localDateTimeToIso(value) : null)
 
 /**
  * Opens a class group (`mode="create"`) or edits one (`mode="edit"`).
@@ -145,8 +146,11 @@ const dateTimeOrNull = (value: string) => (value ? limaDateTimeToIso(value) : nu
  * and is rewritten with the chosen hours only if days or hours are touched —
  * an edit to the capacity alone never flattens its timetable.
  *
- * Dates are calendar days in Lima (midnight `-05:00`) and the enrollment window
- * is a Lima date-time; an emptied field is sent as `null`, which the API reads
+ * Dates are calendar days in Lima (midnight `-05:00`); the enrollment window is
+ * an instant typed in the viewer's own timezone (OOC-186), which the hint names.
+ * The form only mounts in a dialog opened by a click, so it never renders on the
+ * server, where "local" would be the server's zone. An emptied field is sent as
+ * `null`, which the API reads
  * as "clear it". The edit sends only what changed against what was loaded.
  *
  * The module is one of the course's (OOC-100): it picks the material the
@@ -1108,7 +1112,7 @@ export function ClassGroupForm({
           {windowFields}
         </AutoGrid>
 
-        <p className="mt-2 text-xs text-muted-foreground">{t('class_groups.window_hint')}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{t('class_groups.window_hint', { timeZone: viewerTimeZone() })}</p>
 
         {runFields ? (
           <div className="mt-3">{daysField}</div>
@@ -1234,8 +1238,8 @@ export function ClassGroupForm({
     [
       t('class_groups.review_window'),
       t('class_groups.review_window_value', {
-        opens: opensAt ? formatDateTime(limaDateTimeToIso(opensAt), locale) : noLimit,
-        closes: closesAt ? formatDateTime(limaDateTimeToIso(closesAt), locale) : noLimit,
+        opens: opensAt ? formatLocalDateTime(localDateTimeToIso(opensAt), locale) : noLimit,
+        closes: closesAt ? formatLocalDateTime(localDateTimeToIso(closesAt), locale) : noLimit,
       }),
     ],
     [
@@ -1324,7 +1328,7 @@ export function ClassGroupForm({
               {dateFields}
               {windowFields}
             </AutoGrid>
-            <p className="text-xs text-muted-foreground">{t('class_groups.window_hint')}</p>
+            <p className="text-xs text-muted-foreground">{t('class_groups.window_hint', { timeZone: viewerTimeZone() })}</p>
             {missingDatesNote}
           </div>
         )}

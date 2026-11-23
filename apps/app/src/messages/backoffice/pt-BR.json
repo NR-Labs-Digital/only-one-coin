@@ -1204,7 +1204,7 @@
       "field_end_time": "Até",
       "field_window_opens": "Inscrições abrem",
       "field_window_closes": "Inscrições fecham",
-      "window_hint": "Vazio = sem limite desse lado.",
+      "window_hint": "Vazio = sem limite desse lado. Horários no seu fuso ({timeZone}).",
       "save_draft": "Salvar rascunho",
       "open_enrollment": "Abrir inscrições",
       "created_draft": "Turma salva como rascunho",

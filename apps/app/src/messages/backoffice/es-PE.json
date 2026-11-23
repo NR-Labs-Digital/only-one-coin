@@ -1204,7 +1204,7 @@
       "field_end_time": "Hasta",
       "field_window_opens": "Matrícula abre",
       "field_window_closes": "Matrícula cierra",
-      "window_hint": "Vacío = sin límite de ese lado.",
+      "window_hint": "Vacío = sin límite de ese lado. Horas en tu zona horaria ({timeZone}).",
       "save_draft": "Guardar borrador",
       "open_enrollment": "Abrir matrícula",
       "created_draft": "Aula guardada como borrador",

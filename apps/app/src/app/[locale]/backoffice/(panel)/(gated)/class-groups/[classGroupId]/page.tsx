@@ -10,6 +10,7 @@ import {
   listTeacherOptions,
 } from '@/lib/backoffice/catalog'
 import { slotsLabel } from '@/lib/backoffice/schedule'
+import { LocalDateTime } from '@/components/backoffice/local-date-time'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
@@ -30,7 +31,7 @@ import { runClosesTheCourse } from '@/lib/backoffice/certificate-batch'
 import { getCertificateBatch } from '@/lib/backoffice/certificate-batch-server'
 import { CertificatesCard } from './certificates-card'
 import { getPlatformSettings } from '@/lib/backoffice/platform-settings'
-import { formatDate, formatDateTime, type Locale } from '@/lib/format'
+import { formatDate, type Locale } from '@/lib/format'
 import {
   Card,
   Field,
@@ -118,8 +119,9 @@ export default async function ClassGroupDetailPage({
       : null
   const businessDaysLeft = deadline ? businessDaysUntil(deadline, new Date()) : 0
 
+  // The window is an instant, read in the viewer's timezone (OOC-186).
   const windowSide = (iso: string | null) =>
-    iso ? formatDateTime(iso, locale as Locale) : t('class_group.window_open_ended')
+    iso ? <LocalDateTime iso={iso} locale={locale as Locale} /> : t('class_group.window_open_ended')
 
   /* A full class group always shows its waitlist, even empty — that is where
      coordination adds the next person. A failed read shows nothing rather than
@@ -178,7 +180,11 @@ export default async function ClassGroupDetailPage({
           <Field label={t('class_group.field_window')}>
             {group.enrollmentOpensAt === null && group.enrollmentClosesAt === null
               ? t('class_group.window_open_ended')
-              : `${windowSide(group.enrollmentOpensAt)} – ${windowSide(group.enrollmentClosesAt)}`}
+              : (
+                <>
+                  {windowSide(group.enrollmentOpensAt)} – {windowSide(group.enrollmentClosesAt)}
+                </>
+              )}
           </Field>
           <SeatsField
             label={t('class_group.field_seats')}

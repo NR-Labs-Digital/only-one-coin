@@ -1204,7 +1204,7 @@
       "field_end_time": "Until",
       "field_window_opens": "Enrollment opens",
       "field_window_closes": "Enrollment closes",
-      "window_hint": "Empty = no limit on that side.",
+      "window_hint": "Empty = no limit on that side. Times are in your timezone ({timeZone}).",
       "save_draft": "Save draft",
       "open_enrollment": "Open enrollment",
       "created_draft": "Class group saved as a draft",

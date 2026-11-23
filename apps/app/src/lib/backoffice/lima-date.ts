@@ -11,11 +11,6 @@ export function limaDateToIso(date: string): string {
   return new Date(`${date}T00:00:00${LIMA_OFFSET}`).toISOString()
 }
 
-/** `2026-11-02T18:30` (a datetime-local value) → ISO UTC. */
-export function limaDateTimeToIso(value: string): string {
-  return new Date(`${value}:00${LIMA_OFFSET}`).toISOString()
-}
-
 /** ISO UTC → `YYYY-MM-DD` as Lima reads it — the value a date input wants. */
 export function isoToLimaDate(iso: string): string {
   return new Date(new Date(iso).getTime() - LIMA_OFFSET_MS).toISOString().slice(0, 10)
