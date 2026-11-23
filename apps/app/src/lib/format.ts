@@ -8,7 +8,7 @@
 
 export type Locale = 'es' | 'en' | 'pt'
 
-const intlLocale: Record<Locale, string> = {
+export const intlLocale: Record<Locale, string> = {
   es: 'es-PE',
   en: 'en-US',
   pt: 'pt-BR',
