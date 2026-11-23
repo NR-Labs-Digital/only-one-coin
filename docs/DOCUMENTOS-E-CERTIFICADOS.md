@@ -209,14 +209,51 @@ Mecanismo em `apps/api/CLAUDE.md`, "Documentos emitidos".
 
 ---
 
-## 7. Em aberto
+## 7. Verificação pública e anulação (OOC-59, 23/11/2026)
+
+Decisões do Miguel, **a confirmar com o dono**:
+
+- **Onde:** `/verificar` (digitar o código) e `/verificar/<código>` (aonde o QR
+  leva), no domínio do portal (`apps/app`), públicas, `noindex`, consultando a
+  API no servidor. Rate limit por IP na API (`documentVerify`).
+- **O que mostra:** o status — *válido*, *anulado* (com a data) ou
+  *reemplazado* —, o tipo, o **nome completo**, o curso, as datas da turma e a
+  data de emissão, lidos dos dados congelados na emissão: a página diz o que o
+  papel diz. Nunca documento, e-mail, nota ou apoderado (Ley 29733 — há
+  menores). Código que não existe e código mal digitado: a mesma resposta.
+- **QR e endereço no PDF:** todo PDF impresso leva, no rodapé, o código, o
+  endereço da página e um QR para `/verificar/<código>`. Como o PDF é montado
+  a cada download, vale também para o que já foi emitido.
+- **Anular:** `master`, `admin` e `enrollment_supervisor`, na lista de
+  documentos da ficha, com motivo obrigatório. O motivo fica numa tabela
+  append-only (`issued_document_revocations`, `0071`) e não vai à página nem ao
+  `audit_log`. Não se desfaz.
+- **Corrigir = anular e emitir de novo:** o certificado anulado volta a
+  qualificar no lote da turma; o novo aponta o anterior (`replaces_id`), e o
+  código antigo passa a dizer *reemplazado*. Os dados do novo saem da ficha de
+  hoje — é assim que um nome corrigido chega ao certificado.
+- **No portal**, documento anulado ou substituído aparece com o selo e sem
+  download; a equipe continua baixando (é registro).
+
+| Peça | Arquivo |
+| --- | --- |
+| Status, motivo, código | `packages/domain/src/issuedDocument/` |
+| Revogação e `replaces_id` | `packages/db/src/schema.ts`, migration `0071` |
+| QR no rodapé | `apps/api/src/documents/verificationQr.ts`, `frame.ts` |
+| Rota pública | `apps/api/src/http/issuedDocument/VerifyIssuedDocumentRoute.ts` |
+| Página | `apps/app/src/app/[locale]/verificar/` |
+
+---
+
+## 8. Em aberto
 
 - **Prazo de 25 dias úteis** ignora feriados peruanos — falta um calendário de
   feriados. Contar só fins de semana faz o prazo mentir a favor da instituição.
-- **Página pública de validação** (OOC-59, `docs/ROADMAP.md` item 45) substitui
-  o site externo usado hoje (`ooc.asvnets.com/consultar`, busca por DNI). O
-  código já existe em todo documento emitido (`OOC-XXXX-XXXX`, OOC-33), e
-  `normalizeDocumentCode` lê o que a pessoa digitar.
+- **Busca por DNI do site antigo** (`ooc.asvnets.com/consultar`): a página
+  nova busca só por código (§8). Confirmar com o dono que a busca por DNI pode
+  sair — mantê-la seria expor dado pessoal a quem digita um número.
+- **Reemitir a constancia anulada** (§7): hoje não acontece sozinho — o índice
+  é uma constancia por solicitação paga, e uma solicitação nova é paga de novo.
 - **Entidade emissora e redação do certificado** — a moldura imprime a
   S.A.C.; qual entidade emite e se o certificado se diz "válido a nivel
   nacional" ou "sem validade para bacharelado" (`docs/REGRAS-NEGOCIO.md` §11)
