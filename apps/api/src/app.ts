@@ -49,7 +49,12 @@ import { previewDocumentTemplateRoute } from "@/http/document/PreviewDocumentTem
 import { publishDocumentTemplateRoute } from "@/http/document/PublishDocumentTemplateRoute.js";
 import { regenerateTeacherContractRoute } from "@/http/teacher/RegenerateTeacherContractRoute.js";
 import { issueCertificateBatchRoute, previewCertificateBatchRoute } from "@/http/issuedDocument/CertificateBatchRoutes.js";
-import { downloadIssuedDocumentRoute, listStudentIssuedDocumentsRoute } from "@/http/issuedDocument/IssuedDocumentRoutes.js";
+import {
+  downloadIssuedDocumentRoute,
+  listStudentIssuedDocumentsRoute,
+  revokeIssuedDocumentRoute,
+} from "@/http/issuedDocument/IssuedDocumentRoutes.js";
+import { verifyIssuedDocumentRoute } from "@/http/issuedDocument/VerifyIssuedDocumentRoute.js";
 import {
   downloadPortalIssuedDocumentRoute,
   listPortalIssuedDocumentsRoute,
@@ -272,6 +277,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(issueCertificateBatchRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStudentIssuedDocumentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(downloadIssuedDocumentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(revokeIssuedDocumentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(verifyIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPortalIssuedDocumentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(openTeacherContractRoute);

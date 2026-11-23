@@ -82,6 +82,7 @@ export function StudentFile({
   attachments,
   issuedDocuments,
   canManageAttachments,
+  canRevokeIssuedDocuments,
   payments,
   canOpenReceiptImage,
 }: {
@@ -97,6 +98,8 @@ export function StudentFile({
   /** The documents the institution issued (OOC-33); null when the API failed. */
   issuedDocuments: IssuedDocumentItem[] | null
   canManageAttachments: boolean
+  /** Whether the reader's cargo revokes an issued document (OOC-59; the API decides too). */
+  canRevokeIssuedDocuments: boolean
   /** Every payment and receipt on the file (OOC-62); null when the API failed. */
   payments: StudentPaymentItem[] | null
   /** Whether the reader's cargo opens a receipt image (the API decides too). */
@@ -531,6 +534,7 @@ export function StudentFile({
           attachments={attachments}
           issuedDocuments={issuedDocuments}
           canManageAttachments={canManageAttachments}
+          canRevokeIssuedDocuments={canRevokeIssuedDocuments}
           payments={payments}
           canOpenReceiptImage={canOpenReceiptImage}
         />

@@ -375,6 +375,7 @@
         "progression_applied": "Alunos avançados de módulo",
         "issued_document_issued": "Documento emitido",
         "issued_document_downloaded": "Documento emitido baixado",
+        "issued_document_revoked": "Documento emitido revogado",
         "certificate_batch_issued": "Certificados emitidos em lote",
         "class_group_deleted": "Turma excluída",
         "class_group_erased": "Turma excluída (com histórico)"

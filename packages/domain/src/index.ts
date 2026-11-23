@@ -111,11 +111,15 @@ export { gradeEmails, correctedGradeEmails, type GradeEmailFacts } from "./notif
 export { issuedDocumentEmails, type IssuedDocumentEmailFacts } from "./notification/issuedDocumentEmails.js";
 export {
   ISSUED_DOCUMENT_KINDS,
+  ISSUED_DOCUMENT_STATUSES,
+  REVOCATION_REASON_MAX_LENGTH,
   VERIFICATION_CODE_ALPHABET,
+  issuedDocumentStatus,
   newDocumentCode,
   normalizeDocumentCode,
   type IssuedDocument,
   type IssuedDocumentKind,
+  type IssuedDocumentStatus,
 } from "./issuedDocument/IssuedDocument.js";
 export {
   CERTIFICATE_BLOCK_REASONS,
@@ -129,7 +133,9 @@ export {
 export {
   CertificateNothingToIssueError,
   CertificateRunNotLastModuleError,
+  IssuedDocumentAlreadyRevokedError,
   IssuedDocumentNotFoundError,
+  IssuedDocumentRevocationReasonRequiredError,
 } from "./issuedDocument/errors.js";
 export {
   Guardian,

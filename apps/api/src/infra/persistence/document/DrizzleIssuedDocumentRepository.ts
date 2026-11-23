@@ -7,11 +7,20 @@ import {
   currentGrades,
   enrollments,
   guardians,
+  issuedDocumentRevocations,
   issuedDocuments,
   procedureRequests,
   students,
 } from "@ooc/db";
-import type { EmailNotification, IssuedDocument, IssuedDocumentKind, WeeklySlot } from "@ooc/domain";
+import {
+  IssuedDocumentAlreadyRevokedError,
+  issuedDocumentStatus,
+  type EmailNotification,
+  type IssuedDocument,
+  type IssuedDocumentKind,
+  type IssuedDocumentStatus,
+  type WeeklySlot,
+} from "@ooc/domain";
 import { and, asc, desc, eq, inArray, isNull, notExists, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { enrollmentInModule } from "@/infra/persistence/catalog/classGroupModuleSql.js";
@@ -66,7 +75,10 @@ export interface CertificateSeat extends IssuedStudentFacts {
   enrollmentId: string;
   lastModuleGrade: GradeRead | null;
   earlierModuleGrades: { module: number; grade: GradeRead }[];
+  /** The certificate that holds for this enrollment now — never a revoked one. */
   issued: { id: string; code: string; issuedAt: Date } | null;
+  /** The revoked certificate nothing replaced yet (OOC-59): a new issue replaces it. */
+  revokedId: string | null;
 }
 
 /** One document to record, its e-mails already built. */
@@ -77,6 +89,8 @@ export interface DocumentToRecord {
   enrollmentId: string;
   data: unknown;
   emails: EmailNotification[];
+  /** The revoked document this one is issued in place of (OOC-59). */
+  replacesId?: string | null;
 }
 
 export interface IssuedDocumentListItem {
@@ -85,7 +99,30 @@ export interface IssuedDocumentListItem {
   code: string;
   courseName: string;
   issuedAt: Date;
+  status: IssuedDocumentStatus;
+  revokedAt: Date | null;
 }
+
+/** What the public validation page may say about a code (OOC-59) — nothing else leaves. */
+export interface PublicIssuedDocument {
+  kind: IssuedDocumentKind;
+  status: IssuedDocumentStatus;
+  studentName: string;
+  courseName: string;
+  startsOn: string | null;
+  endsOn: string | null;
+  issuedAt: Date;
+  revokedAt: Date | null;
+}
+
+// The outer row's id, qualified by hand: in a single-table select Drizzle
+// writes a column without its table, and inside these subqueries a bare "id"
+// would bind to the inner table (apps/api/CLAUDE.md, "Armadilha do Drizzle").
+const OUTER_ID = sql.raw(`"issued_documents"."id"`);
+/** When the document was revoked, or null. Correlated on the outer `issued_documents`. */
+const revokedAtSql = sql<Date | string | null>`(select r.created_at from issued_document_revocations r where r.issued_document_id = ${OUTER_ID})`;
+/** A later document was issued in its place. Correlated on the outer `issued_documents`. */
+const replacedSql = sql<boolean>`exists (select 1 from issued_documents n where n.replaces_id = ${OUTER_ID})`;
 
 const gradeOf = (row: { score: number | null; didNotSit: boolean }): GradeRead =>
   row.didNotSit ? { score: null, didNotSit: true } : { score: Number(row.score), didNotSit: false };
@@ -321,16 +358,26 @@ export class DrizzleIssuedDocumentRepository {
       .where(inArray(currentGrades.enrollmentId, ids))
       .orderBy(asc(currentGrades.attempt), asc(currentGrades.recordedAt));
 
-    const issued = await this.db
+    // Every certificate of these seats, with whether it was revoked or
+    // replaced. The one that holds is the one never revoked (OOC-59); the
+    // revoked one nothing replaced is what a new issue replaces.
+    const certificates = await this.db
       .select({
         id: issuedDocuments.id,
         enrollmentId: issuedDocuments.enrollmentId,
         code: issuedDocuments.code,
         issuedAt: issuedDocuments.issuedAt,
+        revokedAt: revokedAtSql,
+        replaced: replacedSql,
       })
       .from(issuedDocuments)
       .where(and(eq(issuedDocuments.kind, "certificate"), inArray(issuedDocuments.enrollmentId, ids)));
-    const issuedOf = new Map(issued.map((row) => [row.enrollmentId, row]));
+    const issuedOf = new Map(
+      certificates.filter((row) => row.revokedAt === null).map((row) => [row.enrollmentId, row]),
+    );
+    const revokedOf = new Map(
+      certificates.filter((row) => row.revokedAt !== null && !row.replaced).map((row) => [row.enrollmentId, row.id]),
+    );
 
     return seats.map((seat) => {
       const own = grades.filter((grade) => grade.enrollmentId === seat.enrollmentId);
@@ -358,6 +405,7 @@ export class DrizzleIssuedDocumentRepository {
           .sort(([a], [b]) => a - b)
           .map(([module, grade]) => ({ module, grade })),
         issued: document ? { id: document.id, code: document.code, issuedAt: document.issuedAt } : null,
+        revokedId: document ? null : (revokedOf.get(seat.enrollmentId) ?? null),
       };
     });
   }
@@ -390,6 +438,7 @@ export class DrizzleIssuedDocumentRepository {
           data: document.data,
           issuedBy: params.actorId,
           issuedAt: at,
+          replacesId: document.replacesId ?? null,
         })),
       );
       await insertOutboxEmails(
@@ -401,7 +450,12 @@ export class DrizzleIssuedDocumentRepository {
           actorId: params.actorId,
           action: "issued_document.issued",
           targetId: document.id,
-          metadata: { kind: "certificate", studentId: document.studentId, enrollmentId: document.enrollmentId },
+          metadata: {
+            kind: "certificate",
+            studentId: document.studentId,
+            enrollmentId: document.enrollmentId,
+            ...(document.replacesId ? { replacesId: document.replacesId } : {}),
+          },
           createdAt: at,
         })),
         {
@@ -446,6 +500,8 @@ export class DrizzleIssuedDocumentRepository {
         code: issuedDocuments.code,
         courseName: courses.name,
         issuedAt: issuedDocuments.issuedAt,
+        revokedAt: revokedAtSql,
+        replaced: replacedSql,
       })
       .from(issuedDocuments)
       .innerJoin(enrollments, eq(enrollments.id, issuedDocuments.enrollmentId))
@@ -453,7 +509,89 @@ export class DrizzleIssuedDocumentRepository {
       .innerJoin(courses, eq(courses.id, classGroups.courseId))
       .where(inArray(issuedDocuments.studentId, studentIds))
       .orderBy(desc(issuedDocuments.issuedAt), desc(issuedDocuments.id));
-    return rows.map((row) => ({ ...row, kind: row.kind as IssuedDocumentKind }));
+    return rows.map(({ replaced, ...row }) => ({
+      ...row,
+      kind: row.kind as IssuedDocumentKind,
+      revokedAt: toDate(row.revokedAt),
+      status: issuedDocumentStatus({ revoked: row.revokedAt !== null, replaced }),
+    }));
+  }
+
+  /** The document's status now (OOC-59), or null when there is no such document. */
+  async statusOf(id: string): Promise<IssuedDocumentStatus | null> {
+    const [row] = await this.db
+      .select({ revokedAt: revokedAtSql, replaced: replacedSql })
+      .from(issuedDocuments)
+      .where(eq(issuedDocuments.id, id))
+      .limit(1);
+    return row ? issuedDocumentStatus({ revoked: row.revokedAt !== null, replaced: row.replaced }) : null;
+  }
+
+  /**
+   * Revokes a document (OOC-59): the revocation row and its audit entry in one
+   * transaction. The unique index on the document decides a second revocation
+   * (two people at once included) — 409, nothing written. The reason stays in
+   * the revocation row only: it is free text about a person (CLAUDE.md §8).
+   */
+  async revoke(params: { actorId: string; document: IssuedDocument; reason: string }): Promise<{ revocationId: string }> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(issuedDocumentRevocations)
+          .values({ issuedDocumentId: params.document.id, reason: params.reason, revokedBy: params.actorId })
+          .returning({ id: issuedDocumentRevocations.id });
+        await tx.insert(auditLog).values({
+          actorId: params.actorId,
+          action: "issued_document.revoked",
+          targetId: params.document.id,
+          metadata: {
+            kind: params.document.kind,
+            studentId: params.document.studentId,
+            enrollmentId: params.document.enrollmentId,
+            revocationId: row!.id,
+          },
+        });
+        return { revocationId: row!.id };
+      });
+    } catch (error) {
+      if (uniqueViolationOf(error) === "issued_document_revocations_document_uidx") {
+        throw new IssuedDocumentAlreadyRevokedError();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * The validation page's read (OOC-59): a code, stored form, to the public
+   * fields alone — read from the data frozen on issue, so the page says what
+   * the paper says. Never the document number, e-mail, grade or guardian.
+   */
+  async findPublicByCode(code: string): Promise<PublicIssuedDocument | null> {
+    const [row] = await this.db
+      .select({
+        kind: issuedDocuments.kind,
+        studentName: sql<string | null>`${issuedDocuments.data} #>> '{student,fullName}'`,
+        courseName: sql<string | null>`${issuedDocuments.data} #>> '{course,name}'`,
+        startsOn: sql<string | null>`nullif(${issuedDocuments.data} #>> '{classGroup,startsOn}', '')`,
+        endsOn: sql<string | null>`nullif(${issuedDocuments.data} #>> '{classGroup,endsOn}', '')`,
+        issuedAt: issuedDocuments.issuedAt,
+        revokedAt: revokedAtSql,
+        replaced: replacedSql,
+      })
+      .from(issuedDocuments)
+      .where(eq(issuedDocuments.code, code))
+      .limit(1);
+    if (!row) return null;
+    return {
+      kind: row.kind as IssuedDocumentKind,
+      status: issuedDocumentStatus({ revoked: row.revokedAt !== null, replaced: row.replaced }),
+      studentName: row.studentName ?? "",
+      courseName: row.courseName ?? "",
+      startsOn: row.startsOn,
+      endsOn: row.endsOn,
+      issuedAt: row.issuedAt,
+      revokedAt: toDate(row.revokedAt),
+    };
   }
 
   /** The live file exists. */
@@ -480,5 +618,12 @@ function toDocument(row: typeof issuedDocuments.$inferSelect): IssuedDocument {
     data: row.data,
     issuedBy: row.issuedBy,
     issuedAt: row.issuedAt,
+    replacesId: row.replacesId,
   };
+}
+
+/** A timestamp a raw subquery returns: the driver hands it over as text. */
+function toDate(value: Date | string | null): Date | null {
+  if (value === null) return null;
+  return value instanceof Date ? value : new Date(value);
 }

@@ -27,6 +27,7 @@ export function StudentDocuments({
   attachments,
   issuedDocuments,
   canManageAttachments,
+  canRevokeIssuedDocuments,
   payments,
   canOpenReceiptImage,
 }: {
@@ -37,6 +38,8 @@ export function StudentDocuments({
   issuedDocuments: IssuedDocumentItem[] | null
   /** Whether the reader's cargo attaches and removes documents (the API decides too). */
   canManageAttachments: boolean
+  /** Whether the reader's cargo revokes an issued document (OOC-59). */
+  canRevokeIssuedDocuments: boolean
   /** Every payment and receipt on the file (OOC-62); null when the API failed. */
   payments: StudentPaymentItem[] | null
   canOpenReceiptImage: boolean
@@ -52,6 +55,7 @@ export function StudentDocuments({
           canRemove={canManageAttachments}
           issued={issuedDocuments}
           issuedScope={{ kind: 'staff', studentId: student.id }}
+          canRevokeIssued={canRevokeIssuedDocuments}
         />
       </Card>
       <Card className="p-5">

@@ -2,6 +2,7 @@ import {
   VERIFICATION_CODE_ALPHABET,
   certificateBlockReason,
   closesTheCourse,
+  issuedDocumentStatus,
   newDocumentCode,
   normalizeDocumentCode,
   type CertificateCandidate,
@@ -99,5 +100,16 @@ describe("the verification code (OOC-33)", () => {
     expect(normalizeDocumentCode("7K4M9QX2")).toBe("OOC-7K4M-9QX2");
     expect(normalizeDocumentCode("OOC-7K4M-9QX")).toBeNull();
     expect(normalizeDocumentCode("OOC-0K4M-9QX2")).toBeNull();
+  });
+});
+
+describe("issuedDocumentStatus (OOC-59)", () => {
+  it("is valid until a person revokes it", () => {
+    expect(issuedDocumentStatus({ revoked: false, replaced: false })).toBe("valid");
+    expect(issuedDocumentStatus({ revoked: true, replaced: false })).toBe("revoked");
+  });
+
+  it("says replaced once another was issued in its place — there is a good one now", () => {
+    expect(issuedDocumentStatus({ revoked: true, replaced: true })).toBe("replaced");
   });
 });

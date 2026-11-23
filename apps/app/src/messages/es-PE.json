@@ -259,6 +259,48 @@
       "certificate": "Certificado del curso"
     },
     "issued_meta": "Código {code} · {date}",
-    "issued_load_error": "No pudimos cargar los documentos emitidos."
+    "issued_load_error": "No pudimos cargar los documentos emitidos.",
+    "revoke": "Anular",
+    "revoke_question": "Al anular {code}, la página de verificación dirá que ya no es válido. No se puede deshacer; un certificado puede volver a emitirse en el lote del aula.",
+    "revoke_reason_label": "Motivo (lo verá el equipo, no el público)",
+    "revoke_confirm": "Sí, anular",
+    "revoked": "{code} quedó anulado.",
+    "revoke_error": {
+      "reason_required": "Escribe el motivo de la anulación.",
+      "already_revoked": "Este documento ya no estaba vigente.",
+      "generic": "No pudimos anular el documento. Inténtalo de nuevo."
+    },
+    "issued_status": {
+      "revoked": "Anulado",
+      "replaced": "Reemplazado"
+    }
+  },
+  "verify": {
+    "title": "Verificar un documento",
+    "subtitle": "Escribe el código de verificación que aparece al pie del certificado o de la constancia.",
+    "code_label": "Código de verificación",
+    "code_placeholder": "OOC-XXXX-XXXX",
+    "submit": "Verificar",
+    "not_found": "No encontramos un documento con ese código. Revisa que esté escrito tal como aparece en el documento.",
+    "too_many": "Hiciste muchas consultas seguidas. Espera unos minutos e inténtalo de nuevo.",
+    "error": "No pudimos verificar el código ahora. Inténtalo de nuevo en unos minutos.",
+    "kind": {
+      "enrollment_certificate": "Constancia de matrícula",
+      "certificate": "Certificado"
+    },
+    "status": {
+      "valid": "Documento válido, emitido por la institución.",
+      "revoked": "Este documento fue anulado por la institución y ya no es válido.",
+      "replaced": "Este documento fue reemplazado por uno nuevo y ya no es válido."
+    },
+    "revoked_on": "Anulado el {date}.",
+    "field": {
+      "student": "Alumno",
+      "course": "Curso",
+      "period": "Periodo",
+      "issued_at": "Fecha de emisión"
+    },
+    "period_value": "Del {from} al {to}",
+    "check_another": "Verificar otro código"
   }
 }

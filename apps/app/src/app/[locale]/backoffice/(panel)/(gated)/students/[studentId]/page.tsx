@@ -10,6 +10,7 @@ import {
   canEditStudent,
   canIssuePortalAccess,
   canManageStudentAttachments,
+  canRevokeIssuedDocuments,
   canOpenReceiptImage,
   canViewPayments,
 } from '@/lib/backoffice/permissions'
@@ -104,6 +105,7 @@ export default async function StudentDetailPage({
         attachments={attachments}
         issuedDocuments={issuedDocuments}
         canManageAttachments={canManageStudentAttachments(staff.role)}
+        canRevokeIssuedDocuments={canRevokeIssuedDocuments(staff.role)}
         payments={payments}
         canOpenReceiptImage={canOpenReceiptImage(staff.role)}
       />

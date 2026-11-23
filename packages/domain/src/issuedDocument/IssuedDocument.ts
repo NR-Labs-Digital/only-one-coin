@@ -27,7 +27,31 @@ export interface IssuedDocument {
   /** Null when the platform issued it on its own (the constancia). */
   issuedBy: string | null;
   issuedAt: Date;
+  /** The document this one was issued in place of (OOC-59); null on a first issue. */
+  replacesId: string | null;
 }
+
+/**
+ * What the validation page says about a code (OOC-59). Derived, never
+ * stored — the document row is append-only:
+ *
+ * - `replaced`: a later document was issued in its place (a certificate issued
+ *   again after this one was revoked). Wins over `revoked`: it says there is a
+ *   good one now.
+ * - `revoked`: a person withdrew it, and nothing replaced it.
+ * - `valid`: neither.
+ */
+export const ISSUED_DOCUMENT_STATUSES = ["valid", "revoked", "replaced"] as const;
+export type IssuedDocumentStatus = (typeof ISSUED_DOCUMENT_STATUSES)[number];
+
+export function issuedDocumentStatus(facts: { revoked: boolean; replaced: boolean }): IssuedDocumentStatus {
+  if (facts.replaced) return "replaced";
+  if (facts.revoked) return "revoked";
+  return "valid";
+}
+
+/** A revocation's reason: required, trimmed, at most this long (the CHECK of 0071). */
+export const REVOCATION_REASON_MAX_LENGTH = 500;
 
 /**
  * The verification code's alphabet: digits and capitals with nothing two

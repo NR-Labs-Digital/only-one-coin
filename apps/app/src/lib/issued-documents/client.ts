@@ -1,4 +1,4 @@
-import type { IssuedDocumentScope } from './types'
+import type { IssuedDocumentScope, RevokeFailure } from './types'
 
 // Client-safe: the same-origin `/api/v1` proxy, never the database (CLAUDE.md §8).
 
@@ -24,5 +24,26 @@ export async function downloadIssuedDocument(scope: IssuedDocumentScope, id: str
     return true
   } catch {
     return false
+  }
+}
+
+/**
+ * Revokes an issued document (OOC-59) with the reason the person typed. The
+ * validation page answers "revoked" for its code from then on; it is not undone.
+ */
+export async function revokeIssuedDocument(id: string, reason: string): Promise<{ ok: true } | { ok: false; failure: RevokeFailure }> {
+  try {
+    const response = await fetch(`/api/v1/issued-documents/${encodeURIComponent(id)}/revoke`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    })
+    if (response.ok) return { ok: true }
+    const body = (await response.json().catch(() => null)) as { reason?: string } | null
+    if (body?.reason === 'issued_document.revocation_reason_required') return { ok: false, failure: 'reason_required' }
+    if (body?.reason === 'issued_document.already_revoked') return { ok: false, failure: 'already_revoked' }
+    return { ok: false, failure: 'generic' }
+  } catch {
+    return { ok: false, failure: 'generic' }
   }
 }

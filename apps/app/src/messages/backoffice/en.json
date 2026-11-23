@@ -375,6 +375,7 @@
         "progression_applied": "Students moved on to the next module",
         "issued_document_issued": "Document issued",
         "issued_document_downloaded": "Issued document downloaded",
+        "issued_document_revoked": "Issued document revoked",
         "certificate_batch_issued": "Certificates issued in a batch",
         "class_group_deleted": "Class group deleted",
         "class_group_erased": "Class group deleted (with history)"

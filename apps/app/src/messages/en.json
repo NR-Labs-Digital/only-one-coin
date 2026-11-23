@@ -259,6 +259,48 @@
       "certificate": "Course certificate"
     },
     "issued_meta": "Code {code} · {date}",
-    "issued_load_error": "We could not load the issued documents."
+    "issued_load_error": "We could not load the issued documents.",
+    "revoke": "Revoke",
+    "revoke_question": "Once {code} is revoked, the verification page will say it is no longer valid. It cannot be undone; a certificate can be issued again in the class group's batch.",
+    "revoke_reason_label": "Reason (seen by the team, not the public)",
+    "revoke_confirm": "Yes, revoke",
+    "revoked": "{code} was revoked.",
+    "revoke_error": {
+      "reason_required": "Write the reason for the revocation.",
+      "already_revoked": "This document was no longer valid.",
+      "generic": "We could not revoke the document. Try again."
+    },
+    "issued_status": {
+      "revoked": "Revoked",
+      "replaced": "Replaced"
+    }
+  },
+  "verify": {
+    "title": "Verify a document",
+    "subtitle": "Enter the verification code printed at the foot of the certificate or the enrollment certificate.",
+    "code_label": "Verification code",
+    "code_placeholder": "OOC-XXXX-XXXX",
+    "submit": "Verify",
+    "not_found": "We found no document with that code. Check that it is typed exactly as it appears on the document.",
+    "too_many": "Too many checks in a row. Wait a few minutes and try again.",
+    "error": "We could not verify the code right now. Try again in a few minutes.",
+    "kind": {
+      "enrollment_certificate": "Enrollment certificate",
+      "certificate": "Certificate"
+    },
+    "status": {
+      "valid": "Valid document, issued by the institution.",
+      "revoked": "This document was revoked by the institution and is no longer valid.",
+      "replaced": "This document was replaced by a new one and is no longer valid."
+    },
+    "revoked_on": "Revoked on {date}.",
+    "field": {
+      "student": "Student",
+      "course": "Course",
+      "period": "Period",
+      "issued_at": "Issue date"
+    },
+    "period_value": "{from} to {to}",
+    "check_another": "Check another code"
   }
 }

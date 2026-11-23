@@ -23,3 +23,10 @@ export const CERTIFICATE_READ_ROLES = [...CERTIFICATE_ISSUE_ROLES, "analyst"] as
  * the documents live in the same list (OOC-148).
  */
 export const ISSUED_DOCUMENT_STAFF_ROLES = STUDENT_FILE_ROLES;
+
+/**
+ * Who revokes an issued document (OOC-59 — proposal, to confirm with the
+ * owner): the same three who keep the student file, from the file's document
+ * list. Revoking does not undo anything; the batch issues a certificate again.
+ */
+export const ISSUED_DOCUMENT_REVOKE_ROLES = STUDENT_FILE_ROLES;

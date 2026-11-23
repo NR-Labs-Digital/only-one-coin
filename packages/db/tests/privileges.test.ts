@@ -218,6 +218,15 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("issued_documents"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A revocation is history too (OOC-59): the validation page answers by it.
+  it("refuses UPDATE on issued_document_revocations", async () => {
+    expect(await answerTo(`update issued_document_revocations set reason = reason where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on issued_document_revocations", async () => {
+    expect(await answerTo(deleteFrom("issued_document_revocations"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("refuses TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_GRANT);
   });
@@ -388,6 +397,15 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on issued_documents", async () => {
     expect(await answerTo(deleteFrom("issued_documents"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // A revocation is history too (OOC-59): the validation page answers by it.
+  it("refuses UPDATE on issued_document_revocations", async () => {
+    expect(await answerTo(`update issued_document_revocations set reason = reason where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on issued_document_revocations", async () => {
+    expect(await answerTo(deleteFrom("issued_document_revocations"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

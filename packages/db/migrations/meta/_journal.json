@@ -498,6 +498,13 @@
       "when": 1795473421403,
       "tag": "0070_retire_duplicate_korean_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1795475382742,
+      "tag": "0071_issued_document_revocation",
+      "breakpoints": true
     }
   ]
 }
