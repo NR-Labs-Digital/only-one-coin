@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type {
   CatalogErrorKey,
+  ClassGroupDeleteBlocker,
   ClassGroupItem,
   ClassGroupStatus,
   CourseRow,
   TeacherOption,
 } from '@/lib/backoffice/types'
-import { catalogWrite, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
+import { catalogWrite, deleteClassGroups, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
+import { useRouter as useLocaleRouter } from '@/i18n/navigation'
 import { NEXT_CLASS_GROUP_STATUS } from '@/lib/backoffice/class-group-status'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
@@ -62,7 +64,7 @@ function editBaseline(group: ClassGroupItem): string {
 }
 
 /** Which inline confirmation is open, if any. */
-type Confirming = 'advance' | 'retire' | 'restore' | null
+type Confirming = 'advance' | 'retire' | 'restore' | 'delete' | null
 
 /**
  * What coordination does to a class group from its page: move it one step
@@ -94,11 +96,13 @@ export function ClassGroupActions({
 }) {
   const t = useTranslations('bo')
   const router = useRouter()
+  const localeRouter = useLocaleRouter()
   const [confirming, setConfirming] = useState<Confirming>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<CatalogErrorKey | null>(null)
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [deleteRefusal, setDeleteRefusal] = useState<ClassGroupDeleteBlocker | 'generic' | null>(null)
 
   if (!canManage) return null
 
@@ -143,6 +147,60 @@ export function ClassGroupActions({
     router.refresh()
   }
 
+  /* Deleting is for a class group nobody ever touched (CLAUDE.md §1,
+     exception of 23/11/2026); anything with history only retires. */
+  const deletable = canRetire && group.deleteBlocker === null
+
+  async function remove() {
+    setPending(true)
+    setError(null)
+    const answer = await deleteClassGroups([group.id])
+    setPending(false)
+    const result = answer.results[0]
+    if (result?.outcome === 'deleted' || result?.outcome === 'not_found') {
+      localeRouter.push('/backoffice/class-groups')
+      router.refresh()
+      return
+    }
+    setConfirming(null)
+    setDeleteRefusal(result?.outcome === 'blocked' ? result.blocker : 'generic')
+  }
+
+  const deleteButton = deletable && (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => {
+        setError(null)
+        setDeleteRefusal(null)
+        setConfirming('delete')
+      }}
+      className={dangerButtonClass}
+    >
+      <BoIcon name="trash" size={16} />
+      {t('class_group_actions.delete')}
+    </button>
+  )
+
+  const deleteConfirmation = confirming === 'delete' && (
+    <Confirmation
+      text={t('class_group_actions.confirm_delete', { code: group.code })}
+      pending={pending}
+      onConfirm={() => void remove()}
+      onCancel={() => setConfirming(null)}
+    />
+  )
+
+  const deleteRefusalLine = deleteRefusal && (
+    <p role="alert" className="mt-3 text-sm text-red-700">
+      {deleteRefusal === 'generic'
+        ? t('catalog_errors.generic')
+        : t('class_group_actions.delete_refused', {
+            reason: t(`class_groups.delete_blocker_${deleteRefusal}`),
+          })}
+    </p>
+  )
+
   const errorLine = error && (
     <p role="alert" className="mt-3 text-sm text-red-700">
       {t(`catalog_errors.${error}`)}
@@ -160,21 +218,27 @@ export function ClassGroupActions({
             onConfirm={() => void setOnCatalog('restore')}
             onCancel={() => setConfirming(null)}
           />
+        ) : confirming === 'delete' ? (
+          deleteConfirmation
         ) : (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              setError(null)
-              setConfirming('restore')
-            }}
-            className={secondaryButtonClass}
-          >
-            <BoIcon name="check" size={16} />
-            {t('class_group_actions.restore')}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setError(null)
+                setConfirming('restore')
+              }}
+              className={secondaryButtonClass}
+            >
+              <BoIcon name="check" size={16} />
+              {t('class_group_actions.restore')}
+            </button>
+            {deleteButton}
+          </div>
         )}
         {errorLine}
+        {deleteRefusalLine}
         <Toast message={toast} onDismiss={() => setToast(null)} />
       </Card>
     )
@@ -225,7 +289,10 @@ export function ClassGroupActions({
             {t('class_group_actions.retire')}
           </button>
         )}
+        {deleteButton}
       </div>
+
+      {deleteConfirmation}
 
       {next && confirming === 'advance' && (
         <Confirmation
@@ -257,6 +324,7 @@ export function ClassGroupActions({
       )}
 
       {errorLine}
+      {deleteRefusalLine}
 
       <p className="mt-3 text-xs text-muted-foreground">{t('class_group_actions.forward_only')}</p>
 

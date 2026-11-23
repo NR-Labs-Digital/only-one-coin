@@ -23,7 +23,13 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ClassGroupForm, type ClassGroupFormOutcome } from './class-group-form'
-import { CLASS_GROUP_COLUMNS, ClassGroupTable, ClassGroupTableRow } from './class-group-table'
+import { ClassGroupTable, ClassGroupTableRow, classGroupColumnCount } from './class-group-table'
+import {
+  ClassGroupSelectionBar,
+  ClassGroupSelectionContext,
+  type BulkOutcome,
+  type ClassGroupSelection,
+} from './class-group-selection'
 import { PeriodBar } from './period-bar'
 
 type Sort = 'newest' | 'oldest'
@@ -77,6 +83,7 @@ export function ClassGroupsView({
   selectedPeriodId,
   canManage,
   canManagePeriods,
+  canRetire,
   pendingCount,
 }: {
   items: ClassGroupItem[]
@@ -88,6 +95,11 @@ export function ClassGroupsView({
   canManage: boolean
   /** Opens, edits and duplicates periods — not every class-group writer does (OOC-95). */
   canManagePeriods: boolean
+  /**
+   * Retires and deletes, one or many at once — the same who retire on the
+   * class group page (`canRetireCatalogEntry`).
+   */
+  canRetire: boolean
   /**
    * Class groups waiting for a teacher, every period (OOC-97) — the same
    * number as the Pending tab, so the two screens never disagree. Null when
@@ -118,6 +130,9 @@ export function ClassGroupsView({
   const [draftsOpen, setDraftsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  /** Ticking rows to retire or delete them together (23/11/2026). */
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
 
   /**
    * Switching period resets the filters. They are picked from what the last
@@ -135,6 +150,7 @@ export function ClassGroupsView({
     setStatus(ALL)
     setUnassigned(false)
     setClosedPage(0)
+    setSelected(new Set())
   }
 
   const activeCourses = courses.filter((course) => course.active)
@@ -230,6 +246,61 @@ export function ClassGroupsView({
     currentClosedPage * CLOSED_PAGE_SIZE,
     currentClosedPage * CLOSED_PAGE_SIZE + CLOSED_PAGE_SIZE,
   )
+
+  /* Only ticked rows still on the list count: a refresh or a period switch
+     drops the rest without a stale count. */
+  const selectedRows = useMemo(() => items.filter((row) => selected.has(row.id)), [items, selected])
+
+  const selection: ClassGroupSelection | null = selecting
+    ? {
+        selected,
+        toggle: (id) =>
+          setSelected((current) => {
+            const next = new Set(current)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+          }),
+        setMany: (ids, on) =>
+          setSelected((current) => {
+            const next = new Set(current)
+            for (const id of ids) {
+              if (on) next.add(id)
+              else next.delete(id)
+            }
+            return next
+          }),
+      }
+    : null
+  const columnCount = classGroupColumnCount(selecting)
+  /* The header checkbox ticks what is on screen: a folded language stays as it is. */
+  const activeVisibleIds = activeByLanguage.flatMap((entry) =>
+    narrowed || opened.includes(entry.id) ? entry.groups.map((row) => row.id) : [],
+  )
+
+  function stopSelecting() {
+    setSelecting(false)
+    setSelected(new Set())
+  }
+
+  function bulkDone(outcome: BulkOutcome) {
+    stopSelecting()
+    setToast(
+      [
+        t(outcome.action === 'retire' ? 'class_groups.bulk_retired' : 'class_groups.bulk_deleted', {
+          count: outcome.done,
+        }),
+        ...(outcome.left > 0
+          ? [
+              t(outcome.action === 'retire' ? 'class_groups.bulk_retire_left' : 'class_groups.bulk_delete_left', {
+                count: outcome.left,
+              }),
+            ]
+          : []),
+      ].join(' '),
+    )
+    router.refresh()
+  }
 
   const allOpen = activeByLanguage.length > 0 && opened.length >= activeByLanguage.length
 
@@ -402,6 +473,18 @@ export function ClassGroupsView({
           <BoIcon name="sort" size={16} />
           {t(sort === 'newest' ? 'class_groups.sort_newest' : 'class_groups.sort_oldest')}
         </button>
+
+        {canRetire && (
+          <button
+            type="button"
+            aria-pressed={selecting}
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink aria-pressed:border-brand-blue aria-pressed:text-brand-blue"
+          >
+            <BoIcon name="check" size={16} />
+            {t(selecting ? 'class_groups.selection_cancel' : 'class_groups.select')}
+          </button>
+        )}
       </Toolbar>
 
       {creating &&
@@ -451,6 +534,7 @@ export function ClassGroupsView({
         </Card>
       )}
 
+      <ClassGroupSelectionContext.Provider value={selection}>
       {/* Enrolling and running, folded by language */}
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3">
@@ -479,7 +563,7 @@ export function ClassGroupsView({
           </Card>
         ) : (
           <Card>
-            <ClassGroupTable>
+            <ClassGroupTable rowIds={activeVisibleIds}>
               {activeByLanguage.map((entry) => {
                 /* A search that hid its own matches behind a closed fold would
                    read as no result at all. */
@@ -490,7 +574,7 @@ export function ClassGroupsView({
                         for every language keeps the columns aligned. */}
                     <tr>
                       <td
-                        colSpan={CLASS_GROUP_COLUMNS}
+                        colSpan={columnCount}
                         className="border-y border-line bg-slate-50/80 p-0"
                       >
                         <button
@@ -545,7 +629,7 @@ export function ClassGroupsView({
                 {t('class_groups.drafts_hint')}
               </span>
             </summary>
-            <ClassGroupTable>
+            <ClassGroupTable rowIds={drafts.map((row) => row.id)}>
               <tbody>
                 {drafts.map((row) => (
                   <ClassGroupTableRow key={row.id} row={row} />
@@ -578,7 +662,7 @@ export function ClassGroupsView({
               </div>
             ) : (
               <>
-                <ClassGroupTable>
+                <ClassGroupTable rowIds={closedPageRows.map((row) => row.id)}>
                   <tbody>
                     {closedPageRows.map((row) => (
                       <ClassGroupTableRow key={row.id} row={row} />
@@ -605,6 +689,12 @@ export function ClassGroupsView({
           </details>
         </Card>
       </section>
+
+      </ClassGroupSelectionContext.Provider>
+
+      {selecting && selectedRows.length > 0 && (
+        <ClassGroupSelectionBar rows={selectedRows} onClear={stopSelecting} onDone={bulkDone} />
+      )}
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>

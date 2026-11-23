@@ -8,9 +8,17 @@ import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDateRange, type Locale } from '@/lib/format'
 import { Meter, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
+import { useClassGroupSelection } from './class-group-selection'
 
 /** How many cells a row has — a divider row spans all of them. */
 export const CLASS_GROUP_COLUMNS = 6
+
+/** The cells of a row while selecting adds the checkbox column first. */
+export function classGroupColumnCount(selecting: boolean): number {
+  return CLASS_GROUP_COLUMNS + (selecting ? 1 : 0)
+}
+
+const checkboxClass = 'size-4 cursor-pointer accent-brand-blue'
 
 /**
  * The class group table: headings once, rows below. Both sections of the
@@ -18,9 +26,18 @@ export const CLASS_GROUP_COLUMNS = 6
  * The headings go to `TableShell` too — on a phone each cell prints its own
  * column name, matched by position (`apps/app/CLAUDE.md`, Celular).
  */
-export function ClassGroupTable({ children }: { children: ReactNode }) {
+export function ClassGroupTable({
+  children,
+  rowIds = [],
+}: {
+  children: ReactNode
+  /** The rows this table shows — what its header checkbox ticks while selecting. */
+  rowIds?: string[]
+}) {
   const t = useTranslations('bo')
-  const columns = [
+  const selection = useClassGroupSelection()
+  const allTicked = rowIds.length > 0 && rowIds.every((id) => selection?.selected.has(id))
+  const dataColumns = [
     t('class_groups.col_class_group'),
     t('class_groups.col_teacher'),
     t('class_groups.col_schedule'),
@@ -28,11 +45,24 @@ export function ClassGroupTable({ children }: { children: ReactNode }) {
     t('class_groups.col_seats'),
     t('class_groups.col_status'),
   ]
+  const columns = selection ? [t('class_groups.col_select'), ...dataColumns] : dataColumns
   return (
     <TableShell columns={columns}>
       <thead>
         <tr>
-          {columns.map((column) => (
+          {selection && (
+            <th className={`${thClass} w-10`}>
+              <input
+                type="checkbox"
+                aria-label={t('class_groups.select_all')}
+                checked={allTicked}
+                disabled={rowIds.length === 0}
+                onChange={() => selection.setMany(rowIds, !allTicked)}
+                className={checkboxClass}
+              />
+            </th>
+          )}
+          {dataColumns.map((column) => (
             <th key={column} className={thClass}>
               {column}
             </th>
@@ -64,6 +94,7 @@ export function ClassGroupTableRow({
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
   const router = useRouter()
+  const selection = useClassGroupSelection()
   const href = `/backoffice/class-groups/${row.id}`
   /* Several module runs (OOC-156): teacher and schedule are each run's, one line per run. */
   const severalRuns = row.modules.length > 1
@@ -72,10 +103,23 @@ export function ClassGroupTableRow({
     <tr
       className="cursor-pointer transition hover:bg-sky-soft"
       onClick={(event: MouseEvent<HTMLTableRowElement>) => {
-        if ((event.target as HTMLElement).closest('a')) return
+        if ((event.target as HTMLElement).closest('a, input, label')) return
         router.push(href)
       }}
     >
+      {selection && (
+        <td className={`${tdClass} w-10`}>
+          <label className="-m-2 flex min-h-tap min-w-tap cursor-pointer items-center justify-center p-2">
+            <input
+              type="checkbox"
+              aria-label={t('class_groups.select_row', { code: row.code })}
+              checked={selection.selected.has(row.id)}
+              onChange={() => selection.toggle(row.id)}
+              className={checkboxClass}
+            />
+          </label>
+        </td>
+      )}
       <td className={tdClass}>
         <Link href={href} className="font-semibold text-ink transition hover:text-brand-blue">
           {row.courseName}

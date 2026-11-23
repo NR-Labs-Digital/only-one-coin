@@ -375,7 +375,8 @@
         "progression_applied": "Students moved on to the next module",
         "issued_document_issued": "Document issued",
         "issued_document_downloaded": "Issued document downloaded",
-        "certificate_batch_issued": "Certificates issued in a batch"
+        "certificate_batch_issued": "Certificates issued in a batch",
+        "class_group_deleted": "Class group deleted"
       },
       "field": {
         "first_name": "First name",
@@ -1294,7 +1295,35 @@
       "field_meet": "Google Meet",
       "meet_placeholder": "https://meet.google.com/…",
       "meet_invalid": "Paste an https://meet.google.com/… link",
-      "meet_missing": "No Meet"
+      "meet_missing": "No Meet",
+      "col_select": "Select",
+      "select": "Select",
+      "select_all": "Select every class group in this list",
+      "select_row": "Select class group {code}",
+      "selection_label": "Selected class groups",
+      "selection_cancel": "Cancel selection",
+      "selected_count": "{count, plural, one {# class group selected} other {# class groups selected}}",
+      "bulk_retire": "Take off the catalog ({count})",
+      "bulk_delete": "Delete ({count})",
+      "bulk_retire_title": "{count, plural, one {Take # class group off the catalog?} other {Take # class groups off the catalog?}}",
+      "bulk_retire_body": "They stop being sold and stay on the platform. Existing enrollments do not change, and each one can be put back.",
+      "bulk_retire_seats": "{count, plural, one {# seat is still taken in these class groups.} other {# seats are still taken in these class groups.}}",
+      "bulk_retire_no_seats": "None of these class groups has a seat taken.",
+      "bulk_retire_already": "{count, plural, one {# was already off the catalog and stays as it is.} other {# were already off the catalog and stay as they are.}}",
+      "bulk_retire_confirm": "Take off {count}",
+      "bulk_delete_title": "{count, plural, one {Delete # class group for good?} other {Delete # class groups for good?}}",
+      "bulk_delete_body": "They are erased from the platform with their module groups. This cannot be undone. Only class groups nobody touched are deleted: no enrollment, waitlist or copy.",
+      "bulk_delete_kept": "{count, plural, one {# selected class group has history and is not deleted. To stop selling it, take it off the catalog.} other {# selected class groups have history and are not deleted. To stop selling them, take them off the catalog.}}",
+      "bulk_delete_confirm": "Delete {count}",
+      "bulk_retired": "{count, plural, =0 {No class group was taken off the catalog.} one {# class group taken off the catalog.} other {# class groups taken off the catalog.}}",
+      "bulk_retire_left": "{count, plural, one {# could not be taken off; try again.} other {# could not be taken off; try again.}}",
+      "bulk_deleted": "{count, plural, =0 {No class group was deleted.} one {# class group deleted.} other {# class groups deleted.}}",
+      "bulk_delete_left": "{count, plural, one {# was not deleted because it gained history or failed; check the list.} other {# were not deleted because they gained history or failed; check the list.}}",
+      "delete_blocker_enrollments": "it had enrollments",
+      "delete_blocker_waitlist": "it had a waitlist",
+      "delete_blocker_checkout": "an enrollment is in progress",
+      "delete_blocker_copies": "another period was copied from it",
+      "delete_blocker_history": "it has history on the platform"
     },
     "periods": {
       "label": "Enrollment period",
@@ -1399,7 +1428,10 @@
       "confirm_retire": "Enrollment stops offering this class group. Enrollments already made stay as they are, in the ledger.",
       "confirm_restore": "The class group goes back to the catalog with the status it had.",
       "retired_notice": "{count, plural, =0 {Class group taken off the catalog.} one {Class group taken off the catalog. # enrollment is still running.} other {Class group taken off the catalog. # enrollments are still running.}}",
-      "restored": "Class group back in the catalog"
+      "restored": "Class group back in the catalog",
+      "delete": "Delete",
+      "confirm_delete": "Delete class group {code} for good? Nobody enrolled in it. It is erased with its module groups and this cannot be undone.",
+      "delete_refused": "Not deleted: {reason}. Take it off the catalog."
     },
     "waitlist": {
       "title": "Waitlist",
