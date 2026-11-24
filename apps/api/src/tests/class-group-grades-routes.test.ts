@@ -64,8 +64,8 @@ const correct = (body: unknown = { grade: 14.5, reason: "Error de digitación" }
   call("POST", `/api/v1/catalog/class-groups/${ID}/grades/${SEAT}/correction`, body);
 
 describe("who reads a class group's grades", () => {
-  it("is exactly the supervision, management and the analyst", () => {
-    expect([...readers].sort()).toEqual(["academic_supervisor", "admin", "analyst", "master"]);
+  it("is exactly the supervision, management, the analyst and the academic assistant", () => {
+    expect([...readers].sort()).toEqual(["academic_assistant", "academic_supervisor", "admin", "analyst", "master"]);
     expect([...writers].sort()).toEqual(["academic_supervisor", "admin", "master"]);
   });
 
@@ -76,7 +76,7 @@ describe("who reads a class group's grades", () => {
 });
 
 describe("who posts and corrects", () => {
-  it.each(EVERY_ROLE.filter((role) => !writers.has(role)))("refuses %s, the analyst included", async (role) => {
+  it.each(EVERY_ROLE.filter((role) => !writers.has(role)))("refuses %s, the analyst and the academic assistant included", async (role) => {
     signIn(role);
     const run = vi.spyOn(container.useCases.teaching.correctClassGroupGrade, "run");
     expect((await post()).statusCode).toBe(403);

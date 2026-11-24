@@ -24,7 +24,7 @@ const ROW: ClassGroupRosterRow = {
 };
 
 const FULL: Role[] = ["master", "admin", "enrollment_supervisor"];
-const LIMITED: Role[] = ["analyst", "academic_supervisor", "sales", "support"];
+const LIMITED: Role[] = ["analyst", "academic_supervisor", "academic_assistant", "sales", "support"];
 
 describe("shapeRoster", () => {
   it.each(FULL)("gives %s the national id and the contact", (role) => {

@@ -16,7 +16,7 @@ const PASSWORD = "preview1234";
  * student and guardian hang off a file (teachers/students.user_id) this does
  * not create.
  */
-const PREVIEW_ROLES = ["enrollment_supervisor", "academic_supervisor", "analyst", "sales", "support"] as const satisfies readonly Role[];
+const PREVIEW_ROLES = ["enrollment_supervisor", "academic_supervisor", "academic_assistant", "analyst", "sales", "support"] as const satisfies readonly Role[];
 type PreviewRole = (typeof PREVIEW_ROLES)[number];
 
 async function main() {

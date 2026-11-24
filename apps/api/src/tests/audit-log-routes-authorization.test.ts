@@ -13,7 +13,7 @@ import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 
 const ROUTES = ["/api/v1/audit-log", "/api/v1/audit-log/actors", "/api/v1/audit-log/export"];
 
-const REFUSED: Role[] = ["enrollment_supervisor", "academic_supervisor", "teacher", "sales", "support", "billing"];
+const REFUSED: Role[] = ["enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"];
 
 const CASES = ROUTES.flatMap((url) => REFUSED.map((role) => [url, role] as const));
 

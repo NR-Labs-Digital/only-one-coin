@@ -22,8 +22,8 @@ const PORTAL_ROUTES = [
   `/api/v1/portal/procedure-requests/${REQUEST}/payment`,
 ];
 
-const STAFF: Role[] = ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "teacher", "sales", "support", "billing"];
-const PRICE_REFUSED: Role[] = ["analyst", "enrollment_supervisor", "academic_supervisor", "teacher", "sales", "support", "billing", "student"];
+const STAFF: Role[] = ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"];
+const PRICE_REFUSED: Role[] = ["analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing", "student"];
 
 let app: FastifyInstance;
 

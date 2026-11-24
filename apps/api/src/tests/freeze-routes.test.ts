@@ -12,7 +12,7 @@ import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
  */
 
 const ENROLLMENT = "018f2b5c-8400-7000-8000-000000000010";
-const REFUSED: Role[] = ["analyst", "academic_supervisor", "teacher", "sales", "support", "billing", "student"];
+const REFUSED: Role[] = ["analyst", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing", "student"];
 const ROUTES = [
   { method: "POST" as const, url: `/api/v1/enrollments/${ENROLLMENT}/freeze` },
   { method: "GET" as const, url: `/api/v1/enrollments/${ENROLLMENT}/return-runs` },

@@ -14,10 +14,10 @@ import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 const ROW = "018f2b5c-4000-7000-8000-0000000000aa";
 
 const CASES: (readonly ["GET" | "POST", string, Role])[] = [
-  ...(["academic_supervisor", "teacher", "sales", "support", "billing"] as const).map(
+  ...(["academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"] as const).map(
     (role) => ["GET", "/api/v1/emails/deliveries", role] as const,
   ),
-  ...(["analyst", "academic_supervisor", "teacher", "sales", "support", "billing"] as const).map(
+  ...(["analyst", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"] as const).map(
     (role) => ["POST", `/api/v1/emails/deliveries/${ROW}/resend`, role] as const,
   ),
 ];
