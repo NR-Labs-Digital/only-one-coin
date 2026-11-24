@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-/** The database's bound on a return note (0073). */
+/** The database's bound on a return note (0074). */
 const MAX_NOTE = 1000
 
 const smallButtonClass =

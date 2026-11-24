@@ -21,7 +21,7 @@ import { gradeEmailFactsOf } from "./DrizzleGradeRepository.js";
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 /**
- * The grade registers (OOC-180, `0073`). A register is a module run and a
+ * The grade registers (OOC-180, `0074`). A register is a module run and a
  * round; its status lives on the row and every step in the append-only
  * `grade_register_events`. Every step locks the run's open register first,
  * then re-reads what it decides on — a send and an edit, or two coordinators
