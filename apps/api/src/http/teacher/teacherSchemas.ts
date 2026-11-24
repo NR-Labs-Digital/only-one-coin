@@ -1,10 +1,60 @@
-import type { Teacher } from "@ooc/domain";
+import {
+  CreateTeacherSchema,
+  PendingTeacherDataSchema,
+  TeacherDataSchema,
+  type CreateTeacherDTO,
+  type PendingTeacherDataDTO,
+  type Teacher,
+  type TeacherDataDTO,
+} from "@ooc/domain";
 import { z } from "zod";
 import { ClassGroupItemSchema } from "@/http/catalog/CatalogSchemas.js";
 import type { TeacherDetail } from "@/infra/persistence/teacher/GetTeacherQuery.js";
 import type { TeacherContractSummary, TeacherListRow } from "@/infra/persistence/teacher/ListTeachersQuery.js";
 
 export const TeacherParamsSchema = z.object({ teacherId: z.string().uuid() });
+
+/**
+ * Parses `body` with `schema`, reporting its issues on `ctx` with their own
+ * paths — so a body picked between two shapes still names the field it got
+ * wrong, which a `z.union` would fold into one `invalid_union`.
+ */
+function parseInto<T extends z.ZodTypeAny>(schema: T, body: unknown, ctx: z.RefinementCtx): z.output<T> | typeof z.NEVER {
+  const result = schema.safeParse(body);
+  if (result.success) return result.data as z.output<T>;
+  for (const issue of result.error.issues) ctx.addIssue(issue as z.IssueData);
+  return z.NEVER;
+}
+
+/**
+ * `POST /teachers` (OOC-103): the whole file, or — with `onboarding: true` —
+ * name, e-mail and languages only, for the teacher to complete after the invite.
+ */
+export const RegisterTeacherBodySchema = z
+  .object({ onboarding: z.boolean().optional() })
+  .passthrough()
+  .transform(
+    (body, ctx):
+      | { onboarding: true; teacher: PendingTeacherDataDTO }
+      | { onboarding: false; teacher: CreateTeacherDTO } =>
+      body.onboarding === true
+        ? { onboarding: true, teacher: parseInto(PendingTeacherDataSchema, body, ctx) }
+        : { onboarding: false, teacher: parseInto(CreateTeacherSchema, body, ctx) },
+  );
+
+/**
+ * `PUT /teachers/:id`: the whole file minus the week — or, on a file still
+ * pending onboarding (OOC-103), without the profile. A body with no document
+ * is read as the pending shape; the usecase refuses it on a complete file.
+ */
+export const UpdateTeacherBodySchema = z
+  .object({ nationalId: z.unknown().optional() })
+  .passthrough()
+  .transform((body, ctx): TeacherDataDTO | PendingTeacherDataDTO =>
+    typeof body.nationalId === "string" && body.nationalId.trim() !== ""
+      ? parseInto(TeacherDataSchema, body, ctx)
+      : parseInto(PendingTeacherDataSchema, body, ctx),
+  );
 
 const WeeklySlotResponseSchema = z.object({
   weekday: z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
@@ -28,17 +78,19 @@ export const TeacherRowResponseSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string(),
   lastName: z.string(),
-  nationalIdType: z.enum(["DNI", "CE", "passport"]),
-  nationalId: z.string(),
+  /** Profile fields: null on a file still pending onboarding (OOC-103). */
+  nationalIdType: z.enum(["DNI", "CE", "passport"]).nullable(),
+  nationalId: z.string().nullable(),
   email: z.string(),
-  phone: z.string(),
+  phone: z.string().nullable(),
   status: z.enum(["active", "inactive"]),
   languages: z.array(z.string()),
-  nationality: z.string(),
-  country: z.string(),
+  nationality: z.string().nullable(),
+  country: z.string().nullable(),
   region: z.string().nullable(),
-  city: z.string(),
-  addressLine: z.string(),
+  city: z.string().nullable(),
+  addressLine: z.string().nullable(),
+  profileComplete: z.boolean(),
   contract: TeacherContractResponseSchema.nullable(),
   contractDaysLeft: z.number().int().nullable(),
   activeClassGroups: z.number().int(),
@@ -60,15 +112,16 @@ export const TeacherRecordResponseSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string(),
   lastName: z.string(),
-  nationalIdType: z.enum(["DNI", "CE", "passport"]),
-  nationalId: z.string(),
+  nationalIdType: z.enum(["DNI", "CE", "passport"]).nullable(),
+  nationalId: z.string().nullable(),
   email: z.string(),
-  phone: z.string(),
-  nationality: z.string(),
-  country: z.string(),
+  phone: z.string().nullable(),
+  nationality: z.string().nullable(),
+  country: z.string().nullable(),
   region: z.string().nullable(),
-  city: z.string(),
-  addressLine: z.string(),
+  city: z.string().nullable(),
+  addressLine: z.string().nullable(),
+  profileComplete: z.boolean(),
   status: z.enum(["active", "inactive"]),
   languages: z.array(z.string()),
   availability: z.array(WeeklySlotResponseSchema),
@@ -90,7 +143,7 @@ export function serializeContract(contract: TeacherContractSummary) {
 export function serializeTeacherRow(row: TeacherListRow) {
   return {
     ...row,
-    nationalIdType: row.nationalIdType as "DNI" | "CE" | "passport",
+    nationalIdType: row.nationalIdType as "DNI" | "CE" | "passport" | null,
     contract: row.contract ? serializeContract(row.contract) : null,
     joinedAt: day(row.joinedAt),
   };
@@ -119,6 +172,7 @@ export function serializeTeacher(teacher: Teacher) {
     region: teacher.region,
     city: teacher.city,
     addressLine: teacher.addressLine,
+    profileComplete: teacher.profileComplete,
     status: teacher.status,
     languages: teacher.languages,
     availability: teacher.availability,

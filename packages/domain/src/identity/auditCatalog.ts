@@ -199,6 +199,7 @@ export const AUDIT_ACTIONS = {
 
   "teacher.registered": { key: "teacher_registered", entity: "teacher", subject: "target" },
   "teacher.updated": { key: "teacher_updated", entity: "teacher", subject: "target" },
+  "teacher.onboarding_completed": { key: "teacher_onboarding_completed", entity: "teacher", subject: "target" },
   "teacher.availability_updated": { key: "teacher_availability_updated", entity: "teacher", subject: "target" },
   "teacher.left_roster": { key: "teacher_left_roster", entity: "teacher", subject: "target" },
   "teacher.rejoined_roster": { key: "teacher_rejoined_roster", entity: "teacher", subject: "target" },

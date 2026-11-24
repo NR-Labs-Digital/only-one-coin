@@ -1,9 +1,13 @@
-import { TeacherDataSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { TEACHER_EDIT_ROLES } from "./teacherRoles.js";
-import { serializeTeacher, TeacherParamsSchema, TeacherRecordResponseSchema } from "./teacherSchemas.js";
+import {
+  serializeTeacher,
+  TeacherParamsSchema,
+  TeacherRecordResponseSchema,
+  UpdateTeacherBodySchema,
+} from "./teacherSchemas.js";
 
 /**
  * Corrects the teacher file minus the week (OOC-78). PUT, not PATCH: the body
@@ -14,11 +18,12 @@ export const updateTeacherRoute = RouteBuilder.put("/teachers/:teacherId")
   .docs({
     tags: ["Teachers"],
     summary: "Correct a teacher's data",
-    description: "Refuses a document already on another teacher's file.",
+    description:
+      "Refuses a document already on another teacher's file. A file still pending onboarding (OOC-103) takes name, e-mail and languages alone, or the whole profile.",
   })
   .roles(...TEACHER_EDIT_ROLES)
   .params(TeacherParamsSchema)
-  .body(TeacherDataSchema)
+  .body(UpdateTeacherBodySchema)
   .response(200, TeacherRecordResponseSchema)
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)

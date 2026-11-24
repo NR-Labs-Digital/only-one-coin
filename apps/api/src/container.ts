@@ -69,6 +69,7 @@ import {
   PromoteUserRoleUseCase,
   RegisterStudentUseCase,
   RegisterTeacherUseCase,
+  CompleteTeacherOnboardingUseCase,
   SetTeacherRosterStatusUseCase,
   SaveDocumentTemplateDraftUseCase,
   PublishDocumentTemplateUseCase,
@@ -325,6 +326,7 @@ export interface AppUseCases {
   teacher: {
     register: RegisterTeacherUseCase;
     update: UpdateTeacherUseCase;
+    completeOnboarding: CompleteTeacherOnboardingUseCase;
     updateAvailability: UpdateTeacherAvailabilityUseCase;
     setRosterStatus: SetTeacherRosterStatusUseCase;
     openContract: OpenTeacherContractUseCase;
@@ -666,6 +668,7 @@ function buildContainer(): AppContainer {
   const acceptGuardianConsent = new AcceptGuardianConsentUseCase(new DrizzleGuardianConsentRepository(db), auditLogRepository);
   const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
+  const completeTeacherOnboarding = new CompleteTeacherOnboardingUseCase(teacherRepository, auditLogRepository);
   const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
   const freezeRepository = new DrizzleEnrollmentFreezeRepository(db);
   const moveEnrollment = new MoveEnrollmentUseCase(
@@ -1004,6 +1007,7 @@ function buildContainer(): AppContainer {
     useCases: {
       teacher: {
         register: registerTeacher,
+        completeOnboarding: completeTeacherOnboarding,
         update: updateTeacher,
         updateAvailability: updateTeacherAvailability,
         setRosterStatus: setTeacherRosterStatus,

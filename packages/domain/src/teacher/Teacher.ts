@@ -2,6 +2,7 @@ import { v7 as uuid } from "uuid";
 import { z } from "zod";
 import { WeeklySlotSchema, type WeeklySlot } from "../catalog/ClassGroup.js";
 import { InvalidFieldsError } from "../shared/base/errors/InvalidFieldsError.js";
+import { TeacherOnboardingClosedError } from "./errors.js";
 import { SoftDeletableModel, SoftDeletableModelPropsSchema } from "../shared/base/SoftDeletableModel.js";
 import {
   AddressLineField,
@@ -28,19 +29,38 @@ import {
 export const TeacherStatusSchema = z.enum(["active", "inactive"]);
 export type TeacherStatus = z.infer<typeof TeacherStatusSchema>;
 
-/** What a stored record looks like. */
+/**
+ * The part of the file the teacher can fill in on their own, at onboarding
+ * (OOC-103): document, phone, origin and address. Coordination may register a
+ * file without them — name, e-mail and languages only — and the teacher fills
+ * them once, after accepting the invite. Either all of them are on the file or
+ * none is (CHECK `teachers_profile_check`, 0072); the region stays optional
+ * outside Peru, as it always was.
+ */
+export const TEACHER_PROFILE_FIELDS = [
+  "nationalIdType",
+  "nationalId",
+  "phone",
+  "nationality",
+  "country",
+  "region",
+  "city",
+  "addressLine",
+] as const;
+
+/** What a stored record looks like. Null profile fields = onboarding pending. */
 export const TeacherPropsSchema = SoftDeletableModelPropsSchema.extend({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  nationalIdType: NationalIdTypeSchema,
-  nationalId: z.string().min(1),
+  nationalIdType: NationalIdTypeSchema.nullable(),
+  nationalId: z.string().min(1).nullable(),
   email: z.string().email(),
-  phone: z.string().min(1),
-  nationality: z.string().length(2),
-  country: z.string().length(2),
+  phone: z.string().min(1).nullable(),
+  nationality: z.string().length(2).nullable(),
+  country: z.string().length(2).nullable(),
   region: z.string().min(1).nullable(),
-  city: z.string().min(1),
-  addressLine: z.string().min(1),
+  city: z.string().min(1).nullable(),
+  addressLine: z.string().min(1).nullable(),
   status: TeacherStatusSchema,
   /** The panel account (Better Auth "user".id); null until one is linked. */
   userId: z.string().min(1).nullable(),
@@ -124,6 +144,45 @@ export const CreateTeacherSchema = TeacherFieldsSchema.superRefine(refineNationa
 export type CreateTeacherDTO = z.input<typeof CreateTeacherSchema>;
 
 /**
+ * A file left for the teacher to complete (OOC-103): who they are, where the
+ * invite goes and what they are cleared to teach — what coordination knows on
+ * the day they hire. The rest arrives through onboarding.
+ */
+export const PendingTeacherDataSchema = TeacherFieldsSchema.pick({
+  firstName: true,
+  lastName: true,
+  email: true,
+  languages: true,
+}).superRefine(refineLanguages);
+
+export type PendingTeacherDataDTO = z.input<typeof PendingTeacherDataSchema>;
+
+/**
+ * What the teacher sends at onboarding (OOC-103): the profile fields and the
+ * week they are free. Name, e-mail and languages stay coordination's — the
+ * e-mail is the account's, the languages are a clearance.
+ */
+export const TeacherOnboardingSchema = TeacherFieldsSchema.pick({
+  nationalIdType: true,
+  nationalId: true,
+  phone: true,
+  nationality: true,
+  country: true,
+  region: true,
+  city: true,
+  addressLine: true,
+  availability: true,
+})
+  .superRefine(refineNationalId)
+  .superRefine(refineRegion)
+  .superRefine(refineAvailability);
+
+export type TeacherOnboardingDTO = z.input<typeof TeacherOnboardingSchema>;
+
+/** The field names an onboarding writes — what its audit line records. */
+export type TeacherOnboardingField = keyof TeacherOnboardingDTO;
+
+/**
  * The file without the week (OOC-78): who they are, how to reach them, where
  * they live and what they may teach. The week is its own edit — it changes far
  * more often, and from a different conversation.
@@ -160,15 +219,15 @@ function sameWeek(a: WeeklySlot[], b: WeeklySlot[]): boolean {
 export class Teacher extends SoftDeletableModel {
   public firstName: string;
   public lastName: string;
-  public nationalIdType: NationalIdType;
-  public nationalId: string;
+  public nationalIdType: NationalIdType | null;
+  public nationalId: string | null;
   public email: string;
-  public phone: string;
-  public nationality: string;
-  public country: string;
+  public phone: string | null;
+  public nationality: string | null;
+  public country: string | null;
   public region: string | null;
-  public city: string;
-  public addressLine: string;
+  public city: string | null;
+  public addressLine: string | null;
   public status: TeacherStatus;
   public userId: string | null;
   public languages: string[];
@@ -197,6 +256,44 @@ export class Teacher extends SoftDeletableModel {
     return this.status === "active";
   }
 
+  /**
+   * Whether the profile fields are on the file (OOC-103). False only for a file
+   * coordination left for the teacher to complete, until they do — the
+   * database keeps the profile all-or-nothing, so the document stands for it.
+   */
+  get profileComplete(): boolean {
+    return this.nationalId !== null;
+  }
+
+  /**
+   * The teacher's own onboarding (OOC-103): fills the profile fields and the
+   * week, once. A complete file refuses it — from then on only coordination
+   * corrects the file, as it always did (CLAUDE.md §1, OOC-79). Returns the
+   * names of the fields written, for the audit line.
+   */
+  completeOnboarding(dto: TeacherOnboardingDTO, at: Date = new Date()): TeacherOnboardingField[] {
+    if (this.profileComplete) throw new TeacherOnboardingClosedError();
+
+    const result = TeacherOnboardingSchema.safeParse(dto);
+    if (!result.success) {
+      throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
+    }
+
+    const next = result.data;
+    this.nationalIdType = next.nationalIdType;
+    this.nationalId = next.nationalId;
+    this.phone = next.phone;
+    this.nationality = next.nationality;
+    this.country = next.country;
+    this.region = next.region;
+    this.city = next.city;
+    this.addressLine = next.addressLine;
+    this.availability = next.availability;
+    this.touch(at);
+
+    return Object.keys(next) as TeacherOnboardingField[];
+  }
+
   /** Out of the roster: stops the contract watch, keeps every record (CLAUDE.md §1). */
   leaveRoster(at: Date = new Date()): void {
     if (this.status === "inactive") return;
@@ -215,18 +312,22 @@ export class Teacher extends SoftDeletableModel {
    * to. Returns the names of the fields that changed — what the audit line
    * records, never the values (CLAUDE.md §8, OOC-74).
    */
-  rewrite(dto: TeacherDataDTO): (keyof TeacherDataDTO)[] {
-    const result = TeacherDataSchema.safeParse(dto);
+  rewrite(dto: TeacherDataDTO | PendingTeacherDataDTO): (keyof TeacherDataDTO)[] {
+    // A file still waiting for onboarding can be corrected without the profile
+    // (OOC-103) — or completed by coordination, with all of it. A complete file
+    // never goes back to pending: the full schema refuses the missing fields.
+    const pendingEdit = !this.profileComplete && !("nationalId" in dto && dto.nationalId);
+    const result = (pendingEdit ? PendingTeacherDataSchema : TeacherDataSchema).safeParse(dto);
 
     if (!result.success) {
       throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
     }
 
-    const next = result.data;
+    const next = result.data as Partial<Record<keyof TeacherDataDTO, unknown>> & { languages?: string[] };
     const changed: (keyof TeacherDataDTO)[] = [];
     for (const key of Object.keys(next) as (keyof TeacherDataDTO)[]) {
       const same =
-        key === "languages" ? sameLanguages(this.languages, next.languages) : this[key] === next[key];
+        key === "languages" ? sameLanguages(this.languages, next.languages ?? []) : this[key] === next[key];
       if (same) continue;
       (this as Record<string, unknown>)[key] = next[key];
       changed.push(key);
@@ -258,5 +359,30 @@ export class Teacher extends SoftDeletableModel {
     }
 
     return new Teacher({ id: uuid(), ...result.data, status: "active", userId: null });
+  }
+
+  /** A file for the teacher to complete at onboarding (OOC-103). */
+  static createPending(dto: PendingTeacherDataDTO): Teacher {
+    const result = PendingTeacherDataSchema.safeParse(dto);
+
+    if (!result.success) {
+      throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
+    }
+
+    return new Teacher({
+      id: uuid(),
+      ...result.data,
+      nationalIdType: null,
+      nationalId: null,
+      phone: null,
+      nationality: null,
+      country: null,
+      region: null,
+      city: null,
+      addressLine: null,
+      availability: [],
+      status: "active",
+      userId: null,
+    });
   }
 }

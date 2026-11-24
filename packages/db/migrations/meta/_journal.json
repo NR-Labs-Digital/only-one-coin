@@ -505,6 +505,13 @@
       "when": 1795475382742,
       "tag": "0071_issued_document_revocation",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1795477770659,
+      "tag": "0072_teacher_onboarding",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,14 @@ export interface ITeacherRepository {
    */
   linkAccount(teacherId: string, userId: string): Promise<boolean>;
 
+  /**
+   * Writes the onboarding (OOC-103): the profile fields and the week, only
+   * while the stored file is still pending. Throws
+   * `TeacherOnboardingClosedError` when it was completed meanwhile, and
+   * `TeacherAlreadyRegisteredError` when the unique index refuses the document.
+   */
+  completeOnboarding(teacher: Teacher): Promise<Teacher>;
+
   /** Writes the entity's current fields, languages and availability over its rows. */
   update(teacher: Teacher): Promise<Teacher>;
 

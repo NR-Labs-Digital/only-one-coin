@@ -4,6 +4,7 @@ import {
   ClassGroup,
   Teacher,
   TeacherAlreadyRegisteredError,
+  TeacherOnboardingClosedError,
   TeacherContract,
   type CreateTeacherDTO,
 } from "@ooc/domain";
@@ -565,6 +566,58 @@ describe("ListTeacherOptionsQuery", () => {
         }),
       );
       expect(mine[0]?.classGroups.map((group) => group.id)).toEqual([ahead]);
+    });
+  });
+});
+
+describe("onboarding (OOC-103)", () => {
+  const PENDING = { firstName: "Ana", lastName: "Docente", email: "ana.docente@example.com", languages: ["Italiano (prueba)"] };
+  const { firstName: _f, lastName: _l, email: _e, languages: _langs, ...PROFILE } = ANA;
+
+  it("stores a pending file with no profile, and the teacher completes it once", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const created = await teachers.create(Teacher.createPending(PENDING));
+      expect(created.profileComplete).toBe(false);
+
+      const listed = await new ListTeachersQuery(tx).byId(created.id);
+      expect(listed).toMatchObject({ profileComplete: false, nationalId: null, phone: null });
+
+      const loaded = (await teachers.findById(created.id))!;
+      loaded.completeOnboarding(PROFILE);
+      const saved = await teachers.completeOnboarding(loaded);
+      expect(saved).toMatchObject({ profileComplete: true, nationalId: ANA.nationalId, city: "Lima" });
+      expect(saved.availability).toHaveLength(2);
+
+      // A second write — another tab, or coordination completing it meanwhile.
+      const stale = Teacher.createPending(PENDING);
+      Object.assign(stale, { id: created.id });
+      stale.completeOnboarding(PROFILE);
+      await expect(teachers.completeOnboarding(stale)).rejects.toBeInstanceOf(TeacherOnboardingClosedError);
+    });
+  });
+
+  it("refuses at onboarding a document already on another file", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      await teachers.create(Teacher.create(ANA));
+      const pending = await teachers.create(Teacher.createPending({ ...PENDING, email: "otra@example.com" }));
+
+      pending.completeOnboarding(PROFILE);
+      await expect(teachers.completeOnboarding(pending)).rejects.toBeInstanceOf(TeacherAlreadyRegisteredError);
+    });
+  });
+
+  it("keeps the profile all-or-nothing in the database", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const created = await teachers.create(Teacher.createPending(PENDING));
+
+      await expect(
+        tx.transaction(async (inner) => {
+          await inner.update(schema.teachers).set({ phone: "+51900000009" }).where(eq(schema.teachers.id, created.id));
+        }),
+      ).rejects.toThrow();
     });
   });
 });

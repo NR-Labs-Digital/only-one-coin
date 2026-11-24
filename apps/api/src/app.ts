@@ -39,6 +39,7 @@ import {
 } from "@/http/teaching/ClassGroupGradesRoutes.js";
 import { getTeachingSummaryRoute } from "@/http/teaching/GetTeachingSummaryRoute.js";
 import { registerTeacherRoute } from "@/http/teacher/RegisterTeacherRoute.js";
+import { completeTeacherOnboardingRoute } from "@/http/teaching/CompleteTeacherOnboardingRoute.js";
 import { updateTeacherRoute } from "@/http/teacher/UpdateTeacherRoute.js";
 import { updateTeacherAvailabilityRoute } from "@/http/teacher/UpdateTeacherAvailabilityRoute.js";
 import { setTeacherRosterStatusRoute } from "@/http/teacher/SetTeacherRosterStatusRoute.js";
@@ -263,6 +264,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listTeachersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getTeacherRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(registerTeacherRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(completeTeacherOnboardingRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherAvailabilityRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setTeacherRosterStatusRoute);

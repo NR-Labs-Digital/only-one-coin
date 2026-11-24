@@ -3,6 +3,7 @@ import {
   LanguageNotFoundError,
   Teacher,
   TeacherAlreadyRegisteredError,
+  TeacherOnboardingClosedError,
   type ITeacherRepository,
   type NationalIdType,
   type TeacherStatus,
@@ -26,7 +27,7 @@ function toTeacher(row: TeacherRow, languages: string[], availability: WeeklySlo
     id: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
-    nationalIdType: row.nationalIdType as NationalIdType,
+    nationalIdType: row.nationalIdType as NationalIdType | null,
     nationalId: row.nationalId,
     email: row.email,
     phone: row.phone,
@@ -152,6 +153,39 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
     }
   }
 
+  async completeOnboarding(teacher: Teacher): Promise<Teacher> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        // Only while the stored file is still pending: the document is the
+        // profile's stand-in (teachers_profile_check keeps it all-or-nothing).
+        const [row] = await tx
+          .update(teachers)
+          .set({
+            nationalIdType: teacher.nationalIdType,
+            nationalId: teacher.nationalId,
+            phone: teacher.phone,
+            nationality: teacher.nationality,
+            country: teacher.country,
+            region: teacher.region,
+            city: teacher.city,
+            addressLine: teacher.addressLine,
+            updatedAt: sql`now()`,
+          })
+          .where(and(eq(teachers.id, teacher.id), isNull(teachers.nationalId), isNull(teachers.deletedAt)))
+          .returning();
+
+        if (!row) throw new TeacherOnboardingClosedError();
+
+        await tx.delete(teacherAvailability).where(eq(teacherAvailability.teacherId, teacher.id));
+        await this.writeAvailability(tx, teacher);
+        return this.hydrate(tx, row);
+      });
+    } catch (error) {
+      if (isUniqueViolation(error, "teachers_national_id_uidx")) throw new TeacherAlreadyRegisteredError({ cause: error });
+      throw error;
+    }
+  }
+
   async countRunningClassGroups(teacherId: string): Promise<number> {
     const [row] = await this.db
       .select({ total: count() })
@@ -204,6 +238,10 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
       });
       await tx.insert(teacherLanguages).values(rows);
     }
+    await this.writeAvailability(tx, teacher);
+  }
+
+  private async writeAvailability(tx: Tx, teacher: Teacher): Promise<void> {
     if (teacher.availability.length > 0) {
       await tx.insert(teacherAvailability).values(
         teacher.availability.map((slot) => ({

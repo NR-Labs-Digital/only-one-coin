@@ -54,18 +54,21 @@ export interface TeacherListRow {
   id: string;
   firstName: string;
   lastName: string;
-  nationalIdType: string;
-  nationalId: string;
+  /** The profile fields are null on a file still pending onboarding (OOC-103). */
+  nationalIdType: string | null;
+  nationalId: string | null;
   email: string;
-  phone: string;
+  phone: string | null;
   status: TeacherStatus;
   /** Catalog text, the same as `courses.language`. */
   languages: string[];
-  nationality: string;
-  country: string;
+  nationality: string | null;
+  country: string | null;
   region: string | null;
-  city: string;
-  addressLine: string;
+  city: string | null;
+  addressLine: string | null;
+  /** False while the teacher has not completed the onboarding (OOC-103). */
+  profileComplete: boolean;
   /** The latest filing; null when none was ever filed. */
   contract: TeacherContractSummary | null;
   /** Whole days to the contract's end, negative once it passed; null without one. */
@@ -324,6 +327,7 @@ function toListRow(row: SelectedRow): TeacherListRow {
     region: teacher.region,
     city: teacher.city,
     addressLine: teacher.addressLine,
+    profileComplete: teacher.nationalId !== null,
     contract,
     contractDaysLeft: contract ? row.contractDaysLeft : null,
     activeClassGroups: row.activeClassGroups,

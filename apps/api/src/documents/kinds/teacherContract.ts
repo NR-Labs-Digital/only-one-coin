@@ -1,4 +1,4 @@
-import { LEGAL_IDENTITY, type Teacher } from "@ooc/domain";
+import { LEGAL_IDENTITY, TeacherProfileIncompleteError, type Teacher } from "@ooc/domain";
 import { defineTemplateKind } from "@ooc/templates";
 import { z } from "zod";
 import copy from "../locales/es-PE.json" with { type: "json" };
@@ -80,20 +80,33 @@ export function teacherContractData(
   now: Date = new Date(),
 ): TeacherContractData {
   const documentTypes: Record<string, string> = copy.nationalIdTypes;
+  // A file still pending onboarding (OOC-103) has no document nor address to print.
+  const { nationalIdType, nationalId, nationality, phone, addressLine, city, country } = teacher;
+  if (
+    nationalIdType === null ||
+    nationalId === null ||
+    nationality === null ||
+    phone === null ||
+    addressLine === null ||
+    city === null ||
+    country === null
+  ) {
+    throw new TeacherProfileIncompleteError();
+  }
   return {
     teacher: {
       fullName: `${teacher.firstName} ${teacher.lastName}`,
       firstName: teacher.firstName,
       lastName: teacher.lastName,
-      documentType: documentTypes[teacher.nationalIdType] ?? teacher.nationalIdType,
-      nationalId: teacher.nationalId,
-      nationality: countryNames.of(teacher.nationality) ?? teacher.nationality,
+      documentType: documentTypes[nationalIdType] ?? nationalIdType,
+      nationalId,
+      nationality: countryNames.of(nationality) ?? nationality,
       email: teacher.email,
-      phone: teacher.phone,
-      address: teacher.addressLine,
-      city: teacher.city,
+      phone,
+      address: addressLine,
+      city,
       region: teacher.region,
-      country: countryNames.of(teacher.country) ?? teacher.country,
+      country: countryNames.of(country) ?? country,
       languages: joinLanguages.format(teacher.languages),
     },
     contract,
