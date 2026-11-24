@@ -67,6 +67,7 @@ export function NewTeacherForm({
   const [nationalIdType, setNationalIdType] = useState<NationalIdType>('DNI')
   const [nationalId, setNationalId] = useState('')
   const [email, setEmail] = useState('')
+  const [personalEmail, setPersonalEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [nationality, setNationality] = useState(DEFAULT_COUNTRY)
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
@@ -119,6 +120,7 @@ export function NewTeacherForm({
       nationalIdType,
       nationalId: nationalId.trim(),
       email: email.trim(),
+      personalEmail: personalEmail.trim() === '' ? null : personalEmail.trim(),
       phone,
       nationality,
       country,
@@ -225,6 +227,22 @@ export function NewTeacherForm({
               className={fieldClass}
             />
             <FieldMessage code={fieldError('email')} />
+          </Labelled>
+
+          {/* Optional and separate from the e-mail above (OOC-161): that one
+              gets the panel invite and goes on the contract; this one is the
+              teacher's own, where the monthly feedback report is sent. */}
+          <Labelled label={t('teachers.field_personal_email')} optional>
+            <input
+              type="email"
+              value={personalEmail}
+              onChange={(event) => setPersonalEmail(event.target.value)}
+              className={fieldClass}
+            />
+            <span className="text-xs text-muted-foreground">
+              {t('teachers.personal_email_hint')}
+            </span>
+            <FieldMessage code={fieldError('personalEmail')} />
           </Labelled>
 
           <Labelled label={t('teachers.field_phone')} required>

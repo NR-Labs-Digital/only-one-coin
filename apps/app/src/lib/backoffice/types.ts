@@ -840,7 +840,13 @@ export interface TeacherRow {
    */
   nationalIdType: NationalIdType
   nationalId: string
+  /** The file's e-mail: the panel invite goes here and the contract prints it. */
   email: string
+  /**
+   * Optional, any provider (OOC-161): the teacher's own mail, where the monthly
+   * feedback report goes. Null when coordination has not filled it in.
+   */
+  personalEmail: string | null
   phone: string
   status: TeacherStatus
   /**
