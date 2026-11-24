@@ -34,7 +34,7 @@ export type TeacherStatus = z.infer<typeof TeacherStatusSchema>;
  * (OOC-103): document, phone, origin and address. Coordination may register a
  * file without them — name, e-mail and languages only — and the teacher fills
  * them once, after accepting the invite. Either all of them are on the file or
- * none is (CHECK `teachers_profile_check`, 0072); the region stays optional
+ * none is (CHECK `teachers_profile_check`, 0073); the region stays optional
  * outside Peru, as it always was.
  */
 export const TEACHER_PROFILE_FIELDS = [
@@ -55,6 +55,8 @@ export const TeacherPropsSchema = SoftDeletableModelPropsSchema.extend({
   nationalIdType: NationalIdTypeSchema.nullable(),
   nationalId: z.string().min(1).nullable(),
   email: z.string().email(),
+  /** Optional, any provider (OOC-161) — where the teacher's own mail goes. */
+  personalEmail: z.string().email().nullable(),
   phone: z.string().min(1).nullable(),
   nationality: z.string().length(2).nullable(),
   country: z.string().length(2).nullable(),
@@ -83,6 +85,12 @@ export const TeacherFieldsSchema = z.object({
   nationalIdType: NationalIdTypeSchema,
   nationalId: NationalIdField,
   email: EmailField,
+  /**
+   * Optional (OOC-161), separate from `email` — which stays the panel invite's
+   * and the contract's. The monthly feedback report goes here. Left out of a
+   * write, it keeps what the file has (an older client does not wipe it).
+   */
+  personalEmail: EmailField.nullable().optional(),
   phone: PhoneField,
   nationality: CountryCodeField,
   country: CountryCodeField,
@@ -152,6 +160,8 @@ export const PendingTeacherDataSchema = TeacherFieldsSchema.pick({
   firstName: true,
   lastName: true,
   email: true,
+  // Coordination's on either kind of file (OOC-161), not the onboarding's.
+  personalEmail: true,
   languages: true,
 }).superRefine(refineLanguages);
 
@@ -222,6 +232,7 @@ export class Teacher extends SoftDeletableModel {
   public nationalIdType: NationalIdType | null;
   public nationalId: string | null;
   public email: string;
+  public personalEmail: string | null;
   public phone: string | null;
   public nationality: string | null;
   public country: string | null;
@@ -240,6 +251,7 @@ export class Teacher extends SoftDeletableModel {
     this.nationalIdType = props.nationalIdType;
     this.nationalId = props.nationalId;
     this.email = props.email;
+    this.personalEmail = props.personalEmail;
     this.phone = props.phone;
     this.nationality = props.nationality;
     this.country = props.country;
@@ -326,6 +338,7 @@ export class Teacher extends SoftDeletableModel {
     const next = result.data as Partial<Record<keyof TeacherDataDTO, unknown>> & { languages?: string[] };
     const changed: (keyof TeacherDataDTO)[] = [];
     for (const key of Object.keys(next) as (keyof TeacherDataDTO)[]) {
+      if (next[key] === undefined) continue;
       const same =
         key === "languages" ? sameLanguages(this.languages, next.languages ?? []) : this[key] === next[key];
       if (same) continue;
@@ -358,7 +371,13 @@ export class Teacher extends SoftDeletableModel {
       throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
     }
 
-    return new Teacher({ id: uuid(), ...result.data, status: "active", userId: null });
+    return new Teacher({
+      id: uuid(),
+      ...result.data,
+      personalEmail: result.data.personalEmail ?? null,
+      status: "active",
+      userId: null,
+    });
   }
 
   /** A file for the teacher to complete at onboarding (OOC-103). */
@@ -372,6 +391,7 @@ export class Teacher extends SoftDeletableModel {
     return new Teacher({
       id: uuid(),
       ...result.data,
+      personalEmail: result.data.personalEmail ?? null,
       nationalIdType: null,
       nationalId: null,
       phone: null,

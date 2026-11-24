@@ -49,9 +49,9 @@ const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
  * the same field rules and refuses a document already on the roster. Creating
  * the *login* for this teacher is a staff invite, not this form (CLAUDE.md §8).
  *
- * Or, with "the teacher completes it" (OOC-103), only name, e-mail and
- * languages: the document, phone, origin, address and week arrive through the
- * teacher's own onboarding, once, after they accept the invite.
+ * Or, with "the teacher completes it" (OOC-103), only name, e-mail, personal
+ * e-mail and languages: the document, phone, origin, address and week arrive
+ * through the teacher's own onboarding, once, after they accept the invite.
  */
 export function NewTeacherForm({
   languages,
@@ -71,6 +71,7 @@ export function NewTeacherForm({
   const [nationalIdType, setNationalIdType] = useState<NationalIdType>('DNI')
   const [nationalId, setNationalId] = useState('')
   const [email, setEmail] = useState('')
+  const [personalEmail, setPersonalEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [nationality, setNationality] = useState(DEFAULT_COUNTRY)
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
@@ -119,6 +120,7 @@ export function NewTeacherForm({
     setPending(true)
     setFailure(null)
 
+    const personal = personalEmail.trim() === '' ? null : personalEmail.trim()
     const result = await saveTeacher<{ id: string }>(
       '/api/v1/teachers',
       'POST',
@@ -128,6 +130,7 @@ export function NewTeacherForm({
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim(),
+            personalEmail: personal,
             languages: languageIds,
           }
         : {
@@ -136,6 +139,7 @@ export function NewTeacherForm({
             nationalIdType,
             nationalId: nationalId.trim(),
             email: email.trim(),
+            personalEmail: personal,
             phone,
             nationality,
             country,
@@ -277,6 +281,22 @@ export function NewTeacherForm({
               className={fieldClass}
             />
             <FieldMessage code={fieldError('email')} />
+          </Labelled>
+
+          {/* Optional and separate from the e-mail above (OOC-161): that one
+              gets the panel invite and goes on the contract; this one is the
+              teacher's own, where the monthly feedback report is sent. */}
+          <Labelled label={t('teachers.field_personal_email')} optional>
+            <input
+              type="email"
+              value={personalEmail}
+              onChange={(event) => setPersonalEmail(event.target.value)}
+              className={fieldClass}
+            />
+            <span className="text-xs text-muted-foreground">
+              {t('teachers.personal_email_hint')}
+            </span>
+            <FieldMessage code={fieldError('personalEmail')} />
           </Labelled>
 
           {!byTeacher && (

@@ -1,5 +1,5 @@
 {
-  "id": "ae09caa2-618c-4930-97cb-aef14bd9d30f",
+  "id": "bf48f1b3-d62d-457a-8453-9ae161729561",
   "prevId": "c6783daf-b27d-45e9-b7ee-e4e983abf769",
   "version": "7",
   "dialect": "postgresql",
@@ -6355,13 +6355,13 @@
           "name": "national_id_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "national_id": {
           "name": "national_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "email": {
           "name": "email",
@@ -6369,23 +6369,29 @@
           "primaryKey": false,
           "notNull": true
         },
+        "personal_email": {
+          "name": "personal_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "phone": {
           "name": "phone",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "nationality": {
           "name": "nationality",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "country": {
           "name": "country",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "region": {
           "name": "region",
@@ -6397,13 +6403,13 @@
           "name": "city",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "address_line": {
           "name": "address_line",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",
@@ -6490,10 +6496,6 @@
         "teachers_status_check": {
           "name": "teachers_status_check",
           "value": "\"teachers\".\"status\" in ('active', 'inactive')"
-        },
-        "teachers_profile_check": {
-          "name": "teachers_profile_check",
-          "value": "num_nulls(\"teachers\".\"national_id_type\", \"teachers\".\"national_id\", \"teachers\".\"phone\", \"teachers\".\"nationality\", \"teachers\".\"country\", \"teachers\".\"city\", \"teachers\".\"address_line\") = 0 or (num_nulls(\"teachers\".\"national_id_type\", \"teachers\".\"national_id\", \"teachers\".\"phone\", \"teachers\".\"nationality\", \"teachers\".\"country\", \"teachers\".\"city\", \"teachers\".\"address_line\") = 7 and \"teachers\".\"region\" is null)"
         },
         "teachers_national_id_normalized_check": {
           "name": "teachers_national_id_normalized_check",

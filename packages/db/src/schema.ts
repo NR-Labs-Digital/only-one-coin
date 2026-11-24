@@ -494,6 +494,11 @@ export const teachers = pgTable(
     nationalIdType: text("national_id_type"),
     nationalId: text("national_id"),
     email: text("email").notNull(),
+    // Optional, any provider (OOC-161): the teacher's own mail — where the
+    // monthly feedback report goes, at the administration's request. `email`
+    // above stays what the panel invite goes to and the contract prints.
+    // Not part of the onboarding profile (OOC-103): coordination's, as before.
+    personalEmail: text("personal_email"),
     phone: text("phone"),
     // ISO 3166-1 alpha-2 — where they are from; a selling point in the catalog.
     nationality: text("nationality"),

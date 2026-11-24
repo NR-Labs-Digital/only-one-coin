@@ -509,8 +509,15 @@
     {
       "idx": 72,
       "version": "7",
-      "when": 1795477770659,
-      "tag": "0072_teacher_onboarding",
+      "when": 1795477592704,
+      "tag": "0072_teacher_personal_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795481065374,
+      "tag": "0073_teacher_onboarding",
       "breakpoints": true
     }
   ]

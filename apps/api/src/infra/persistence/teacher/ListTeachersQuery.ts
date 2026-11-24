@@ -58,6 +58,8 @@ export interface TeacherListRow {
   nationalIdType: string | null;
   nationalId: string | null;
   email: string;
+  /** Optional (OOC-161); null when coordination has not filled it in. */
+  personalEmail: string | null;
   phone: string | null;
   status: TeacherStatus;
   /** Catalog text, the same as `courses.language`. */
@@ -222,6 +224,7 @@ export class ListTeachersQuery {
         or(
           ilike(sql`${teachers.firstName} || ' ' || ${teachers.lastName}`, needle),
           ilike(teachers.email, needle),
+          ilike(teachers.personalEmail, needle),
           ilike(teachers.phone, needle),
           ilike(teachers.nationalId, needle),
           sql`exists (
@@ -319,6 +322,7 @@ function toListRow(row: SelectedRow): TeacherListRow {
     nationalIdType: teacher.nationalIdType,
     nationalId: teacher.nationalId,
     email: teacher.email,
+    personalEmail: teacher.personalEmail,
     phone: teacher.phone,
     status: teacher.status as TeacherStatus,
     languages: row.languages,
