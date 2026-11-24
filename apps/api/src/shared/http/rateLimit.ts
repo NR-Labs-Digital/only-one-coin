@@ -89,6 +89,9 @@ export const RATE_LIMITS = {
   emailVerificationSend: { name: "email-verification-send:ip", by: "ip", limit: 20, windowSeconds: 10 * MINUTE },
   /** Checkout: typing the code. */
   emailVerificationConfirm: { name: "email-verification-confirm:ip", by: "ip", limit: 60, windowSeconds: 10 * MINUTE },
+  /** The complaints book (OOC-63): filing a sheet sends an e-mail. A person
+   * files one or two; the captcha, not this count, stops a script. */
+  complaintSubmit: { name: "complaint-submit:ip", by: "ip", limit: 10, windowSeconds: 10 * MINUTE },
   /** Checkout: the submit. */
   enrollmentSubmit: { name: "enrollment-submit:ip", by: "ip", limit: 60, windowSeconds: 10 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;

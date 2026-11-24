@@ -1,4 +1,4 @@
-import type { EmailTemplateVars } from "@ooc/domain";
+import { LEGAL_IDENTITY, type EmailTemplateVars } from "@ooc/domain";
 
 /**
  * What the backoffice preview renders each template over (OOC-88). Invented on
@@ -149,6 +149,32 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
     code: "OOC-7K4M-9QX2",
+  },
+  // A minor filing through her mother, so every paragraph of the copy shows.
+  // The supplier is the real one: it is what the sheet freezes.
+  complaint_filed: {
+    recipientName: "María Fernanda",
+    code: "2026-000123",
+    filedAt: "2026-11-24T15:30:00.000Z",
+    kind: "claim",
+    legalName: LEGAL_IDENTITY.legalName,
+    ruc: LEGAL_IDENTITY.ruc,
+    supplierAddress: LEGAL_IDENTITY.address,
+    consumerName: "María Fernanda Quispe Rojas",
+    nationalIdType: "DNI",
+    nationalId: "71234567",
+    address: "Jr. Las Begonias 456, Miraflores, Lima, Lima (frente al parque)",
+    phone: "987 654 321",
+    email: "maria.quispe@gmail.com",
+    guardianName: "Rosa Rojas Huamán",
+    guardianNationalIdType: "DNI",
+    guardianNationalId: "41234567",
+    goodType: "service",
+    amountCents: 6990,
+    purchasedOn: "2026-11-02",
+    description: "Inglés Básico, paquete completo.",
+    detail: "Pagué la matrícula y todavía no recibo el acceso al aula.",
+    request: "Que me envíen el acceso o me indiquen cuándo empiezan las clases.",
   },
   portal_credentials: {
     recipientName: "María Fernanda",
