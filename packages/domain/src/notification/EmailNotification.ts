@@ -195,6 +195,37 @@ export interface EmailTemplateVars {
     courseName: string;
     code: string;
   };
+  /**
+   * The copy of a complaints book sheet (OOC-63): everything the consumer
+   * wrote, the supplier as it stood at filing, and the sheet's number. Codes
+   * (`kind`, `goodType`, document types) are labelled by the template; null
+   * is an optional field left empty, and the guardian's three are null
+   * together when the consumer is of age.
+   */
+  complaint_filed: {
+    recipientName: string;
+    code: string;
+    filedAt: string;
+    kind: "claim" | "grievance";
+    legalName: string;
+    ruc: string;
+    supplierAddress: string;
+    consumerName: string;
+    nationalIdType: "DNI" | "CE" | "passport";
+    nationalId: string;
+    address: string;
+    phone: string;
+    email: string;
+    guardianName: string | null;
+    guardianNationalIdType: "DNI" | "CE" | "passport" | null;
+    guardianNationalId: string | null;
+    goodType: "product" | "service";
+    amountCents: number | null;
+    purchasedOn: string | null;
+    description: string;
+    detail: string;
+    request: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;
