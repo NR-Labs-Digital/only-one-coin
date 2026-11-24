@@ -580,7 +580,7 @@ describe("onboarding (OOC-103)", () => {
       const created = await teachers.create(Teacher.createPending(PENDING));
       expect(created.profileComplete).toBe(false);
 
-      const listed = await new ListTeachersQuery(tx).byId(created.id);
+      const listed = await new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx)).byId(created.id);
       expect(listed).toMatchObject({ profileComplete: false, nationalId: null, phone: null });
 
       const loaded = (await teachers.findById(created.id))!;
