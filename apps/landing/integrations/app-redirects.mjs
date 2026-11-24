@@ -2,7 +2,7 @@
  * Costura local entre a landing (Astro) e `apps/app` (Next.js).
  *
  * Em produção quem faz isso é o Vercel (`middleware.ts`): 302 de `/enrollment*`,
- * `/login*` e `/portal*` para o domínio do app. `astro dev` não lê
+ * `/login*`, `/portal*` e `/libro-de-reclamaciones*` (OOC-63) para o domínio do app. `astro dev` não lê
  * `middleware.ts`, então sem isto os CTAs da landing ("Matricúlate ahora",
  * "Portal del Alumno") dão 404 no local — e a matrícula e o login do aluno só
  * se testam digitando a porta do Next à mão.
@@ -23,7 +23,7 @@
  * aqui do mesmo jeito, porque link salvo e link compartilhado existem; quem
  * decide se aquilo abre ou volta para o login é o app, nunca a landing.
  */
-const APP_PATHS = ["/enrollment", "/login", "/portal"];
+const APP_PATHS = ["/enrollment", "/login", "/portal", "/libro-de-reclamaciones"];
 
 /** Locales prefixados na landing e no app (`es-PE` é o padrão, sem prefixo). */
 const LOCALE_PREFIXES = ["/en", "/pt"];

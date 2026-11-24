@@ -105,6 +105,10 @@ const socials = [
         <li><a href={whatsappUrl} target="_blank" rel="noopener">{f.helpWhatsapp}</a></li>
         <li><a href={withLang(lang, "/terms-and-conditions")}>{f.terms}</a></li>
         <li><a href={withLang(lang, "/privacy-policy")}>{f.privacy}</a></li>
+        <!-- The complaints book (OOC-63): on every page, as the consumer
+             protection rules ask. The form lives in apps/app; the path is
+             sent there like /enrollment (middleware.ts). -->
+        <li><a href={withLang(lang, "/libro-de-reclamaciones")}>{f.complaintsBook}</a></li>
         <li class="muted">{f.hoursLabel}</li>
         <li class="muted">{f.hours}</li>
       </ul>
