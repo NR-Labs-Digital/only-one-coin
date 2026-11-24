@@ -6,7 +6,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutStaff } from '../actions'
 import {
   canBrowseCatalog,
+  canBrowseEnrollments,
   canBrowseReports,
+  canBrowseStudents,
+  canManageTeachers,
   canConfigureSettings,
   canViewAuditLog,
   canManageEmail,
@@ -104,7 +107,10 @@ export default async function BackofficePanelLayout({
       key: 'operations',
       label: t('nav.group_operations'),
       items: [
-        ...(flags['backoffice.students']
+        /* Every section of the rail follows the cargo's permission to read it
+           (OOC-183): a cargo created in Equipo sees the sections it was given
+           and no locked door besides. Home is the only unconditional entry. */
+        ...(flags['backoffice.students'] && canBrowseStudents(staff)
           ? [
               {
                 key: 'students' as const,
@@ -114,13 +120,13 @@ export default async function BackofficePanelLayout({
               },
             ]
           : []),
-        ...(flags['backoffice.enrollments'] ? [{
+        ...(flags['backoffice.enrollments'] && canBrowseEnrollments(staff) ? [{
           key: 'enrollments' as const,
           href: '/backoffice/enrollments',
           label: t('nav.enrollments'),
           hiddenFromOthers: hidden('backoffice.enrollments'),
         }] : []),
-        ...(flags['backoffice.payments'] ? [{
+        ...(flags['backoffice.payments'] && canViewPayments(staff) ? [{
           /* One entry for the three screens of the section — the ledger, the
              review queue and the validation parameters. The badge is the queue
              count: what the panel is opened for on a busy day. */
@@ -149,7 +155,7 @@ export default async function BackofficePanelLayout({
           label: t('nav.academic'),
           hiddenFromOthers: hidden('backoffice.academic'),
         }] : []),
-        ...(flags['backoffice.teachers']
+        ...(flags['backoffice.teachers'] && canManageTeachers(staff)
           ? [
               {
                 key: 'teachers' as const,
