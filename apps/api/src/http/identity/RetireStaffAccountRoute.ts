@@ -18,7 +18,7 @@ export const retireStaffAccountRoute = RouteBuilder.post("/staff/:userId/retire"
     tags: ["Identity"],
     summary: "Retire a panel account, confirmed by typing its e-mail",
   })
-  .roles("master", "admin")
+  .can("team.retire")
   .params(RetireStaffAccountParamsSchema)
   .body(RetireStaffAccountBodySchema)
   .response(204, z.void())

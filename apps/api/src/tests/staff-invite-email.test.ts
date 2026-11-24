@@ -1,9 +1,9 @@
-import { CreateStaffInviteUseCase } from "@ooc/domain";
+import { CreateStaffInviteUseCase, defaultPermissionsOf } from "@ooc/domain";
 import { renderEmail } from "@ooc/notifications";
 import { describe, expect, it } from "vitest";
 import { BackofficeInviteLinkBuilder } from "@/infra/identity/BackofficeInviteLinkBuilder.js";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
-import { FakeStaffInviteRepository, FakeStaffUserLookup } from "./fakes/staff.js";
+import { FakeStaffInviteRepository, FakeStaffProfileRepository, FakeStaffUserLookup } from "./fakes/staff.js";
 import { FakeTeacherRepository } from "./fakes/teacher.js";
 
 /** OOC-138: inviting somebody to the panel e-mails them the link. */
@@ -19,6 +19,7 @@ function setup() {
     new FakeTeacherRepository(),
     new FakeAuditLogRepository(),
     new BackofficeInviteLinkBuilder({ backoffice: ORIGIN, teacher: TEACHER_ORIGIN }),
+    new FakeStaffProfileRepository(),
   );
   return { invites, useCase };
 }
@@ -29,6 +30,7 @@ const INPUT = {
   firstName: "Rick",
   lastName: "Test",
   role: "sales" as const,
+  actorPermissions: new Set<string>(defaultPermissionsOf("admin")),
 };
 
 describe("CreateStaffInviteUseCase e-mail", () => {

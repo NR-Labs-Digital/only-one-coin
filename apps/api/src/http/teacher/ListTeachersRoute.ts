@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_READ_ROLES } from "./teacherRoles.js";
 import { serializeTeacherRow, TeacherRowResponseSchema } from "./teacherSchemas.js";
 
 // Every filter runs in Postgres (OOC-78). `free` and `contract` are the
@@ -36,7 +35,7 @@ export const listTeachersRoute = RouteBuilder.get("/teachers")
     summary: "The teacher roster",
     description: "Roster or former teachers, with search, language, free and contract filters applied server-side.",
   })
-  .roles(...TEACHER_READ_ROLES)
+  .can("teachers.view")
   .query(ListTeachersQuerySchema)
   .response(200, TeacherDirectoryResponseSchema)
   .response(400, ErrorResponseSchema)

@@ -1,4 +1,5 @@
 import {
+  defaultPermissionsOf,
   CompleteStaffInviteUseCase,
   CreateStaffInviteUseCase,
   PromoteUserRoleUseCase,
@@ -15,6 +16,7 @@ import {
   FakeStaffInviteRepository,
   FakeStaffUserLookup,
   FakeUserRoleRepository,
+  FakeStaffProfileRepository,
 } from "./fakes/staff.js";
 import { FakeStaffAccessRepository, FakeTeacherRepository } from "./fakes/teacher.js";
 
@@ -41,7 +43,15 @@ const ANA: CreateTeacherDTO = {
   availability: [{ weekday: "tue", startTime: "19:00", endTime: "21:00" }],
 };
 
-const INVITE = { actorId: "usr_admin", email: "ana@example.com", firstName: "Ana", lastName: "Quispe" };
+const ADMIN = new Set<string>(defaultPermissionsOf("admin"));
+
+const INVITE = {
+  actorId: "usr_admin",
+  email: "ana@example.com",
+  firstName: "Ana",
+  lastName: "Quispe",
+  actorPermissions: ADMIN,
+};
 
 function setup(...onFile: Teacher[]) {
   const teachers = new FakeTeacherRepository(...onFile);
@@ -57,12 +67,17 @@ function setup(...onFile: Teacher[]) {
     provisioner,
     access,
     roles,
-    create: new CreateStaffInviteUseCase(new FakeStaffUserLookup(), invites, teachers, audit, {
-      build: (token) => `https://panel.test/backoffice/invite/${token}`,
-    }),
+    create: new CreateStaffInviteUseCase(
+      new FakeStaffUserLookup(),
+      invites,
+      teachers,
+      audit,
+      { build: (token) => `https://panel.test/backoffice/invite/${token}` },
+      new FakeStaffProfileRepository(),
+    ),
     complete: new CompleteStaffInviteUseCase(invites, provisioner, teachers, audit),
     restore: new RestoreStaffAccessUseCase(access, teachers, audit),
-    promote: new PromoteUserRoleUseCase(new FakeFreshAuthVerifier(), roles, audit),
+    promote: new PromoteUserRoleUseCase(new FakeFreshAuthVerifier(), roles, audit, new FakeStaffProfileRepository()),
   };
 }
 
@@ -76,6 +91,7 @@ function pendingTeacherInvite(teacherId: string): StaffInvite {
     token: "tok_ana",
     status: "pending",
     teacherId,
+    profileId: null,
     expiresAt: new Date(Date.now() + 86_400_000),
   };
 }
@@ -207,7 +223,7 @@ describe("PromoteUserRoleUseCase — teacher cargo", () => {
     roles.roles.set("usr_ana", "teacher");
 
     await expect(
-      promote.run({ adminUserId: "usr_admin", adminPassword: "pw", targetUserId: "usr_ana", newRole: "support" }),
+      promote.run({ adminUserId: "usr_admin", adminPassword: "pw", adminPermissions: ADMIN, targetUserId: "usr_ana", newRole: "support" }),
     ).rejects.toMatchObject({ status: 422, reason: "staff_role.teacher_account_locked" });
     expect(roles.roles.get("usr_ana")).toBe("teacher");
   });
@@ -217,7 +233,7 @@ describe("PromoteUserRoleUseCase — teacher cargo", () => {
     roles.roles.set("usr_rosa", "support");
 
     await expect(
-      promote.run({ adminUserId: "usr_admin", adminPassword: "pw", targetUserId: "usr_rosa", newRole: "teacher" }),
+      promote.run({ adminUserId: "usr_admin", adminPassword: "pw", adminPermissions: ADMIN, targetUserId: "usr_rosa", newRole: "teacher" }),
     ).rejects.toMatchObject({ reason: "staff_role.teacher_account_locked" });
     expect(roles.roles.get("usr_rosa")).toBe("support");
   });

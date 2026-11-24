@@ -18,7 +18,7 @@ export const renewStaffPasswordResetRoute = RouteBuilder.post("/staff/password-r
     tags: ["Identity"],
     summary: "Renew an expired or expiring password-reset link",
   })
-  .roles("master", "admin")
+  .can("team.access")
   .params(RenewStaffPasswordResetParamsSchema)
   .response(200, RenewStaffPasswordResetResponseSchema)
   .response(404, ErrorResponseSchema)

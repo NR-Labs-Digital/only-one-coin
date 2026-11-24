@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema } from "./CatalogSchemas.js";
 
 /**
@@ -16,7 +15,7 @@ export const duplicatePeriodRoute = RouteBuilder.post("/catalog/periods/:id/dupl
     summary: "Copy another period's class groups into this period",
     description: "Drafts with no dates and no seats taken. A second copy of the same source answers 409.",
   })
-  .roles(...CATALOG_WRITE_ROLES)
+  .can("catalog.periods")
   .params(IdParamsSchema)
   .body(z.object({ sourcePeriodId: z.string().uuid() }))
   .response(201, z.object({ copied: z.number().int(), skippedRetired: z.number().int() }))

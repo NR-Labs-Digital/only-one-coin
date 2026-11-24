@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_EDIT_ROLES } from "./teacherRoles.js";
 import { TeacherParamsSchema } from "./teacherSchemas.js";
 
 /** `YYYY-MM-DD` that is a real day — `2026-02-30` would roll over to March in a Date. */
@@ -29,7 +28,7 @@ export const generateTeacherContractRoute = RouteBuilder.post("/teachers/:teache
     description:
       "Fills the published contract template with the teacher file and the given period, records the contract (period, template version, who generated it) and responds with the PDF itself (application/pdf). Writes audit_log.",
   })
-  .roles(...TEACHER_EDIT_ROLES)
+  .can("teachers.contract_generate")
   .params(TeacherParamsSchema)
   .body(z.object({ startsOn: CalendarDaySchema, endsOn: CalendarDaySchema }))
   .response(400, ErrorResponseSchema)

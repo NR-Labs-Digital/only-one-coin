@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_OWNER_ROLES, CATALOG_READ_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -15,7 +14,7 @@ const LanguageNameSchema = z.object({ name: z.string().trim().min(1).max(60) });
 
 export const listLanguagesRoute = RouteBuilder.get("/catalog/languages")
   .docs({ tags: ["Catalog"], summary: "List the live languages, with their course and teacher counts" })
-  .roles(...CATALOG_READ_ROLES)
+  .can("catalog.view")
   .response(
     200,
     z.object({
@@ -35,7 +34,7 @@ export const listLanguagesRoute = RouteBuilder.get("/catalog/languages")
 
 export const createLanguageRoute = RouteBuilder.post("/catalog/languages")
   .docs({ tags: ["Catalog"], summary: "Create a language" })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.languages")
   .body(LanguageNameSchema)
   .response(201, IdResponseSchema)
   .response(400, ErrorResponseSchema)
@@ -54,7 +53,7 @@ export const renameLanguageRoute = RouteBuilder.patch("/catalog/languages/:id")
     summary: "Rename a language",
     description: "The new name reaches every course and teacher filed under it.",
   })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.languages")
   .params(IdParamsSchema)
   .body(LanguageNameSchema)
   .response(200, IdResponseSchema)
@@ -76,7 +75,7 @@ export const retireLanguageRoute = RouteBuilder.post("/catalog/languages/:id/ret
     summary: "Take a language off the list",
     description: "Refused (409 catalog.language_in_use) while a live course is filed under it.",
   })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.languages")
   .params(IdParamsSchema)
   .response(200, z.object({ teachersReleased: z.number().int() }))
   .response(409, ErrorResponseSchema)

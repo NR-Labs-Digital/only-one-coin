@@ -21,7 +21,7 @@ export const createStaffPasswordResetRoute = RouteBuilder.post("/staff/:userId/p
     summary: "Generate a password-reset link for a panel account",
     description: "One-time, 24h link — admin copies it and sends it by hand, same as an invite.",
   })
-  .roles("master", "admin")
+  .can("team.access")
   .params(CreateStaffPasswordResetParamsSchema)
   .response(201, CreateStaffPasswordResetResponseSchema)
   .handler(async (request, reply) => {

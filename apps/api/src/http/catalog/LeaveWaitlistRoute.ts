@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -13,7 +12,7 @@ import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const leaveWaitlistRoute = RouteBuilder.post("/catalog/waitlist/:id/leave")
   .docs({ tags: ["Catalog"], summary: "Take a student out of a waitlist" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .can("catalog.waitlist")
   .params(IdParamsSchema)
   .body(z.object({ reason: StaffWaitlistLeaveReasonSchema }))
   .response(200, IdResponseSchema)

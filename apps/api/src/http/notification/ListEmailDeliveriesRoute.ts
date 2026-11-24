@@ -3,7 +3,6 @@ import { DELIVERY_FAILURE_REASONS, STUDENT_DELIVERY_TEMPLATES, type StudentDeliv
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { EMAIL_DELIVERY_READ_ROLES } from "./emailDeliveryRoles.js";
 
 const TemplateSchema = z.enum(STUDENT_DELIVERY_TEMPLATES as [StudentDeliveryTemplate, ...StudentDeliveryTemplate[]]);
 
@@ -29,7 +28,7 @@ export const listEmailDeliveriesRoute = RouteBuilder.get("/emails/deliveries")
     summary: "The e-mails about a student that failed and were not resent",
     description: "Newest first, at most 200 rows; `total` counts them all. Each row names the student file its subject leads to.",
   })
-  .roles(...EMAIL_DELIVERY_READ_ROLES)
+  .can("emails.view")
   .query(z.object({ template: TemplateSchema.optional() }))
   .response(200, z.object({ items: z.array(EmailDeliveryIssueSchema), total: z.number().int() }))
   .response(400, ErrorResponseSchema)

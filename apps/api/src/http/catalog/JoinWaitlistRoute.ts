@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -11,7 +10,7 @@ import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const joinWaitlistRoute = RouteBuilder.post("/catalog/class-groups/:id/waitlist")
   .docs({ tags: ["Catalog"], summary: "Put a student on a class group's waitlist" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .can("catalog.waitlist")
   .params(IdParamsSchema)
   .body(z.object({ studentId: z.string().uuid() }))
   .response(201, IdResponseSchema)

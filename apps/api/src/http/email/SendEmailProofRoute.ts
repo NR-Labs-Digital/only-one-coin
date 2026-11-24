@@ -4,7 +4,6 @@ import { container } from "@/container.js";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
-import { EMAIL_PROOF_ROLES } from "./emailRoles.js";
 import { EmittedEmailKeySchema } from "./emailFlowSchemas.js";
 import { EMAIL_PREVIEW_SAMPLES } from "./emailPreviewSamples.js";
 
@@ -19,7 +18,7 @@ export const sendEmailProofRoute = RouteBuilder.post("/emails/flows/:key/proof")
     description:
       "Up to five addresses, in one language. Proof rows go through the outbox and are left out of the e-mail figures and the resend list.",
   })
-  .roles(...EMAIL_PROOF_ROLES)
+  .can("emails.send")
   .rateLimit(RATE_LIMITS.staff, RATE_LIMITS.emailProof)
   .params(z.object({ key: EmittedEmailKeySchema }))
   .body(

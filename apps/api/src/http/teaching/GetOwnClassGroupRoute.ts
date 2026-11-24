@@ -12,7 +12,7 @@ export const getOwnClassGroupRoute = RouteBuilder.get("/teaching/class-groups/:i
     summary: "One of the signed-in teacher's class groups",
     description: "Somebody else's, a closed one and one that does not exist all answer the same 404.",
   })
-  .roles("teacher")
+  .can("teaching.own_class_groups")
   .params(IdParamsSchema)
   .response(200, TeachingClassGroupSchema)
   .response(404, ErrorResponseSchema)

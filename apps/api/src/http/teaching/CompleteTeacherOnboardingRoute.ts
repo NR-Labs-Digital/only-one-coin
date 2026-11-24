@@ -17,7 +17,7 @@ export const completeTeacherOnboardingRoute = RouteBuilder.put("/teaching/onboar
     description:
       "Document, phone, origin, address and the week — once, on a file coordination registered with name, e-mail and languages only.",
   })
-  .roles("teacher")
+  .can("teaching.onboarding")
   .body(TeacherOnboardingSchema)
   .response(200, TeacherRecordResponseSchema)
   .response(400, ErrorResponseSchema)

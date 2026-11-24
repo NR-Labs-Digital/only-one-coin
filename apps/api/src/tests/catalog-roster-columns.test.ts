@@ -28,7 +28,7 @@ const LIMITED: Role[] = ["analyst", "academic_supervisor", "academic_assistant",
 
 describe("shapeRoster", () => {
   it.each(FULL)("gives %s the national id and the contact", (role) => {
-    const roster = shapeRoster(role, [ROW]);
+    const roster = shapeRoster({ role }, [ROW]);
     expect(roster.view).toBe("full");
     expect(roster.items[0]).toEqual({
       enrollmentId: ROW.enrollmentId,
@@ -42,7 +42,7 @@ describe("shapeRoster", () => {
   });
 
   it.each(LIMITED)("keeps the national id and the contact from %s", (role) => {
-    const roster = shapeRoster(role, [ROW]);
+    const roster = shapeRoster({ role }, [ROW]);
     expect(roster.view).toBe("limited");
     expect(roster.items[0]!.file).toBeNull();
     const serialized = JSON.stringify(roster);

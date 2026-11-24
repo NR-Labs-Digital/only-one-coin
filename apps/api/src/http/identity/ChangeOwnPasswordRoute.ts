@@ -26,18 +26,7 @@ export const changeOwnPasswordRoute = RouteBuilder.post("/me/password")
     description:
       "Requires the current password. Closes every other open session of the account; the one making the change stays open.",
   })
-  .roles(
-    "master",
-    "admin",
-    "analyst",
-    "enrollment_supervisor",
-    "academic_supervisor",
-    "academic_assistant",
-    "teacher",
-    "sales",
-    "support",
-    "billing",
-  )
+  .can("account.self")
   .body(ChangeOwnPasswordBodySchema)
   .response(200, ChangeOwnPasswordResponseSchema)
   .response(401, ErrorResponseSchema)

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 const ResponseSchema = z.object({
   items: z.array(
@@ -43,7 +42,7 @@ export const listStudentPaymentsRoute = RouteBuilder.get("/students/:studentId/p
     description:
       "Every payment on the student's file, with the declared, expected and read amounts, the traffic light and the decision. No image — that is GET /payments/:id/receipt.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.view")
   .params(z.object({ studentId: z.string().uuid() }))
   .response(200, ResponseSchema)
   .response(400, ErrorResponseSchema)

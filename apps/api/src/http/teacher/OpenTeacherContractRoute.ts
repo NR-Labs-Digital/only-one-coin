@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_READ_ROLES } from "./teacherRoles.js";
 
 /**
  * A five-minute download link for a contract filed as a PDF (OOC-81); one
@@ -17,7 +16,7 @@ export const openTeacherContractRoute = RouteBuilder.get("/teachers/:teacherId/c
     summary: "Get a 5-minute download URL for a filed contract",
     description: "The only way a person opens a contract. Every call is written to the audit log.",
   })
-  .roles(...TEACHER_READ_ROLES)
+  .can("teachers.contract_download")
   .params(z.object({ teacherId: z.string().uuid(), contractId: z.string().uuid() }))
   .response(200, z.object({ url: z.string().url(), expiresAt: z.string() }))
   .response(400, ErrorResponseSchema)

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { PAYMENT_RECEIPT_ROLES } from "./paymentRoles.js";
 
 export const getPaymentReceiptRoute = RouteBuilder.get("/payments/:id/receipt")
   .docs({
@@ -10,7 +9,7 @@ export const getPaymentReceiptRoute = RouteBuilder.get("/payments/:id/receipt")
     summary: "Get a 5-minute URL for a payment's processed receipt",
     description: "The only way a person sees a receipt image. Every call is written to the audit log.",
   })
-  .roles(...PAYMENT_RECEIPT_ROLES)
+  .can("payments.view_receipt")
   .params(z.object({ id: z.string().uuid() }))
   .response(200, z.object({ url: z.string().url(), expiresAt: z.string() }))
   .response(404, ErrorResponseSchema)

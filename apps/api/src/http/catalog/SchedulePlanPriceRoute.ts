@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_OWNER_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, PriceBodySchema } from "./CatalogSchemas.js";
 
 /**
@@ -11,7 +10,7 @@ import { IdParamsSchema, PriceBodySchema } from "./CatalogSchemas.js";
  */
 export const schedulePlanPriceRoute = RouteBuilder.post("/catalog/plans/:id/prices")
   .docs({ tags: ["Catalog"], summary: "Schedule a new price for a plan" })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.plan_prices")
   .params(IdParamsSchema)
   .body(PriceBodySchema)
   .response(201, z.object({ id: z.string().uuid() }))

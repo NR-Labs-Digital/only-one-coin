@@ -25,19 +25,20 @@ const CREDENTIAL_PROVIDER = "credential";
  */
 export async function insertPasswordlessUser(
   db: SqlExecutor,
-  input: { email: string; name: string; role: Role },
+  input: { email: string; name: string; role: Role; profileId?: string | null },
 ): Promise<string> {
   const userId = randomUUID();
   await db.execute(
-    sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "createdAt", "updatedAt")
-        values (${userId}, ${input.name}, ${input.email.trim().toLowerCase()}, false, ${input.role}, now(), now())`,
+    sql`insert into "user" ("id", "name", "email", "emailVerified", "role", "profile_id", "createdAt", "updatedAt")
+        values (${userId}, ${input.name}, ${input.email.trim().toLowerCase()}, false, ${input.role},
+                ${input.profileId ?? null}, now(), now())`,
   );
   return userId;
 }
 
 export async function insertCredentialUser(
   db: SqlExecutor,
-  input: { email: string; name: string; role: Role; password: string },
+  input: { email: string; name: string; role: Role; profileId?: string | null; password: string },
 ): Promise<string> {
   const userId = await insertPasswordlessUser(db, input);
   await insertCredential(db, userId, await hashPassword(input.password));

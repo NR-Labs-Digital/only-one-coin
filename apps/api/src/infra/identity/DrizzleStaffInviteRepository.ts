@@ -16,6 +16,7 @@ function toDomain(row: StaffInviteRow): StaffInvite {
     token: row.token,
     status: row.status as StaffInvite["status"],
     teacherId: row.teacherId,
+    profileId: row.profileId,
     expiresAt: row.expiresAt,
   };
 }
@@ -38,6 +39,7 @@ export class DrizzleStaffInviteRepository implements IStaffInviteRepository {
           token: record.token,
           invitedBy: record.invitedBy,
           teacherId: record.teacherId,
+          profileId: record.profileId,
           expiresAt: record.expiresAt,
         })
         .returning();

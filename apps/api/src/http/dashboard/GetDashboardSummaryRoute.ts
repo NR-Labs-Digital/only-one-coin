@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { container } from "@/container.js";
-import { CATALOG_READ_ROLES } from "@/http/catalog/catalogRoles.js";
 
 const DashboardSummaryResponseSchema = z.object({
   enrollmentsToday: z.number().int(),
@@ -21,7 +20,7 @@ export const getDashboardSummaryRoute = RouteBuilder.get("/dashboard/summary")
     description:
       "Enrollments confirmed today and students studying now, each next to yesterday's figure (Lima time), and the current period's seat occupancy. Definitions in DashboardSummaryQuery.",
   })
-  .roles(...CATALOG_READ_ROLES)
+  .can("reports.dashboard")
   .response(200, DashboardSummaryResponseSchema)
   .handler(async (_request, reply) => {
     const summary = await container.queries.dashboardSummary.run();

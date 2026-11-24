@@ -28,7 +28,7 @@ export const getCatalogEntryStateRoute = RouteBuilder.get("/catalog/:kind/:id/st
     tags: ["Catalog"],
     summary: "Where a catalog entry stands (retired, live enrollments)",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("catalog.retire")
   .params(CatalogEntryParamsSchema)
   .response(200, CatalogEntryStateSchema)
   .response(403, ErrorResponseSchema)

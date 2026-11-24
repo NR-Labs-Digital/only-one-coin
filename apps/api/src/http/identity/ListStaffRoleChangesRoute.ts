@@ -13,6 +13,7 @@ const StaffRoleSchema = z.enum([
   "sales",
   "support",
   "billing",
+  "custom",
 ]);
 
 const StaffRoleChangeSchema = z.object({
@@ -22,8 +23,11 @@ const StaffRoleChangeSchema = z.object({
   memberName: z.string(),
   fromRole: StaffRoleSchema.nullable(),
   toRole: StaffRoleSchema,
+  fromProfileName: z.string().nullable(),
+  toProfileName: z.string().nullable(),
   actorName: z.string(),
   actorRole: StaffRoleSchema,
+  actorProfileName: z.string().nullable(),
 });
 
 const ListStaffRoleChangesResponseSchema = z.object({
@@ -37,7 +41,7 @@ export const listStaffRoleChangesRoute = RouteBuilder.get("/staff/role-changes")
     summary: "List the cargo ledger",
     description: "Backs Equipo's role-change history — reads audit_log, never edits it.",
   })
-  .roles("master", "admin")
+  .can("team.view")
   .response(200, ListStaffRoleChangesResponseSchema)
   .handler(async (_request, reply) => {
     const items = await container.queries.listStaffRoleChanges.run();

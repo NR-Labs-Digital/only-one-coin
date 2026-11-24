@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { REPORT_DIMENSIONS } from "@/infra/persistence/report/assembleReport.js";
-import { REPORT_READ_ROLES } from "./reportRoles.js";
 
 const GetReportQuerySchema = z.object({
   // A period id or `all`; absent opens on the current period.
@@ -63,7 +62,7 @@ export const getReportRoute = RouteBuilder.get("/reports")
     description:
       "Backs /backoffice/reports (OOC-40). Read from the nightly aggregation, never from the ledger live — `refreshedAt` says when it was built (null: never). Definitions in ReportFactsRefresher.",
   })
-  .roles(...REPORT_READ_ROLES)
+  .can("reports.view")
   .query(GetReportQuerySchema)
   .response(200, GetReportResponseSchema)
   .response(400, ErrorResponseSchema)

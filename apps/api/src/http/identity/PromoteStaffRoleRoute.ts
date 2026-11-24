@@ -7,28 +7,37 @@ const PromoteStaffRoleParamsSchema = z.object({
   userId: z.string().min(1),
 });
 
-const PromoteStaffRoleBodySchema = z.object({
-  // `master` is deliberately absent: an account is born master through the
-  // owners'-domain invite, never promoted into it. `teacher` travels with the
-  // roster file.
-  role: z.enum([
-    "admin",
-    "analyst",
-    "enrollment_supervisor",
-    "academic_supervisor",
-    "academic_assistant",
-    "sales",
-    "support",
-    "billing",
-  ]),
-  // The acting admin's own password, confirmed again right now — the only
-  // way a `role` ever moves (CLAUDE.md §8, PromoteUserRoleUseCase).
-  password: z.string().min(1),
-});
+const PromoteStaffRoleBodySchema = z
+  .object({
+    // `master` is deliberately absent: an account is born master through the
+    // owners'-domain invite, never promoted into it. `teacher` travels with the
+    // roster file. `custom` is a cargo created in Equipo, named by `profileId`
+    // (OOC-183).
+    role: z.enum([
+      "admin",
+      "analyst",
+      "enrollment_supervisor",
+      "academic_supervisor",
+      "academic_assistant",
+      "sales",
+      "support",
+      "billing",
+      "custom",
+    ]),
+    profileId: z.string().uuid().nullish(),
+    // The acting admin's own password, confirmed again right now — the only
+    // way a `role` ever moves (CLAUDE.md §8, PromoteUserRoleUseCase).
+    password: z.string().min(1),
+  })
+  .refine((body) => (body.role === "custom") === Boolean(body.profileId), {
+    path: ["profileId"],
+    message: "profile_only_for_custom_role",
+  });
 
 const PromoteStaffRoleResponseSchema = z.object({
   targetUserId: z.string(),
   newRole: z.string(),
+  newProfileId: z.string().nullable(),
 });
 
 // Admin-only. `teacher` is deliberately absent from the body's role union:
@@ -40,9 +49,10 @@ export const promoteStaffRoleRoute = RouteBuilder.patch("/staff/:userId/role")
   .docs({
     tags: ["Identity"],
     summary: "Change a panel account's cargo",
-    description: "Requires the acting admin's own password again, even with their session open.",
+    description:
+      "Requires the acting admin's own password again, even with their session open.",
   })
-  .roles("master", "admin")
+  .can("team.change_role")
   .params(PromoteStaffRoleParamsSchema)
   .body(PromoteStaffRoleBodySchema)
   .response(200, PromoteStaffRoleResponseSchema)
@@ -53,8 +63,12 @@ export const promoteStaffRoleRoute = RouteBuilder.patch("/staff/:userId/role")
     const result = await container.useCases.staff.promoteRole.run({
       adminUserId: request.currentUser!.id,
       adminPassword: request.body.password,
+      adminPermissions: container.identity.staffAccess.permissionsOf(
+        request.currentUser!,
+      ),
       targetUserId: request.params.userId,
       newRole: request.body.role,
+      newProfileId: request.body.profileId ?? null,
     });
 
     reply.status(200).send(result);

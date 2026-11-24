@@ -19,7 +19,7 @@ export const listOwnClassGroupStudentsRoute = RouteBuilder.get("/teaching/class-
     summary: "The students of one of the signed-in teacher's class groups",
     description: "Confirmed seats only, in surname order, names only. Another teacher's class group answers 404.",
   })
-  .roles("teacher")
+  .can("teaching.own_class_groups")
   .params(IdParamsSchema)
   .response(200, z.object({ items: z.array(TeachingStudentSchema) }))
   .response(404, ErrorResponseSchema)

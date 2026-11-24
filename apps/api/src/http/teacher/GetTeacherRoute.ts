@@ -2,7 +2,6 @@ import { TeacherNotFoundError } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_OWN_FILE_ROLES } from "./teacherRoles.js";
 import { serializeTeacherDetail, TeacherDetailResponseSchema, TeacherParamsSchema } from "./teacherSchemas.js";
 
 /**
@@ -17,7 +16,7 @@ export const getTeacherRoute = RouteBuilder.get("/teachers/:teacherId")
     summary: "One teacher's file",
     description: "Contact, languages, the declared week, the current contract and the class groups allocated to them.",
   })
-  .roles(...TEACHER_OWN_FILE_ROLES)
+  .can("teachers.view_file")
   .params(TeacherParamsSchema)
   .response(200, TeacherDetailResponseSchema)
   .response(400, ErrorResponseSchema)

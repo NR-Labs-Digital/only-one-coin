@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_READ_ROLES } from "./catalogRoles.js";
 import { ClassGroupItemSchema } from "./CatalogSchemas.js";
 
 const ListClassGroupsQuerySchema = z.object({
@@ -25,7 +24,7 @@ export const listClassGroupsRoute = RouteBuilder.get("/catalog/class-groups")
     description:
       "Retired class groups included and flagged. Without a periodId, a search term or pendingTeacher the answer is capped at the 500 most recent.",
   })
-  .roles(...CATALOG_READ_ROLES)
+  .can("catalog.view")
   .query(ListClassGroupsQuerySchema)
   .response(200, z.object({ items: z.array(ClassGroupItemSchema) }))
   .response(400, ErrorResponseSchema)

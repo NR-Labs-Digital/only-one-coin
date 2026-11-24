@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { IUserRoleRepository, Role } from "@ooc/domain";
+import type { IUserRoleRepository, Role, UserRoleAssignment } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 
 // Raw SQL against Better Auth's own "user" table — same reason
@@ -10,16 +10,18 @@ import type { Db } from "@/infra/db/client.js";
 export class DrizzleUserRoleRepository implements IUserRoleRepository {
   constructor(private readonly db: Db) {}
 
-  async findRoleByUserId(userId: string): Promise<Role | null> {
-    const rows = await this.db.execute<{ role: Role }>(
-      sql`select "role" from "user" where "id" = ${userId}`,
+  async findAssignmentByUserId(userId: string): Promise<UserRoleAssignment | null> {
+    const rows = await this.db.execute<{ role: Role; profile_id: string | null }>(
+      sql`select "role", "profile_id" from "user" where "id" = ${userId}`,
     );
-    return rows.rows[0]?.role ?? null;
+    const row = rows.rows[0];
+    return row ? { role: row.role, profileId: row.profile_id } : null;
   }
 
-  async updateRole(userId: string, role: Role): Promise<void> {
+  /** Role and cargo move in one statement: `user_profile_check` holds them together. */
+  async updateAssignment(userId: string, assignment: UserRoleAssignment): Promise<void> {
     await this.db.execute(
-      sql`update "user" set "role" = ${role}, "updatedAt" = now() where "id" = ${userId}`,
+      sql`update "user" set "role" = ${assignment.role}, "profile_id" = ${assignment.profileId}, "updatedAt" = now() where "id" = ${userId}`,
     );
   }
 }

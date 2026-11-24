@@ -12,7 +12,7 @@ export const listOwnClassGroupsRoute = RouteBuilder.get("/teaching/class-groups"
     summary: "The signed-in teacher's class groups",
     description: "Enrolling, running and finished — closed, draft and retired ones are out of the docente portal.",
   })
-  .roles("teacher")
+  .can("teaching.own_class_groups")
   .response(200, z.object({ items: z.array(TeachingClassGroupSchema) }))
   .handler(async (request, reply) => {
     const groups = await container.useCases.teaching.listOwnClassGroups.run({ userId: request.currentUser!.id });

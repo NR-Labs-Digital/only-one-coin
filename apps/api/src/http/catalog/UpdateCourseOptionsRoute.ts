@@ -2,7 +2,6 @@ import { CourseOptionsSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -13,7 +12,7 @@ import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const updateCourseOptionsRoute = RouteBuilder.patch("/catalog/courses/:id/options")
   .docs({ tags: ["Catalog"], summary: "Change a course's options" })
-  .roles(...CATALOG_WRITE_ROLES)
+  .can("catalog.course_options")
   .params(IdParamsSchema)
   .body(CourseOptionsSchema.partial().refine((patch) => Object.keys(patch).length > 0))
   .response(200, IdResponseSchema)

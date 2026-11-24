@@ -109,6 +109,14 @@ export function createAuth(config: Config, deps: { codeSender?: TwoFactorCodeSen
           input: false,
           defaultValue: "student",
         },
+        // The cargo created in Equipo a `custom` account is on (OOC-183) —
+        // written only by the invite and the cargo change, never by a client.
+        profileId: {
+          type: "string",
+          required: false,
+          input: false,
+          fieldName: "profile_id",
+        },
       },
     },
   });

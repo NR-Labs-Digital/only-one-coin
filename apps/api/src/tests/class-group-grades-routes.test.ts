@@ -4,7 +4,6 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { buildApp } from "@/app.js";
 import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
-import { GRADE_READ_ROLES, GRADE_WRITE_ROLES } from "@/http/teaching/gradeRoles.js";
 
 /**
  * The academic supervision's grades over HTTP (OOC-102). CI gate §6.5: every
@@ -31,8 +30,10 @@ const EVERY_ROLE: Role[] = [
   "student",
 ];
 
-const readers = new Set<Role>(GRADE_READ_ROLES);
-const writers = new Set<Role>(GRADE_WRITE_ROLES);
+// The board's defaults (OOC-183) — the suite runs without a database, so the
+// access registry answers with them: `grades.view` and `grades.record`.
+const readers = new Set<Role>(["master", "admin", "analyst", "academic_supervisor", "academic_assistant"]);
+const writers = new Set<Role>(["master", "admin", "academic_supervisor"]);
 
 let app: FastifyInstance;
 

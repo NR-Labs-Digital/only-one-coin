@@ -36,7 +36,7 @@ export const listOpenClassGroupsRoute = RouteBuilder.get("/class-groups")
     summary: "List class groups still open for enrollment",
     description: "Backs the manual enrollment form's class group picker.",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("enrollments.create_manual")
   .response(200, OpenClassGroupResponseSchema)
   .handler(async (_request, reply) => {
     const results = await container.queries.listOpenClassGroups.run();

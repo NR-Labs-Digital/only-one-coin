@@ -1,22 +1,10 @@
-import type { Role, ProgressionPreview } from "@ooc/domain";
+import type { ProgressionPreview } from "@ooc/domain";
 import { z } from "zod";
 import { container } from "@/container.js";
 import { ClassGroupModuleParamsSchema, IdParamsSchema } from "@/http/catalog/CatalogSchemas.js";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 
-/**
- * Who moves students on from the backoffice (OOC-156, decision of 14/11/2026
- * — to confirm with the owner): management and both supervisions. The
- * teacher does it from the portal, in their own run only, never below the
- * pass mark while it is required.
- */
-export const PROGRESSION_ROLES = [
-  "master",
-  "admin",
-  "enrollment_supervisor",
-  "academic_supervisor",
-] as const satisfies readonly Role[];
 
 const ProgressionPreviewSchema = z.object({
   classGroupId: z.string().uuid(),
@@ -67,7 +55,7 @@ const APPLY_DESCRIPTION =
 
 export const previewOwnProgressionRoute = RouteBuilder.get("/teaching/class-groups/:id/progression")
   .docs({ tags: ["Teaching"], summary: "Who of the teacher's own run may move on, and to which run (OOC-156)" })
-  .roles("teacher")
+  .can("teaching.own_progression")
   .params(IdParamsSchema)
   .response(200, ProgressionPreviewSchema)
   .response(404, ErrorResponseSchema)
@@ -81,7 +69,7 @@ export const previewOwnProgressionRoute = RouteBuilder.get("/teaching/class-grou
 
 export const applyOwnProgressionRoute = RouteBuilder.post("/teaching/class-groups/:id/progression")
   .docs({ tags: ["Teaching"], summary: "Move the students of the teacher's own run on (OOC-156)", description: APPLY_DESCRIPTION })
-  .roles("teacher")
+  .can("teaching.own_progression")
   .params(IdParamsSchema)
   .body(ApplyBodySchema)
   .response(200, ApplyResponseSchema)
@@ -101,7 +89,7 @@ export const applyOwnProgressionRoute = RouteBuilder.post("/teaching/class-group
 
 export const previewProgressionRoute = RouteBuilder.get("/catalog/class-groups/:id/modules/:moduleId/progression")
   .docs({ tags: ["Teaching"], summary: "Who of a module run may move on, and to which run (OOC-156)" })
-  .roles(...PROGRESSION_ROLES)
+  .can("grades.progression")
   .params(ClassGroupModuleParamsSchema)
   .response(200, ProgressionPreviewSchema)
   .response(404, ErrorResponseSchema)
@@ -119,7 +107,7 @@ export const applyProgressionRoute = RouteBuilder.post("/catalog/class-groups/:i
     summary: "Move the students of a module run on — below the pass mark too, with a reason (OOC-156)",
     description: APPLY_DESCRIPTION,
   })
-  .roles(...PROGRESSION_ROLES)
+  .can("grades.progression")
   .params(ClassGroupModuleParamsSchema)
   .body(ApplyBodySchema)
   .response(200, ApplyResponseSchema)

@@ -18,7 +18,13 @@ const StaffMemberSchema = z.object({
     "sales",
     "support",
     "billing",
+    "custom",
   ]),
+  /** The cargo created in Equipo, for a `custom` account or invite (OOC-183). */
+  profileId: z.string().nullable(),
+  profileName: z.string().nullable(),
+  /** Whether the account's cargo must sign in with the second factor (CLAUDE.md §8). */
+  mfaRequired: z.boolean(),
   status: z.enum(["active", "invited", "inactive"]),
   teacherId: z.string().nullable(),
   mfaEnrolled: z.boolean(),
@@ -39,7 +45,7 @@ export const listStaffRoute = RouteBuilder.get("/staff")
     summary: "List panel accounts and pending invites",
     description: "Backs the Equipo directory — real accounts plus invites still waiting on the person.",
   })
-  .roles("master", "admin")
+  .can("team.view")
   .response(200, ListStaffResponseSchema)
   .handler(async (_request, reply) => {
     const items = await container.queries.listStaff.run();
@@ -47,6 +53,11 @@ export const listStaffRoute = RouteBuilder.get("/staff")
     reply.status(200).send({
       items: items.map((row) => ({
         ...row,
+        role: row.role as z.infer<typeof StaffMemberSchema>["role"],
+        mfaRequired: container.identity.staffAccess.requiresMfa({
+          role: row.role as z.infer<typeof StaffMemberSchema>["role"],
+          profileId: row.profileId,
+        }),
         joinedAt: row.joinedAt.toISOString(),
         lastAccessAt: row.lastAccessAt?.toISOString() ?? null,
         inviteExpiresAt: row.inviteExpiresAt?.toISOString() ?? null,

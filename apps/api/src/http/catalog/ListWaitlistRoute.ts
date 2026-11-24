@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { container } from "@/container.js";
-import { CATALOG_WRITE_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, WaitlistItemSchema } from "./CatalogSchemas.js";
 
 /**
@@ -12,7 +11,7 @@ import { IdParamsSchema, WaitlistItemSchema } from "./CatalogSchemas.js";
 // No rate limit yet (docs/ROADMAP.md Sessão 25).
 export const listWaitlistRoute = RouteBuilder.get("/catalog/class-groups/:id/waitlist")
   .docs({ tags: ["Catalog"], summary: "Who is waiting for a class group", description: "First come first served." })
-  .roles(...CATALOG_WRITE_ROLES)
+  .can("catalog.waitlist")
   .params(IdParamsSchema)
   .response(200, z.object({ items: z.array(WaitlistItemSchema) }))
   .handler(async (request, reply) => {

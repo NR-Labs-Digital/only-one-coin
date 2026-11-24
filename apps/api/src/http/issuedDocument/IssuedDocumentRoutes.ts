@@ -3,7 +3,6 @@ import { StudentNotFoundError } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { ISSUED_DOCUMENT_REVOKE_ROLES, ISSUED_DOCUMENT_STAFF_ROLES } from "./issuedDocumentRoles.js";
 import {
   IssuedDocumentListSchema,
   RevokeIssuedDocumentBodySchema,
@@ -13,7 +12,7 @@ import {
 /** The documents the institution issued about a student (OOC-33), newest first. */
 export const listStudentIssuedDocumentsRoute = RouteBuilder.get("/students/:studentId/issued-documents")
   .docs({ tags: ["Documents"], summary: "List a student's issued documents" })
-  .roles(...ISSUED_DOCUMENT_STAFF_ROLES)
+  .can("students.view")
   .params(z.object({ studentId: z.string().uuid() }))
   .response(200, IssuedDocumentListSchema)
   .response(400, ErrorResponseSchema)
@@ -35,7 +34,7 @@ export const downloadIssuedDocumentRoute = RouteBuilder.get("/issued-documents/:
     summary: "Download an issued document as PDF",
     description: "Responds with the PDF itself (application/pdf).",
   })
-  .roles(...ISSUED_DOCUMENT_STAFF_ROLES)
+  .can("students.view")
   .params(z.object({ id: z.string().uuid() }))
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)
@@ -61,7 +60,7 @@ export const downloadIssuedDocumentRoute = RouteBuilder.get("/issued-documents/:
  */
 export const revokeIssuedDocumentRoute = RouteBuilder.post("/issued-documents/:id/revoke")
   .docs({ tags: ["Documents"], summary: "Revoke an issued document" })
-  .roles(...ISSUED_DOCUMENT_REVOKE_ROLES)
+  .can("students.revoke_document")
   .params(z.object({ id: z.string().uuid() }))
   .body(RevokeIssuedDocumentBodySchema)
   .response(201, z.object({ revocationId: z.string().uuid() }))

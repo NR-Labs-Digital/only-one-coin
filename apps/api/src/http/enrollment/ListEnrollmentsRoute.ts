@@ -83,7 +83,7 @@ export const listEnrollmentsRoute = RouteBuilder.get("/enrollments")
     description:
       "Backs /backoffice/enrollments. Opens on the current tab (class group enrolling or in progress); `counts` says how many each tab holds under the other filters. One page at a time, filtered and searched server-side; the metrics count the whole ledger.",
   })
-  .roles("master", "admin", "enrollment_supervisor", "analyst", "sales", "support")
+  .can("enrollments.view")
   .query(ListEnrollmentsQuerySchema)
   .response(200, EnrollmentListResponseSchema)
   .response(400, ErrorResponseSchema)

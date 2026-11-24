@@ -1,4 +1,4 @@
-import { staffInvites } from "@ooc/db";
+import { staffInvites, staffProfiles } from "@ooc/db";
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { splitName } from "@/infra/identity/splitName.js";
@@ -11,6 +11,9 @@ export interface StaffMemberRow {
   lastName: string;
   email: string;
   role: string;
+  /** The cargo created in Equipo, for a `custom` account or invite (OOC-183). */
+  profileId: string | null;
+  profileName: string | null;
   status: StaffStatus;
   teacherId: string | null;
   mfaEnrolled: boolean;
@@ -28,6 +31,8 @@ interface StaffUserRow extends Record<string, unknown> {
   name: string;
   email: string;
   role: string;
+  profileId: string | null;
+  profileName: string | null;
   banned: boolean;
   twoFactorEnabled: boolean;
   teacherId: string | null;
@@ -58,6 +63,8 @@ export class ListStaffQuery {
         u."name" as "name",
         u."email" as "email",
         u."role" as "role",
+        u."profile_id" as "profileId",
+        p."name" as "profileName",
         u."banned" as "banned",
         u."twoFactorEnabled" as "twoFactorEnabled",
         t."id" as "teacherId",
@@ -65,6 +72,7 @@ export class ListStaffQuery {
         (select max(s."createdAt") from "session" s where s."userId" = u."id") as "lastAccessAt"
       from "user" u
       left join "teachers" t on t."user_id" = u."id" and t."deleted_at" is null
+      left join "staff_profiles" p on p."id" = u."profile_id"
       where u."role" not in ('student', 'guardian')
         and u."deletedAt" is null
     `);
@@ -77,6 +85,8 @@ export class ListStaffQuery {
         lastName,
         email: row.email,
         role: row.role,
+        profileId: row.profileId,
+        profileName: row.profileName,
         status: row.banned ? "inactive" : "active",
         teacherId: row.teacherId,
         mfaEnrolled: row.twoFactorEnabled,
@@ -88,6 +98,14 @@ export class ListStaffQuery {
     });
 
     const inviteRows = await this.db.select().from(staffInvites).where(eq(staffInvites.status, "pending"));
+    const profileNames = new Map(
+      (
+        await this.db
+          .select({ id: staffProfiles.id, name: staffProfiles.name })
+          .from(staffProfiles)
+          .where(sql`${staffProfiles.name} is not null`)
+      ).map((row) => [row.id, row.name]),
+    );
 
     const invitedRows: StaffMemberRow[] = inviteRows.map((invite) => ({
       id: invite.id,
@@ -95,6 +113,8 @@ export class ListStaffQuery {
       lastName: invite.lastName,
       email: invite.email,
       role: invite.role,
+      profileId: invite.profileId,
+      profileName: invite.profileId ? (profileNames.get(invite.profileId) ?? null) : null,
       status: "invited",
       teacherId: invite.teacherId,
       mfaEnrolled: false,

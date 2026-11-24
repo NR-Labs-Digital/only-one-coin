@@ -12,7 +12,7 @@ export const issuePortalAccessRoute = RouteBuilder.post("/students/:studentId/po
     description:
       "Creates the account, re-sends the activation, or sends a reset link — whichever applies. Opens the guardian's account with a new student account, and on an existing one while a minor's consent is pending (OOC-72); `guardian` says what that did.",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("students.portal_access")
   .params(z.object({ studentId: z.string().uuid() }))
   .body(z.object({}))
   .response(

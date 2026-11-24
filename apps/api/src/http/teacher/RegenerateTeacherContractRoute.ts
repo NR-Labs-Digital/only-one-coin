@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_READ_ROLES } from "./teacherRoles.js";
 
 /**
  * A recorded contract printed again (OOC-124), from the template version it
@@ -18,7 +17,7 @@ export const regenerateTeacherContractRoute = RouteBuilder.get("/teachers/:teach
     description:
       "Prints the contract from its recorded template version and period, with the teacher file as it is now. Responds with the PDF itself (application/pdf).",
   })
-  .roles(...TEACHER_READ_ROLES)
+  .can("teachers.contract_download")
   .params(z.object({ teacherId: z.string().uuid(), contractId: z.string().uuid() }))
   .response(400, ErrorResponseSchema)
   .response(404, ErrorResponseSchema)

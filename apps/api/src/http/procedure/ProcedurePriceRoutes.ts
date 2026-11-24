@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { SETTINGS_READ_ROLES } from "@/http/platform/settingsRoles.js";
 
 const ProcedurePriceSchema = z.object({
   kind: ProcedureKindSchema,
@@ -21,7 +20,7 @@ const toResponse = (price: ProcedurePrice) => ({
  * settings it replaced (OOC-41, OOC-83). */
 export const listProcedurePricesRoute = RouteBuilder.get("/procedure-prices")
   .docs({ tags: ["Platform"], summary: "The price in force of each paid procedure" })
-  .roles(...SETTINGS_READ_ROLES)
+  .can("settings.read")
   .response(200, z.object({ items: z.array(ProcedurePriceSchema) }))
   .handler(async (_request, reply) => {
     const prices = await container.repositories.procedure.currentPrices();
@@ -32,7 +31,7 @@ export const listProcedurePricesRoute = RouteBuilder.get("/procedure-prices")
  * writes this. Requests already opened keep what they froze. */
 export const setProcedurePriceRoute = RouteBuilder.post("/procedure-prices")
   .docs({ tags: ["Platform"], summary: "Set a new price for a paid procedure" })
-  .roles("master", "admin")
+  .can("settings.procedure_prices")
   .body(z.object({ kind: ProcedureKindSchema, amountCents: z.number().int() }))
   .response(201, ProcedurePriceSchema)
   .response(400, ErrorResponseSchema)

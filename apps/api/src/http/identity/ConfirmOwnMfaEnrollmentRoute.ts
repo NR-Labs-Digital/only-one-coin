@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
 import { container } from "@/container.js";
-import { STAFF_MFA_ROLES } from "./staffMfaRoles.js";
 
 const ConfirmOwnMfaEnrollmentBodySchema = z.object({
   code: z.string().trim().regex(/^\d{6}$/),
@@ -24,7 +23,7 @@ export const confirmOwnMfaEnrollmentRoute = RouteBuilder.post("/me/mfa/enrollmen
     description:
       "Answers the recovery codes, once, and the replaced session cookie. 422 when the code is wrong, expired or tried too many times.",
   })
-  .roles(...STAFF_MFA_ROLES)
+  .can("account.self")
   .allowBeforeMfa()
   .rateLimit(RATE_LIMITS.staff, RATE_LIMITS.staffMfaConfirm)
   .body(ConfirmOwnMfaEnrollmentBodySchema)

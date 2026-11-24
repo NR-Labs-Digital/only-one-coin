@@ -1,14 +1,23 @@
-import type {
-  CreateStaffInviteRecord,
-  EmailNotification,
-  IFreshAuthVerifier,
-  IStaffAccountProvisioner,
-  IStaffInviteRepository,
-  IStaffUserLookup,
-  IUserRoleRepository,
-  ProvisionStaffAccountInput,
-  Role,
-  StaffInvite,
+import {
+  BOARD_ROLES,
+  defaultPermissionsOf,
+  isGrantable,
+  type BoardRole,
+  type CreateStaffInviteRecord,
+  type EmailNotification,
+  type IFreshAuthVerifier,
+  type IStaffAccountProvisioner,
+  type IStaffInviteRepository,
+  type IStaffProfileRepository,
+  type IStaffUserLookup,
+  type IUserRoleRepository,
+  type PermissionKey,
+  type ProvisionStaffAccountInput,
+  type Role,
+  type StaffInvite,
+  type StaffProfileListing,
+  type StaffProfileRecord,
+  type UserRoleAssignment,
 } from "@ooc/domain";
 
 /** In-memory stand-ins for the staff account ports, shared by the team usecase tests. */
@@ -50,6 +59,7 @@ export class FakeStaffInviteRepository implements IStaffInviteRepository {
       token: record.token,
       status: "pending",
       teacherId: record.teacherId,
+      profileId: record.profileId,
       expiresAt: record.expiresAt,
     };
     this.rows.push(invite);
@@ -98,13 +108,69 @@ export class FakeStaffAccountProvisioner implements IStaffAccountProvisioner {
 
 export class FakeUserRoleRepository implements IUserRoleRepository {
   public readonly roles = new Map<string, Role>();
+  public readonly profiles = new Map<string, string | null>();
 
-  async findRoleByUserId(userId: string): Promise<Role | null> {
-    return this.roles.get(userId) ?? null;
+  async findAssignmentByUserId(userId: string): Promise<UserRoleAssignment | null> {
+    const role = this.roles.get(userId);
+    return role ? { role, profileId: this.profiles.get(userId) ?? null } : null;
   }
 
-  async updateRole(userId: string, role: Role): Promise<void> {
-    this.roles.set(userId, role);
+  async updateAssignment(userId: string, assignment: UserRoleAssignment): Promise<void> {
+    this.roles.set(userId, assignment.role);
+    this.profiles.set(userId, assignment.profileId);
+  }
+}
+
+/**
+ * The cargos in memory (OOC-183): the board's, with their defaults, plus the
+ * ones a test creates.
+ */
+export class FakeStaffProfileRepository implements IStaffProfileRepository {
+  public readonly rows: (StaffProfileRecord & { retired?: boolean })[] = BOARD_ROLES.map((role) => ({
+    id: `profile_${role}`,
+    role,
+    name: null,
+    // As `syncBoard` stores them: only what a cargo is handed.
+    permissions: defaultPermissionsOf(role).filter(isGrantable),
+  }));
+  public members = new Map<string, number>();
+
+  async listLive(): Promise<StaffProfileListing[]> {
+    return this.rows.filter((row) => !row.retired).map((row) => ({ ...row, members: this.members.get(row.id) ?? 0 }));
+  }
+
+  async findLiveById(id: string): Promise<StaffProfileRecord | null> {
+    return this.rows.find((row) => row.id === id && !row.retired) ?? null;
+  }
+
+  async findByRole(role: BoardRole): Promise<StaffProfileRecord | null> {
+    return this.rows.find((row) => row.role === role) ?? null;
+  }
+
+  async nameTaken(name: string, exceptId?: string): Promise<boolean> {
+    return this.rows.some(
+      (row) => !row.retired && row.id !== exceptId && row.name?.toLowerCase() === name.toLowerCase(),
+    );
+  }
+
+  async create(input: { name: string; permissions: PermissionKey[]; createdBy: string }): Promise<StaffProfileRecord> {
+    const row = { id: `profile_${this.rows.length + 1}`, role: null, name: input.name, permissions: input.permissions };
+    this.rows.push(row);
+    return row;
+  }
+
+  async update(id: string, input: { name?: string; permissions: PermissionKey[] }): Promise<void> {
+    const row = this.rows.find((candidate) => candidate.id === id)!;
+    if (input.name !== undefined) row.name = input.name;
+    row.permissions = input.permissions;
+  }
+
+  async retire(id: string): Promise<void> {
+    this.rows.find((row) => row.id === id)!.retired = true;
+  }
+
+  async countMembers(id: string): Promise<number> {
+    return this.members.get(id) ?? 0;
   }
 }
 

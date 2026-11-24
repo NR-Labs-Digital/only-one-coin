@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 const ReceiptUploadResponseSchema = z.object({
   receiptUploadId: z.string().uuid(),
@@ -19,7 +18,7 @@ export const requestManualReceiptUploadRoute = RouteBuilder.post("/enrollments/r
     description:
       "The receipt is mandatory on the manual enrollment (OOC-146). The browser POSTs the file straight to the bucket; the upload belongs to the signed-in staff account until POST /enrollments attaches it to the payment.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.create_manual")
   .body(z.object({ contentType: z.enum(RECEIPT_CONTENT_TYPES) }))
   .response(201, ReceiptUploadResponseSchema)
   .response(400, ErrorResponseSchema)

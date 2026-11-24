@@ -3,7 +3,6 @@ import { CreateCourseSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_OWNER_ROLES } from "./catalogRoles.js";
 import { IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -13,7 +12,7 @@ import { IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const createCourseRoute = RouteBuilder.post("/catalog/courses")
   .docs({ tags: ["Catalog"], summary: "Create a course" })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.courses_create")
   // The language is picked from the list by id (OOC-128); its name is the record's.
   .body(CreateCourseSchema.omit({ language: true }).extend({ languageId: z.string().uuid() }))
   .response(201, IdResponseSchema)

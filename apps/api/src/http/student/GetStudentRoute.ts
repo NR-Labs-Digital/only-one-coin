@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { ACADEMIC_STATUSES, NotFoundError } from "@ooc/domain";
 import { container } from "@/container.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 const GetStudentParamsSchema = z.object({
   studentId: z.string().uuid(),
@@ -87,7 +86,7 @@ export const getStudentRoute = RouteBuilder.get("/students/:studentId")
     summary: "Get a student's file",
     description: "Backs the student detail screen — identity, contact, guardian and enrollment history.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.view")
   .params(GetStudentParamsSchema)
   .response(200, GetStudentResponseSchema)
   .response(404, ErrorResponseSchema)

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 const StudentParamsSchema = z.object({ studentId: z.string().uuid() });
 
@@ -32,7 +31,7 @@ export const saveGuardianRoute = RouteBuilder.put("/students/:studentId/guardian
     summary: "Correct or add a student's guardian",
     description: "Creates the guardian when the student has none; never records consent.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.edit")
   .params(StudentParamsSchema)
   .body(SaveGuardianBodySchema)
   .response(200, GuardianResponseSchema)

@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { serializeStudentRow, StudentListRowSchema } from "./ListStudentsRoute.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 // The floor keeps a search box from turning into a directory-enumeration
 // primitive — a capped match list, never a browse.
@@ -24,7 +23,7 @@ export const searchStudentsRoute = RouteBuilder.get("/students/search")
     summary: "Find a student by partial name or national id",
     description: "Backs the manual enrollment and waitlist pickers — a short, capped match list.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.view")
   .query(SearchStudentsQuerySchema)
   .response(200, SearchStudentsResponseSchema)
   .response(400, ErrorResponseSchema)

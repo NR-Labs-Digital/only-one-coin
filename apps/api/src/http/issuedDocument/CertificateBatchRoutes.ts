@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { ClassGroupModuleParamsSchema } from "@/http/catalog/CatalogSchemas.js";
-import { CERTIFICATE_ISSUE_ROLES, CERTIFICATE_READ_ROLES } from "./issuedDocumentRoles.js";
 import { CertificatePreviewSchema } from "./issuedDocumentSchemas.js";
 
 /**
@@ -19,7 +18,7 @@ export const previewCertificateBatchRoute = RouteBuilder.get("/catalog/class-gro
     description:
       "Every confirmed seat in the module group of the course's last module, with the last module's grade and why the certificate would not go out (null = it would). Writes nothing.",
   })
-  .roles(...CERTIFICATE_READ_ROLES)
+  .can("grades.certificates_preview")
   .params(ClassGroupModuleParamsSchema)
   .response(200, CertificatePreviewSchema)
   .response(400, ErrorResponseSchema)
@@ -57,7 +56,7 @@ export const issueCertificateBatchRoute = RouteBuilder.post("/catalog/class-grou
     tags: ["Documents"],
     summary: "Issue a module group's certificate batch",
   })
-  .roles(...CERTIFICATE_ISSUE_ROLES)
+  .can("grades.certificates_issue")
   .params(ClassGroupModuleParamsSchema)
   .body(IssueCertificatesBodySchema)
   .response(200, z.object({ issued: z.number().int(), skipped: z.number().int() }))

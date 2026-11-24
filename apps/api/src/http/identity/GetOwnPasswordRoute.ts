@@ -15,18 +15,7 @@ export const getOwnPasswordRoute = RouteBuilder.get("/me/password")
     summary: "When the signed-in staff member's password last changed",
     description: "Null while it is still the password the account was created with.",
   })
-  .roles(
-    "master",
-    "admin",
-    "analyst",
-    "enrollment_supervisor",
-    "academic_supervisor",
-    "academic_assistant",
-    "teacher",
-    "sales",
-    "support",
-    "billing",
-  )
+  .can("account.self")
   .response(200, GetOwnPasswordResponseSchema)
   .handler(async (request, reply) => {
     const changedAt = await container.queries.getPasswordChangedAt.run(request.currentUser!.id);

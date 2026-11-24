@@ -16,7 +16,13 @@ export class BetterAuthStaffAccountProvisioner implements IStaffAccountProvision
   async provision(input: ProvisionStaffAccountInput): Promise<ProvisionStaffAccountOutput> {
     try {
       const userId = await this.db.transaction((tx) =>
-        insertCredentialUser(tx, { email: input.email, name: input.name, role: input.role, password: input.password }),
+        insertCredentialUser(tx, {
+          email: input.email,
+          name: input.name,
+          role: input.role,
+          profileId: input.profileId,
+          password: input.password,
+        }),
       );
       return { userId };
     } catch (error) {

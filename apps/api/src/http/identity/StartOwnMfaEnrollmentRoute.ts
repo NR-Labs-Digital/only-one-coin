@@ -4,7 +4,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
 import { container } from "@/container.js";
-import { STAFF_MFA_ROLES } from "./staffMfaRoles.js";
 
 const StartOwnMfaEnrollmentBodySchema = z.object({
   /** The language of the screen asking — the e-mail is written in it. */
@@ -19,7 +18,7 @@ export const startOwnMfaEnrollmentRoute = RouteBuilder.post("/me/mfa/enrollment"
     summary: "E-mail a code to turn on the signed-in staff member's second factor",
     description: "Asking again replaces the code. 409 when the factor is already on.",
   })
-  .roles(...STAFF_MFA_ROLES)
+  .can("account.self")
   .allowBeforeMfa()
   .rateLimit(RATE_LIMITS.staff, RATE_LIMITS.staffMfaSend)
   .body(StartOwnMfaEnrollmentBodySchema)

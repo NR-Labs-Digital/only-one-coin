@@ -30,6 +30,9 @@ import {
   RECEIPT_EXTRACTION_TIER_SECONDARY,
 } from "@ooc/domain";
 import { buildApp } from "./app.js";
+
+/** How often another machine's cargo edits reach this one (OOC-183). */
+const STAFF_ACCESS_REFRESH_MS = 30_000;
 import { container } from "./container.js";
 import { createReceiptExtractor, receiptOcrModelFor } from "./infra/ocr/createReceiptExtractor.js";
 import { startOutboxRelayWorker } from "./workers/outbox-relay.worker.js";
@@ -60,6 +63,17 @@ const {
 } = container;
 
 const app = await buildApp();
+
+// The cargos as data (OOC-183): bring the board's rows up to the permission
+// catalog, then load what every cargo can do before the first request is
+// served. A database that cannot be read here fails the boot — the release
+// never passes /health and blue-green keeps the old machine (CLAUDE.md §7):
+// serving the board's defaults instead would undo what administration saved.
+await container.identity.staffProfileRepository.syncBoard();
+await container.identity.staffAccess.reload();
+container.identity.staffAccess.startRefreshing(STAFF_ACCESS_REFRESH_MS, (err: unknown) => {
+  logger.error({ err }, "staff access refresh failed; keeping the last loaded cargos");
+});
 
 const connection = createRedisConnection(REDIS_URL);
 
