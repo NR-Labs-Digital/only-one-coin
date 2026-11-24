@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
-import type { TeachingClassGroup, TeachingGrade, TeachingStudent } from '@/lib/docente/teaching'
+import {
+  registerIsTeachers,
+  type GradeRegister,
+  type TeachingClassGroup,
+  type TeachingGrade,
+  type TeachingStudent,
+} from '@/lib/docente/teaching'
+import { editGrade, submitGradeRegister, type RegisterWriteResult } from '@/lib/docente/grade-register-client'
+import { GradeRegisterSummary } from '@/components/grades/grade-register-summary'
 import {
   mergePendingGrades,
   postGrades,
@@ -65,6 +73,7 @@ export function ClassGroupWorkspace({
   tools,
   passingGrade,
   grades,
+  register,
 }: {
   group: TeachingClassGroup
   students: TeachingStudent[]
@@ -74,6 +83,8 @@ export function ClassGroupWorkspace({
   passingGrade: number | null
   /** The grades already posted (OOC-38). Null when the sheet is off or the read failed. */
   grades: TeachingGrade[] | null
+  /** The run's open grade register (OOC-180). Null when the sheet is off or the read failed. */
+  register: GradeRegister | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
@@ -84,6 +95,9 @@ export function ClassGroupWorkspace({
   const grading = tools.grades && passingGrade !== null && grades !== null
   const gradesUnavailable = tools.grades && !grading
   const gradingOpen = group.status === 'in_progress' || group.status === 'finished'
+  /* The teacher posts and changes grades while the register is theirs — not
+     sent, or returned (OOC-180). An unread register leaves the API to say no. */
+  const editable = register === null || registerIsTeachers(register.status)
 
   /* What this device confirmed and the API has not acknowledged yet. Read
      from storage after mount — the server render cannot see it. */
@@ -102,6 +116,10 @@ export function ClassGroupWorkspace({
   const [confirmingGrade, setConfirmingGrade] = useState(false)
   const [posted, setPosted] = useState<string | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
+  /** Changing a posted grade (OOC-180) rather than adding one. */
+  const [changing, setChanging] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [submitOpen, setSubmitOpen] = useState(false)
 
   const sheet: GradeSheetRow[] =
     grading && passingGrade !== null
@@ -139,6 +157,8 @@ export function ClassGroupWorkspace({
           didNotSit: entry.grade === 'da',
           recordedAt: now,
           correctedAt: null,
+          changedBy: null,
+          official: false,
         })),
       ])
       setNotice(null)
@@ -185,16 +205,57 @@ export function ClassGroupWorkspace({
   }
 
   /* One grade per student: the final exam's, which is the module's grade
-     (`docs/REGRAS-NEGOCIO.md` §3). Once posted it is final (decision
-     08/10/2026). A cell offers "add" only while empty, in a running or
-     finished group. */
-  const canAdd = (row: GradeSheetRow) => gradingOpen && row.sync === null
+     (`docs/REGRAS-NEGOCIO.md` §3). A cell offers "add" while empty and
+     "change" once posted — both only while the register is the teacher's
+     (OOC-180), in a running or finished group. */
+  const canAdd = (row: GradeSheetRow) => gradingOpen && editable && row.sync === null
+  const canChange = (row: GradeSheetRow) =>
+    gradingOpen && editable && row.sync === 'posted' && (row.finalGrade !== null || row.gradeStatus === 'auto_failed')
+
+  function registerError(result: RegisterWriteResult): string {
+    return t(`grade_register.errors.${result === 'done' ? 'failed' : result}`)
+  }
+
+  async function changeGrade() {
+    if (!editing || saving) return
+    setSaving(true)
+    const result = await editGrade(group.id, editing, isDa(editValue) ? 'da' : (parseGrade(editValue) as number))
+    setSaving(false)
+    setEditing(null)
+    setConfirmingGrade(false)
+    if (result === 'done') {
+      setNotice(null)
+      setPosted(t('grade_register.edited_toast'))
+    } else {
+      setNotice(registerError(result))
+    }
+    router.refresh()
+  }
+
+  async function sendToReview() {
+    if (saving) return
+    setSaving(true)
+    const result = await submitGradeRegister(group.id)
+    setSaving(false)
+    setSubmitOpen(false)
+    if (result === 'done') {
+      setNotice(null)
+      setPosted(t('grade_register.submitted_toast'))
+    } else {
+      setNotice(registerError(result))
+    }
+    router.refresh()
+  }
 
   const editingRow = editing ? (sheet.find((row) => row.enrollmentId === editing) ?? null) : null
   const editValid = editing !== null && parseGrade(editValue) !== null
 
   function postGrade() {
     if (passingGrade === null || !editing || !(editValid || isDa(editValue))) return
+    if (changing) {
+      void changeGrade()
+      return
+    }
     enqueue([{ enrollmentId: editing, grade: isDa(editValue) ? 'da' : (parseGrade(editValue) as number) }])
     setEditing(null)
     setConfirmingGrade(false)
@@ -323,6 +384,28 @@ export function ClassGroupWorkspace({
           )}
         </header>
 
+        {grading && register && (
+          <div className="flex flex-col gap-3 border-b border-line bg-sky-soft/40 px-5 py-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('grade_register.title')}
+              </p>
+              <GradeRegisterSummary register={register} />
+              <p className="text-xs text-muted-foreground">{t(`grade_register.teacher_${register.status}`)}</p>
+            </div>
+            {gradingOpen && registerIsTeachers(register.status) && (
+              <button
+                type="button"
+                onClick={() => setSubmitOpen(true)}
+                disabled={register.graded === 0 || register.graded < register.total || pending.length > 0}
+                className="inline-flex min-h-tap shrink-0 items-center gap-1.5 self-start rounded-lg bg-brand-blue px-3.5 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:cursor-default disabled:opacity-50 sm:min-h-0 sm:py-2"
+              >
+                <BoIcon name="check" size={15} />
+                {t('grade_register.submit')}
+              </button>
+            )}
+          </div>
+        )}
         {grading && !gradingOpen && (
           <p className="border-b border-line px-5 py-2.5 text-xs text-muted-foreground">
             {t('teacher_groups.not_started')}
@@ -408,16 +491,34 @@ export function ClassGroupWorkspace({
                             onClick={() => {
                               setEditing(row.enrollmentId)
                               setEditValue('')
+                              setChanging(false)
                               setConfirmingGrade(false)
                             }}
                           />
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
-                        {/* The supervision corrected it (OOC-102): the value shown is the correction's. */}
+                        {canChange(row) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditing(row.enrollmentId)
+                              setEditValue(row.gradeStatus === 'auto_failed' ? DA_MARK : String(row.finalGrade ?? ''))
+                              setChanging(true)
+                              setConfirmingGrade(false)
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-brand-blue transition hover:bg-sky-soft"
+                          >
+                            <BoIcon name="edit" size={12} />
+                            {t('grade_register.edit')}
+                          </button>
+                        )}
+                        {/* The supervision corrected it (OOC-102), or the teacher changed it (OOC-180). */}
                         {row.corrected && (
                           <span className="rounded-full bg-sky px-2 py-0.5 text-[11px] font-semibold text-brand-blue-deep">
-                            {t('class_group_grades.teacher_corrected')}
+                            {row.changedBy === 'teacher'
+                              ? t('grade_register.edited_badge')
+                              : t('class_group_grades.teacher_corrected')}
                           </span>
                         )}
                         {/* Confirmed here, not yet acknowledged by the API. */}
@@ -494,9 +595,11 @@ export function ClassGroupWorkspace({
                 >
                   <DialogHeader>
                     <DialogTitle>
-                      {confirmingGrade
-                        ? t('class_list.confirm_grade_title')
-                        : t('class_list.add_grade_title')}
+                      {changing
+                        ? t('grade_register.edit_title')
+                        : confirmingGrade
+                          ? t('class_list.confirm_grade_title')
+                          : t('class_list.add_grade_title')}
                     </DialogTitle>
                     <DialogDescription>
                       {t('class_list.student_label', { name: editingRow.fullName })}
@@ -530,7 +633,7 @@ export function ClassGroupWorkspace({
                         />
                         <p className="flex items-center gap-1.5 text-xs text-amber-700">
                           <BoIcon name="alert" size={13} className="shrink-0" />
-                          {t('class_list.final_warning')}
+                          {changing ? t('grade_register.edit_warning') : t('class_list.final_warning')}
                         </p>
                       </div>
                       <DialogFooter className="grid grid-cols-2 gap-2">
@@ -544,7 +647,8 @@ export function ClassGroupWorkspace({
                         <button
                           type="button"
                           onClick={postGrade}
-                          className="rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+                          disabled={saving}
+                          className="rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:opacity-50"
                         >
                           {t('class_list.confirm_cta')}
                         </button>
@@ -578,7 +682,7 @@ export function ClassGroupWorkspace({
                         </button>
                         <p className="flex w-full items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                           <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                          {t('class_list.final_warning')}
+                          {changing ? t('grade_register.edit_warning') : t('class_list.final_warning')}
                         </p>
                       </div>
                       <DialogFooter className="sm:flex-row sm:justify-end">
@@ -612,6 +716,35 @@ export function ClassGroupWorkspace({
             students={batchRows}
             onPost={postBatch}
           />
+
+          {register && (
+            <Dialog open={submitOpen} onOpenChange={(next) => !saving && setSubmitOpen(next)}>
+              <DialogContent closeLabel={t('agenda.close')} className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{t('grade_register.submit_title')}</DialogTitle>
+                  <DialogDescription>{t('grade_register.submit_body')}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSubmitOpen(false)}
+                    disabled={saving}
+                    className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+                  >
+                    {t('class_list.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void sendToReview()}
+                    disabled={saving}
+                    className="rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-deep disabled:opacity-50"
+                  >
+                    {t('grade_register.submit')}
+                  </button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <PostedOverlay message={posted} onDone={() => setPosted(null)} />
         </>

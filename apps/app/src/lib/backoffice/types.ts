@@ -446,6 +446,8 @@ export interface ClassGroupModuleItem {
   classroomMissing: boolean
   /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
   meetUrl: string | null
+  /** The module's end date in this run (OOC-180), `YYYY-MM-DD`; null = not set. */
+  moduleEndsOn: string | null
   /** Confirmed seats in the run now. */
   students: number
 }
@@ -489,6 +491,8 @@ export interface ClassGroupItem {
   classroomMissing: boolean
   /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
   meetUrl: string | null
+  /** The first run's module end date (OOC-180), `YYYY-MM-DD` — what the form of a one-run class group edits. */
+  moduleEndsOn: string | null
   /** Some run of the class group has no teacher yet. */
   teacherMissing: boolean
   /**

@@ -379,7 +379,11 @@
         "issued_document_revoked": "Documento emitido anulado",
         "certificate_batch_issued": "Certificados emitidos en lote",
         "class_group_deleted": "Aula eliminada",
-        "class_group_erased": "Aula eliminada (con historial)"
+        "class_group_erased": "Aula eliminada (con historial)",
+        "grade_edited": "Nota cambiada por el docente",
+        "grade_register_submitted": "Registro de notas enviado a revisión",
+        "grade_register_returned": "Registro de notas devuelto al docente",
+        "grade_register_confirmed": "Registro de notas confirmado como oficial"
       },
       "field": {
         "first_name": "Nombre",
@@ -434,7 +438,9 @@
         "constancia_fee_cents": "Tasa de la constancia",
         "contract_alert_days": "Aviso de vencimiento del contrato",
         "full_course": "Curso completo",
-        "progression_requires_passing_grade": "Nota mínima para pasar de módulo"
+        "progression_requires_passing_grade": "Nota mínima para pasar de módulo",
+        "grade_submission_hours": "Plazo del registro de notas",
+        "module_ends_on": "Fin del módulo"
       }
     },
     "student_status": {
@@ -932,7 +938,11 @@
       "grade_corrected": "Nota final corregida",
       "grade_corrected_did_not_sit": "Resultado corregido a DA",
       "monthly_module_due": "Módulo mensual por pagar",
-      "enrollment_freeze_reengagement": "Recordatorio de matrícula congelada"
+      "enrollment_freeze_reengagement": "Recordatorio de matrícula congelada",
+      "grade_updated": "Nota actualizada por el docente",
+      "grade_updated_did_not_sit": "Resultado actualizado a DA",
+      "grade_official": "Nota oficial",
+      "grade_official_did_not_sit": "Resultado oficial: DA"
     },
     "email_trigger": {
       "enrollment_received": "Al recibir los datos de matrícula, después de que el alumno llena el formulario.",
@@ -963,7 +973,11 @@
       "grade_corrected": "La supervisión académica corrige una nota registrada",
       "grade_corrected_did_not_sit": "La supervisión académica corrige una nota registrada a DA",
       "monthly_module_due": "Cuando la progresión lleva a un alumno mensual a un módulo que nadie pagó.",
-      "enrollment_freeze_reengagement": "Al mes, a los 3 y a los 6 meses de congelar una matrícula."
+      "enrollment_freeze_reengagement": "Al mes, a los 3 y a los 6 meses de congelar una matrícula.",
+      "grade_updated": "El docente cambia una nota antes de que el registro sea oficial",
+      "grade_updated_did_not_sit": "El docente cambia una nota a DA antes de que el registro sea oficial",
+      "grade_official": "La coordinación confirma el registro de notas",
+      "grade_official_did_not_sit": "La coordinación confirma el registro con el módulo como DA"
     },
     "email_audience": {
       "student": "Alumno",
@@ -995,7 +1009,10 @@
       "grade_corrected": "Solo si una nota registrada se corrige",
       "grade_corrected_did_not_sit": "Solo si la nota se corrige a DA (no rindió el examen final)",
       "monthly_module_due": "si es mensual y el módulo no está pagado",
-      "enrollment_freeze_reengagement": "si la matrícula sigue congelada"
+      "enrollment_freeze_reengagement": "si la matrícula sigue congelada",
+      "grade_updated": "Solo si el docente cambia una nota ya registrada",
+      "grade_updated_did_not_sit": "Solo si el docente cambia la nota a DA",
+      "grade_official_did_not_sit": "Solo si el alumno no rindió el examen final (DA)"
     },
     "email_delivery_reason": {
       "provider_unavailable": "El proveedor no respondió",
@@ -1522,7 +1539,8 @@
       "payment_not_approved": "Pago sin aprobar",
       "enrollment_not_completed": "Matrícula sin cerrar",
       "exam_not_approved": "Falta el examen de certificación",
-      "already_issued": "Ya emitido"
+      "already_issued": "Ya emitido",
+      "grade_not_official": "La nota todavía está en revisión"
     },
     "weekday": {
       "mon": "Lun",
@@ -2153,7 +2171,10 @@
       "progression_requires_passing_hint": "Encendido, solo pasa al módulo siguiente quien tiene la nota mínima. La coordinación puede pasar a alguien por debajo, con un motivo; el docente nunca. Apagado, cualquier nota lanzada permite pasar.",
       "progression_requires_passing_on": "Exige la nota mínima",
       "progression_requires_passing_off": "Cualquier nota",
-      "progression_requires_passing_toggle": "Exigir"
+      "progression_requires_passing_toggle": "Exigir",
+      "grade_submission_label": "Plazo del registro de notas",
+      "grade_submission_hint": "Horas desde el fin del módulo para que el docente envíe el registro a revisión. Después aparece «Fuera de plazo».",
+      "hours_value": "{hours} horas"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2362,10 +2383,10 @@
       "back": "Mis aulas",
       "students_title": "Alumnos ({count})",
       "notes_button": "{count, plural, =0 {Observaciones} other {Observaciones (#)}}",
-      "final_warning": "Una vez registrada, la nota no se puede cambiar.",
+      "final_warning": "Puedes cambiarla hasta enviar el registro a revisión.",
       "cancel": "Cancelar",
       "post": "Registrar nota",
-      "grades_locked": "Las notas registradas no se cambian.",
+      "grades_locked": "Las notas se cambian hasta enviar el registro a revisión; después, solo la supervisión las corrige.",
       "col_class": "Aula",
       "confirm_cta": "Confirmar",
       "back_to_edit": "Volver",
@@ -2816,7 +2837,9 @@
       "error_below_passing": "Solo la coordinación pasa a alguien debajo de la nota mínima.",
       "error_reason_required": "Escribe el motivo (hasta 500 caracteres).",
       "error_conflict": "Alguien movió a uno de estos alumnos mientras tanto. Recarga y vuelve a intentar.",
-      "error_failed": "No se pudo guardar. Intenta de nuevo."
+      "error_failed": "No se pudo guardar. Intenta de nuevo.",
+      "verdict_not_official": "Nota en revisión",
+      "error_not_official": "Una nota todavía está en revisión: se pasa de módulo cuando la coordinación confirma el registro."
     },
     "class_group_picker": {
       "single": "{label} · {left, plural, =0 {llena} one {# vacante} other {# vacantes}}",
@@ -2853,7 +2876,8 @@
         "did_not_sit": "No rindió el examen final (DA)",
         "grade_below_minimum": "Nota menor a la mínima",
         "earlier_module_failed": "Desaprobó un módulo anterior",
-        "exam_not_approved": "Falta el examen de certificación"
+        "exam_not_approved": "Falta el examen de certificación",
+        "grade_not_official": "Nota en revisión"
       },
       "issue": "{count, plural, =0 {Nada para emitir} one {Emitir # certificado} other {Emitir # certificados}}",
       "confirm_body": "{count, plural, one {Se emitirá # certificado} other {Se emitirán # certificados}} y cada alumno recibirá un correo (y su apoderado, si es menor). La emisión no se puede deshacer.",
@@ -2944,6 +2968,94 @@
         "transfer_conflict": "La matrícula cambió mientras tanto. Ciérralo y vuelve a abrirlo.",
         "failed": "No pudimos guardar. Inténtalo de nuevo."
       }
+    },
+    "grade_register": {
+      "tab": "Registros de notas",
+      "title": "Registro de notas",
+      "intro": "Cada grupo de módulo tiene un registro por vuelta del módulo. El docente lo envía a revisión; la coordinación lo devuelve con lo que hay que corregir o lo confirma, y sus notas pasan a oficiales.",
+      "empty": "Todavía no hay registros: aparecen cuando el grupo tiene alumnos confirmados.",
+      "load_error": "No se pudieron cargar los registros de notas. Recarga la página.",
+      "status": {
+        "draft": "Sin enviar",
+        "in_review": "En revisión",
+        "returned": "Devuelto",
+        "official": "Oficial"
+      },
+      "overdue": "Fuera de plazo",
+      "submitted_late": "Enviado fuera de plazo",
+      "round": "Vuelta {round}",
+      "progress": "{graded} de {total} notas",
+      "ends_on": "Fin del módulo: {date}",
+      "deadline": "Enviar hasta: {date}",
+      "no_end_date": "Sin fecha de fin",
+      "returned_note_title": "La coordinación pidió corregir:",
+      "unknown_name": "una cuenta sin nombre",
+      "run_fallback": "Grupo de módulo",
+      "step": {
+        "submitted": "Enviado a revisión por {name} · {date}",
+        "returned": "Devuelto por {name} · {date}",
+        "confirmed": "Confirmado como oficial por {name} · {date}"
+      },
+      "teacher_draft": "Puedes registrar y cambiar las notas hasta enviar el registro a revisión.",
+      "teacher_in_review": "La coordinación está revisando las notas. Mientras tanto no se cambian; si pide una corrección, el registro vuelve a ti.",
+      "teacher_returned": "Corrige lo que pidió la coordinación y vuelve a enviar el registro.",
+      "teacher_official": "La coordinación confirmó las notas: ya son oficiales. Solo la supervisión las corrige.",
+      "submit": "Enviar a revisión",
+      "submit_title": "¿Enviar el registro a revisión?",
+      "submit_body": "La coordinación revisa las notas. Mientras el registro esté en revisión no puedes cambiarlas; si piden una corrección, vuelve a ti.",
+      "submitted_toast": "Registro enviado a revisión.",
+      "edit": "Cambiar",
+      "edit_title": "Cambiar la nota",
+      "edit_warning": "El alumno recibe la nota nueva por correo. La anterior queda en el historial.",
+      "edited_badge": "Cambiada",
+      "edited_toast": "Nota cambiada.",
+      "history_edited": "Cambiada por el docente {name} · {date}",
+      "grade_in_review": "En revisión",
+      "grade_official": "Oficial",
+      "return": "Devolver al docente",
+      "return_title": "Devolver el registro al docente",
+      "return_body": "El docente ve tu mensaje en su portal, corrige las notas y vuelve a enviar el registro.",
+      "return_note_label": "Qué hay que corregir",
+      "return_note_hint": "Hasta 1000 caracteres. Queda en el historial del registro.",
+      "returned_toast": "Registro devuelto al docente.",
+      "confirm": "Confirmar como oficial",
+      "confirm_incomplete": "Faltan notas en este registro.",
+      "confirm_title": "¿Confirmar las notas como oficiales?",
+      "confirm_body": "Desde ahora las notas cuentan para pasar de módulo y para el certificado. Cada alumno, y el apoderado si es menor, recibe su nota oficial por correo. Después solo la supervisión corrige, con motivo.",
+      "confirmed_toast": "Notas confirmadas como oficiales.",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "saving": "Guardando…",
+      "errors": {
+        "incomplete": "Todos los alumnos de este registro necesitan nota antes de este paso.",
+        "locked": "El registro ya no está en ese estado. Recarga la página.",
+        "conflict": "Otra persona cambió este registro al mismo tiempo. Recarga la página.",
+        "unchanged": "La nota ya tiene ese valor.",
+        "note_required": "Escribe qué hay que corregir (hasta 1000 caracteres).",
+        "failed": "No se pudo guardar. Intenta de nuevo."
+      },
+      "field_module_ends_on": "Fin del módulo",
+      "field_module_ends_on_what": "El último día del módulo en este grupo.",
+      "field_module_ends_on_how": "El plazo para enviar el registro de notas corre desde el final de este día. Sin fecha, el registro no tiene plazo.",
+      "list_intro": "El docente tiene {hours} horas desde el fin del módulo para enviar el registro. Solo aulas en curso o finalizadas.",
+      "list_empty_title": "Nada pendiente con estos filtros",
+      "list_empty_body": "Cambia los filtros para ver otros registros.",
+      "filter_period": "Período",
+      "filter_teacher": "Docente",
+      "filter_module": "Módulo",
+      "filter_status": "Estado",
+      "filter_all": "Todos",
+      "filter_status_open": "Abiertos",
+      "filter_status_all": "Todos",
+      "filter_overdue": "Solo fuera de plazo",
+      "filter_apply": "Filtrar",
+      "col_class_group": "Aula",
+      "col_module": "Módulo",
+      "col_teacher": "Docente",
+      "col_grades": "Notas",
+      "col_status": "Estado",
+      "col_deadline": "Plazo",
+      "no_teacher": "Sin docente"
     }
   }
 }

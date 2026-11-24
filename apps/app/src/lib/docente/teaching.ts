@@ -111,8 +111,9 @@ export const listOwnClassGroupStudents = cache(
 )
 
 /**
- * One final grade as it counts (OOC-38): the exam's, or DA in its place. Final
- * for the teacher; only the academic supervision corrects it (OOC-102).
+ * One final grade as it counts (OOC-38): the exam's, or DA in its place. The
+ * teacher changes it while the grade register is theirs (OOC-180); after that
+ * only the academic supervision corrects it (OOC-102).
  */
 export interface TeachingGrade {
   enrollmentId: string
@@ -121,9 +122,65 @@ export interface TeachingGrade {
   didNotSit: boolean
   /** ISO 8601 UTC. */
   recordedAt: string
-  /** When the academic supervision last corrected it (OOC-102); null = as posted. */
+  /** When it last changed — the teacher's edit or the supervision's correction; null = as posted. */
   correctedAt: string | null
+  /** Who made that last change; null = as posted. */
+  changedBy: 'teacher' | 'supervision' | null
+  /** Coordination confirmed its register (OOC-180), or it predates registers. */
+  official: boolean
 }
+
+/** The grade register's states (OOC-180): Sin enviar · En revisión · Devuelto · Oficial. */
+export type GradeRegisterStatus = 'draft' | 'in_review' | 'returned' | 'official'
+
+export interface GradeRegisterStep {
+  kind: 'submitted' | 'returned' | 'confirmed'
+  /** ISO 8601 UTC. */
+  at: string
+  byName: string | null
+  /** What coordination asked to correct — only on a return. */
+  note: string | null
+}
+
+/** One module run's grades for one round of the module (OOC-180). */
+export interface GradeRegister {
+  /** Null while nothing of this round was posted yet. */
+  registerId: string | null
+  classGroupId: string
+  classGroupModuleId: string
+  round: number
+  status: GradeRegisterStatus
+  /** `YYYY-MM-DD`, a calendar day in Lima; null = coordination has not set it. */
+  moduleEndsOn: string | null
+  /** ISO 8601 UTC; null without an end date. */
+  deadlineAt: string | null
+  /** Not sent and past the deadline ("Fuera de plazo"). */
+  overdue: boolean
+  submittedLate: boolean
+  graded: number
+  total: number
+  returnNote: string | null
+  steps: GradeRegisterStep[]
+}
+
+/** The teacher changes grades while the register is theirs: not sent, or returned. */
+export function registerIsTeachers(status: GradeRegisterStatus): boolean {
+  return status === 'draft' || status === 'returned'
+}
+
+/** The open register of one of the teacher's runs; null when the read failed. */
+export const getOwnGradeRegister = cache(async (id: string): Promise<GradeRegister | null> => {
+  try {
+    const response = await apiFetch(
+      `/api/v1/teaching/class-groups/${encodeURIComponent(id)}/grade-register`,
+    )
+    if (!response.ok) return null
+    const { register } = (await response.json()) as { register: GradeRegister }
+    return register
+  } catch {
+    return null
+  }
+})
 
 /** The grades posted in one of the teacher's class groups; null when the read failed. */
 export const listOwnClassGroupGrades = cache(

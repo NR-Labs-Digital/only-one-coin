@@ -78,7 +78,7 @@ interface ApiEnrollment {
   /** OOC-86; null for a package plan. Optional: an API from before it sends none. */
   monthly?: ApiMonthly | null
   /** The final grade the teacher posted (OOC-38); `grade` null on a DA. */
-  finalGrade: { grade: number | null; didNotSit: boolean; recordedAt: string } | null
+  finalGrade: { grade: number | null; didNotSit: boolean; recordedAt: string; official: boolean } | null
 }
 
 interface ApiProcedureRequest {
@@ -200,6 +200,7 @@ export function toEnrollment(row: ApiEnrollment): Enrollment {
         ? 'did_not_attempt'
         : row.finalGrade.grade
       : null,
+    finalGradeOfficial: row.finalGrade?.official ?? false,
     progressPct: null,
   }
 }

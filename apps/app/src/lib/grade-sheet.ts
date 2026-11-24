@@ -20,13 +20,15 @@ export interface GradeSheetRow {
   finalGrade: number | null
   gradeStatus: GradeStatus
   /**
-   * `posted` — the API holds it, final. `pending` — confirmed on this device
+   * `posted` — the API holds it. `pending` — confirmed on this device
    * and not acknowledged yet (no connection); it is sent again. `null` —
    * nothing yet.
    */
   sync: 'posted' | 'pending' | null
-  /** The academic supervision corrected the posted grade (OOC-102). */
+  /** The posted grade was changed — by the supervision (OOC-102) or the teacher (OOC-180). */
   corrected: boolean
+  /** Who made the last change; null = as posted. */
+  changedBy: 'teacher' | 'supervision' | null
 }
 
 /**
@@ -48,6 +50,7 @@ export function gradeSheet(
       enrollmentId: student.enrollmentId,
       fullName: student.studentName,
       corrected: Boolean(grade?.correctedAt),
+      changedBy: grade?.changedBy ?? null,
     }
     if (grade) {
       if (grade.didNotSit || grade.grade === null) {

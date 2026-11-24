@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { formatDate, type Locale } from '@/lib/format'
 import type {
   CatalogErrorKey,
   ClassGroupItem,
@@ -71,6 +72,7 @@ export function ModuleRunsCard({
   canProgress: boolean
 }) {
   const t = useTranslations('bo')
+  const locale = useLocale() as Locale
   const router = useRouter()
   const [editing, setEditing] = useState<Editing>(null)
   const [retiring, setRetiring] = useState<string | null>(null)
@@ -172,6 +174,15 @@ export function ModuleRunsCard({
                 <StatusBadge
                   tone={run.meetUrl ? 'success' : 'warning'}
                   label={t(run.meetUrl ? 'class_group_runs.meet_ok' : 'class_group_runs.meet_missing')}
+                />
+                {/* The module's end date (OOC-180): the grade register's deadline runs from it. */}
+                <StatusBadge
+                  tone={run.moduleEndsOn ? 'neutral' : 'warning'}
+                  label={
+                    run.moduleEndsOn
+                      ? t('grade_register.ends_on', { date: formatDate(run.moduleEndsOn, locale) })
+                      : t('grade_register.no_end_date')
+                  }
                 />
               </span>
               <span className="text-xs font-medium tabular-nums text-muted-foreground">

@@ -242,12 +242,23 @@ export async function EnrollmentDetail({
             </div>
           </Card>
 
-          {/* Final grade — from the moment the teacher posts it, which is
-              when it becomes final (OOC-38). Pass or not is read against the
+          {/* Final grade — from the moment the teacher posts it (OOC-38),
+              marked "en revisión" until coordination confirms the register
+              and "oficial" after (OOC-180). Pass or not is read against the
               backoffice's pass mark, never a constant. */}
           {enrollment.finalGrade !== null && (
             <Card className="p-5 sm:p-6">
-              <SectionTitle>{t('course_detail.result_title')}</SectionTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <SectionTitle>{t('course_detail.result_title')}</SectionTitle>
+                <StatusBadge
+                  tone={enrollment.finalGradeOfficial ? 'success' : 'warning'}
+                  label={
+                    enrollment.finalGradeOfficial
+                      ? t('course_detail.result_official')
+                      : t('course_detail.result_in_review')
+                  }
+                />
+              </div>
               {enrollment.finalGrade === 'did_not_attempt' ? (
                 <p className="mt-3 text-sm text-muted-foreground">
                   {t('course_detail.result_did_not_attempt')}
