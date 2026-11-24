@@ -641,6 +641,7 @@ sessão nenhuma.
 | `portal.procedures` | portal | Trámites pagos (`/portal/enrollment`) |
 | `portal.documents` | portal | Constancias e certificados |
 | `portal.continue` | portal | Continuar estudando (próximo nível, re-matrícula) |
+| `complaints` | portal (sem pai) | Libro de Reclamaciones, o formulário público (OOC-63). **`production: false`** até a caixa do backoffice (OOC-58); desligada, a página redireciona ao Google Forms antigo em vez do 404 — ver `apps/app/CLAUDE.md`. Sem pai de propósito: desligar o portal não fecha um canal legal |
 | `backoffice` | backoffice | O painel inteiro |
 | `backoffice.students` | backoffice | Diretório de alunos e ficha |
 | `backoffice.enrollments` | backoffice | Matrículas (só vaga confirmada) |

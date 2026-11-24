@@ -204,7 +204,7 @@ Se o aluno afirma ter enviado uma imagem (comprovante ou captura do formulário)
 
 ## 9. Atendimento e reclamações
 
-- **Livro de Reclamações**: formulário próprio (Google Forms) — `forms.gle/55Z6uner33ZZxZ1cA`.
+- **Livro de Reclamações**: formulário próprio (Google Forms) — `forms.gle/55Z6uner33ZZxZ1cA`. Substituído na plataforma pela OOC-63 (`/libro-de-reclamaciones`, atrás de flag até a caixa do backoffice existir — `CLAUDE.md` §1).
 - Não há devolução em dinheiro descrita no processo atual — reclamações e situações de "estafa" (fraude) são sempre encaminhadas ao atendimento humano.
 - Contatos: +51 999 193 666 · +51 924 269 676 · +51 962 985 106.
 - Horário de atendimento: segunda a sexta, 8h30–17h.
