@@ -81,7 +81,7 @@ export function RoleChangeLog({ items }: { items: StaffRoleChange[] }) {
                       <span className="inline-flex items-center gap-1.5">
                         {row.fromRole ? (
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                            {t(`role.${row.fromRole}`)}
+                            {row.fromProfileName ?? t(`role.${row.fromRole}`)}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">
@@ -89,14 +89,14 @@ export function RoleChangeLog({ items }: { items: StaffRoleChange[] }) {
                           </span>
                         )}
                         <BoIcon name="chevron-right" size={12} className="text-muted-foreground" />
-                        <span className={roleBadgeClass}>{t(`role.${row.toRole}`)}</span>
+                        <span className={roleBadgeClass}>{row.toProfileName ?? t(`role.${row.toRole}`)}</span>
                       </span>
                     </td>
                     <td className={`${tdClass} whitespace-nowrap`}>
                       <span className="flex flex-col leading-tight">
                         <span>{row.actorName}</span>
                         <span className="text-xs text-muted-foreground">
-                          {t(`role.${row.actorRole}`)}
+                          {row.actorProfileName ?? t(`role.${row.actorRole}`)}
                         </span>
                       </span>
                     </td>

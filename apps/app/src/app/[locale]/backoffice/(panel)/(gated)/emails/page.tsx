@@ -33,7 +33,7 @@ export default async function EmailsPage({
 
   const staff = await getStaffSession()
 
-  if (!canManageEmail(staff.role)) {
+  if (!canManageEmail(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('emails.title')} />

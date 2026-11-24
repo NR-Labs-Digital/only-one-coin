@@ -19,7 +19,7 @@ import { canReadGrades } from '@/lib/backoffice/permissions'
 export async function AcademicTabs() {
   const t = await getTranslations('bo')
   const staff = await getStaffSession()
-  const readsGrades = canReadGrades(staff.role)
+  const readsGrades = canReadGrades(staff)
   const [pending, registers] = await Promise.all([
     listPendingTeacherClassGroups(),
     readsGrades ? listGradeRegisters({ status: 'in_review' }) : Promise.resolve(null),

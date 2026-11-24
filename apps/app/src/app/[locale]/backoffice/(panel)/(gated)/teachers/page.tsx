@@ -33,7 +33,7 @@ export default async function TeachersPage({
 
   const staff = await getStaffSession()
 
-  if (!canManageTeachers(staff.role)) {
+  if (!canManageTeachers(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('teachers.title')} />
@@ -76,7 +76,7 @@ export default async function TeachersPage({
         directory={directory}
         query={query}
         languages={languages}
-        canCreate={canCreateTeacher(staff.role)}
+        canCreate={canCreateTeacher(staff)}
       />
     </div>
   )

@@ -1,10 +1,21 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { listInvitableTeachers, listStaff, listStaffRoleChanges } from '@/lib/backoffice/staff'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { canManageStaff } from '@/lib/backoffice/permissions'
+import {
+  canChangeStaffRole,
+  canInviteStaff,
+  canManageStaff,
+  canManageStaffAccess,
+  canRetireStaffAccount,
+  canViewPermissionMatrix,
+} from '@/lib/backoffice/permissions'
+import { getStaffProfiles } from '@/lib/backoffice/permission-matrix-server'
+import { customCargosOf } from '@/lib/backoffice/permission-matrix'
+import { redirect } from '@/i18n/navigation'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeamView } from './team-view'
 import { RoleChangeLog } from './role-change-log'
+import { TeamTabs } from './team-tabs'
 
 /**
  * The team: every account that opens the backoffice, the cargo it opens it
@@ -29,7 +40,13 @@ export default async function TeamPage({
 
   const staff = await getStaffSession()
 
-  if (!canManageStaff(staff.role)) {
+  /* The analyst reads what each cargo can do (OOC-57), not the people who
+     hold them: Equipo opens on that sheet for them. */
+  if (!canManageStaff(staff) && canViewPermissionMatrix(staff)) {
+    redirect({ href: '/backoffice/team/permissions', locale })
+  }
+
+  if (!canManageStaff(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('team.title')} />
@@ -42,20 +59,31 @@ export default async function TeamPage({
     )
   }
 
-  const [rows, roleChanges, invitableTeachers] = await Promise.all([
+  const [rows, roleChanges, invitableTeachers, profiles] = await Promise.all([
     listStaff(),
     listStaffRoleChanges(),
     listInvitableTeachers(),
+    // The cargos created in Equipo (OOC-183) — without the read, the selects
+    // offer the board's only.
+    canViewPermissionMatrix(staff) ? getStaffProfiles() : Promise.resolve(null),
   ])
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('team.title')} />
+      <TeamTabs active="people" showPeople showPermissions={canViewPermissionMatrix(staff)} />
       <TeamView
         rows={rows}
         invitableTeachers={invitableTeachers}
         currentUserId={staff.id}
         currentUserRole={staff.role}
+        cargos={customCargosOf(profiles ?? [])}
+        actions={{
+          invite: canInviteStaff(staff),
+          changeRole: canChangeStaffRole(staff),
+          access: canManageStaffAccess(staff),
+          retire: canRetireStaffAccount(staff),
+        }}
         currentUserName={`${staff.firstName} ${staff.lastName}`}
       />
       <RoleChangeLog items={roleChanges} />

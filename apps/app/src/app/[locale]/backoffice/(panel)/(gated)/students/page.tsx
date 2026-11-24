@@ -37,7 +37,7 @@ export default async function StudentsPage({
   /* A teacher reaches a student through their own class group, never through a
      roster of everybody in the institution. The screen says so; the check that
      enforces it is the role on the route in `apps/api` (CLAUDE.md §8). */
-  if (!canBrowseStudents(staff.role)) {
+  if (!canBrowseStudents(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('students.title')} />
@@ -73,8 +73,8 @@ export default async function StudentsPage({
       <StudentsTable
         directory={page}
         query={query}
-        canCreate={canCreateStudent(staff.role)}
-        canExport={canExportStudents(staff.role)}
+        canCreate={canCreateStudent(staff)}
+        canExport={canExportStudents(staff)}
       />
     </div>
   )

@@ -18,7 +18,7 @@ export default async function LanguagesPage({ params }: { params: Promise<{ loca
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
   const languages = await listCatalogLanguages()
 
   return (
@@ -30,7 +30,7 @@ export default async function LanguagesPage({ params }: { params: Promise<{ loca
           <EmptyState icon="alert" title={t('languages.load_error_title')} body={t('languages.load_error_body')} />
         </Card>
       ) : (
-        <LanguagesView languages={languages} canManage={canCreateCourse(staff.role)} />
+        <LanguagesView languages={languages} canManage={canCreateCourse(staff)} />
       )}
     </div>
   )

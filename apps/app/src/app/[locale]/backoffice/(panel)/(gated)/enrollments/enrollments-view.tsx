@@ -79,6 +79,8 @@ export function EnrollmentsView({
   query,
   canCreate,
   canMove,
+  canFreeze,
+  canTransfer,
   preselect = null,
 }: {
   ledger: EnrollmentLedger
@@ -86,6 +88,9 @@ export function EnrollmentsView({
   canCreate: boolean
   /** May move an enrollment to another class group (OOC-84). */
   canMove: boolean
+  /** Freeze and transfer are their own permissions (OOC-183). */
+  canFreeze: boolean
+  canTransfer: boolean
   /**
    * A link that arrives to open an enrollment (the class group's waitlist,
    * "enroll the first in line") — the form opens with these picked.
@@ -496,7 +501,7 @@ export function EnrollmentsView({
             : undefined
         }
         onFreeze={
-          canMove
+          canFreeze
             ? (row) => {
                 setDetail(null)
                 setFreezing({ row, mode: 'freeze' })
@@ -504,7 +509,7 @@ export function EnrollmentsView({
             : undefined
         }
         onReturn={
-          canMove
+          canFreeze
             ? (row) => {
                 setDetail(null)
                 setFreezing({ row, mode: 'return' })
@@ -512,7 +517,7 @@ export function EnrollmentsView({
             : undefined
         }
         onTransfer={
-          canMove
+          canTransfer
             ? (row) => {
                 setDetail(null)
                 setTransferring(row)

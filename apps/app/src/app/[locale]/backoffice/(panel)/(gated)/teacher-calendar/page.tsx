@@ -33,7 +33,7 @@ export default async function TeacherCalendarPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
 
   const items = await listCatalogClassGroups()
   const now = isoToLimaDateTime(new Date().toISOString())

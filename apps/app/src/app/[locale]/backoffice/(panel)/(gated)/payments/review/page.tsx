@@ -40,7 +40,7 @@ export default async function PaymentsReviewPage({
 
   const staff = await getStaffSession()
 
-  if (!canViewPayments(staff.role)) {
+  if (!canViewPayments(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('payments.title')} />
@@ -117,13 +117,13 @@ export default async function PaymentsReviewPage({
         total={queue.total}
         pageSize={queue.pageSize}
         query={query}
-        canReview={canReviewPayments(staff.role)}
+        canReview={canReviewPayments(staff)}
         openReceiptId={receipt ?? null}
         renderedAt={renderedAt}
         // Settings that could not be read only lose the low-confidence flag;
         // the queue itself still works.
         lowConfidencePercent={settings?.ocrLowConfidencePercent ?? null}
-        canOpenStudentFile={canBrowseStudents(staff.role)}
+        canOpenStudentFile={canBrowseStudents(staff)}
       />
     </div>
   )

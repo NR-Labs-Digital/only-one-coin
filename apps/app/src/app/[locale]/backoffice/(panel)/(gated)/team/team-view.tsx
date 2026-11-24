@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, getPathname } from '@/i18n/navigation'
@@ -33,6 +33,21 @@ import {
 import { NewStaffForm } from './new-staff-form'
 import { RetireAccountDialog, retireOutcome, type RetireOutcome } from './retire-account-dialog'
 import { RoleChangeDialog, roleChangeOutcome, type RoleChangeOutcome } from './role-change-dialog'
+import {
+  cargoLabel,
+  cargoValue,
+  parseCargoValue,
+  type CargoValue,
+  type CustomCargo,
+} from '@/lib/backoffice/cargos'
+
+/** What the signed-in account may do here — each its own permission (OOC-183), enforced on its route. */
+export interface TeamActions {
+  invite: boolean
+  changeRole: boolean
+  access: boolean
+  retire: boolean
+}
 
 /**
  * Accounts that still open the panel, accounts with an invite still waiting
@@ -82,6 +97,8 @@ export function TeamView({
   invitableTeachers,
   currentUserId,
   currentUserRole,
+  cargos,
+  actions,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
 }: {
@@ -92,6 +109,9 @@ export function TeamView({
   currentUserId: string
   /** Only a master deletes a master; the API refuses it either way. */
   currentUserRole: StaffRole
+  /** The cargos created in Equipo (OOC-183), offered beside the board's. */
+  cargos: CustomCargo[]
+  actions: TeamActions
   currentUserName: string
 }) {
   const t = useTranslations('bo')
@@ -119,17 +139,23 @@ export function TeamView({
     [members, tab],
   )
 
+  const labelOf = useCallback(
+    (row: Pick<StaffMemberRow, 'role' | 'profileName'>) =>
+      cargoLabel(row.role, row.profileName, (item) => t(`role.${item}`)),
+    [t],
+  )
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return scoped.filter((row) => {
-      if (role !== ALL && row.role !== role) return false
+      if (role !== ALL && cargoValue(row.role, row.profileId) !== role) return false
       if (!needle) return true
-      return [`${row.firstName} ${row.lastName}`, row.email, t(`role.${row.role}`)]
+      return [`${row.firstName} ${row.lastName}`, row.email, labelOf(row)]
         .join(' ')
         .toLowerCase()
         .includes(needle)
     })
-  }, [scoped, query, role, t])
+  }, [scoped, query, role, labelOf])
 
   const counts = useMemo(
     () => ({
@@ -165,13 +191,14 @@ export function TeamView({
    */
   async function applyRoleChange(
     member: StaffMemberRow,
-    next: StaffRole,
+    value: CargoValue,
     password: string,
   ): Promise<RoleChangeOutcome> {
+    const next = parseCargoValue(value)
     const response = await fetch(`/api/v1/staff/${member.id}/role`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: next, password }),
+      body: JSON.stringify({ role: next.role, profileId: next.profileId, password }),
     }).catch(() => null)
     if (!response) return 'failed'
     if (!response.ok) {
@@ -180,7 +207,16 @@ export function TeamView({
     }
 
     setMembers((current) =>
-      current.map((row) => (row.id === member.id ? { ...row, role: next } : row)),
+      current.map((row) =>
+        row.id === member.id
+          ? {
+              ...row,
+              role: next.role,
+              profileId: next.profileId,
+              profileName: cargos.find((cargo) => cargo.id === next.profileId)?.name ?? null,
+            }
+          : row,
+      ),
     )
     setChanging(null)
     setToast(t('team.changed_toast'))
@@ -414,11 +450,16 @@ export function TeamView({
                     {t(`role.${item}`)}
                   </option>
                 ))}
+                {cargos.map((cargo) => (
+                  <option key={cargo.id} value={cargoValue('custom', cargo.id)}>
+                    {cargo.name}
+                  </option>
+                ))}
               </select>
             </label>
           </FiltersDropdown>
 
-          {!creating && (
+          {!creating && actions.invite && (
             <button
               type="button"
               onClick={() => setCreating(true)}
@@ -435,6 +476,7 @@ export function TeamView({
       {creating && (
         <NewStaffForm
           teachers={invitableTeachers}
+          cargos={cargos}
           onCancel={() => setCreating(false)}
           onCreate={(member) => {
             setMembers((current) => [member, ...current])
@@ -552,7 +594,7 @@ export function TeamView({
                           the same on every row of a list says nothing. */}
                       <td className={`${tdClass} whitespace-nowrap`}>
                         <span className="rounded-full bg-sky px-2 py-0.5 text-[11px] font-semibold text-brand-blue-deep">
-                          {t(`role.${row.role}`)}
+                          {labelOf(row)}
                         </span>
                       </td>
 
@@ -595,7 +637,7 @@ export function TeamView({
                           >
                             {t('team.self_note')}
                           </span>
-                        ) : row.status === 'invited' ? (
+                        ) : row.status === 'invited' && !actions.invite ? null : row.status === 'invited' ? (
                           <span className="inline-flex flex-wrap items-center justify-end gap-2">
                             <button
                               type="button"
@@ -632,7 +674,7 @@ export function TeamView({
                           </span>
                         ) : (
                           <span className="inline-flex flex-wrap items-center justify-end gap-2">
-                            {!lockedByRoster && row.status === 'active' && (
+                            {actions.changeRole && !lockedByRoster && row.status === 'active' && (
                               <button
                                 type="button"
                                 onClick={() => setChanging(row)}
@@ -647,7 +689,7 @@ export function TeamView({
                                 change (that cargo travels with the roster
                                 file) but not out of this — a forgotten
                                 password has nothing to do with the roster. */}
-                            {row.status === 'active' && (
+                            {actions.access && row.status === 'active' && (
                               <button
                                 type="button"
                                 onClick={() => void createPasswordReset(row)}
@@ -663,7 +705,7 @@ export function TeamView({
                               </button>
                             )}
 
-                            {row.status === 'active' ? (
+                            {!actions.access ? null : row.status === 'active' ? (
                               <button
                                 type="button"
                                 onClick={() => setRemoving(row)}
@@ -685,7 +727,8 @@ export function TeamView({
 
                             {/* A linked docente leaves through the roster
                                 (OOC-79), and only a master deletes a master. */}
-                            {!row.teacherId &&
+                            {actions.retire &&
+                              !row.teacherId &&
                               (row.role !== 'master' || currentUserRole === 'master') && (
                                 <button
                                   type="button"
@@ -734,6 +777,7 @@ export function TeamView({
 
       <RoleChangeDialog
         member={changing}
+        cargos={cargos}
         onClose={() => setChanging(null)}
         onConfirm={applyRoleChange}
       />

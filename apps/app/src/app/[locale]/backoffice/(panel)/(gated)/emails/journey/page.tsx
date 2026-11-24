@@ -40,7 +40,7 @@ export default async function EmailJourneyPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canManageEmail(staff.role)) notFound()
+  if (!canManageEmail(staff)) notFound()
 
   const journey = buildEmailJourney(catalogJourneyFlows())
 

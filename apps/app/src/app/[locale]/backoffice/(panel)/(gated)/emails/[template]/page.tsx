@@ -37,7 +37,7 @@ export default async function EmailFlowPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canManageEmail(staff.role)) notFound()
+  if (!canManageEmail(staff)) notFound()
   if (!isEmailTemplate(template)) notFound()
 
   /* A template nothing sends yet has no words in the repository to render, so
@@ -70,7 +70,7 @@ export default async function EmailFlowPage({
           flow={detail.flow}
           windowDays={detail.windowDays}
           previews={previews}
-          canSendProof={canSendEmailProof(staff.role)}
+          canSendProof={canSendEmailProof(staff)}
         />
       ) : (
         <EmptyState

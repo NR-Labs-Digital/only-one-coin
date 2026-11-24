@@ -57,6 +57,8 @@ export type StaffRole =
   | 'sales'
   | 'support'
   | 'billing'
+  /** An account on a cargo administration created in Equipo (OOC-183). */
+  | 'custom'
 
 export interface StaffUser {
   id: string
@@ -77,6 +79,13 @@ export interface StaffUser {
    * Optional because an API from before it does not send it: absent is false.
    */
   teacherOnboardingPending?: boolean
+  /**
+   * What the account's cargo can do (OOC-183), as `apps/api` reads it — every
+   * gate of `lib/backoffice/permissions.ts` reads this, never `role`.
+   */
+  permissions: readonly string[]
+  /** The cargo's name, for an account on one created in Equipo; null otherwise. */
+  profileName: string | null
 }
 
 /**
@@ -106,6 +115,11 @@ export interface StaffMemberRow {
   lastName: string
   email: string
   role: StaffRole
+  /** The cargo created in Equipo, for a `custom` account or invite (OOC-183). */
+  profileId: string | null
+  profileName: string | null
+  /** Whether the cargo must sign in with the second factor, as the API reads it. */
+  mfaRequired: boolean
   status: StaffStatus
   /**
    * The teacher record behind the account, when the cargo is `teacher` — the
@@ -164,9 +178,13 @@ export interface StaffRoleChange {
   memberName: string
   fromRole: StaffRole | null
   toRole: StaffRole
-  /** Who signed it off — always an admin, by the rule that allows it at all. */
+  /** Names of the cargos created in Equipo, when a side is `custom` (OOC-183). */
+  fromProfileName: string | null
+  toProfileName: string | null
+  /** Who signed it off. */
   actorName: string
   actorRole: StaffRole
+  actorProfileName: string | null
 }
 
 /**

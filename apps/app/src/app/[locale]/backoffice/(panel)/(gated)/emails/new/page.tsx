@@ -30,7 +30,7 @@ export default async function NewEmailPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canManageEmail(staff.role)) notFound()
+  if (!canManageEmail(staff)) notFound()
 
   /* The segment is a question for the database, answered on the server —
      the browser is not the one holding the register. No route answers it

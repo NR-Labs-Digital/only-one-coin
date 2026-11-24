@@ -5,6 +5,8 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateEnrollment,
   canManageEnrollment,
+  canFreezeEnrollment,
+  canTransferEnrollment,
   canBrowseEnrollments,
 } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
@@ -79,7 +81,7 @@ export default async function EnrollmentsPage({
      section and a teacher reaches their students through the class group —
      neither reads a roster of the whole institution. The screen says so; the
      role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
-  if (!canBrowseEnrollments(staff.role)) {
+  if (!canBrowseEnrollments(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader
@@ -99,7 +101,7 @@ export default async function EnrollmentsPage({
      which is the one thing this screen must never say by accident. */
   const search = await searchParams
   const query = parseEnrollmentLedgerQuery(search)
-  const canCreate = canCreateEnrollment(staff.role)
+  const canCreate = canCreateEnrollment(staff)
   const [ledger, preselect] = await Promise.all([
     listEnrollments(query),
     canCreate ? readPreselect(search) : Promise.resolve(null),
@@ -127,7 +129,9 @@ export default async function EnrollmentsPage({
         ledger={ledger}
         query={query}
         canCreate={canCreate}
-        canMove={canManageEnrollment(staff.role)}
+        canMove={canManageEnrollment(staff)}
+        canFreeze={canFreezeEnrollment(staff)}
+        canTransfer={canTransferEnrollment(staff)}
         preselect={preselect}
       />
     </div>

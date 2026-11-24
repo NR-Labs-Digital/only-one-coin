@@ -54,7 +54,7 @@ export default async function GradeRegistersPage({
   setRequestLocale(locale)
   const t = await getTranslations('bo')
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role) || !canReadGrades(staff.role)) notFound()
+  if (!canBrowseCatalog(staff) || !canReadGrades(staff)) notFound()
 
   const query = await searchParams
   const period = one(query.period) || undefined

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
+import { cargoLabel, cargoValue, type CargoValue, type CustomCargo } from '@/lib/backoffice/cargos'
 import { BoIcon } from '@/components/backoffice/icons'
 import {
   Dialog,
@@ -30,7 +31,7 @@ const ROLES: StaffRole[] = [
 ]
 
 /** What the promotion route answered, reduced to what the dialog has to say. */
-export type RoleChangeOutcome = 'ok' | 'wrong_password' | 'self' | 'failed'
+export type RoleChangeOutcome = 'ok' | 'wrong_password' | 'self' | 'beyond' | 'failed'
 
 /**
  * Maps the API's `reason` (`PromoteUserRoleUseCase`) to the dialog's message.
@@ -41,12 +42,14 @@ export type RoleChangeOutcome = 'ok' | 'wrong_password' | 'self' | 'failed'
 export function roleChangeOutcome(reason: string | undefined): Exclude<RoleChangeOutcome, 'ok'> {
   if (reason === 'auth.not_freshly_authenticated') return 'wrong_password'
   if (reason === 'auth.cannot_act_on_self') return 'self'
+  if (reason === 'staff_profile.beyond_own_permissions') return 'beyond'
   return 'failed'
 }
 
 const ERROR_KEY = {
   wrong_password: 'team.reauth_wrong_password',
   self: 'team.change_error_self',
+  beyond: 'team.change_error_beyond',
   failed: 'team.change_error_failed',
 } as const satisfies Record<Exclude<RoleChangeOutcome, 'ok'>, string>
 
@@ -69,17 +72,25 @@ const labelClass =
  */
 export function RoleChangeDialog({
   member,
+  cargos,
   onClose,
   onConfirm,
 }: {
   member: StaffMemberRow | null
+  /** The cargos created in Equipo (OOC-183), offered after the board's. */
+  cargos: CustomCargo[]
   onClose: () => void
   /** Anything but `'ok'` keeps the dialog open with the matching inline
    * error, same as any other form. */
-  onConfirm: (member: StaffMemberRow, role: StaffRole, password: string) => Promise<RoleChangeOutcome>
+  onConfirm: (member: StaffMemberRow, cargo: CargoValue, password: string) => Promise<RoleChangeOutcome>
 }) {
   const t = useTranslations('bo')
-  const [role, setRole] = useState<StaffRole>('enrollment_supervisor')
+  const [role, setRole] = useState<CargoValue>('enrollment_supervisor')
+  const options: { value: CargoValue; label: string }[] = [
+    ...ROLES.map((item) => ({ value: item as CargoValue, label: t(`role.${item}`) })),
+    ...cargos.map((cargo) => ({ value: cargoValue('custom', cargo.id), label: cargo.name })),
+  ]
+  const current = member ? cargoValue(member.role, member.profileId) : null
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<Exclude<RoleChangeOutcome, 'ok'> | null>(null)
@@ -88,12 +99,13 @@ export function RoleChangeDialog({
      answers — least of all the password. */
   useEffect(() => {
     if (!member) return
-    setRole(ROLES.find((item) => item !== member.role) ?? 'enrollment_supervisor')
+    const from = cargoValue(member.role, member.profileId)
+    setRole(ROLES.find((item) => item !== from) ?? 'enrollment_supervisor')
     setPassword('')
     setError(null)
   }, [member])
 
-  const ready = member !== null && role !== member.role && password.trim() !== '' && !pending
+  const ready = member !== null && role !== current && password.trim() !== '' && !pending
 
   async function submit() {
     if (!member || !ready) return
@@ -144,7 +156,7 @@ export function RoleChangeDialog({
                 <div className="flex flex-col gap-1">
                   <span className={labelClass}>{t('team.change_current')}</span>
                   <span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                    {t(`role.${member.role}`)}
+                    {cargoLabel(member.role, member.profileName, (item) => t(`role.${item}`))}
                   </span>
                 </div>
 
@@ -152,14 +164,16 @@ export function RoleChangeDialog({
                   <span className={labelClass}>{t('team.change_new')}</span>
                   <select
                     value={role}
-                    onChange={(event) => setRole(event.target.value as StaffRole)}
+                    onChange={(event) => setRole(event.target.value)}
                     className={fieldClass}
                   >
-                    {ROLES.filter((item) => item !== member.role).map((item) => (
-                      <option key={item} value={item}>
-                        {t(`role.${item}`)}
-                      </option>
-                    ))}
+                    {options
+                      .filter((option) => option.value !== current)
+                      .map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                   </select>
                 </label>
 
