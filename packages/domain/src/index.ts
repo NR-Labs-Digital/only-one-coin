@@ -31,15 +31,31 @@ export {
   TeacherFieldsSchema,
   CreateTeacherSchema,
   TeacherStatusSchema,
+  PendingTeacherDataSchema,
+  TeacherOnboardingSchema,
+  TEACHER_PROFILE_FIELDS,
 } from "./teacher/Teacher.js";
-export type { TeacherProps, CreateTeacherDTO, TeacherDataDTO, TeacherStatus } from "./teacher/Teacher.js";
+export type {
+  TeacherProps,
+  CreateTeacherDTO,
+  TeacherDataDTO,
+  TeacherStatus,
+  PendingTeacherDataDTO,
+  TeacherOnboardingDTO,
+} from "./teacher/Teacher.js";
 export { TeacherDataSchema, TeacherAvailabilitySchema } from "./teacher/Teacher.js";
 export type { ITeacherRepository } from "./teacher/TeacherRepository.js";
 export {
   TeacherAlreadyRegisteredError,
   TeacherNotFoundError,
   TeacherContractNotFoundError,
+  TeacherOnboardingClosedError,
+  TeacherProfileIncompleteError,
 } from "./teacher/errors.js";
+export {
+  CompleteTeacherOnboardingUseCase,
+  type CompleteTeacherOnboardingInput,
+} from "./teacher/CompleteTeacherOnboardingUseCase.js";
 export { TeacherContract, TeacherContractPropsSchema, TeacherContractPeriodSchema } from "./teacher/TeacherContract.js";
 export type { TeacherContractProps, TeacherContractFile, TeacherContractPeriodDTO } from "./teacher/TeacherContract.js";
 export type { ITeacherContractRepository } from "./teacher/TeacherContractRepository.js";

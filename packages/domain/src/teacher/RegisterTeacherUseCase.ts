@@ -1,13 +1,13 @@
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { TeacherAlreadyRegisteredError } from "./errors.js";
-import { Teacher, type CreateTeacherDTO } from "./Teacher.js";
+import { Teacher, type CreateTeacherDTO, type PendingTeacherDataDTO } from "./Teacher.js";
 import type { ITeacherRepository } from "./TeacherRepository.js";
 
-export interface RegisterTeacherInput {
-  actorId: string;
-  teacher: CreateTeacherDTO;
-}
+export type RegisterTeacherInput =
+  | { actorId: string; teacher: CreateTeacherDTO; onboarding?: false }
+  /** Name, e-mail and languages only: the teacher completes the rest (OOC-103). */
+  | { actorId: string; teacher: PendingTeacherDataDTO; onboarding: true };
 
 /**
  * Registers a teacher on the roster (OOC-78). Creates the file only — the
@@ -23,13 +23,16 @@ export class RegisterTeacherUseCase extends BaseUseCase<RegisterTeacherInput, Te
   }
 
   async run(input: RegisterTeacherInput): Promise<Teacher> {
-    const teacher = Teacher.create(input.teacher);
+    const teacher = input.onboarding ? Teacher.createPending(input.teacher) : Teacher.create(input.teacher);
 
-    const alreadyOnFile = await this.teachers.findByNationalId({
-      nationalIdType: teacher.nationalIdType,
-      nationalId: teacher.nationalId,
-    });
-    if (alreadyOnFile) throw new TeacherAlreadyRegisteredError();
+    // A pending file has no document yet — the check runs at onboarding.
+    if (teacher.nationalIdType !== null && teacher.nationalId !== null) {
+      const alreadyOnFile = await this.teachers.findByNationalId({
+        nationalIdType: teacher.nationalIdType,
+        nationalId: teacher.nationalId,
+      });
+      if (alreadyOnFile) throw new TeacherAlreadyRegisteredError();
+    }
 
     const created = await this.teachers.create(teacher);
 
@@ -37,7 +40,7 @@ export class RegisterTeacherUseCase extends BaseUseCase<RegisterTeacherInput, Te
       actorId: input.actorId,
       action: "teacher.registered",
       targetId: created.id,
-      metadata: {},
+      metadata: { onboarding: input.onboarding === true },
       at: created.createdAt,
     });
 

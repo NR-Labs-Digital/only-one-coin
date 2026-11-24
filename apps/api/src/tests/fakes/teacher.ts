@@ -7,6 +7,7 @@ import {
   type RetirableStaffAccount,
   type Teacher,
   type TeacherContract,
+  TeacherOnboardingClosedError,
 } from "@ooc/domain";
 
 /** A detached copy, the way a row read back from the database would be. */
@@ -62,6 +63,15 @@ export class FakeTeacherRepository implements ITeacherRepository {
   }
 
   async update(teacher: Teacher): Promise<Teacher> {
+    this.rows.set(teacher.id, copy(teacher));
+    this.updated.push(teacher);
+    return teacher;
+  }
+
+  /** Mirrors the adapter: writes only while the stored file is still pending. */
+  async completeOnboarding(teacher: Teacher): Promise<Teacher> {
+    const row = this.rows.get(teacher.id);
+    if (!row || row.nationalId !== null) throw new TeacherOnboardingClosedError();
     this.rows.set(teacher.id, copy(teacher));
     this.updated.push(teacher);
     return teacher;

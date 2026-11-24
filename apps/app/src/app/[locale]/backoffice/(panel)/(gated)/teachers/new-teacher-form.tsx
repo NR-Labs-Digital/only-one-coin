@@ -48,6 +48,10 @@ const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
  * Saves through `POST /teachers` (OOC-78), a usecase in `apps/api` that holds
  * the same field rules and refuses a document already on the roster. Creating
  * the *login* for this teacher is a staff invite, not this form (CLAUDE.md §8).
+ *
+ * Or, with "the teacher completes it" (OOC-103), only name, e-mail, personal
+ * e-mail and languages: the document, phone, origin, address and week arrive
+ * through the teacher's own onboarding, once, after they accept the invite.
  */
 export function NewTeacherForm({
   languages,
@@ -76,6 +80,7 @@ export function NewTeacherForm({
   const [addressLine, setAddressLine] = useState('')
   const [languageIds, setLanguageIds] = useState<string[]>([])
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([])
+  const [byTeacher, setByTeacher] = useState(false)
   const [pending, setPending] = useState(false)
   const [failure, setFailure] = useState<TeacherSaveFailure | null>(null)
 
@@ -85,14 +90,15 @@ export function NewTeacherForm({
   const ready =
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
-    nationalId.trim() !== '' &&
     email.trim() !== '' &&
-    hasPhoneNumber(phone) &&
-    addressLine.trim() !== '' &&
-    (!inPeru || region !== null) &&
-    city.trim() !== '' &&
     languageIds.length > 0 &&
-    slotsAreValid(availability)
+    (byTeacher ||
+      (nationalId.trim() !== '' &&
+        hasPhoneNumber(phone) &&
+        addressLine.trim() !== '' &&
+        (!inPeru || region !== null) &&
+        city.trim() !== '' &&
+        slotsAreValid(availability)))
 
   /** The API's refusal for one field, shown under it. */
   const fieldError = (key: string) => (failure?.kind === 'invalid' ? failure.fields[key] : undefined)
@@ -114,22 +120,36 @@ export function NewTeacherForm({
     setPending(true)
     setFailure(null)
 
-    const result = await saveTeacher<{ id: string }>('/api/v1/teachers', 'POST', {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      nationalIdType,
-      nationalId: nationalId.trim(),
-      email: email.trim(),
-      personalEmail: personalEmail.trim() === '' ? null : personalEmail.trim(),
-      phone,
-      nationality,
-      country,
-      region,
-      city: city.trim(),
-      addressLine: addressLine.trim(),
-      languages: languageIds,
-      availability,
-    })
+    const personal = personalEmail.trim() === '' ? null : personalEmail.trim()
+    const result = await saveTeacher<{ id: string }>(
+      '/api/v1/teachers',
+      'POST',
+      byTeacher
+        ? {
+            onboarding: true,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            personalEmail: personal,
+            languages: languageIds,
+          }
+        : {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            nationalIdType,
+            nationalId: nationalId.trim(),
+            email: email.trim(),
+            personalEmail: personal,
+            phone,
+            nationality,
+            country,
+            region,
+            city: city.trim(),
+            addressLine: addressLine.trim(),
+            languages: languageIds,
+            availability,
+          },
+    )
     setPending(false)
 
     if (!result.ok) {
@@ -153,6 +173,36 @@ export function NewTeacherForm({
       <p className="mb-1 text-sm font-semibold text-ink">{t('teachers.new_title')}</p>
       <p className="mb-4 text-xs text-muted-foreground">{t('teachers.new_subtitle')}</p>
 
+      {/* Who fills the personal data (OOC-103): coordination, here, or the
+          teacher, at onboarding after accepting the invite. */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className={`mb-2 ${labelClass}`}>{t('teachers.fill_mode_title')}</legend>
+        {([false, true] as const).map((value) => (
+          <label
+            key={String(value)}
+            className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition ${
+              byTeacher === value ? 'border-brand-blue bg-sky-soft' : 'border-line hover:bg-cream'
+            }`}
+          >
+            <input
+              type="radio"
+              name="teacher-fill-mode"
+              checked={byTeacher === value}
+              onChange={() => setByTeacher(value)}
+              className="mt-0.5 accent-brand-blue"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-ink">
+                {t(value ? 'teachers.fill_mode_teacher' : 'teachers.fill_mode_staff')}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                {t(value ? 'teachers.fill_mode_teacher_hint' : 'teachers.fill_mode_staff_hint')}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
       {/* Identification */}
       <Block title={t('teachers.section_identity')}>
         <AutoGrid min="15rem" gap="gap-3">
@@ -172,47 +222,51 @@ export function NewTeacherForm({
             />
           </Labelled>
 
-          <Labelled label={t('teachers.field_id_type')} required>
-            <select
-              value={nationalIdType}
-              onChange={(event) =>
-                setNationalIdType(event.target.value as NationalIdType)
-              }
-              className={fieldClass}
-            >
-              {ID_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {t(`national_id_type.${type}`)}
-                </option>
-              ))}
-            </select>
-          </Labelled>
+          {!byTeacher && (
+            <>
+            <Labelled label={t('teachers.field_id_type')} required>
+              <select
+                value={nationalIdType}
+                onChange={(event) =>
+                  setNationalIdType(event.target.value as NationalIdType)
+                }
+                className={fieldClass}
+              >
+                {ID_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {t(`national_id_type.${type}`)}
+                  </option>
+                ))}
+              </select>
+            </Labelled>
 
-          <Labelled label={t('teachers.field_id_number')} required>
-            <input
-              value={nationalId}
-              onChange={(event) => setNationalId(event.target.value)}
-              className={`${fieldClass} tabular-nums`}
-            />
-            <FieldMessage code={fieldError('nationalId')} />
-          </Labelled>
+            <Labelled label={t('teachers.field_id_number')} required>
+              <input
+                value={nationalId}
+                onChange={(event) => setNationalId(event.target.value)}
+                className={`${fieldClass} tabular-nums`}
+              />
+              <FieldMessage code={fieldError('nationalId')} />
+            </Labelled>
 
-          {/* Origin is not residence: the catalog sells the Italian class
-              group on its "docente ítalo-peruano"
-              (`docs/REGRAS-NEGOCIO.md` §3), and that is this field. */}
-          <Labelled label={t('teachers.field_nationality')} required>
-            <select
-              value={nationality}
-              onChange={(event) => setNationality(event.target.value)}
-              className={fieldClass}
-            >
-              {COUNTRIES.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {`${flagEmoji(item.code)} ${countryName(item.code, locale)}`}
-                </option>
-              ))}
-            </select>
-          </Labelled>
+            {/* Origin is not residence: the catalog sells the Italian class
+                group on its "docente ítalo-peruano"
+                (`docs/REGRAS-NEGOCIO.md` §3), and that is this field. */}
+            <Labelled label={t('teachers.field_nationality')} required>
+              <select
+                value={nationality}
+                onChange={(event) => setNationality(event.target.value)}
+                className={fieldClass}
+              >
+                {COUNTRIES.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {`${flagEmoji(item.code)} ${countryName(item.code, locale)}`}
+                  </option>
+                ))}
+              </select>
+            </Labelled>
+            </>
+          )}
         </AutoGrid>
       </Block>
 
@@ -245,88 +299,94 @@ export function NewTeacherForm({
             <FieldMessage code={fieldError('personalEmail')} />
           </Labelled>
 
-          <Labelled label={t('teachers.field_phone')} required>
-            <PhoneField value={phone} onChange={setPhone} required />
-            <FieldMessage code={fieldError('phone')} />
-          </Labelled>
-        </AutoGrid>
-      </Block>
-
-      {/* Address — what the contract is signed against. */}
-      <Block title={t('teachers.section_address')} hint={t('teachers.address_hint')}>
-        <AutoGrid min="15rem" gap="gap-3">
-          <Labelled label={t('teachers.field_country')} required>
-            <select
-              value={country}
-              onChange={(event) => selectCountry(event.target.value)}
-              className={fieldClass}
-            >
-              {COUNTRIES.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {`${flagEmoji(item.code)} ${countryName(item.code, locale)}`}
-                </option>
-              ))}
-            </select>
-          </Labelled>
-
-          {inPeru && (
-            <Labelled label={t('teachers.field_region')} required>
-              <select
-                value={region ?? ''}
-                onChange={(event) => {
-                  setRegion(event.target.value || null)
-                  setCity('')
-                }}
-                className={fieldClass}
-              >
-                <option value="">{t('student_file.select_placeholder')}</option>
-                {PERU_REGIONS.map((item) => (
-                  <option key={item.region} value={item.region}>
-                    {item.region}
-                  </option>
-                ))}
-              </select>
+          {!byTeacher && (
+            <Labelled label={t('teachers.field_phone')} required>
+              <PhoneField value={phone} onChange={setPhone} required />
+              <FieldMessage code={fieldError('phone')} />
             </Labelled>
           )}
-
-          <Labelled label={t('teachers.field_city')} required>
-            {inPeru ? (
-              <select
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-                disabled={cities.length === 0}
-                className={fieldClass}
-              >
-                <option value="">
-                  {cities.length === 0
-                    ? t('student_file.city_needs_region')
-                    : t('student_file.select_placeholder')}
-                </option>
-                {cities.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-                className={fieldClass}
-              />
-            )}
-          </Labelled>
-
-          <Labelled label={t('teachers.field_address_line')} required>
-            <input
-              value={addressLine}
-              onChange={(event) => setAddressLine(event.target.value)}
-              placeholder={t('teachers.address_line_placeholder')}
-              className={fieldClass}
-            />
-          </Labelled>
         </AutoGrid>
       </Block>
+
+      {!byTeacher && (
+        <>
+          {/* Address — what the contract is signed against. */}
+          <Block title={t('teachers.section_address')} hint={t('teachers.address_hint')}>
+            <AutoGrid min="15rem" gap="gap-3">
+              <Labelled label={t('teachers.field_country')} required>
+                <select
+                  value={country}
+                  onChange={(event) => selectCountry(event.target.value)}
+                  className={fieldClass}
+                >
+                  {COUNTRIES.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {`${flagEmoji(item.code)} ${countryName(item.code, locale)}`}
+                    </option>
+                  ))}
+                </select>
+              </Labelled>
+
+              {inPeru && (
+                <Labelled label={t('teachers.field_region')} required>
+                  <select
+                    value={region ?? ''}
+                    onChange={(event) => {
+                      setRegion(event.target.value || null)
+                      setCity('')
+                    }}
+                    className={fieldClass}
+                  >
+                    <option value="">{t('student_file.select_placeholder')}</option>
+                    {PERU_REGIONS.map((item) => (
+                      <option key={item.region} value={item.region}>
+                        {item.region}
+                      </option>
+                    ))}
+                  </select>
+                </Labelled>
+              )}
+
+              <Labelled label={t('teachers.field_city')} required>
+                {inPeru ? (
+                  <select
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                    disabled={cities.length === 0}
+                    className={fieldClass}
+                  >
+                    <option value="">
+                      {cities.length === 0
+                        ? t('student_file.city_needs_region')
+                        : t('student_file.select_placeholder')}
+                    </option>
+                    {cities.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                    className={fieldClass}
+                  />
+                )}
+              </Labelled>
+
+              <Labelled label={t('teachers.field_address_line')} required>
+                <input
+                  value={addressLine}
+                  onChange={(event) => setAddressLine(event.target.value)}
+                  placeholder={t('teachers.address_line_placeholder')}
+                  className={fieldClass}
+                />
+              </Labelled>
+            </AutoGrid>
+          </Block>
+        </>
+      )}
 
       {/* Teaching — the two lists, read together because allocation reads them
           together: what they can run, and when they can run it. */}
@@ -363,17 +423,19 @@ export function NewTeacherForm({
             </div>
           </fieldset>
 
-          <fieldset className="rounded-lg border border-line bg-sky-soft/60 p-3">
-            <legend className={`px-1 ${labelClass}`}>
-              {t('availability.title')}
-              <RequiredMark label={t('common.required')} />
-            </legend>
-            <p className="mb-2.5 text-xs text-muted-foreground">
-              {t('availability.hint')}
-            </p>
-            <AvailabilityFields value={availability} onChange={setAvailability} />
-            <FieldMessage code={fieldError('availability')} />
-          </fieldset>
+          {!byTeacher && (
+            <fieldset className="rounded-lg border border-line bg-sky-soft/60 p-3">
+              <legend className={`px-1 ${labelClass}`}>
+                {t('availability.title')}
+                <RequiredMark label={t('common.required')} />
+              </legend>
+              <p className="mb-2.5 text-xs text-muted-foreground">
+                {t('availability.hint')}
+              </p>
+              <AvailabilityFields value={availability} onChange={setAvailability} />
+              <FieldMessage code={fieldError('availability')} />
+            </fieldset>
+          )}
         </div>
       </Block>
 

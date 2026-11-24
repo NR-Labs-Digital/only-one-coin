@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutTeacher } from '../actions'
 import { getTeacherSession } from '@/lib/backoffice/session'
+import { getTeacher } from '@/lib/backoffice/teachers'
+import { TeacherOnboardingForm } from './onboarding-form'
 import { getFeatureView } from '@/lib/feature-flags/server'
 import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
 import { initials } from '@/lib/format'
@@ -45,6 +47,13 @@ export default async function TeacherPanelLayout({
   const [staff, view] = await Promise.all([getTeacherSession(), getFeatureView('teacher')])
   const { flags } = view
   const sidebarOpen = (await cookies()).get('sidebar_state')?.value !== 'false'
+
+  /* A file coordination left for the teacher to complete (OOC-103): every
+     screen of the portal opens on the onboarding until it is sent — the same
+     gate as the guardian's consent in the student portal (OOC-72). A gate of
+     the screen, not the authorization: the API still answers the teacher. */
+  const onboarding =
+    staff.teacherOnboardingPending && staff.teacherId ? await getTeacher(staff.teacherId) : null
 
   /* No badge on "My class groups" yet: what it would count — the final
      grades still open — has no API until OOC-38. A zero would say "nothing
@@ -156,7 +165,16 @@ export default async function TeacherPanelLayout({
               screens size against the space they get, `min-w-0` so a wide
               cell never drags the page sideways (`apps/app/CLAUDE.md`). */}
           <main className="@container/page mx-auto w-full min-w-0 max-w-[100rem] px-4 pb-[calc(var(--spacing-safe-b)+1.5rem)] pt-6 sm:px-6 lg:px-8">
-            {children}
+            {staff.teacherOnboardingPending ? (
+              <TeacherOnboardingForm
+                firstName={onboarding?.firstName ?? staff.firstName}
+                lastName={onboarding?.lastName ?? staff.lastName}
+                email={onboarding?.email ?? staff.email}
+                languages={onboarding?.languages.map((language) => language.name) ?? []}
+              />
+            ) : (
+              children
+            )}
           </main>
         </SidebarInset>
       </SidebarProvider>

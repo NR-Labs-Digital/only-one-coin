@@ -218,3 +218,92 @@ describe("POST /staff/invites", () => {
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ role: "teacher", teacherId: TEACHER_ID }));
   });
 });
+
+describe("teacher onboarding over HTTP (OOC-103)", () => {
+  const cookies = { [SESSION_COOKIE_NAME]: "token" };
+  const PROFILE = {
+    nationalIdType: "DNI",
+    nationalId: "12345678",
+    phone: "+51900000000",
+    nationality: "IT",
+    country: "PE",
+    region: "Lima",
+    city: "Lima",
+    addressLine: "Av. Siempre Viva 123",
+    availability: [{ weekday: "tue", startTime: "19:00", endTime: "21:00" }],
+  };
+
+  function pendingFile(): Teacher {
+    return new Teacher({
+      ...Teacher.createPending({ firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] }),
+      id: TEACHER_ID,
+      userId: "usr_79",
+    });
+  }
+
+  it("tells /me the file waits for onboarding", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(pendingFile());
+
+    const response = await app.inject({ method: "GET", url: "/api/v1/me", cookies });
+
+    expect(response.json()).toMatchObject({ teacherId: TEACHER_ID, teacherOnboardingPending: true });
+  });
+
+  it("completes the file linked to the session, never an id from the client", async () => {
+    signIn("teacher");
+    const run = vi
+      .spyOn(container.useCases.teacher.completeOnboarding, "run")
+      .mockResolvedValue(teacherFile());
+
+    const response = await app.inject({ method: "PUT", url: "/api/v1/teaching/onboarding", cookies, payload: PROFILE });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ id: TEACHER_ID, profileComplete: true });
+    expect(run).toHaveBeenCalledWith(expect.objectContaining({ userId: "usr_79" }));
+  });
+
+  it.each(["master", "admin", "academic_supervisor", "analyst", "support"] as Role[])(
+    "refuses %s — onboarding is the teacher's own",
+    async (role) => {
+      signIn(role);
+      const run = vi.spyOn(container.useCases.teacher.completeOnboarding, "run");
+
+      const response = await app.inject({ method: "PUT", url: "/api/v1/teaching/onboarding", cookies, payload: PROFILE });
+
+      expect(response.statusCode).toBe(403);
+      expect(run).not.toHaveBeenCalled();
+    },
+  );
+
+  it("registers a pending file from name, e-mail and languages", async () => {
+    signIn("admin");
+    const run = vi.spyOn(container.useCases.teacher.register, "run").mockResolvedValue(pendingFile());
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/teachers",
+      cookies,
+      payload: { onboarding: true, firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ profileComplete: false, nationalId: null });
+    expect(run).toHaveBeenCalledWith(expect.objectContaining({ onboarding: true }));
+  });
+
+  it("still names the field a full registration got wrong", async () => {
+    signIn("admin");
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/teachers",
+      cookies,
+      payload: { firstName: "Ana", lastName: "Quispe", email: "not-an-email", languages: ["Italiano"] },
+    });
+
+    expect(response.statusCode).toBe(400);
+    const paths = (response.json() as { fields?: { path: string }[] }).fields?.map((field) => field.path) ?? [];
+    expect(paths).toEqual(expect.arrayContaining(["email", "nationalId"]));
+  });
+});

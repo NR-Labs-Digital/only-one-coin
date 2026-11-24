@@ -23,6 +23,12 @@ const GetCurrentStaffResponseSchema = z.object({
   email: z.string(),
   role: StaffRoleSchema,
   teacherId: z.string().uuid().nullable(),
+  /**
+   * True while the linked teacher file waits for the teacher's own onboarding
+   * (OOC-103): the docente portal opens on that form instead of its screens.
+   * False for every other account.
+   */
+  teacherOnboardingPending: z.boolean(),
   /** The language chosen on the account page (OOC-150); null until one is. */
   preferredLocale: LocaleSchema.nullable(),
 });
@@ -72,6 +78,7 @@ export const getCurrentStaffRoute = RouteBuilder.get("/me")
       email: user.email,
       role: user.role as z.infer<typeof StaffRoleSchema>,
       teacherId: teacher?.id ?? null,
+      teacherOnboardingPending: teacher ? !teacher.profileComplete : false,
       preferredLocale,
     });
   });

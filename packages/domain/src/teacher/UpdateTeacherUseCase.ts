@@ -1,14 +1,14 @@
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { TeacherAlreadyRegisteredError, TeacherNotFoundError } from "./errors.js";
-import type { Teacher, TeacherDataDTO } from "./Teacher.js";
+import type { PendingTeacherDataDTO, Teacher, TeacherDataDTO } from "./Teacher.js";
 import type { ITeacherRepository } from "./TeacherRepository.js";
 
 export interface UpdateTeacherInput {
   actorId: string;
   teacherId: string;
-  /** The whole file minus the week, as the form holds it. */
-  teacher: TeacherDataDTO;
+  /** The whole file minus the week, as the form holds it — or, on a file still pending onboarding, without the profile (OOC-103). */
+  teacher: TeacherDataDTO | PendingTeacherDataDTO;
 }
 
 /**
@@ -31,7 +31,11 @@ export class UpdateTeacherUseCase extends BaseUseCase<UpdateTeacherInput, Teache
     const changed = teacher.rewrite(input.teacher);
     if (changed.length === 0) return teacher;
 
-    if (changed.includes("nationalIdType") || changed.includes("nationalId")) {
+    if (
+      (changed.includes("nationalIdType") || changed.includes("nationalId")) &&
+      teacher.nationalIdType !== null &&
+      teacher.nationalId !== null
+    ) {
       const holder = await this.teachers.findByNationalId({
         nationalIdType: teacher.nationalIdType,
         nationalId: teacher.nationalId,

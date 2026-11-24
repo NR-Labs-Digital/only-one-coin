@@ -321,7 +321,9 @@ export function TeachersView({
                           §3), so it is what one teacher is told from another
                           by when the class group is being advertised. */}
                       <p className="text-xs text-muted-foreground">
-                        {`${flagEmoji(row.nationality)} ${countryName(row.nationality, locale)}`}
+                        {row.nationality
+                          ? `${flagEmoji(row.nationality)} ${countryName(row.nationality, locale)}`
+                          : t('teachers.onboarding_pending_badge')}
                       </p>
                     </td>
                     <td className={tdClass}>

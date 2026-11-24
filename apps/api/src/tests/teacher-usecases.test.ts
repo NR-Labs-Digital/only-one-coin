@@ -1,4 +1,5 @@
 import {
+  CompleteTeacherOnboardingUseCase,
   InvalidFieldsError,
   RegisterTeacherUseCase,
   SetTeacherRosterStatusUseCase,
@@ -6,6 +7,7 @@ import {
   TEACHER_LEFT_ROSTER_BAN_REASON,
   TeacherAlreadyRegisteredError,
   TeacherNotFoundError,
+  TeacherOnboardingClosedError,
   UpdateTeacherAvailabilityUseCase,
   UpdateTeacherUseCase,
   type CreateTeacherDTO,
@@ -209,5 +211,100 @@ describe("SetTeacherRosterStatusUseCase", () => {
     expect(teachers.updated).toHaveLength(0);
     expect(access.unbanned).toHaveLength(0);
     expect(audit.appended).toHaveLength(0);
+  });
+});
+
+describe("teacher onboarding (OOC-103)", () => {
+  const PENDING = { firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] };
+  const { firstName: _f, lastName: _l, email: _e, languages: _langs, ...PROFILE } = ANA;
+
+  function pendingLinked(): Teacher {
+    return new Teacher({ ...Teacher.createPending(PENDING), userId: "usr_103" });
+  }
+
+  it("registers a pending file with name, e-mail and languages only", async () => {
+    const { register, audit } = setup();
+
+    const teacher = await register.run({ actorId: "staff-1", onboarding: true, teacher: PENDING });
+
+    expect(teacher.profileComplete).toBe(false);
+    expect(teacher.nationalId).toBeNull();
+    expect(teacher.availability).toEqual([]);
+    expect(audit.appended).toEqual([
+      expect.objectContaining({ action: "teacher.registered", metadata: { onboarding: true } }),
+    ]);
+  });
+
+  it("lets the teacher fill the profile and the week, and audits field names only", async () => {
+    const pending = pendingLinked();
+    const teachers = new FakeTeacherRepository(pending);
+    const audit = new FakeAuditLogRepository();
+    const complete = new CompleteTeacherOnboardingUseCase(teachers, audit);
+
+    const saved = await complete.run({ userId: "usr_103", data: { ...PROFILE, nationalId: "12.345.678" } });
+
+    expect(saved.profileComplete).toBe(true);
+    expect(saved.nationalId).toBe("12345678");
+    expect(saved.availability).toEqual(ANA.availability);
+    expect(audit.appended).toEqual([
+      expect.objectContaining({ actorId: "usr_103", action: "teacher.onboarding_completed", targetId: pending.id }),
+    ]);
+    const metadata = audit.appended[0]!.metadata as { fields: string[] };
+    expect(metadata.fields).toContain("nationalId");
+    expect(JSON.stringify(metadata)).not.toContain("12345678");
+  });
+
+  it("refuses a second onboarding — the complete file is coordination's", async () => {
+    const teachers = new FakeTeacherRepository(new Teacher({ ...Teacher.create(ANA), userId: "usr_103" }));
+    const complete = new CompleteTeacherOnboardingUseCase(teachers, new FakeAuditLogRepository());
+
+    await expect(complete.run({ userId: "usr_103", data: PROFILE })).rejects.toBeInstanceOf(
+      TeacherOnboardingClosedError,
+    );
+  });
+
+  it("refuses a document already on another file", async () => {
+    const teachers = new FakeTeacherRepository(Teacher.create(ANA), pendingLinked());
+    const complete = new CompleteTeacherOnboardingUseCase(teachers, new FakeAuditLogRepository());
+
+    await expect(complete.run({ userId: "usr_103", data: PROFILE })).rejects.toBeInstanceOf(
+      TeacherAlreadyRegisteredError,
+    );
+  });
+
+  it("answers not found to an account with no file", async () => {
+    const complete = new CompleteTeacherOnboardingUseCase(new FakeTeacherRepository(), new FakeAuditLogRepository());
+
+    await expect(complete.run({ userId: "usr_x", data: PROFILE })).rejects.toBeInstanceOf(TeacherNotFoundError);
+  });
+
+  it("refuses an incomplete profile with field errors", async () => {
+    const teachers = new FakeTeacherRepository(pendingLinked());
+    const complete = new CompleteTeacherOnboardingUseCase(teachers, new FakeAuditLogRepository());
+
+    await expect(
+      complete.run({ userId: "usr_103", data: { ...PROFILE, country: "PE", region: null } }),
+    ).rejects.toBeInstanceOf(InvalidFieldsError);
+  });
+
+  it("lets coordination correct a pending file without the profile, or complete it", async () => {
+    const pending = Teacher.createPending(PENDING);
+    const { update } = setup(pending);
+
+    const renamed = await update.run({ actorId: "staff-1", teacherId: pending.id, teacher: { ...PENDING, firstName: "Ana María" } });
+    expect(renamed.firstName).toBe("Ana María");
+    expect(renamed.profileComplete).toBe(false);
+
+    const completed = await update.run({ actorId: "staff-1", teacherId: pending.id, teacher: ANA_DATA });
+    expect(completed.profileComplete).toBe(true);
+  });
+
+  it("never sends a complete file back to pending", async () => {
+    const teacher = Teacher.create(ANA);
+    const { update } = setup(teacher);
+
+    await expect(update.run({ actorId: "staff-1", teacherId: teacher.id, teacher: PENDING })).rejects.toBeInstanceOf(
+      InvalidFieldsError,
+    );
   });
 });

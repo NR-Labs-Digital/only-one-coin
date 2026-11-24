@@ -27,3 +27,28 @@ export class TeacherContractNotFoundError extends NotFoundError {
     super({ reason: "teacher_contract.not_found", message: "No contract with that id on this teacher.", ...params });
   }
 }
+
+/**
+ * The teacher's onboarding (OOC-103) runs once, on a file coordination left
+ * pending. A complete file is corrected by coordination, never by the teacher
+ * (CLAUDE.md §1, OOC-79).
+ */
+export class TeacherOnboardingClosedError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "teacher.onboarding_closed", message: "This teacher file is already complete.", ...params });
+  }
+}
+
+/**
+ * A contract prints the teacher's document and address; a file still pending
+ * onboarding (OOC-103) has neither, so nothing is printed or recorded.
+ */
+export class TeacherProfileIncompleteError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "teacher_contract.profile_incomplete",
+      message: "The teacher has not completed their file yet.",
+      ...params,
+    });
+  }
+}

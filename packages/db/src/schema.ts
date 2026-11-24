@@ -488,22 +488,26 @@ export const teachers = pgTable(
     id: uuidPk(),
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
-    nationalIdType: text("national_id_type").notNull(),
-    nationalId: text("national_id").notNull(),
+    // The profile — document, phone, origin, address — is all-or-nothing
+    // (teachers_profile_check): null while the teacher has not completed the
+    // onboarding of a file coordination left pending (OOC-103).
+    nationalIdType: text("national_id_type"),
+    nationalId: text("national_id"),
     email: text("email").notNull(),
     // Optional, any provider (OOC-161): the teacher's own mail — where the
     // monthly feedback report goes, at the administration's request. `email`
     // above stays what the panel invite goes to and the contract prints.
+    // Not part of the onboarding profile (OOC-103): coordination's, as before.
     personalEmail: text("personal_email"),
-    phone: text("phone").notNull(),
+    phone: text("phone"),
     // ISO 3166-1 alpha-2 — where they are from; a selling point in the catalog.
-    nationality: text("nationality").notNull(),
+    nationality: text("nationality"),
     // ISO 3166-1 alpha-2 — where they live; the contract needs an address.
-    country: text("country").notNull(),
+    country: text("country"),
     // First-level division ("departamento" in Peru). Null outside it.
     region: text("region"),
-    city: text("city").notNull(),
-    addressLine: text("address_line").notNull(),
+    city: text("city"),
+    addressLine: text("address_line"),
     status: text("status").notNull().default("active"),
     userId: text("user_id"),
     ...softDeletable(),
@@ -511,6 +515,10 @@ export const teachers = pgTable(
   (table) => [
     check("teachers_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
     check("teachers_status_check", sql`${table.status} in ('active', 'inactive')`),
+    check(
+      "teachers_profile_check",
+      sql`num_nulls(${table.nationalIdType}, ${table.nationalId}, ${table.phone}, ${table.nationality}, ${table.country}, ${table.city}, ${table.addressLine}) = 0 or (num_nulls(${table.nationalIdType}, ${table.nationalId}, ${table.phone}, ${table.nationality}, ${table.country}, ${table.city}, ${table.addressLine}) = 7 and ${table.region} is null)`,
+    ),
     // The same normal form as normalizeNationalId (no spaces, dots or dashes,
     // upper case): the unique index sits on the raw column, so a value written
     // un-normalized would slip past it.
