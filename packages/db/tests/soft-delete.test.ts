@@ -39,6 +39,7 @@ const SOFT_DELETABLE = [
   "guardians",
   "languages",
   "plans",
+  "staff_profiles",
   "students",
   "teachers",
 ];

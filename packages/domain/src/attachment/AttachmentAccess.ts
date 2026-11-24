@@ -59,6 +59,6 @@ export class AttachmentAccess {
   }
 
   private staffReaches(actor: AttachmentActor, owner: AttachmentOwner): boolean {
-    return this.staffPolicy[owner.type]?.includes(actor.role) ?? false;
+    return this.staffPolicy(actor, owner.type);
   }
 }

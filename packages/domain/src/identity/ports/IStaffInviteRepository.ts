@@ -11,6 +11,8 @@ export interface StaffInvite {
   status: "pending" | "completed" | "cancelled";
   /** The teacher file a `teacher` invite opens an account for (OOC-79); null for every other cargo. */
   teacherId: string | null;
+  /** The cargo created in Equipo a `custom` invite opens the account on (OOC-183); null for every other cargo. */
+  profileId: string | null;
   expiresAt: Date;
 }
 
@@ -22,6 +24,7 @@ export interface CreateStaffInviteRecord {
   token: string;
   invitedBy: string;
   teacherId: string | null;
+  profileId: string | null;
   expiresAt: Date;
 }
 

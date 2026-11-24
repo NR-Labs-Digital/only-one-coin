@@ -9,6 +9,9 @@ import type { IStaffInviteLinkBuilder } from "./ports/IStaffInviteLinkBuilder.js
 import type { IStaffUserLookup } from "./ports/IStaffUserLookup.js";
 import { DEFAULT_LOCALE, type EmailNotification } from "../notification/EmailNotification.js";
 import type { Role } from "./Role.js";
+import type { IStaffProfileRepository } from "./staffProfile/IStaffProfileRepository.js";
+import { assertWithinActor } from "./staffProfile/StaffProfile.js";
+import { cargoPermissions, comparablePermissions } from "./staffProfile/cargoPermissions.js";
 
 const INVITE_TTL_DAYS = 7;
 
@@ -20,6 +23,10 @@ export interface CreateStaffInviteInput {
   role: Role;
   /** The teacher file a `teacher` invite opens an account for — required for that cargo, ignored for any other. */
   teacherId?: string | null;
+  /** The cargo created in Equipo a `custom` invite opens the account on (OOC-183). */
+  profileId?: string | null;
+  /** What the acting account's own cargo lets it do: nobody invites into more (CLAUDE.md §8). */
+  actorPermissions: ReadonlySet<string>;
 }
 
 export interface CreateStaffInviteOutput {
@@ -45,6 +52,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
     private readonly teacherRepository: ITeacherRepository,
     private readonly auditLogRepository: IAuditLogRepository,
     private readonly linkBuilder: IStaffInviteLinkBuilder,
+    private readonly staffProfiles: IStaffProfileRepository,
   ) {
     super();
   }
@@ -69,6 +77,15 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
     }
 
     const teacherId = input.role === "teacher" ? await this.invitableTeacherId(input.teacherId ?? null) : null;
+    const profileId = input.role === "custom" ? (input.profileId ?? null) : null;
+
+    // Anti-escalation (OOC-183): the cargo the invite opens holds nothing the
+    // actor does not. `cargoPermissions` also refuses a `custom` invite whose
+    // cargo is missing or retired.
+    assertWithinActor(
+      input.actorPermissions,
+      comparablePermissions(await cargoPermissions(this.staffProfiles, { role: input.role, profileId })),
+    );
 
     const token = randomBytes(32).toString("base64url");
     const expiresAt = new Date();
@@ -83,6 +100,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
         token,
         invitedBy: input.actorId,
         teacherId,
+        profileId,
         expiresAt,
       },
       // Spanish, like a manual enrollment's e-mail: the invite does not record
@@ -116,6 +134,7 @@ export class CreateStaffInviteUseCase extends BaseUseCase<CreateStaffInviteInput
         firstName: invite.firstName,
         lastName: invite.lastName,
         ...(teacherId ? { teacherId } : {}),
+        ...(profileId ? { profileId } : {}),
       },
       at: new Date(),
     });
