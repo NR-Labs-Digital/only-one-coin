@@ -16,6 +16,7 @@ import { getPortalAccessTokenRoute, completePortalAccessTokenRoute } from "@/htt
 import { getPortalMeRoute } from "@/http/portal/GetPortalMeRoute.js";
 import { getPortalOverviewRoute } from "@/http/portal/GetPortalOverviewRoute.js";
 import { acceptGuardianConsentRoute } from "@/http/portal/AcceptGuardianConsentRoute.js";
+import { updateOwnPhoneRoute } from "@/http/portal/UpdateOwnPhoneRoute.js";
 import { getPortalPaymentReceiptRoute } from "@/http/portal/GetPortalPaymentReceiptRoute.js";
 import { registerStudentRoute } from "@/http/student/RegisterStudentRoute.js";
 import { exportStudentsRoute } from "@/http/student/ExportStudentsRoute.js";
@@ -259,6 +260,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getPortalMeRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPortalOverviewRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(acceptGuardianConsentRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(updateOwnPhoneRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPortalPaymentReceiptRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(registerStudentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStudentsRoute);

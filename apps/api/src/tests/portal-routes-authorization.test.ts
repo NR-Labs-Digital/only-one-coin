@@ -26,6 +26,9 @@ const CASES: [string, string, Role][] = [
   ["POST", `/api/v1/students/${STUDENT_ID}/portal-access`, "teacher"],
   ["POST", `/api/v1/students/${STUDENT_ID}/portal-access`, "student"],
   ["GET", `/api/v1/me`, "student"],
+  ["PATCH", "/api/v1/portal/me/phone", "admin"],
+  ["PATCH", "/api/v1/portal/me/phone", "guardian"],
+  ["PATCH", "/api/v1/portal/me/phone", "support"],
 ];
 
 let app: FastifyInstance;

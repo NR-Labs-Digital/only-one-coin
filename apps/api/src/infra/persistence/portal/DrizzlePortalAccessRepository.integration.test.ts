@@ -24,6 +24,7 @@ import { insertPasswordlessUser, upsertCredentialPassword } from "@/infra/auth/c
 import { profilesOfAccount } from "./accountProfiles.js";
 import { DrizzlePortalAccessRepository } from "./DrizzlePortalAccessRepository.js";
 import { DrizzleGuardianConsentRepository } from "./DrizzleGuardianConsentRepository.js";
+import { DrizzlePortalProfileFileRepository } from "./DrizzlePortalProfileFileRepository.js";
 import { provisionPortalAccount } from "./provisionPortalAccount.js";
 import { seedModuleRuns } from "@/tests/fixtures/classGroupModules.js";
 
@@ -631,6 +632,21 @@ describe("the guardian's consent (OOC-72)", () => {
       expect(await consentsRepo.appendIfAbsent(consent)).toBe(false);
       expect(await tx.select({ ip: consents.ip }).from(consents).where(eq(consents.guardianId, guardianRow))).toEqual([{ ip: "200.48.1.1" }]);
       expect((await consentsRepo.findSubject(guardianId, lucia))?.consentGiven).toBe(true);
+    });
+  });
+
+  it("finds the file a portal write lands on only among the account's own profiles, exactly", async () => {
+    await rolledBack(async (tx) => {
+      const files = new DrizzlePortalProfileFileRepository(tx as unknown as Db);
+      const lucia = await insertChild(tx, "Lucia", "70000001");
+      const mateo = await insertChild(tx, "Mateo", "70000002", "otro.papa@hotmail.com");
+      await provisionPortalAccount(tx, withGuardian(lucia));
+      await provisionPortalAccount(tx, withGuardian(mateo));
+      const guardianId = (await userIdByEmail(tx, GUARDIAN_EMAIL))!;
+
+      expect(await files.findProfileFileId(guardianId, lucia)).toBe(lucia);
+      // Someone else's child: no fallback to the default profile.
+      expect(await files.findProfileFileId(guardianId, mateo)).toBeNull();
     });
   });
 });

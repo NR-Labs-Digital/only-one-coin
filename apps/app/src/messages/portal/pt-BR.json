@@ -314,7 +314,19 @@
       "edit_note": "Os dados com cadeado só são corrigidos pela coordenação — fale conosco pelo WhatsApp.",
       "locked_hint": "Este dado só é corrigido pela coordenação.",
       "preferences_title": "Preferências",
-      "language_label": "Idioma"
+      "language_label": "Idioma",
+      "phone_edit": "Corrigir",
+      "phone_save": "Salvar",
+      "phone_saving": "Salvando…",
+      "phone_cancel": "Cancelar",
+      "phone_saved": "Celular atualizado.",
+      "phone_hint": "É o número pelo qual a coordenação entra em contato com você.",
+      "phone_error": {
+        "required": "Escreva seu número de celular.",
+        "phone_format": "Escreva um número de celular válido.",
+        "too_long": "O número é longo demais.",
+        "generic": "Não conseguimos salvar o número. Tente de novo."
+      }
     },
     "notifications": {
       "title": "Notificações",

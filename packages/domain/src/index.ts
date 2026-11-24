@@ -216,6 +216,8 @@ export {
   type AcceptGuardianConsentInput,
   type AcceptGuardianConsentOutcome,
 } from "./student/AcceptGuardianConsentUseCase.js";
+export type { IPortalProfileFileRepository } from "./student/PortalProfileFileRepository.js";
+export { UpdateOwnPhoneUseCase, type UpdateOwnPhoneInput } from "./student/UpdateOwnPhoneUseCase.js";
 export {
   RegisterStudentUseCase,
   type RegisterStudentInput,

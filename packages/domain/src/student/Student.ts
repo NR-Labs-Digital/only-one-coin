@@ -154,6 +154,22 @@ export class Student extends SoftDeletableModel {
     return changed;
   }
 
+  /**
+   * The student's own correction of their phone, from the portal (OOC-110) —
+   * the one field of the file a portal account rewrites. Held to the same
+   * rule as registration (`PhoneField`); answers whether anything changed.
+   */
+  changePhone(phone: string): boolean {
+    const result = PhoneField.safeParse(phone);
+    if (!result.success) {
+      throw new InvalidFieldsError(toFieldErrors(result.error.issues, "phone"));
+    }
+    if (result.data === this.phone) return false;
+    this.phone = result.data;
+    this.touch();
+    return true;
+  }
+
   static create(dto: CreateStudentDTO): Student {
     const result = CreateStudentSchema.safeParse(dto);
 

@@ -314,7 +314,19 @@
       "edit_note": "Padlocked details are corrected by the coordination — message us on WhatsApp.",
       "locked_hint": "Only the coordination can correct this.",
       "preferences_title": "Preferences",
-      "language_label": "Language"
+      "language_label": "Language",
+      "phone_edit": "Correct",
+      "phone_save": "Save",
+      "phone_saving": "Saving…",
+      "phone_cancel": "Cancel",
+      "phone_saved": "Mobile updated.",
+      "phone_hint": "This is the number the coordination uses to reach you.",
+      "phone_error": {
+        "required": "Enter your mobile number.",
+        "phone_format": "Enter a valid mobile number.",
+        "too_long": "The number is too long.",
+        "generic": "We couldn't save the number. Please try again."
+      }
     },
     "notifications": {
       "title": "Notifications",

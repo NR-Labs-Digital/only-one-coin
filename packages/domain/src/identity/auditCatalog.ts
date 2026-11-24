@@ -99,6 +99,9 @@ export const AUDIT_ACTIONS = {
   // The guardian accepted the consent text in the portal (OOC-72); the actor
   // is the guardian's portal account.
   "student.guardian_consent_accepted": { key: "guardian_consent_accepted", entity: "student", subject: "target" },
+  // A portal account corrected the profile's phone (OOC-110); the actor is
+  // that account — the student's own or the guardian's.
+  "student.phone_self_updated": { key: "student_phone_self_updated", entity: "student", subject: "target" },
   "student.directory_exported": { key: "student_directory_exported", entity: "student", subject: "none" },
   "enrollment.created": { key: "enrollment_created", entity: "student", subject: "metadata_student" },
   // Staff moved the seat to another class group (OOC-84), possibly above its

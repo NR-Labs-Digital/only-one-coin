@@ -90,6 +90,7 @@ import {
   UpdateStudentUseCase,
   SaveGuardianUseCase,
   AcceptGuardianConsentUseCase,
+  UpdateOwnPhoneUseCase,
   RenamePlanUseCase,
   ReleaseSeatHoldUseCase,
   RequestPortalPasswordResetUseCase,
@@ -183,6 +184,7 @@ import { DrizzleUserPreferenceRepository } from "./infra/identity/DrizzleUserPre
 import { createDb, type Db } from "./infra/db/client.js";
 import { DrizzlePortalAccessRepository } from "./infra/persistence/portal/DrizzlePortalAccessRepository.js";
 import { DrizzleGuardianConsentRepository } from "./infra/persistence/portal/DrizzleGuardianConsentRepository.js";
+import { DrizzlePortalProfileFileRepository } from "./infra/persistence/portal/DrizzlePortalProfileFileRepository.js";
 import { DrizzleStudentRepository } from "./infra/persistence/student/DrizzleStudentRepository.js";
 import { DrizzleGuardianRepository } from "./infra/persistence/student/DrizzleGuardianRepository.js";
 import { DrizzleEnrollmentRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentRepository.js";
@@ -370,6 +372,7 @@ export interface AppUseCases {
     update: UpdateStudentUseCase;
     saveGuardian: SaveGuardianUseCase;
     acceptGuardianConsent: AcceptGuardianConsentUseCase;
+    updateOwnPhone: UpdateOwnPhoneUseCase;
   };
   enrollment: {
     createManual: CreateManualEnrollmentUseCase;
@@ -683,6 +686,7 @@ function buildContainer(): AppContainer {
   const updateStudent = new UpdateStudentUseCase(studentRepository, guardianRepository, auditLogRepository);
   const saveGuardian = new SaveGuardianUseCase(studentRepository, guardianRepository, auditLogRepository);
   const acceptGuardianConsent = new AcceptGuardianConsentUseCase(new DrizzleGuardianConsentRepository(db), auditLogRepository);
+  const updateOwnPhone = new UpdateOwnPhoneUseCase(new DrizzlePortalProfileFileRepository(db), studentRepository, auditLogRepository);
   const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
   const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
   const completeTeacherOnboarding = new CompleteTeacherOnboardingUseCase(teacherRepository, auditLogRepository);
@@ -1092,6 +1096,7 @@ function buildContainer(): AppContainer {
         update: updateStudent,
         saveGuardian,
         acceptGuardianConsent,
+        updateOwnPhone,
       },
       enrollment: {
         createManual: createManualEnrollment,
