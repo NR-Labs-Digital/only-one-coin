@@ -10,6 +10,7 @@ export const TEST_SETTINGS: PlatformSettings = {
   passingGrade: 14,
   certificateDeadlineBusinessDays: 25,
   contractAlertDays: 45,
+  gradeSubmissionHours: 48,
   progressionRequiresPassingGrade: true,
 };
 

@@ -63,7 +63,10 @@ const PortalEnrollmentSchema = z.object({
     })
     .nullable(),
   /** The final grade posted by the teacher (OOC-38): `grade` null on a DA; null while nothing is posted. */
-  finalGrade: z.object({ grade: z.number().nullable(), didNotSit: z.boolean(), recordedAt: z.string() }).nullable(),
+  /** `official`: coordination confirmed it (OOC-180); false = "en revisión". */
+  finalGrade: z
+    .object({ grade: z.number().nullable(), didNotSit: z.boolean(), recordedAt: z.string(), official: z.boolean() })
+    .nullable(),
 });
 
 const PortalOverviewSchema = z.object({
@@ -243,6 +246,7 @@ export const getPortalOverviewRoute = RouteBuilder.get("/portal/overview")
               grade: enrollment.finalGrade.score,
               didNotSit: enrollment.finalGrade.didNotSit,
               recordedAt: enrollment.finalGrade.recordedAt.toISOString(),
+              official: enrollment.finalGrade.official,
             }
           : null,
       })),

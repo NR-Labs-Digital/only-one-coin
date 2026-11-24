@@ -100,6 +100,7 @@ export function classGroupAsRun(group: ClassGroupItem, run: ClassGroupModuleItem
     classroomLinks: run?.classroomLinks ?? [],
     classroomMissing: run?.classroomMissing ?? true,
     meetUrl: run?.meetUrl ?? null,
+    moduleEndsOn: run?.moduleEndsOn ?? null,
     module: run?.module ?? null,
     fullCourse: run?.fullCourse ?? false,
     slots: run?.slots ?? [],
@@ -283,6 +284,14 @@ export function ClassGroupForm({
   const meetShown = !(mode === 'create' && fullCourse)
   /** What the Meet field sends: unchanged, or typed wrong, sends nothing. */
   const meetChanged = meetShown && !meetInvalid && meetValue !== (initial?.meetUrl ?? null)
+  /**
+   * The module's end date in this module group (OOC-180): the grade register's
+   * deadline runs from it. Edited on an existing group — a new one gets it
+   * once the module's calendar is known.
+   */
+  const [moduleEndsOnDraft, setModuleEndsOnDraft] = useState(initial?.moduleEndsOn ?? '')
+  const moduleEndsOnShown = mode !== 'create'
+  const moduleEndsOnChanged = moduleEndsOnShown && (moduleEndsOnDraft || null) !== (initial?.moduleEndsOn ?? null)
   const [weekdays, setWeekdays] = useState<Weekday[]>(loaded.weekdays)
   const [startTime, setStartTime] = useState(loaded.startTime)
   const [endTime, setEndTime] = useState(loaded.endTime)
@@ -374,6 +383,7 @@ export function ClassGroupForm({
       if (moduleNumber !== initial.module) patch.module = moduleNumber
       if (!classroomInvalid && classroomPatch.length > 0) patch.classroomLinks = classroomPatch
       if (meetChanged) patch.meetUrl = meetValue
+      if (moduleEndsOnChanged) patch.moduleEndsOn = moduleEndsOnDraft || null
       if (scheduleTouched) patch.slots = slots
     }
     // A run carries only its own fields; the class group's stay on its card.
@@ -471,6 +481,7 @@ export function ClassGroupForm({
             slots,
             classroomLinks: classroomInvalid ? [] : classroomPatch.filter((entry) => entry.url !== null),
             meetUrl: meetChanged ? meetValue : null,
+            moduleEndsOn: moduleEndsOnDraft || null,
           })
         : await catalogWrite(`${base}/modules/${encodeURIComponent(run!.moduleId!)}`, 'PATCH', patch)
     setSaving(false)
@@ -820,6 +831,24 @@ export function ClassGroupForm({
     </HelpField>
   ) : null
 
+  const moduleEndsOnField = moduleEndsOnShown ? (
+    <HelpField
+      label={t('grade_register.field_module_ends_on')}
+      what={t('grade_register.field_module_ends_on_what')}
+      how={t('grade_register.field_module_ends_on_how')}
+    >
+      {(id) => (
+        <input
+          id={id}
+          type="date"
+          value={moduleEndsOnDraft}
+          onChange={(event) => setModuleEndsOnDraft(event.target.value)}
+          className={fieldClass}
+        />
+      )}
+    </HelpField>
+  ) : null
+
   const capacityField = (
     <HelpField
       label={t('class_groups.field_capacity_per_group')}
@@ -1069,6 +1098,7 @@ export function ClassGroupForm({
           {teacherField}
           {classroomField}
           {meetField}
+          {moduleEndsOnField}
           {timeFields}
         </AutoGrid>
 
@@ -1348,6 +1378,7 @@ export function ClassGroupForm({
               {teacherField}
               {classroomField}
               {meetField}
+              {moduleEndsOnField}
             </AutoGrid>
             {teacherWarnings}
           </div>

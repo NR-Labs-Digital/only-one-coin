@@ -186,6 +186,7 @@ export class IssuedDocumentService {
           {
             enrollmentId: seat.enrollmentId,
             lastModuleGrade: seat.lastModuleGrade,
+            lastModuleGradeOfficial: seat.lastModuleGradeOfficial,
             earlierModuleGrades: seat.earlierModuleGrades,
             alreadyIssued: seat.issued !== null,
           },
@@ -243,6 +244,7 @@ export class IssuedDocumentService {
           {
             enrollmentId: seat.enrollmentId,
             lastModuleGrade: seat.lastModuleGrade,
+            lastModuleGradeOfficial: seat.lastModuleGradeOfficial,
             earlierModuleGrades: seat.earlierModuleGrades,
             alreadyIssued: seat.issued !== null,
           },

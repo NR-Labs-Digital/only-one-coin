@@ -705,6 +705,10 @@ export const classGroupModules = pgTable(
     // one yet. The host rule (https on meet.google.com) is the domain's
     // (normalizeMeetUrl), as the Classroom's.
     meetUrl: text("meet_url"),
+    // The day the module ends in this run (OOC-180): a calendar day in Lima,
+    // set by the staff in the run's form. The grade register's deadline runs
+    // from it. Null = nobody set it yet, and the register has no deadline.
+    moduleEndsOn: date("module_ends_on", { mode: "string" }),
     ...softDeletable(),
   },
   (table) => [
@@ -1530,6 +1534,10 @@ export const grades = pgTable(
     // Exact decimal, two places (`13.50`): a grade is compared as typed.
     score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
     didNotSit: boolean("did_not_sit").notNull().default(false),
+    // The grade register the grade was posted into (OOC-180). Null only on a
+    // grade posted before registers existed — read as official, which is what
+    // it was under the rule of the day ("final as posted").
+    registerId: uuid("register_id").references((): AnyPgColumn => gradeRegisters.id, { onDelete: "restrict" }),
     // Better Auth's "user" is not modelled here; FK written by hand in 0051.
     recordedBy: text("recorded_by").notNull(),
     createdAt: createdAt(),
@@ -1568,7 +1576,11 @@ export const gradeCorrections = pgTable(
     replacesId: uuid("replaces_id").references((): AnyPgColumn => gradeCorrections.id, { onDelete: "restrict" }),
     score: numeric("score", { precision: 4, scale: 2, mode: "number" }),
     didNotSit: boolean("did_not_sit").notNull().default(false),
-    reason: text("reason").notNull(),
+    // Who changed it (OOC-180): the supervision's correction, with a reason,
+    // or the teacher's own edit while the register was still theirs — no
+    // reason asked. Same line of history either way.
+    kind: text("kind").notNull().default("correction"),
+    reason: text("reason"),
     // Better Auth's "user" is not modelled here; FK written by hand in 0052.
     correctedBy: text("corrected_by").notNull(),
     createdAt: createdAt(),
@@ -1580,7 +1592,76 @@ export const gradeCorrections = pgTable(
       "grade_corrections_value_check",
       sql`(${table.didNotSit} and ${table.score} is null) or (not ${table.didNotSit} and ${table.score} between 0 and 20)`,
     ),
-    check("grade_corrections_reason_check", sql`length(btrim(${table.reason})) between 1 and 500`),
+    check("grade_corrections_kind_check", sql`${table.kind} in ('correction', 'teacher_edit')`),
+    check(
+      "grade_corrections_reason_check",
+      sql`(${table.kind} = 'teacher_edit' and ${table.reason} is null) or (${table.kind} = 'correction' and length(btrim(${table.reason})) between 1 and 500)`,
+    ),
+  ],
+);
+
+// A grade register (OOC-180, decisions of 23/11/2026 with Miguel — to confirm
+// with the owner): one module run's grades for one round of the module. The
+// teacher sends it to review, coordination returns it with a note or confirms
+// it, and its grades become official. A run gets a new round when its
+// register is official and grades are posted again — the repeaters' new
+// attempt, or a student moved in later. Status is the row's; who did each
+// step, and when, is `grade_register_events`.
+export const gradeRegisters = pgTable(
+  "grade_registers",
+  {
+    id: uuidPk(),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    classGroupModuleId: uuid("class_group_module_id").notNull(),
+    round: integer("round").notNull(),
+    // draft (Sin enviar) → in_review → returned → in_review … → official.
+    status: text("status").notNull().default("draft"),
+    ...timestamps(),
+  },
+  (table) => [
+    foreignKey({
+      name: "grade_registers_class_group_module_fk",
+      columns: [table.classGroupModuleId, table.classGroupId],
+      foreignColumns: [classGroupModules.id, classGroupModules.classGroupId],
+    }).onDelete("restrict"),
+    check("grade_registers_round_check", sql`${table.round} > 0`),
+    check("grade_registers_status_check", sql`${table.status} in ('draft', 'in_review', 'returned', 'official')`),
+    uniqueIndex("grade_registers_run_round_uidx").on(table.classGroupModuleId, table.round),
+    // One open register per run: the round that is being graded now.
+    uniqueIndex("grade_registers_run_open_uidx")
+      .on(table.classGroupModuleId)
+      .where(sql`${table.status} <> 'official'`),
+    index("grade_registers_class_group_id_idx").on(table.classGroupId),
+  ],
+);
+
+// Each step of a register (OOC-180), append-only: who sent it to review, who
+// returned it and why, who confirmed it. `module_ends_on` is the run's end
+// date as it stood when the register was sent — what "sent late" is judged by
+// after the date is moved for the next round.
+export const gradeRegisterEvents = pgTable(
+  "grade_register_events",
+  {
+    id: uuidPk(),
+    registerId: uuid("register_id")
+      .notNull()
+      .references(() => gradeRegisters.id, { onDelete: "restrict" }),
+    kind: text("kind").notNull(),
+    note: text("note"),
+    moduleEndsOn: date("module_ends_on", { mode: "string" }),
+    // Better Auth's "user" is not modelled here; FK written by hand.
+    actorId: text("actor_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("grade_register_events_kind_check", sql`${table.kind} in ('submitted', 'returned', 'confirmed')`),
+    check(
+      "grade_register_events_note_check",
+      sql`(${table.kind} = 'returned' and length(btrim(${table.note})) between 1 and 1000) or (${table.kind} <> 'returned' and ${table.note} is null)`,
+    ),
+    index("grade_register_events_register_id_idx").on(table.registerId, table.createdAt),
   ],
 );
 
@@ -1602,6 +1683,11 @@ export const currentGrades = pgView("current_grades", {
   correctionId: uuid("correction_id"),
   correctedAt: timestamp("corrected_at", { withTimezone: true }),
   correctedBy: text("corrected_by"),
+  // The register the grade was posted into, its status, and whether the grade
+  // counts as official (OOC-180, 0074): no register, or an official one.
+  registerId: uuid("register_id"),
+  registerStatus: text("register_status"),
+  official: boolean("official").notNull(),
 }).existing();
 
 // Append-only history of staff/role events (CLAUDE.md §8, "toda mudança de
@@ -1901,6 +1987,9 @@ export const platformSettings = pgTable(
     // OOC-41: how early a teacher's contract starts warning. 45 is
     // provisional (CLAUDE.md §1).
     contractAlertDays: integer("contract_alert_days").notNull().default(45),
+    // OOC-180: hours after the module's end date to send the grade register
+    // to review before it reads "out of time". 48 today.
+    gradeSubmissionHours: integer("grade_submission_hours").notNull().default(48),
     // OOC-156: advancing a student to the next module asks for the pass mark.
     // Coordination may still advance below it, with a reason; off, any posted
     // grade lets the student advance.
@@ -1937,6 +2026,10 @@ export const platformSettings = pgTable(
       sql`${table.constanciaFeeCents} between 100 and 100000`,
     ),
     check("platform_settings_contract_alert_days_check", sql`${table.contractAlertDays} between 1 and 180`),
+    check(
+      "platform_settings_grade_submission_hours_check",
+      sql`${table.gradeSubmissionHours} between 1 and 720`,
+    ),
   ],
 );
 

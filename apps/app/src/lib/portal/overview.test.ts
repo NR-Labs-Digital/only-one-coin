@@ -58,12 +58,12 @@ describe('toEnrollment — the Classroom quick links (OOC-98, OOC-144)', () => {
 
 describe('toEnrollment — the final grade (OOC-38)', () => {
   it('carries the posted grade, decimals included', () => {
-    const row = { ...enrollmentWith(), finalGrade: { grade: 13.5, didNotSit: false, recordedAt: '2026-12-16T15:00:00.000Z' } }
+    const row = { ...enrollmentWith(), finalGrade: { grade: 13.5, didNotSit: false, recordedAt: '2026-12-16T15:00:00.000Z', official: false } }
     expect(toEnrollment(row).finalGrade).toBe(13.5)
   })
 
   it('reads a DA as did_not_attempt', () => {
-    const row = { ...enrollmentWith(), finalGrade: { grade: null, didNotSit: true, recordedAt: '2026-12-16T15:00:00.000Z' } }
+    const row = { ...enrollmentWith(), finalGrade: { grade: null, didNotSit: true, recordedAt: '2026-12-16T15:00:00.000Z', official: false } }
     expect(toEnrollment(row).finalGrade).toBe('did_not_attempt')
   })
 

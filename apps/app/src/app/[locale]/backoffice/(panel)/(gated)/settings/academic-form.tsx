@@ -9,7 +9,11 @@ import { Notice, Row, SettingsActions, numberClass, useSettingsForm } from './se
 /** The academic half of the settings. */
 export type AcademicSettings = Pick<
   PlatformSettings,
-  'passingGrade' | 'certificateDeadlineBusinessDays' | 'contractAlertDays' | 'progressionRequiresPassingGrade'
+  | 'passingGrade'
+  | 'certificateDeadlineBusinessDays'
+  | 'contractAlertDays'
+  | 'gradeSubmissionHours'
+  | 'progressionRequiresPassingGrade'
 >
 
 /**
@@ -67,6 +71,23 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
               />
               {t('settings.progression_requires_passing_toggle')}
             </label>
+          </Row>
+
+          <Row
+            helpLabel={t('common.help')}
+            label={t('settings.grade_submission_label')}
+            hint={t('settings.grade_submission_hint')}
+            value={t('settings.hours_value', { hours: draft.gradeSubmissionHours })}
+          >
+            <input
+              type="number"
+              min={1}
+              max={720}
+              aria-label={t('settings.grade_submission_label')}
+              value={draft.gradeSubmissionHours}
+              onChange={(event) => set('gradeSubmissionHours', Number(event.target.value))}
+              className={numberClass}
+            />
           </Row>
 
           <Row

@@ -10,6 +10,7 @@
 export const CERTIFICATE_BLOCK_REASONS = [
   'already_issued',
   'grade_pending',
+  'grade_not_official',
   'did_not_sit',
   'grade_below_minimum',
   'earlier_module_failed',

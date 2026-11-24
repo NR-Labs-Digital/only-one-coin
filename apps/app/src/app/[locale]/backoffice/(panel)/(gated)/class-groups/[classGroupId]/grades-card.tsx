@@ -143,6 +143,11 @@ export function GradesCard({
                             {grade.correctedAt && (
                               <StatusBadge tone="info" label={t('class_group_grades.corrected_badge')} />
                             )}
+                            {/* In review until coordination confirms the register (OOC-180). */}
+                            <StatusBadge
+                              tone={grade.official ? 'success' : 'warning'}
+                              label={grade.official ? t('grade_register.grade_official') : t('grade_register.grade_in_review')}
+                            />
                             <button
                               type="button"
                               onClick={() => toggle(seat.enrollmentId)}
@@ -195,9 +200,11 @@ export function GradesCard({
                                   <span className="font-semibold tabular-nums">{gradeText(step)}</span>
                                   {' · '}
                                   <span className="text-muted-foreground">
-                                    {index === 0
+                                    {step.kind === 'posted'
                                       ? t('class_group_grades.history_posted', { name: who, date: when })
-                                      : t('class_group_grades.history_corrected', { name: who, date: when })}
+                                      : step.kind === 'teacher_edit'
+                                        ? t('grade_register.history_edited', { name: who, date: when })
+                                        : t('class_group_grades.history_corrected', { name: who, date: when })}
                                   </span>
                                   {step.reason && (
                                     <span className="block text-xs text-muted-foreground">

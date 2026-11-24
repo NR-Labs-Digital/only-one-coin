@@ -14,8 +14,8 @@ export interface GradeEmailFacts {
 }
 
 /**
- * "Your final grade is in" (OOC-38) — sent when the teacher posts it, which
- * is when it becomes final. Same recipients as the enrollment e-mails: the
+ * "Your final grade is in" (OOC-38) — sent when the teacher posts it; it says
+ * the grade is in review until coordination confirms it (OOC-180). Same recipients as the enrollment e-mails: the
  * student, and a minor's guardian (decision of 27/09/2026).
  *
  * It says the grade and the pass mark, and promises nothing about the
@@ -98,4 +98,76 @@ export function correctedGradeEmails(
       dedupeKey: `grade_corrected:${correctionId}:${recipient.kind}`,
     };
   });
+}
+
+/** The e-mails of one grade, by template pair: a score, or DA. */
+function pairEmails(
+  facts: GradeEmailFacts,
+  value: GradeValue,
+  passingGrade: number,
+  locale: Locale,
+  templates: { score: "grade_updated" | "grade_official"; didNotSit: "grade_updated_did_not_sit" | "grade_official_did_not_sit" },
+  key: string,
+): EmailNotification[] {
+  const studentName = `${facts.student.firstName} ${facts.student.lastName}`;
+  return enrollmentRecipients(facts).map((recipient): EmailNotification => {
+    const base = { to: recipient.to, locale };
+    if (value.kind === "did_not_sit") {
+      return {
+        ...base,
+        templateKey: templates.didNotSit,
+        vars: { recipientName: recipient.name, studentName, courseName: facts.courseName },
+        dedupeKey: `${templates.didNotSit}:${key}:${recipient.kind}`,
+      };
+    }
+    return {
+      ...base,
+      templateKey: templates.score,
+      vars: { recipientName: recipient.name, studentName, courseName: facts.courseName, grade: value.score, passingGrade },
+      dedupeKey: `${templates.score}:${key}:${recipient.kind}`,
+    };
+  });
+}
+
+/**
+ * "Your grade was updated" (OOC-180) — the teacher changed a grade while the
+ * register was still theirs. Still in review. Keyed by the edit.
+ */
+export function updatedGradeEmails(
+  facts: GradeEmailFacts,
+  editId: string,
+  value: GradeValue,
+  passingGrade: number,
+  locale: Locale,
+): EmailNotification[] {
+  return pairEmails(
+    facts,
+    value,
+    passingGrade,
+    locale,
+    { score: "grade_updated", didNotSit: "grade_updated_did_not_sit" },
+    editId,
+  );
+}
+
+/**
+ * "Your grade is official" (OOC-180, decision of 18/11/2026) — coordination
+ * confirmed the register. Keyed by register and seat: a retry sends nothing
+ * twice, and the next round's register is an e-mail of its own.
+ */
+export function officialGradeEmails(
+  facts: GradeEmailFacts,
+  registerId: string,
+  value: GradeValue,
+  passingGrade: number,
+  locale: Locale,
+): EmailNotification[] {
+  return pairEmails(
+    facts,
+    value,
+    passingGrade,
+    locale,
+    { score: "grade_official", didNotSit: "grade_official_did_not_sit" },
+    `${registerId}:${facts.enrollmentId}`,
+  );
 }

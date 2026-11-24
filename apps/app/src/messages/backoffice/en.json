@@ -379,7 +379,11 @@
         "issued_document_revoked": "Issued document revoked",
         "certificate_batch_issued": "Certificates issued in a batch",
         "class_group_deleted": "Class group deleted",
-        "class_group_erased": "Class group deleted (with history)"
+        "class_group_erased": "Class group deleted (with history)",
+        "grade_edited": "Grade changed by the teacher",
+        "grade_register_submitted": "Grade register sent to review",
+        "grade_register_returned": "Grade register returned to the teacher",
+        "grade_register_confirmed": "Grade register confirmed as official"
       },
       "field": {
         "first_name": "First name",
@@ -434,7 +438,9 @@
         "constancia_fee_cents": "Constancia fee",
         "contract_alert_days": "Contract expiry warning",
         "full_course": "Full course",
-        "progression_requires_passing_grade": "Pass mark to move on to the next module"
+        "progression_requires_passing_grade": "Pass mark to move on to the next module",
+        "grade_submission_hours": "Grade register deadline",
+        "module_ends_on": "Module end date"
       }
     },
     "student_status": {
@@ -932,7 +938,11 @@
       "grade_corrected": "Final grade corrected",
       "grade_corrected_did_not_sit": "Result corrected to DA",
       "monthly_module_due": "Monthly module to pay",
-      "enrollment_freeze_reengagement": "Frozen enrollment reminder"
+      "enrollment_freeze_reengagement": "Frozen enrollment reminder",
+      "grade_updated": "Grade updated by the teacher",
+      "grade_updated_did_not_sit": "Result updated to DA",
+      "grade_official": "Official grade",
+      "grade_official_did_not_sit": "Official result: DA"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -963,7 +973,11 @@
       "grade_corrected": "The academic supervision corrects a posted grade",
       "grade_corrected_did_not_sit": "The academic supervision corrects a posted grade to DA",
       "monthly_module_due": "When progression takes a monthly student into a module nobody paid for.",
-      "enrollment_freeze_reengagement": "1, 3 and 6 months after an enrollment is frozen."
+      "enrollment_freeze_reengagement": "1, 3 and 6 months after an enrollment is frozen.",
+      "grade_updated": "The teacher changes a grade before the register is official",
+      "grade_updated_did_not_sit": "The teacher changes a grade to DA before the register is official",
+      "grade_official": "Coordination confirms the grade register",
+      "grade_official_did_not_sit": "Coordination confirms the register with the module as DA"
     },
     "email_audience": {
       "student": "Student",
@@ -995,7 +1009,10 @@
       "grade_corrected": "Only if a posted grade is corrected",
       "grade_corrected_did_not_sit": "Only if the grade is corrected to DA (final exam not taken)",
       "monthly_module_due": "if monthly and the module is not paid",
-      "enrollment_freeze_reengagement": "if the enrollment is still frozen"
+      "enrollment_freeze_reengagement": "if the enrollment is still frozen",
+      "grade_updated": "Only if the teacher changes a posted grade",
+      "grade_updated_did_not_sit": "Only if the teacher changes the grade to DA",
+      "grade_official_did_not_sit": "Only if the student did not take the final exam (DA)"
     },
     "email_delivery_reason": {
       "provider_unavailable": "The provider did not answer",
@@ -1522,7 +1539,8 @@
       "payment_not_approved": "Payment not approved",
       "enrollment_not_completed": "Enrollment not closed",
       "exam_not_approved": "Certification exam missing",
-      "already_issued": "Already issued"
+      "already_issued": "Already issued",
+      "grade_not_official": "The grade is still in review"
     },
     "weekday": {
       "mon": "Mon",
@@ -2153,7 +2171,10 @@
       "progression_requires_passing_hint": "On, only students with the pass mark move on to the next module. Coordination may move someone below it, with a reason; a teacher never can. Off, any posted grade lets a student move on.",
       "progression_requires_passing_on": "Requires the pass mark",
       "progression_requires_passing_off": "Any grade",
-      "progression_requires_passing_toggle": "Require"
+      "progression_requires_passing_toggle": "Require",
+      "grade_submission_label": "Grade register deadline",
+      "grade_submission_hint": "Hours after the module ends for the teacher to send the register to review. After that it reads «Out of time».",
+      "hours_value": "{hours} hours"
     },
     "features": {
       "title": "Features",
@@ -2362,10 +2383,10 @@
       "back": "My classes",
       "students_title": "Students ({count})",
       "notes_button": "{count, plural, =0 {Notes} other {Notes (#)}}",
-      "final_warning": "Once posted, a grade cannot be changed.",
+      "final_warning": "You can change it until you send the register to review.",
       "cancel": "Cancel",
       "post": "Post grade",
-      "grades_locked": "Posted grades cannot be changed.",
+      "grades_locked": "Grades can change until the register is sent to review; after that, only the supervision corrects them.",
       "col_class": "Class",
       "confirm_cta": "Confirm",
       "back_to_edit": "Back",
@@ -2816,7 +2837,9 @@
       "error_below_passing": "Only coordination moves someone on below the pass mark.",
       "error_reason_required": "Write the reason (up to 500 characters).",
       "error_conflict": "Somebody moved one of these students meanwhile. Reload and try again.",
-      "error_failed": "Could not save. Try again."
+      "error_failed": "Could not save. Try again.",
+      "verdict_not_official": "Grade in review",
+      "error_not_official": "A grade is still in review: students move on once coordination confirms the register."
     },
     "class_group_picker": {
       "single": "{label} · {left, plural, =0 {full} one {# seat} other {# seats}}",
@@ -2853,7 +2876,8 @@
         "did_not_sit": "Did not sit the final exam (DA)",
         "grade_below_minimum": "Grade below the minimum",
         "earlier_module_failed": "Failed an earlier module",
-        "exam_not_approved": "Certification exam missing"
+        "exam_not_approved": "Certification exam missing",
+        "grade_not_official": "Grade in review"
       },
       "issue": "{count, plural, =0 {Nothing to issue} one {Issue # certificate} other {Issue # certificates}}",
       "confirm_body": "{count, plural, one {# certificate will be issued} other {# certificates will be issued}} and each student will get an e-mail (and their guardian, if a minor). Issuing cannot be undone.",
@@ -2944,6 +2968,94 @@
         "transfer_conflict": "The enrollment changed meanwhile. Close and open it again.",
         "failed": "We could not save. Try again."
       }
+    },
+    "grade_register": {
+      "tab": "Grade registers",
+      "title": "Grade register",
+      "intro": "Each module group has one register per round of the module. The teacher sends it to review; coordination returns it with what to correct, or confirms it and its grades become official.",
+      "empty": "No registers yet: they appear once the group has confirmed students.",
+      "load_error": "The grade registers could not be loaded. Reload the page.",
+      "status": {
+        "draft": "Not sent",
+        "in_review": "In review",
+        "returned": "Returned",
+        "official": "Official"
+      },
+      "overdue": "Out of time",
+      "submitted_late": "Sent late",
+      "round": "Round {round}",
+      "progress": "{graded} of {total} grades",
+      "ends_on": "Module ends: {date}",
+      "deadline": "Send by: {date}",
+      "no_end_date": "No end date",
+      "returned_note_title": "Coordination asked to correct:",
+      "unknown_name": "an account with no name",
+      "run_fallback": "Module group",
+      "step": {
+        "submitted": "Sent to review by {name} · {date}",
+        "returned": "Returned by {name} · {date}",
+        "confirmed": "Confirmed as official by {name} · {date}"
+      },
+      "teacher_draft": "You can post and change grades until you send the register to review.",
+      "teacher_in_review": "Coordination is reviewing the grades. They do not change meanwhile; if a correction is asked, the register comes back to you.",
+      "teacher_returned": "Correct what coordination asked and send the register again.",
+      "teacher_official": "Coordination confirmed the grades: they are official. Only the supervision corrects them now.",
+      "submit": "Send to review",
+      "submit_title": "Send the register to review?",
+      "submit_body": "Coordination reviews the grades. While the register is in review you cannot change them; if a correction is asked, it comes back to you.",
+      "submitted_toast": "Register sent to review.",
+      "edit": "Change",
+      "edit_title": "Change the grade",
+      "edit_warning": "The student gets the new grade by e-mail. The previous one stays in the history.",
+      "edited_badge": "Changed",
+      "edited_toast": "Grade changed.",
+      "history_edited": "Changed by the teacher {name} · {date}",
+      "grade_in_review": "In review",
+      "grade_official": "Official",
+      "return": "Return to the teacher",
+      "return_title": "Return the register to the teacher",
+      "return_body": "The teacher sees your message in their portal, corrects the grades and sends the register again.",
+      "return_note_label": "What needs correcting",
+      "return_note_hint": "Up to 1000 characters. It stays in the register's history.",
+      "returned_toast": "Register returned to the teacher.",
+      "confirm": "Confirm as official",
+      "confirm_incomplete": "Grades are missing in this register.",
+      "confirm_title": "Confirm the grades as official?",
+      "confirm_body": "From now on the grades count for moving on to the next module and for the certificate. Each student, and a minor's guardian, gets the official grade by e-mail. After this only the supervision corrects, with a reason.",
+      "confirmed_toast": "Grades confirmed as official.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "saving": "Saving…",
+      "errors": {
+        "incomplete": "Every student in this register needs a grade before this step.",
+        "locked": "The register is no longer in that state. Reload the page.",
+        "conflict": "Somebody changed this register at the same moment. Reload the page.",
+        "unchanged": "The grade already has that value.",
+        "note_required": "Write what needs correcting (up to 1000 characters).",
+        "failed": "Could not save. Try again."
+      },
+      "field_module_ends_on": "Module end date",
+      "field_module_ends_on_what": "The module's last day in this group.",
+      "field_module_ends_on_how": "The deadline to send the grade register runs from the end of this day. With no date, the register has no deadline.",
+      "list_intro": "The teacher has {hours} hours after the module ends to send the register. Only class groups running or finished.",
+      "list_empty_title": "Nothing pending with these filters",
+      "list_empty_body": "Change the filters to see other registers.",
+      "filter_period": "Period",
+      "filter_teacher": "Teacher",
+      "filter_module": "Module",
+      "filter_status": "Status",
+      "filter_all": "All",
+      "filter_status_open": "Open",
+      "filter_status_all": "All",
+      "filter_overdue": "Out of time only",
+      "filter_apply": "Filter",
+      "col_class_group": "Class group",
+      "col_module": "Module",
+      "col_teacher": "Teacher",
+      "col_grades": "Grades",
+      "col_status": "Status",
+      "col_deadline": "Deadline",
+      "no_teacher": "No teacher"
     }
   }
 }

@@ -167,7 +167,9 @@
       "enrolled_on": "Matriculada el {date}",
       "period_dates": "Del {start} al {end}",
       "classroom": "Classroom",
-      "join_meet": "Entrar al Meet"
+      "join_meet": "Entrar al Meet",
+      "result_official": "Oficial",
+      "result_in_review": "En revisión"
     },
     "enrollments": {
       "title": "Mi matrícula",

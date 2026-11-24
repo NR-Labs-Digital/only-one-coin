@@ -52,6 +52,13 @@ import {
   IssuePortalAccessUseCase,
   ResendFailedEmailUseCase,
   ListOwnClassGroupGradesUseCase,
+  EditOwnClassGroupGradeUseCase,
+  GetOwnGradeRegisterUseCase,
+  SubmitOwnGradeRegisterUseCase,
+  ListClassGroupGradeRegistersUseCase,
+  ListGradeRegistersUseCase,
+  ReturnGradeRegisterUseCase,
+  ConfirmGradeRegisterUseCase,
   RecordOwnClassGroupGradesUseCase,
   ListClassGroupGradesUseCase,
   RecordClassGroupGradesUseCase,
@@ -258,6 +265,7 @@ import { ClassGroupRosterQuery } from "./infra/persistence/catalog/ClassGroupRos
 import { ClassGroupMonthlyQuery } from "./infra/persistence/catalog/ClassGroupMonthlyQuery.js";
 import { DrizzleTeachingReader } from "./infra/persistence/teaching/DrizzleTeachingReader.js";
 import { DrizzleGradeRepository } from "./infra/persistence/teaching/DrizzleGradeRepository.js";
+import { DrizzleGradeRegisterRepository } from "./infra/persistence/teaching/DrizzleGradeRegisterRepository.js";
 import { ListStaffQuery } from "./infra/persistence/identity/ListStaffQuery.js";
 import { ListStaffRoleChangesQuery } from "./infra/persistence/identity/ListStaffRoleChangesQuery.js";
 import { AuditLogQuery } from "./infra/persistence/audit/AuditLogQuery.js";
@@ -338,6 +346,15 @@ export interface AppUseCases {
     listOwnClassGroupStudents: ListOwnClassGroupStudentsUseCase;
     listOwnClassGroupGrades: ListOwnClassGroupGradesUseCase;
     recordOwnClassGroupGrades: RecordOwnClassGroupGradesUseCase;
+    /** The grade register (OOC-180): the teacher's edit, its open register, sending it to review. */
+    editOwnClassGroupGrade: EditOwnClassGroupGradeUseCase;
+    getOwnGradeRegister: GetOwnGradeRegisterUseCase;
+    submitOwnGradeRegister: SubmitOwnGradeRegisterUseCase;
+    /** Coordination's side of the register: read, return, confirm. */
+    listClassGroupGradeRegisters: ListClassGroupGradeRegistersUseCase;
+    listGradeRegisters: ListGradeRegistersUseCase;
+    returnGradeRegister: ReturnGradeRegisterUseCase;
+    confirmGradeRegister: ConfirmGradeRegisterUseCase;
     summary: GetTeachingSummaryUseCase;
     /** The academic supervision's side of the grades, any class group (OOC-102). */
     listClassGroupGrades: ListClassGroupGradesUseCase;
@@ -919,6 +936,7 @@ function buildContainer(): AppContainer {
   const classGroupRoster = new ClassGroupRosterQuery(db);
   const teachingReader = new DrizzleTeachingReader(db, classGroupRoster);
   const gradeRepository = new DrizzleGradeRepository(db);
+  const gradeRegisterRepository = new DrizzleGradeRegisterRepository(db);
   const listOwnClassGroups = new ListOwnClassGroupsUseCase(teacherRepository, teachingReader);
   const getOwnClassGroup = new GetOwnClassGroupUseCase(teacherRepository, teachingReader);
   const listStaff = new ListStaffQuery(db);
@@ -1026,6 +1044,30 @@ function buildContainer(): AppContainer {
           getOwnClassGroup,
           teachingReader,
           gradeRepository,
+          platformSettingsRepository,
+        ),
+        editOwnClassGroupGrade: new EditOwnClassGroupGradeUseCase(
+          getOwnClassGroup,
+          teachingReader,
+          gradeRepository,
+          platformSettingsRepository,
+        ),
+        getOwnGradeRegister: new GetOwnGradeRegisterUseCase(
+          getOwnClassGroup,
+          gradeRegisterRepository,
+          platformSettingsRepository,
+        ),
+        submitOwnGradeRegister: new SubmitOwnGradeRegisterUseCase(getOwnClassGroup, gradeRegisterRepository),
+        listClassGroupGradeRegisters: new ListClassGroupGradeRegistersUseCase(
+          teachingReader,
+          gradeRegisterRepository,
+          platformSettingsRepository,
+        ),
+        listGradeRegisters: new ListGradeRegistersUseCase(gradeRegisterRepository, platformSettingsRepository),
+        returnGradeRegister: new ReturnGradeRegisterUseCase(teachingReader, gradeRegisterRepository),
+        confirmGradeRegister: new ConfirmGradeRegisterUseCase(
+          teachingReader,
+          gradeRegisterRepository,
           platformSettingsRepository,
         ),
         summary: new GetTeachingSummaryUseCase(listOwnClassGroups, teachingReader),

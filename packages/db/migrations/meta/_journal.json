@@ -519,6 +519,13 @@
       "when": 1795481065374,
       "tag": "0073_teacher_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795483835732,
+      "tag": "0074_grade_registers",
+      "breakpoints": true
     }
   ]
 }

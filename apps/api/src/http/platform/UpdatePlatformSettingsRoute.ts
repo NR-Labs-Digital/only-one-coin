@@ -17,6 +17,7 @@ const BodySchema = z
     passingGrade: z.number().int(),
     certificateDeadlineBusinessDays: z.number().int(),
     contractAlertDays: z.number().int(),
+    gradeSubmissionHours: z.number().int(),
     progressionRequiresPassingGrade: z.boolean(),
   })
   .partial()

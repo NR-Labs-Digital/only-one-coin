@@ -188,20 +188,20 @@
       ]
     },
     "grade_posted": {
-      "subject": "Final grade for {courseName}: {grade}",
-      "preheader": "The final exam grade has been posted.",
+      "subject": "Final grade for {courseName}: {grade} (in review)",
+      "preheader": "The final exam grade is recorded and in review.",
       "paragraphs": [
         "{studentName}'s final grade in {courseName} is {grade}, on the 0 to 20 scale. It is the final exam's grade, which is the module's grade.",
         "The passing grade is {passingGrade}.",
-        "The grade is now on record and you can see it in the student portal."
+        "The grade is in review: academic coordination confirms it before it is official, and we will let you know when it is. You can see it in the student portal."
       ]
     },
     "grade_did_not_sit": {
-      "subject": "Result for {courseName}: final exam not taken",
-      "preheader": "The module was recorded as DA.",
+      "subject": "Result for {courseName}: final exam not taken (in review)",
+      "preheader": "The module was recorded as DA, in review.",
       "paragraphs": [
         "{studentName} did not take the final exam of {courseName}, so the module was recorded as DA (failed for not taking the exam).",
-        "You can see the result in the student portal."
+        "The result is in review: academic coordination confirms it before it is official. You can see it in the student portal."
       ]
     },
     "grade_corrected": {
@@ -219,6 +219,40 @@
       "paragraphs": [
         "The academic coordination corrected {studentName}'s result in {courseName}: the module was recorded as DA (failed for not taking the exam).",
         "You can see the result in the student portal."
+      ]
+    },
+    "grade_updated": {
+      "subject": "Updated grade for {courseName}: {grade}",
+      "preheader": "The teacher updated the final exam grade, which is still in review.",
+      "paragraphs": [
+        "The teacher updated {studentName}'s final grade in {courseName}. The grade is now {grade}, on the 0 to 20 scale.",
+        "The passing grade is {passingGrade}.",
+        "The grade stays in review until academic coordination confirms it. You can see it in the student portal."
+      ]
+    },
+    "grade_updated_did_not_sit": {
+      "subject": "Updated result for {courseName}: final exam not taken",
+      "preheader": "The teacher updated the module's result, which is still in review.",
+      "paragraphs": [
+        "The teacher updated {studentName}'s result in {courseName}: the module was recorded as DA (failed for not taking the exam).",
+        "The result stays in review until academic coordination confirms it. You can see it in the student portal."
+      ]
+    },
+    "grade_official": {
+      "subject": "Official grade for {courseName}: {grade}",
+      "preheader": "Academic coordination confirmed the final exam grade.",
+      "paragraphs": [
+        "Academic coordination confirmed {studentName}'s final grade in {courseName}: {grade}, on the 0 to 20 scale. It is now the module's official grade.",
+        "The passing grade is {passingGrade}.",
+        "You can see it in the student portal."
+      ]
+    },
+    "grade_official_did_not_sit": {
+      "subject": "Official result for {courseName}: final exam not taken",
+      "preheader": "Academic coordination confirmed the module's result.",
+      "paragraphs": [
+        "Academic coordination confirmed {studentName}'s result in {courseName}: the module was recorded as DA (failed for not taking the exam). It is now the official result.",
+        "You can see it in the student portal."
       ]
     },
     "enrollment_certificate_issued": {

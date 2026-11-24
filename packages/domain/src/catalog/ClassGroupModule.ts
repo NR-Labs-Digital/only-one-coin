@@ -31,6 +31,12 @@ import {
  * A run with no module number — the full-course one or the unset one — is
  * alone in its class group (`ClassGroup.assertModulesConsistent`).
  */
+/** A real calendar day, `YYYY-MM-DD` — `Date` would roll 2026-02-30 into March. */
+const CalendarDaySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value, "invalid");
+
 export const ClassGroupModulePropsSchema = SoftDeletableModelPropsSchema.extend({
   classGroupId: z.string().uuid(),
   module: z.number().int().positive().nullable(),
@@ -49,6 +55,11 @@ export const ClassGroupModulePropsSchema = SoftDeletableModelPropsSchema.extend(
   classroomUrl: z.string().nullable(),
   /** Its Google Meet (OOC-159). Null until coordination pastes one — warns, never blocks. */
   meetUrl: z.string().nullable(),
+  /**
+   * The day the module ends in this run (OOC-180), a calendar day in Lima. The
+   * grade register's deadline runs from it; null = no deadline yet.
+   */
+  moduleEndsOn: z.string().nullable(),
 });
 export type ClassGroupModuleProps = z.infer<typeof ClassGroupModulePropsSchema>;
 
@@ -59,6 +70,8 @@ export const CreateClassGroupModuleSchema = z.object({
   classroomLinks: z.array(ClassroomLinkPatchSchema).max(50).optional(),
   /** Its Meet link (OOC-159); null or blank clears it. Checked by `normalizeMeetUrl`. */
   meetUrl: z.string().max(2000).nullable().optional(),
+  /** The module's end date in this run (OOC-180); null clears it. */
+  moduleEndsOn: CalendarDaySchema.nullable().optional(),
   module: z.number().int().positive().nullable().optional(),
   /** Wins over `module`: the whole course is not one of its modules. */
   fullCourse: z.boolean().optional(),
@@ -69,7 +82,14 @@ export type CreateClassGroupModuleDTO = z.infer<typeof CreateClassGroupModuleSch
 export const UpdateClassGroupModuleSchema = CreateClassGroupModuleSchema.partial();
 export type UpdateClassGroupModuleDTO = z.infer<typeof UpdateClassGroupModuleSchema>;
 
-export type ClassGroupModuleField = "teacherId" | "classroomLinks" | "meetUrl" | "module" | "fullCourse" | "slots";
+export type ClassGroupModuleField =
+  | "teacherId"
+  | "classroomLinks"
+  | "meetUrl"
+  | "moduleEndsOn"
+  | "module"
+  | "fullCourse"
+  | "slots";
 
 export class ClassGroupModule extends SoftDeletableModel {
   public readonly classGroupId: string;
@@ -81,6 +101,7 @@ export class ClassGroupModule extends SoftDeletableModel {
   public classroomLinks: ClassroomLinks;
   public readonly classroomUrl: string | null;
   public meetUrl: string | null;
+  public moduleEndsOn: string | null;
 
   constructor(props: ClassGroupModuleProps) {
     super(props);
@@ -93,6 +114,7 @@ export class ClassGroupModule extends SoftDeletableModel {
     this.classroomLinks = props.classroomLinks;
     this.classroomUrl = props.classroomUrl;
     this.meetUrl = props.meetUrl;
+    this.moduleEndsOn = props.moduleEndsOn;
   }
 
   /**
@@ -115,6 +137,7 @@ export class ClassGroupModule extends SoftDeletableModel {
         classroomLinks: applyClassroomLinks({}, valid.classroomLinks ?? []),
         classroomUrl: null,
         meetUrl: normalizeMeetUrl(valid.meetUrl ?? null),
+        moduleEndsOn: valid.moduleEndsOn ?? null,
       }),
     );
   }
@@ -137,6 +160,8 @@ export class ClassGroupModule extends SoftDeletableModel {
         classroomLinks: {},
         classroomUrl: null,
         meetUrl: null,
+        // The next period's dates are new: the copy has none (OOC-35).
+        moduleEndsOn: null,
       }),
     );
   }
@@ -172,6 +197,11 @@ export class ClassGroupModule extends SoftDeletableModel {
         this.meetUrl = next;
         changed.push("meetUrl");
       }
+    }
+
+    if (valid.moduleEndsOn !== undefined && valid.moduleEndsOn !== this.moduleEndsOn) {
+      this.moduleEndsOn = valid.moduleEndsOn;
+      changed.push("moduleEndsOn");
     }
 
     // One or the other: picking a module ends "full course", and the reverse.

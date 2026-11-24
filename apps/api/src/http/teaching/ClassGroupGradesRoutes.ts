@@ -21,6 +21,8 @@ import {
  */
 
 const HistoryEntrySchema = z.object({
+  /** The posting, the teacher's own edit (OOC-180), or the supervision's correction. */
+  kind: z.enum(["posted", "teacher_edit", "correction"]),
   grade: z.number().nullable(),
   didNotSit: z.boolean(),
   /** ISO 8601, UTC. */
@@ -43,6 +45,7 @@ function serializeWithHistory(grade: GradeWithHistory) {
   return {
     ...serializeGrade(grade),
     history: grade.history.map((entry) => ({
+      kind: entry.kind,
       grade: entry.value.kind === "score" ? entry.value.score : null,
       didNotSit: entry.value.kind === "did_not_sit",
       at: entry.at.toISOString(),

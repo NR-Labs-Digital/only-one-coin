@@ -61,3 +61,49 @@ export function correctGrade(classGroupId: string, enrollmentId: string, grade: 
     { grade, reason },
   )
 }
+
+/**
+ * Coordination's register steps (OOC-180). Answers `done`, or a key of
+ * `grade_register.errors.*` the screen says — never the API's text.
+ */
+export type RegisterStepResult = 'done' | 'incomplete' | 'locked' | 'conflict' | 'note_required' | 'failed'
+
+async function registerStep(path: string, body?: unknown): Promise<RegisterStepResult> {
+  try {
+    const response = await fetch(`/api/v1/catalog/class-groups/${path}`, {
+      method: 'POST',
+      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    if (response.ok) return 'done'
+    const failure = (await response.json().catch(() => null)) as { reason?: string } | null
+    switch (failure?.reason) {
+      case 'teaching.grade_register_incomplete':
+      case 'teaching.grade_register_empty':
+        return 'incomplete'
+      case 'teaching.grade_register_wrong_status':
+        return 'locked'
+      case 'teaching.grade_register_note_required':
+        return 'note_required'
+      default:
+        return response.status === 409 ? 'conflict' : 'failed'
+    }
+  } catch {
+    return 'failed'
+  }
+}
+
+/** Returns the run's register in review to its teacher, with what to correct. */
+export function returnRegister(classGroupId: string, classGroupModuleId: string, note: string) {
+  return registerStep(
+    `${encodeURIComponent(classGroupId)}/modules/${encodeURIComponent(classGroupModuleId)}/grade-register/return`,
+    { note },
+  )
+}
+
+/** Confirms the run's register: its grades become official. */
+export function confirmRegister(classGroupId: string, classGroupModuleId: string) {
+  return registerStep(
+    `${encodeURIComponent(classGroupId)}/modules/${encodeURIComponent(classGroupModuleId)}/grade-register/confirm`,
+  )
+}

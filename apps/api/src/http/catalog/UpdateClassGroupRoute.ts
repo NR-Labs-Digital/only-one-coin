@@ -32,11 +32,11 @@ export const updateClassGroupRoute = RouteBuilder.patch("/catalog/class-groups/:
   .response(404, ErrorResponseSchema)
   .response(422, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const { startsOn, endsOn, enrollmentOpensAt, enrollmentClosesAt, teacherId, classroomLinks, meetUrl, module, fullCourse, slots, ...rest } =
+    const { startsOn, endsOn, enrollmentOpensAt, enrollmentClosesAt, teacherId, classroomLinks, meetUrl, moduleEndsOn, module, fullCourse, slots, ...rest } =
       request.body;
     const actorId = request.currentUser!.id;
     const runPatch = Object.fromEntries(
-      Object.entries({ teacherId, classroomLinks, meetUrl, module, fullCourse, slots }).filter(([, value]) => value !== undefined),
+      Object.entries({ teacherId, classroomLinks, meetUrl, moduleEndsOn, module, fullCourse, slots }).filter(([, value]) => value !== undefined),
     );
 
     if (Object.keys(runPatch).length > 0) {

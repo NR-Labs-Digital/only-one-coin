@@ -15,7 +15,7 @@ const pass = (score: number) => ({ score, didNotSit: false as const });
 const DA = { score: null, didNotSit: true as const };
 
 function candidate(overrides: Partial<CertificateCandidate> = {}): CertificateCandidate {
-  return { enrollmentId: "e", lastModuleGrade: pass(16), earlierModuleGrades: [], alreadyIssued: false, ...overrides };
+  return { enrollmentId: "e", lastModuleGrade: pass(16), lastModuleGradeOfficial: true, earlierModuleGrades: [], alreadyIssued: false, ...overrides };
 }
 
 const RULE = { passingGrade: 14, examRequired: false, examApproved: false };
@@ -31,6 +31,8 @@ describe("certificateBlockReason (OOC-33)", () => {
     expect(certificateBlockReason(candidate({ lastModuleGrade: pass(13.99) }), RULE)).toBe("grade_below_minimum");
     expect(certificateBlockReason(candidate({ lastModuleGrade: DA }), RULE)).toBe("did_not_sit");
     expect(certificateBlockReason(candidate({ lastModuleGrade: null }), RULE)).toBe("grade_pending");
+    // OOC-180: a grade still in review does not issue.
+    expect(certificateBlockReason(candidate({ lastModuleGradeOfficial: false }), RULE)).toBe("grade_not_official");
   });
 
   it("reads the pass mark it is given, never a constant", () => {

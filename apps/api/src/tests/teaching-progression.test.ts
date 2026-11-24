@@ -79,10 +79,10 @@ function run(overrides: Partial<TeachingClassGroup> = {}): TeachingClassGroup {
 }
 
 const SEATS: ProgressionSeat[] = [
-  { enrollmentId: ROSA, firstName: "Rosa", lastName: "A", attempt: 1, grade: { kind: "score", score: 16 } },
-  { enrollmentId: LUIS, firstName: "Luis", lastName: "B", attempt: 1, grade: { kind: "score", score: 11 } },
-  { enrollmentId: ANA, firstName: "Ana", lastName: "C", attempt: 2, grade: { kind: "did_not_sit" } },
-  { enrollmentId: JUAN, firstName: "Juan", lastName: "D", attempt: 1, grade: null },
+  { enrollmentId: ROSA, firstName: "Rosa", lastName: "A", attempt: 1, grade: { kind: "score", score: 16 }, official: true },
+  { enrollmentId: LUIS, firstName: "Luis", lastName: "B", attempt: 1, grade: { kind: "score", score: 11 }, official: true },
+  { enrollmentId: ANA, firstName: "Ana", lastName: "C", attempt: 2, grade: { kind: "did_not_sit" }, official: true },
+  { enrollmentId: JUAN, firstName: "Juan", lastName: "D", attempt: 1, grade: null, official: true },
 ];
 
 class FakeProgression implements IProgressionRepository {
@@ -90,9 +90,11 @@ class FakeProgression implements IProgressionRepository {
   next: { id: string; module: number } | null = { id: RUN_2, module: 2 };
   modules = 4;
   conflictNext = false;
+  /** Seats whose grade is still in review (OOC-180). */
+  inReview = new Set<string>();
 
   async seatsOf() {
-    return SEATS;
+    return SEATS.map((seat) => (this.inReview.has(seat.enrollmentId) ? { ...seat, official: false } : seat));
   }
 
   async runOfModule(_classGroupId: string, module: number) {
@@ -222,6 +224,23 @@ describe("Teacher moving their own run on", () => {
     await expect(applyOwn.run({ ...own, advance: [], repeat: [] })).rejects.toMatchObject({
       reason: "teaching.progression_empty",
     });
+  });
+
+  it("moves nobody on a grade still in review: it waits for the register to be official (OOC-180)", async () => {
+    const { applyOwn, previewOwn, repository } = setUp();
+    repository.inReview.add(ROSA);
+    repository.inReview.add(LUIS);
+
+    const preview = await previewOwn.run(own);
+    expect(preview.seats.find((seat) => seat.enrollmentId === ROSA)?.verdict).toBe("not_official");
+
+    await expect(applyOwn.run({ ...own, advance: [ROSA], repeat: [] })).rejects.toMatchObject({
+      reason: "teaching.progression_not_official",
+    });
+    await expect(applyOwn.run({ ...own, advance: [], repeat: [LUIS] })).rejects.toMatchObject({
+      reason: "teaching.progression_not_official",
+    });
+    expect(repository.applied).toHaveLength(0);
   });
 
   it("waits for the next module's run to be opened", async () => {

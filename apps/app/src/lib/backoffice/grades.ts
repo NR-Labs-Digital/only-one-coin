@@ -6,8 +6,11 @@ import { apiFetch } from './api-client'
  * call (GRADE_READ_ROLES); the screen only draws what came.
  */
 
-/** One step of a grade's history, oldest first: the posting, then each correction. */
+/** One step of a grade's history, oldest first: the posting, then each change. */
 export interface GradeHistoryStep {
+  /** The posting, the teacher's own edit (OOC-180), or the supervision's correction. */
+  kind: 'posted' | 'teacher_edit' | 'correction'
+
   /** 0–20; null on a DA. */
   grade: number | null
   didNotSit: boolean
@@ -23,8 +26,10 @@ export interface SheetGrade {
   grade: number | null
   didNotSit: boolean
   recordedAt: string
-  /** Null while never corrected. */
+  /** Null while never changed. */
   correctedAt: string | null
+  /** Coordination confirmed its register (OOC-180), or it predates registers. */
+  official: boolean
   history: GradeHistoryStep[]
 }
 

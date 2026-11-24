@@ -24,7 +24,7 @@ interface ProgressionPreview {
   }[]
 }
 
-type Verdict = 'passed' | 'below_passing' | 'did_not_sit' | 'not_graded'
+type Verdict = 'passed' | 'below_passing' | 'did_not_sit' | 'not_graded' | 'not_official'
 type Choice = 'advance' | 'repeat' | 'none'
 
 const CHOICES: readonly Choice[] = ['advance', 'repeat', 'none']
@@ -34,6 +34,8 @@ const VERDICT_TONE: Record<Verdict, Tone> = {
   below_passing: 'warning',
   did_not_sit: 'warning',
   not_graded: 'neutral',
+  // The register is not confirmed yet (OOC-180): nobody moves on a grade in review.
+  not_official: 'neutral',
 }
 
 /** Every refusal the progression routes answer with, as the locale names them. */
@@ -43,6 +45,7 @@ const KNOWN_ERRORS = new Set([
   'unknown_enrollment',
   'duplicate_enrollment',
   'not_graded',
+  'not_official',
   'no_next_run',
   'below_passing',
   'reason_required',
@@ -99,7 +102,7 @@ export function ProgressionPanel({
           Object.fromEntries(
             data.seats.map((seat) => [
               seat.enrollmentId,
-              seat.verdict === 'not_graded'
+              seat.verdict === 'not_graded' || seat.verdict === 'not_official'
                 ? 'none'
                 : seat.verdict === 'passed' && data.next
                   ? 'advance'
@@ -190,7 +193,10 @@ export function ProgressionPanel({
           {preview.seats.map((seat) => {
             const choice = choices[seat.enrollmentId] ?? 'none'
             const advanceBlocked =
-              preview.next === null || seat.verdict === 'not_graded' || (forcing(seat.verdict) && !canForce)
+              preview.next === null ||
+              seat.verdict === 'not_graded' ||
+              seat.verdict === 'not_official' ||
+              (forcing(seat.verdict) && !canForce)
             return (
               <li key={seat.enrollmentId} className="flex flex-wrap items-center justify-between gap-3 p-3">
                 <span className="flex min-w-0 flex-col">
@@ -203,7 +209,10 @@ export function ProgressionPanel({
                     {seat.attempt > 1 && <span>{t('progression.attempt', { attempt: seat.attempt })}</span>}
                   </span>
                 </span>
-                <fieldset className="flex flex-wrap gap-1.5" disabled={seat.verdict === 'not_graded' || pending}>
+                <fieldset
+                  className="flex flex-wrap gap-1.5"
+                  disabled={seat.verdict === 'not_graded' || seat.verdict === 'not_official' || pending}
+                >
                   <legend className="sr-only">{`${seat.firstName} ${seat.lastName}`}</legend>
                   {CHOICES.map((option) => {
                     const disabled = option === 'advance' && advanceBlocked

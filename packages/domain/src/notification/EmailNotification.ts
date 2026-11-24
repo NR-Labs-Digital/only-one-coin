@@ -120,9 +120,10 @@ export interface EmailTemplateVars {
     courseName: string;
     months: number;
   };
-  /** The final grade was posted (OOC-38) — final once posted. `grade` is the
-   * 0–20 grade as typed (up to two decimals); `passingGrade` is the pass mark
-   * from `platform_settings` at the time, so the e-mail never hardcodes 14. */
+  /** The final grade was posted (OOC-38) — in review until coordination
+   * confirms the register (OOC-180). `grade` is the 0–20 grade as typed (up to
+   * two decimals); `passingGrade` is the pass mark from `platform_settings` at
+   * the time, so the e-mail never hardcodes 14. */
   grade_posted: {
     recipientName: string;
     studentName: string;
@@ -146,6 +147,34 @@ export interface EmailTemplateVars {
   };
   /** The supervision corrected a posted grade to DA (OOC-102). */
   grade_corrected_did_not_sit: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
+  /** The teacher changed a grade while the register was theirs (OOC-180): still in review. */
+  grade_updated: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    grade: number;
+    passingGrade: number;
+  };
+  /** The teacher changed a grade to DA while the register was theirs (OOC-180). */
+  grade_updated_did_not_sit: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+  };
+  /** Coordination confirmed the register (OOC-180): the grade is official. */
+  grade_official: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    grade: number;
+    passingGrade: number;
+  };
+  /** Coordination confirmed the register with the module as DA (OOC-180). */
+  grade_official_did_not_sit: {
     recipientName: string;
     studentName: string;
     courseName: string;

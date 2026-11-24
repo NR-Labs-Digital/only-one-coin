@@ -111,8 +111,9 @@ export const listOwnClassGroupStudents = cache(
 )
 
 /**
- * One final grade as it counts (OOC-38): the exam's, or DA in its place. Final
- * for the teacher; only the academic supervision corrects it (OOC-102).
+ * One final grade as it counts (OOC-38): the exam's, or DA in its place. The
+ * teacher changes it while the grade register is theirs (OOC-180); after that
+ * only the academic supervision corrects it (OOC-102).
  */
 export interface TeachingGrade {
   enrollmentId: string
@@ -121,9 +122,37 @@ export interface TeachingGrade {
   didNotSit: boolean
   /** ISO 8601 UTC. */
   recordedAt: string
-  /** When the academic supervision last corrected it (OOC-102); null = as posted. */
+  /** When it last changed — the teacher's edit or the supervision's correction; null = as posted. */
   correctedAt: string | null
+  /** Who made that last change; null = as posted. */
+  changedBy: 'teacher' | 'supervision' | null
+  /** Coordination confirmed its register (OOC-180), or it predates registers. */
+  official: boolean
 }
+
+// The register's types and rule live in a module with no server import, so
+// the teacher's client screen can use them (OOC-180).
+export {
+  registerIsTeachers,
+  type GradeRegister,
+  type GradeRegisterStatus,
+  type GradeRegisterStep,
+} from './grade-register'
+import type { GradeRegister } from './grade-register'
+
+/** The open register of one of the teacher's runs; null when the read failed. */
+export const getOwnGradeRegister = cache(async (id: string): Promise<GradeRegister | null> => {
+  try {
+    const response = await apiFetch(
+      `/api/v1/teaching/class-groups/${encodeURIComponent(id)}/grade-register`,
+    )
+    if (!response.ok) return null
+    const { register } = (await response.json()) as { register: GradeRegister }
+    return register
+  } catch {
+    return null
+  }
+})
 
 /** The grades posted in one of the teacher's class groups; null when the read failed. */
 export const listOwnClassGroupGrades = cache(

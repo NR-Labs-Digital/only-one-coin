@@ -310,11 +310,16 @@ export interface Enrollment {
   classAccessLock: ClassAccessLock
   /**
    * The final exam's grade, the module's one grade, from the moment the
-   * teacher posts it (OOC-38) — final then. Compared with the session's
+   * teacher posts it (OOC-38) — in review until coordination confirms it. Compared with the session's
    * `passingGrade`, never a constant. `did_not_attempt` is DA (skipped the
    * final exam). Null while nothing is posted.
    */
   finalGrade: number | 'did_not_attempt' | null
+  /**
+   * Coordination confirmed the grade register (OOC-180): the grade is
+   * official. False = "en revisión" — shown, but it moves nothing yet.
+   */
+  finalGradeOfficial: boolean
   /**
    * Progress 0–100 for active/completed enrollments; null while under review,
    * and null for every enrollment until modules and grades are recorded —

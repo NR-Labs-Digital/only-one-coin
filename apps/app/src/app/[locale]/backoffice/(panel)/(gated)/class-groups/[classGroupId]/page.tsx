@@ -26,6 +26,7 @@ import {
   canRetireCatalogEntry,
 } from '@/lib/backoffice/permissions'
 import { getClassGroupGradeSheet } from '@/lib/backoffice/grades'
+import { getClassGroupGradeRegisters } from '@/lib/backoffice/grade-registers'
 import { addBusinessDays, businessDaysUntil } from '@/lib/backoffice/certificates'
 import { runClosesTheCourse } from '@/lib/backoffice/certificate-batch'
 import { getCertificateBatch } from '@/lib/backoffice/certificate-batch-server'
@@ -46,6 +47,7 @@ import { WaitlistCard } from './waitlist-card'
 import { RosterCard } from './roster-card'
 import { MonthlyCard } from './monthly-card'
 import { GradesCard } from './grades-card'
+import { GradeRegistersCard } from './grade-registers-card'
 import { ModuleRunsCard } from './module-runs-card'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
@@ -85,7 +87,7 @@ export default async function ClassGroupDetailPage({
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
      never asks: the card is simply not there, same as a failed read. */
-  const [roster, monthly, waitlist, courses, teachers, settings, gradeSheet] = await Promise.all([
+  const [roster, monthly, waitlist, courses, teachers, settings, gradeSheet, gradeRegisters] = await Promise.all([
     // Every catalog reader gets the roster; which columns is the API's call.
     getClassGroupRoster(group.id),
     // The same readers as the roster (OOC-86).
@@ -95,7 +97,19 @@ export default async function ClassGroupDetailPage({
     canManage ? listTeacherOptions() : Promise.resolve(null),
     getPlatformSettings(),
     readsGrades ? getClassGroupGradeSheet(group.id) : Promise.resolve(null),
+    // The grade registers (OOC-180): the same readers as the sheet.
+    readsGrades ? getClassGroupGradeRegisters(group.id) : Promise.resolve(null),
   ])
+  const runLabels = Object.fromEntries(
+    group.modules.map((run) => [
+      run.id,
+      run.fullCourse
+        ? t('class_group_runs.full_course')
+        : run.module === null
+          ? t('class_group_runs.no_module')
+          : t('class_group_runs.module_label', { number: run.module }),
+    ]),
+  )
   /* The certificate batch (OOC-33) lives on the module group of the course's
      last module. Who cannot read it never asks, as with the grade sheet. */
   const courseModules = courses?.find((course) => course.id === group.courseId)?.modules ?? 1
@@ -237,6 +251,15 @@ export default async function ClassGroupDetailPage({
       <RosterCard roster={roster} />
 
       <MonthlyCard seats={monthly} />
+
+      {readsGrades && (
+        <GradeRegistersCard
+          classGroupId={group.id}
+          registers={gradeRegisters}
+          runLabels={runLabels}
+          canEdit={canEditGrades(staff.role)}
+        />
+      )}
 
       {readsGrades && (
         <GradesCard

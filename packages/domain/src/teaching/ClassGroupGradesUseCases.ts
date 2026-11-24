@@ -88,6 +88,7 @@ export class RecordClassGroupGradesUseCase extends BaseUseCase<RecordClassGroupG
       { classGroupId: group.id, status: group.status, seatIds },
       input.actorId,
       input.entries,
+      false,
     );
   }
 }

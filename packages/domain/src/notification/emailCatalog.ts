@@ -82,13 +82,21 @@ export const EMAIL_CATALOG = {
      (`docs/REGRAS-NEGOCIO.md` §5, step 9 — two days in one FAQ, §11). */
   class_access_ready: { audience: "student", stage: "access", conditional: false, emitted: false },
   /* The teacher posted the final grade (OOC-38): the grade, or DA when the
-     final exam was not sat. Sent the moment it is posted — it is final then. */
+     final exam was not sat. Sent the moment it is posted — in review until
+     coordination confirms the register (OOC-180). */
   grade_posted: { audience: "student", stage: "grades", conditional: false, emitted: true },
   grade_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
   /* The academic supervision corrected a posted grade (OOC-102): the new
      grade, or DA. Sent with the correction. */
   grade_corrected: { audience: "student", stage: "grades", conditional: true, emitted: true },
   grade_corrected_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
+  /* The teacher changed a grade while the register was theirs (OOC-180):
+     the new grade, or DA, still in review. */
+  grade_updated: { audience: "student", stage: "grades", conditional: true, emitted: true },
+  grade_updated_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
+  /* Coordination confirmed the register (OOC-180): the grade, or DA, is official. */
+  grade_official: { audience: "student", stage: "grades", conditional: false, emitted: true },
+  grade_official_did_not_sit: { audience: "student", stage: "grades", conditional: true, emitted: true },
   enrollment_certificate_issued: { audience: "student", stage: "documents", conditional: true, emitted: true },
   certificate_issued: { audience: "student", stage: "documents", conditional: false, emitted: true },
 

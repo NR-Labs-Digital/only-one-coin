@@ -1,6 +1,7 @@
 import type { AuditLogEntry } from "../identity/ports/IAuditLogRepository.js";
 import type { EmailNotification } from "../notification/EmailNotification.js";
 import type { GradeEmailFacts } from "../notification/gradeEmails.js";
+import type { GradeRegisterStatus } from "./gradeRegister.js";
 
 /**
  * A grade as the sheet posts it (OOC-38, CLAUDE.md §1, decision 08/10/2026):
@@ -25,17 +26,36 @@ export interface RecordedGrade {
   value: GradeValue;
   /** When the grade was first posted. */
   recordedAt: Date;
-  /** When the last correction was made; null = never corrected. */
+  /** When the last change was made — the teacher's edit or the supervision's correction; null = as posted. */
   correctedAt: Date | null;
+  /** Who made that last change (OOC-180); null = as posted. */
+  changedBy: "teacher" | "supervision" | null;
+  /**
+   * The status of the register the grade was posted into (OOC-180); null on a
+   * grade posted before registers existed.
+   */
+  registerStatus: GradeRegisterStatus | null;
+  /** Counts for advancing and the certificate: its register is official, or it has none. */
+  official: boolean;
 }
 
-/** One link of a grade's history, oldest first: the posting, then each correction. */
+/** Official once its register is — a grade from before registers always was. */
+export function isOfficialGrade(registerStatus: GradeRegisterStatus | null): boolean {
+  return registerStatus === null || registerStatus === "official";
+}
+
+/**
+ * One link of a grade's history, oldest first: the posting, then each change
+ * — the teacher's own edit while the register was theirs (OOC-180), or the
+ * supervision's correction.
+ */
 export interface GradeHistoryEntry {
+  kind: "posted" | "teacher_edit" | "correction";
   value: GradeValue;
   at: Date;
   /** The account's name; null when the account no longer has one to show. */
   byName: string | null;
-  /** Why it was corrected; null on the posting itself. */
+  /** Why it was corrected; null on the posting and on a teacher's edit. */
   reason: string | null;
 }
 
@@ -74,6 +94,15 @@ export interface RecordGradesResult {
   finished: boolean;
 }
 
+export type EditGradeOutcome =
+  | { kind: "edited"; editId: string }
+  /** The seat has no posted grade to change. */
+  | { kind: "not_graded" }
+  | { kind: "same_value" }
+  /** The grade's register is not the teacher's any more: in review or official (or from before registers). */
+  | { kind: "locked" }
+  | { kind: "concurrent" };
+
 export type CorrectGradeOutcome =
   | { kind: "corrected"; correctionId: string }
   /** The seat has no posted grade to correct. */
@@ -108,10 +137,29 @@ export interface IGradeRepository {
     classGroupId: string;
     recordedBy: string;
     entries: GradeEntry[];
+    /**
+     * The teacher posts only while the run's open register is theirs (draft or
+     * returned, OOC-180); the supervision posts into one in review too. A
+     * grade with no open register opens the run's next round.
+     */
+    byTeacher: boolean;
     audit: (recorded: GradeEntry[]) => AuditLogEntry;
     finishAudit: () => AuditLogEntry;
     emails: (recorded: GradeEntry[]) => EmailNotification[];
-  }): Promise<RecordGradesResult | { conflicts: string[] }>;
+  }): Promise<RecordGradesResult | { conflicts: string[] } | { locked: true }>;
+  /**
+   * The teacher changes a posted grade while its register is theirs (OOC-180):
+   * a row of its own in the grade's line of history, like a correction, with
+   * the audit entry and the e-mails in the same transaction.
+   */
+  edit(params: {
+    classGroupId: string;
+    enrollmentId: string;
+    value: GradeValue;
+    editedBy: string;
+    audit: (editId: string) => AuditLogEntry;
+    emails: (editId: string) => EmailNotification[];
+  }): Promise<EditGradeOutcome>;
   /**
    * Appends a correction to the seat's posted grade, replacing its latest
    * correction, with the audit entry and the e-mails in the same transaction.
