@@ -18,6 +18,7 @@ const DEFAULTS: PlatformSettings = {
   passingGrade: 14,
   certificateDeadlineBusinessDays: 25,
   contractAlertDays: 45,
+  gradeSubmissionHours: 48,
   progressionRequiresPassingGrade: true,
 };
 
@@ -35,6 +36,7 @@ export class DrizzlePlatformSettingsRepository implements IPlatformSettingsRepos
         passingGrade: platformSettings.passingGrade,
         certificateDeadlineBusinessDays: platformSettings.certificateDeadlineBusinessDays,
         contractAlertDays: platformSettings.contractAlertDays,
+        gradeSubmissionHours: platformSettings.gradeSubmissionHours,
         progressionRequiresPassingGrade: platformSettings.progressionRequiresPassingGrade,
       })
       .from(platformSettings)

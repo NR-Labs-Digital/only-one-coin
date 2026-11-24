@@ -59,6 +59,10 @@ const SAMPLE_VARS: EmailTemplateVars = {
     passingGrade: 14,
   },
   grade_corrected_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  grade_updated: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", grade: 15.5, passingGrade: 14 },
+  grade_updated_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
+  grade_official: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", grade: 15.5, passingGrade: 14 },
+  grade_official_did_not_sit: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico" },
   enrollment_certificate_issued: {
     recipientName: "Rosa",
     studentName: "Rosa Quispe",
@@ -191,7 +195,7 @@ describe("grade_posted (OOC-38)", () => {
   it("writes the grade and the pass mark in the reader's convention", () => {
     expect(renderEmail(sample("grade_posted", "es-PE")).text).toContain("13.5");
     expect(renderEmail(sample("grade_posted", "pt-BR")).text).toContain("13,5");
-    expect(renderEmail(sample("grade_posted", "en")).subject).toBe("Final grade for Inglés Básico: 13.5");
+    expect(renderEmail(sample("grade_posted", "en")).subject).toBe("Final grade for Inglés Básico: 13.5 (in review)");
     expect(renderEmail(sample("grade_posted", "es-PE")).text).toContain("14");
   });
 });

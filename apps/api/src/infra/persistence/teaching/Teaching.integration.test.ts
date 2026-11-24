@@ -28,6 +28,10 @@ import {
   RecordOwnClassGroupGradesUseCase,
   Teacher,
   type CreateTeacherDTO,
+  SubmitOwnGradeRegisterUseCase,
+  ConfirmGradeRegisterUseCase,
+  ReturnGradeRegisterUseCase,
+  EditOwnClassGroupGradeUseCase,
 } from "@ooc/domain";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -38,6 +42,7 @@ import { seedLanguages } from "@/tests/fixtures/languages.js";
 import { ClassGroupRosterQuery } from "@/infra/persistence/catalog/ClassGroupRosterQuery.js";
 import { DrizzleTeacherRepository } from "@/infra/persistence/teacher/DrizzleTeacherRepository.js";
 import { DrizzleTeachingReader } from "./DrizzleTeachingReader.js";
+import { DrizzleGradeRegisterRepository } from "./DrizzleGradeRegisterRepository.js";
 import { DrizzleProgressionRepository } from "./DrizzleProgressionRepository.js";
 import { DrizzleGradeRepository } from "./DrizzleGradeRepository.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
@@ -497,6 +502,17 @@ describe("moving students on (OOC-156, part 2)", () => {
         ],
       });
 
+      // OOC-180: posted is not official — nobody moves until coordination confirms the register.
+      const registers = new DrizzleGradeRegisterRepository(tx);
+      const inReview = await preview.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      expect(inReview.seats.map((seat) => seat.verdict)).toEqual(["not_official", "not_official"]);
+      await new SubmitOwnGradeRegisterUseCase(get, registers).run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
+      await new ConfirmGradeRegisterUseCase(reader, registers, settings).run({
+        actorId: A_ACCOUNT,
+        classGroupId: A_RUNNING,
+        classGroupModuleId: A_RUNNING,
+      });
+
       const before = await preview.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING });
       expect(before.next).toEqual({ id: second!.id, module: 2 });
       expect(before.seats.map((seat) => [seat.firstName, seat.verdict, seat.attempt])).toEqual([
@@ -543,6 +559,10 @@ describe("moving students on (OOC-156, part 2)", () => {
       expect(counting.map((grade) => [grade.enrollmentId, grade.value])).toEqual([
         [pedro!.id, { kind: "score", score: 15 }],
       ]);
+      // The repeat opened the run's second round, in its own register, not yet official.
+      expect(counting[0]).toMatchObject({ registerStatus: "draft", official: false });
+      const round = await registers.currentOf(A_RUNNING, 48, new Date());
+      expect(round).toMatchObject({ round: 2, status: "draft", graded: 1, total: 1 });
 
       // A second confirmation from a stale screen moves nobody.
       await expect(
@@ -813,6 +833,126 @@ describe("finishing the module and correcting grades (OOC-102)", () => {
 
       const [current] = await tx.select().from(currentGrades).where(eq(currentGrades.gradeId, row!.id));
       expect(current).toMatchObject({ score: 12, didNotSit: false });
+    });
+  });
+});
+
+describe("the grade register (OOC-180)", () => {
+  function flow(tx: Db) {
+    const teachers = new DrizzleTeacherRepository(tx);
+    const reader = new DrizzleTeachingReader(tx, new ClassGroupRosterQuery(tx));
+    const get = new GetOwnClassGroupUseCase(teachers, reader);
+    const grades = new DrizzleGradeRepository(tx);
+    const settings = new DrizzlePlatformSettingsRepository(tx);
+    const registers = new DrizzleGradeRegisterRepository(tx);
+    return {
+      grades,
+      registers,
+      roster: new ListOwnClassGroupStudentsUseCase(get, reader),
+      record: new RecordOwnClassGroupGradesUseCase(get, reader, grades, settings),
+      edit: new EditOwnClassGroupGradeUseCase(get, reader, grades, settings),
+      submit: new SubmitOwnGradeRegisterUseCase(get, registers),
+      returnIt: new ReturnGradeRegisterUseCase(reader, registers),
+      confirm: new ConfirmGradeRegisterUseCase(reader, registers, settings),
+    };
+  }
+
+  it("goes draft → in review → returned → in review → official, locking the teacher out in review", async () => {
+    await seeded(async (tx) => {
+      const f = flow(tx);
+      const scope = { userId: A_ACCOUNT, classGroupId: A_RUNNING };
+      const step = { actorId: A_ACCOUNT, classGroupId: A_RUNNING, classGroupModuleId: A_RUNNING };
+      await tx.update(classGroupModules).set({ moduleEndsOn: "2026-11-20" }).where(eq(classGroupModules.id, A_RUNNING));
+
+      // Before any grade: the round the next grade opens, with the run's deadline.
+      const empty = await f.registers.currentOf(A_RUNNING, 48, new Date("2026-11-22T00:00:00Z"));
+      expect(empty).toMatchObject({ registerId: null, round: 1, status: "draft", graded: 0, total: 1, overdue: false });
+      expect(empty.deadlineAt?.toISOString()).toBe("2026-11-23T05:00:00.000Z");
+      expect((await f.registers.currentOf(A_RUNNING, 48, new Date("2026-11-24T00:00:00Z"))).overdue).toBe(true);
+      await expect(f.submit.run(scope)).rejects.toMatchObject({ reason: "teaching.grade_register_empty" });
+
+      const [lucia] = await f.roster.run(scope);
+      await f.record.run({ ...scope, entries: [{ enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 11 } }] });
+      // The teacher changes it while the register is theirs.
+      await f.edit.run({ ...scope, enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 12 } });
+
+      await f.submit.run(scope);
+      expect(await f.registers.currentOf(A_RUNNING, 48, new Date())).toMatchObject({ status: "in_review", graded: 1, total: 1 });
+      await expect(
+        f.edit.run({ ...scope, enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 13 } }),
+      ).rejects.toMatchObject({ reason: "teaching.grade_register_locked" });
+      await expect(f.submit.run(scope)).rejects.toMatchObject({ reason: "teaching.grade_register_wrong_status" });
+
+      await expect(f.returnIt.run({ ...step, note: "   " })).rejects.toMatchObject({
+        reason: "teaching.grade_register_note_required",
+      });
+      await f.returnIt.run({ ...step, note: "Revisa la nota de Lucía" });
+      const returned = await f.registers.currentOf(A_RUNNING, 48, new Date());
+      expect(returned).toMatchObject({ status: "returned", returnNote: "Revisa la nota de Lucía" });
+
+      const { editId } = await f.edit.run({ ...scope, enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 15 } });
+      await f.submit.run(scope);
+      await f.confirm.run(step);
+
+      const official = await f.registers.currentOf(A_RUNNING, 48, new Date());
+      expect(official.status).toBe("official");
+      expect(official.steps.map((entry) => entry.kind)).toEqual(["submitted", "returned", "submitted", "confirmed"]);
+      expect(official.steps[0]!.byName).not.toBeNull();
+
+      const [grade] = await f.grades.listWithHistory(A_RUNNING);
+      expect(grade).toMatchObject({ value: { kind: "score", score: 15 }, official: true, changedBy: "teacher" });
+      expect(grade!.history.map((entry) => entry.kind)).toEqual(["posted", "teacher_edit", "teacher_edit"]);
+
+      const mails = await tx
+        .select({ templateKey: outbox.templateKey, dedupeKey: outbox.dedupeKey })
+        .from(outbox)
+        .where(sql`${outbox.templateKey} in ('grade_updated', 'grade_official')`);
+      expect(mails.map((mail) => mail.templateKey).sort()).toEqual(["grade_official", "grade_updated", "grade_updated"]);
+      expect(mails.some((mail) => mail.dedupeKey === `grade_updated:${editId}:student`)).toBe(true);
+
+      const audits = await tx
+        .select({ action: auditLog.action })
+        .from(auditLog)
+        .where(sql`${auditLog.action} like 'teaching.grade_register_%' or ${auditLog.action} = 'teaching.grade_edited'`);
+      expect(audits.map((entry) => entry.action).sort()).toEqual([
+        "teaching.grade_edited",
+        "teaching.grade_edited",
+        "teaching.grade_register_confirmed",
+        "teaching.grade_register_returned",
+        "teaching.grade_register_submitted",
+        "teaching.grade_register_submitted",
+      ]);
+
+      // Official is the supervision's to correct, never the teacher's.
+      await expect(
+        f.edit.run({ ...scope, enrollmentId: lucia!.enrollmentId, value: { kind: "score", score: 16 } }),
+      ).rejects.toMatchObject({ reason: "teaching.grade_register_locked" });
+    });
+  });
+
+  it("refuses sending a round with a seat still ungraded, and lists it for coordination", async () => {
+    await seeded(async (tx) => {
+      const f = flow(tx);
+      const scope = { userId: A_ACCOUNT, classGroupId: A_RUNNING };
+      const PEDRO = "018f2b5c-8200-7000-8000-000000000039";
+      await tx.insert(students).values(studentRow(PEDRO, "Pedro", "Vargas", "OOC180-STUDENT-1"));
+      await tx.insert(enrollments).values({ studentId: PEDRO, classGroupId: A_RUNNING, planPriceId: PRICE, seatStatus: "confirmed" });
+      const [first] = await f.roster.run(scope);
+      await f.record.run({ ...scope, entries: [{ enrollmentId: first!.enrollmentId, value: { kind: "did_not_sit" } }] });
+
+      await expect(f.submit.run(scope)).rejects.toMatchObject({ reason: "teaching.grade_register_incomplete" });
+      await expect(
+        f.confirm.run({ actorId: A_ACCOUNT, classGroupId: A_RUNNING, classGroupModuleId: A_RUNNING }),
+      ).rejects.toMatchObject({ reason: "teaching.grade_register_incomplete" });
+
+      const rows = await f.registers.list(
+        { academicPeriodId: null, teacherId: null, module: null, status: "draft", overdueOnly: false },
+        48,
+        new Date(),
+      );
+      const mine = rows.find((row) => row.classGroupModuleId === A_RUNNING);
+      expect(mine).toMatchObject({ graded: 1, total: 2, status: "draft" });
+      expect(mine?.teacherName).toBeTruthy();
     });
   });
 });

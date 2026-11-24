@@ -3,6 +3,7 @@ import {
   GetOwnClassGroupUseCase,
   RecordClassGroupGradesUseCase,
   RecordOwnClassGroupGradesUseCase,
+  EditOwnClassGroupGradeUseCase,
   Teacher,
   isValidScore,
   type GradeEntry,
@@ -93,6 +94,10 @@ class FakeGrades implements IGradeRepository {
   recordedInto: string | null = null;
   /** Set to make the next correction lose a race with somebody else's. */
   raceNextCorrection = false;
+  /** The open register's status (OOC-180): the teacher posts and edits only while it is theirs. */
+  registerStatus: "draft" | "in_review" | "returned" | "official" = "draft";
+  /** The teacher's edits per seat. */
+  edits = new Map<string, Array<{ id: string; value: GradeEntry["value"] }>>();
 
   async listForClassGroup() {
     return [];
@@ -103,7 +108,26 @@ class FakeGrades implements IGradeRepository {
   }
 
   current(enrollmentId: string) {
-    return this.corrections.get(enrollmentId)?.at(-1)?.value ?? this.posted.get(enrollmentId);
+    return (
+      this.corrections.get(enrollmentId)?.at(-1)?.value ??
+      this.edits.get(enrollmentId)?.at(-1)?.value ??
+      this.posted.get(enrollmentId)
+    );
+  }
+
+  async edit(params: Parameters<IGradeRepository["edit"]>[0]) {
+    if (!this.posted.has(params.enrollmentId)) return { kind: "not_graded" as const };
+    if (this.registerStatus !== "draft" && this.registerStatus !== "returned") return { kind: "locked" as const };
+    if (JSON.stringify(this.current(params.enrollmentId)) === JSON.stringify(params.value)) {
+      return { kind: "same_value" as const };
+    }
+    const list = this.edits.get(params.enrollmentId) ?? [];
+    const id = `018f2b5c-1030-7000-8000-${String(list.length + 1).padStart(12, "0")}`;
+    list.push({ id, value: params.value });
+    this.edits.set(params.enrollmentId, list);
+    this.audits.push(params.audit(id));
+    this.emails.push(...params.emails(id));
+    return { kind: "edited" as const, editId: id };
   }
 
   async correct(params: Parameters<IGradeRepository["correct"]>[0]) {
@@ -142,6 +166,10 @@ class FakeGrades implements IGradeRepository {
 
   async record(params: Parameters<IGradeRepository["record"]>[0]) {
     this.recordedInto = params.classGroupId;
+    const opensNew = params.entries.some((entry) => !this.posted.has(entry.enrollmentId));
+    if (opensNew && params.byTeacher && this.registerStatus !== "draft" && this.registerStatus !== "returned") {
+      return { locked: true as const };
+    }
     const conflicts = params.entries.filter((entry) => {
       const posted = this.posted.get(entry.enrollmentId);
       return posted && JSON.stringify(posted) !== JSON.stringify(entry.value);
@@ -188,6 +216,7 @@ function setUp(status: TeachingClassGroup["status"] = "finished", run: string = 
     useCase,
     grades,
     supervision: new RecordClassGroupGradesUseCase(reader, grades, settings),
+    edit: new EditOwnClassGroupGradeUseCase(new GetOwnClassGroupUseCase(teachers, reader), reader, grades, settings),
     correct: new CorrectClassGroupGradeUseCase(reader, grades, settings),
   };
 }
@@ -281,7 +310,7 @@ describe("RecordOwnClassGroupGradesUseCase", () => {
     expect(grades.emails).toHaveLength(sent);
   });
 
-  it("refuses a different grade on a posted seat: a posted grade is final", async () => {
+  it("refuses a different grade on a posted seat: changing one is an edit, not a second posting", async () => {
     const { useCase } = setUp();
     await useCase.run(post([score(SEAT_A, 15)]));
 
@@ -490,6 +519,82 @@ describe("CorrectClassGroupGradeUseCase (OOC-102)", () => {
       status: 422,
       reason: "teaching.grading_closed",
     });
+  });
+});
+
+describe("the teacher and the grade register (OOC-180)", () => {
+  it("refuses posting while the register is in review or official", async () => {
+    for (const status of ["in_review", "official"] as const) {
+      const { useCase, grades } = setUp();
+      grades.registerStatus = status;
+      await expect(useCase.run(post([score(SEAT_A, 15)]))).rejects.toMatchObject({
+        status: 422,
+        reason: "teaching.grade_register_locked",
+      });
+      expect(grades.posted.size).toBe(0);
+    }
+  });
+
+  it("posts into a returned register", async () => {
+    const { useCase, grades } = setUp();
+    grades.registerStatus = "returned";
+    await useCase.run(post([score(SEAT_A, 15)]));
+    expect(grades.posted.get(SEAT_A)).toEqual({ kind: "score", score: 15 });
+  });
+
+  it("lets the supervision post into a register in review", async () => {
+    const { supervision, grades } = setUp();
+    grades.registerStatus = "in_review";
+    await supervision.run({ actorId: "usr_sup", classGroupId: GROUP, entries: [score(SEAT_A, 15)] });
+    expect(grades.posted.get(SEAT_A)).toEqual({ kind: "score", score: 15 });
+  });
+
+  it("edits a posted grade, audits the seat never the grade, and e-mails the update", async () => {
+    const { useCase, edit, grades } = setUp();
+    await useCase.run(post([score(SEAT_A, 11)]));
+    grades.emails = [];
+
+    const result = await edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: SEAT_A, value: { kind: "score", score: 15.5 } });
+
+    expect(grades.current(SEAT_A)).toEqual({ kind: "score", score: 15.5 });
+    expect(grades.posted.get(SEAT_A)).toEqual({ kind: "score", score: 11 });
+    expect(grades.audits.at(-1)).toMatchObject({
+      action: "teaching.grade_edited",
+      metadata: { enrollmentId: SEAT_A, editId: result.editId },
+    });
+    expect(JSON.stringify(grades.audits.at(-1))).not.toContain("15.5");
+    expect(grades.emails.map((email) => [email.templateKey, email.to])).toEqual([["grade_updated", "rosa@gmail.com"]]);
+    expect(grades.emails[0]).toMatchObject({ dedupeKey: `grade_updated:${result.editId}:student` });
+  });
+
+  it("e-mails the DA update to a minor's guardian too", async () => {
+    const { useCase, edit, grades } = setUp();
+    await useCase.run(post([score(SEAT_B, 11)]));
+    grades.emails = [];
+    await edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: SEAT_B, value: { kind: "did_not_sit" } });
+    expect(grades.emails.map((email) => email.templateKey)).toEqual(["grade_updated_did_not_sit", "grade_updated_did_not_sit"]);
+  });
+
+  it("refuses the edit once the register is in review or official", async () => {
+    const { useCase, edit, grades } = setUp();
+    await useCase.run(post([score(SEAT_A, 11)]));
+    grades.registerStatus = "in_review";
+    await expect(
+      edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: SEAT_A, value: { kind: "score", score: 15 } }),
+    ).rejects.toMatchObject({ status: 422, reason: "teaching.grade_register_locked" });
+  });
+
+  it("refuses editing a seat with no grade, a seat of another run, and an out-of-range grade", async () => {
+    const { edit } = setUp();
+    await expect(
+      edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: SEAT_A, value: { kind: "score", score: 15 } }),
+    ).rejects.toMatchObject({ reason: "teaching.grade_not_recorded" });
+    await expect(
+      edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: "018f2b5c-3800-7000-8000-0000000000ff", value: { kind: "score", score: 15 } }),
+    ).rejects.toMatchObject({ reason: "teaching.grade_unknown_enrollment" });
+    await expect(
+      edit.run({ userId: ACCOUNT, classGroupId: GROUP, enrollmentId: SEAT_A, value: { kind: "score", score: 20.5 } }),
+    ).rejects.toMatchObject({ reason: "teaching.grade_out_of_range" });
   });
 });
 

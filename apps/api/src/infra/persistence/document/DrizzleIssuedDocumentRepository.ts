@@ -74,6 +74,8 @@ export type GradeRead = { score: number; didNotSit: false } | { score: null; did
 export interface CertificateSeat extends IssuedStudentFacts {
   enrollmentId: string;
   lastModuleGrade: GradeRead | null;
+  /** That grade's register is official (OOC-180) — or it predates registers. */
+  lastModuleGradeOfficial: boolean;
   earlierModuleGrades: { module: number; grade: GradeRead }[];
   /** The certificate that holds for this enrollment now — never a revoked one. */
   issued: { id: string; code: string; issuedAt: Date } | null;
@@ -351,6 +353,7 @@ export class DrizzleIssuedDocumentRepository {
         attempt: currentGrades.attempt,
         score: currentGrades.score,
         didNotSit: currentGrades.didNotSit,
+        official: currentGrades.official,
         recordedAt: currentGrades.recordedAt,
       })
       .from(currentGrades)
@@ -401,6 +404,7 @@ export class DrizzleIssuedDocumentRepository {
         birthDate: seat.birthDate,
         guardian: seat.guardianEmail ? { firstName: seat.guardianFirstName ?? "", email: seat.guardianEmail } : null,
         lastModuleGrade: here ? gradeOf(here) : null,
+        lastModuleGradeOfficial: here?.official ?? false,
         earlierModuleGrades: [...earlier.entries()]
           .sort(([a], [b]) => a - b)
           .map(([module, grade]) => ({ module, grade })),

@@ -92,6 +92,8 @@ export const ClassGroupModuleItemSchema = z.object({
   classroomMissing: z.boolean(),
   /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
   meetUrl: z.string().nullable(),
+  /** The module's end date in this run (OOC-180), `YYYY-MM-DD`; null = not set. */
+  moduleEndsOn: z.string().nullable(),
   /** Confirmed seats in the run now. */
   students: z.number().int(),
 });
@@ -121,6 +123,8 @@ export const ClassGroupItemSchema = z.object({
   classroomMissing: z.boolean(),
   /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
   meetUrl: z.string().nullable(),
+  /** The first run's module end date (OOC-180), `YYYY-MM-DD`. */
+  moduleEndsOn: z.string().nullable(),
   /** Some run of the class group has no teacher yet. */
   teacherMissing: z.boolean(),
   module: z.number().int().nullable(),
@@ -195,7 +199,15 @@ export const CreateClassGroupBodySchema = z.object({
  * always edited them (OOC-156). With more than one run those go to the run's
  * route; sending them here is 422 `catalog.class_group_module_ambiguous`.
  */
+/** The module's end date in a run (OOC-180): a calendar day, `YYYY-MM-DD`; null clears it. The domain checks the day exists. */
+const ModuleEndsOnSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .nullable()
+  .optional();
+
 export const UpdateClassGroupBodySchema = CreateClassGroupBodySchema.omit({ academicPeriodId: true, publish: true })
+  .extend({ moduleEndsOn: ModuleEndsOnSchema })
   .partial()
   .refine((patch) => Object.keys(patch).length > 0);
 
@@ -207,7 +219,7 @@ export const CreateClassGroupModuleBodySchema = CreateClassGroupBodySchema.pick(
   module: true,
   fullCourse: true,
   slots: true,
-});
+}).extend({ moduleEndsOn: ModuleEndsOnSchema });
 
 export const UpdateClassGroupModuleBodySchema = CreateClassGroupModuleBodySchema.partial().refine(
   (patch) => Object.keys(patch).length > 0,

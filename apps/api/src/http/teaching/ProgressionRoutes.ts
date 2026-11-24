@@ -34,7 +34,7 @@ const ProgressionPreviewSchema = z.object({
       attempt: z.number().int(),
       grade: z.number().nullable(),
       didNotSit: z.boolean(),
-      verdict: z.enum(["passed", "below_passing", "did_not_sit", "not_graded"]),
+      verdict: z.enum(["passed", "below_passing", "did_not_sit", "not_graded", "not_official"]),
     }),
   ),
 });

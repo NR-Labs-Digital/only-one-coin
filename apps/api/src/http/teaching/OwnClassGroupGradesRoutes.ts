@@ -1,4 +1,4 @@
-import { MAX_GRADE, MIN_GRADE, type GradeEntry, type RecordedGrade } from "@ooc/domain";
+import { GRADE_REGISTER_STATUSES, MAX_GRADE, MIN_GRADE, type GradeEntry, type RecordedGrade } from "@ooc/domain";
 import { z } from "zod";
 import { container } from "@/container.js";
 import { IdParamsSchema } from "@/http/catalog/CatalogSchemas.js";
@@ -12,8 +12,14 @@ export const RecordedGradeSchema = z.object({
   didNotSit: z.boolean(),
   /** When it was first posted — ISO 8601, UTC. */
   recordedAt: z.string().datetime(),
-  /** When the supervision last corrected it (OOC-102); null = as posted. */
+  /** When it last changed — the teacher's edit or the supervision's correction; null = as posted. */
   correctedAt: z.string().datetime().nullable(),
+  /** Who made that last change (OOC-180); null = as posted. */
+  changedBy: z.enum(["teacher", "supervision"]).nullable(),
+  /** The status of the register it was posted into (OOC-180); null on a grade from before registers. */
+  registerStatus: z.enum(GRADE_REGISTER_STATUSES).nullable(),
+  /** Counts for advancing and the certificate: the register is official, or there is none. */
+  official: z.boolean(),
 });
 
 export function serializeGrade(grade: RecordedGrade): z.infer<typeof RecordedGradeSchema> {
@@ -23,6 +29,9 @@ export function serializeGrade(grade: RecordedGrade): z.infer<typeof RecordedGra
     didNotSit: grade.value.kind === "did_not_sit",
     recordedAt: grade.recordedAt.toISOString(),
     correctedAt: grade.correctedAt ? grade.correctedAt.toISOString() : null,
+    changedBy: grade.changedBy,
+    registerStatus: grade.registerStatus,
+    official: grade.official,
   };
 }
 
@@ -65,15 +74,15 @@ export function toGradeEntry(entry: z.infer<typeof GradeEntrySchema>): GradeEntr
   };
 }
 
-// Posting final grades — one, or the sheet's batch (OOC-38). Final once
-// posted; the same value again is a no-op, so a sheet that lost its
-// connection resends safely.
+// Posting final grades — one, or the sheet's batch (OOC-38). The same value
+// again is a no-op, so a sheet that lost its connection resends safely;
+// changing one is the edit route below (OOC-180).
 export const recordOwnClassGroupGradesRoute = RouteBuilder.post("/teaching/class-groups/:id/grades")
   .docs({
     tags: ["Teaching"],
     summary: "Post final grades in one of the signed-in teacher's class groups",
     description:
-      "One grade per confirmed seat, final once posted. Resending the same value is a no-op; a different value on a graded seat is 409 and nothing is written. The batch that leaves every confirmed seat graded moves an in-progress class group to finished.",
+      "One grade per confirmed seat, into the run's open grade register — only while it is the teacher's (not sent, or returned; 422 `teaching.grade_register_locked` otherwise). Resending the same value is a no-op; a different value on a graded seat is 409 and nothing is written. The batch that leaves every confirmed seat graded moves an in-progress class group to finished.",
   })
   .roles("teacher")
   .params(IdParamsSchema)

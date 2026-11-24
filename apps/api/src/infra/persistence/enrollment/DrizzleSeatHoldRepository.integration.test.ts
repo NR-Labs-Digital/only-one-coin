@@ -323,6 +323,7 @@ describe("DrizzlePlatformSettingsRepository", () => {
         "certificateDeadlineBusinessDays",
         "checkoutHoldMinutes",
         "contractAlertDays",
+        "gradeSubmissionHours",
         "ocrLowConfidencePercent",
         "passingGrade",
         "progressionRequiresPassingGrade",

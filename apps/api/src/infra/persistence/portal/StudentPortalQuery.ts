@@ -84,7 +84,8 @@ export interface PortalEnrollmentRow {
    * The final grade the teacher posted in this class group (OOC-38) — final
    * once posted. `score` is null on a DA. Null while nothing is posted.
    */
-  finalGrade: { score: number | null; didNotSit: boolean; recordedAt: Date } | null;
+  /** `official` once coordination confirmed its register (OOC-180); "in review" until then. */
+  finalGrade: { score: number | null; didNotSit: boolean; recordedAt: Date; official: boolean } | null;
 }
 
 /**
@@ -200,6 +201,7 @@ export class StudentPortalQuery {
         gradeScore: currentGrades.score,
         gradeDidNotSit: currentGrades.didNotSit,
         gradeRecordedAt: currentGrades.recordedAt,
+        gradeOfficial: currentGrades.official,
       })
       .from(enrollments)
       // A retired course or class group still labels the enrollment that
@@ -324,6 +326,7 @@ export class StudentPortalQuery {
                   score: row.gradeDidNotSit ? null : Number(row.gradeScore),
                   didNotSit: row.gradeDidNotSit === true,
                   recordedAt: row.gradeRecordedAt,
+                  official: row.gradeOfficial === true,
                 }
               : null,
         };

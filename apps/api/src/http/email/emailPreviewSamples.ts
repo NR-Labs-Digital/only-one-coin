@@ -114,6 +114,30 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     studentName: "María Fernanda Quispe Rojas",
     courseName: "Inglés Básico",
   },
+  grade_updated: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    grade: 15.5,
+    passingGrade: 14,
+  },
+  grade_updated_did_not_sit: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
+  grade_official: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    grade: 15.5,
+    passingGrade: 14,
+  },
+  grade_official_did_not_sit: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+  },
   enrollment_certificate_issued: {
     recipientName: "María Fernanda",
     studentName: "María Fernanda Quispe Rojas",

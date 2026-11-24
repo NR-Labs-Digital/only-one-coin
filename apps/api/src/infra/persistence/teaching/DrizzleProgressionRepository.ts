@@ -30,6 +30,7 @@ export class DrizzleProgressionRepository implements IProgressionRepository {
         score: currentGrades.score,
         didNotSit: currentGrades.didNotSit,
         gradeId: currentGrades.gradeId,
+        official: currentGrades.official,
       })
       .from(enrollments)
       .innerJoin(students, eq(students.id, enrollments.studentId))
@@ -61,6 +62,7 @@ export class DrizzleProgressionRepository implements IProgressionRepository {
           : row.didNotSit
             ? ({ kind: "did_not_sit" } satisfies GradeValue)
             : ({ kind: "score", score: Number(row.score) } satisfies GradeValue),
+      official: row.official ?? false,
     }));
   }
 

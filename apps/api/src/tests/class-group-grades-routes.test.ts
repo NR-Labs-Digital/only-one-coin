@@ -143,9 +143,13 @@ describe("the analyst reads", () => {
             value: { kind: "score", score: 14.5 },
             recordedAt: new Date("2026-11-10T15:00:00.000Z"),
             correctedAt: new Date("2026-11-10T16:00:00.000Z"),
+            changedBy: "supervision",
+            registerStatus: "in_review",
+            official: false,
             history: [
-              { value: { kind: "score", score: 11 }, at: new Date("2026-11-10T15:00:00.000Z"), byName: "Ana", reason: null },
+              { kind: "posted", value: { kind: "score", score: 11 }, at: new Date("2026-11-10T15:00:00.000Z"), byName: "Ana", reason: null },
               {
+                kind: "correction",
                 value: { kind: "score", score: 14.5 },
                 at: new Date("2026-11-10T16:00:00.000Z"),
                 byName: "Lucía",
@@ -166,9 +170,11 @@ describe("the analyst reads", () => {
         grade: 14.5,
         didNotSit: false,
         correctedAt: "2026-11-10T16:00:00.000Z",
+        registerStatus: "in_review",
+        official: false,
         history: [
-          { grade: 11, byName: "Ana", reason: null },
-          { grade: 14.5, byName: "Lucía", reason: "Error de digitación" },
+          { kind: "posted", grade: 11, byName: "Ana", reason: null },
+          { kind: "correction", grade: 14.5, byName: "Lucía", reason: "Error de digitación" },
         ],
       },
     });

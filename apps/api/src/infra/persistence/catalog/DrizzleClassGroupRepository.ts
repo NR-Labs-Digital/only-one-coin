@@ -31,6 +31,7 @@ export function classGroupModuleFromRow(row: ModuleRow): ClassGroupModule {
     classroomLinks: row.classroomLinks,
     classroomUrl: row.classroomUrl,
     meetUrl: row.meetUrl,
+    moduleEndsOn: row.moduleEndsOn,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -99,6 +100,7 @@ function moduleValues(run: ClassGroupModule) {
     classroomLinks: run.classroomLinks,
     classroomUrl: run.classroomUrl,
     meetUrl: run.meetUrl,
+    moduleEndsOn: run.moduleEndsOn,
   };
 }
 

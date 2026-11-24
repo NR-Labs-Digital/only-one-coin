@@ -1,6 +1,10 @@
 import {
+  isOfficialGrade,
   sameGrade,
+  teacherMayEdit,
   type CorrectGradeOutcome,
+  type EditGradeOutcome,
+  type GradeRegisterStatus,
   type GradeEmailFacts,
   type GradeEntry,
   type GradeValue,
@@ -15,11 +19,12 @@ import {
   currentGrades,
   enrollments,
   gradeCorrections,
+  gradeRegisters,
   grades,
   guardians,
   students,
 } from "@ooc/db";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { AuditLogEntry } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
@@ -27,6 +32,12 @@ import { insertOutboxEmails } from "@/infra/persistence/notification/DrizzleOutb
 class ConflictingGrades extends Error {
   constructor(readonly enrollmentIds: string[]) {
     super("conflicting grades");
+  }
+}
+
+class LockedRegister extends Error {
+  constructor() {
+    super("grade register locked");
   }
 }
 
@@ -42,6 +53,80 @@ function columnsOf(value: GradeValue) {
 }
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/**
+ * The run's open register, locked for this transaction — or a new one, the
+ * run's next round, when none is open (OOC-180). Two batches opening the same
+ * round meet on the partial unique index: the loser's insert does nothing and
+ * it reads the winner's row.
+ */
+export async function openRegisterOf(
+  tx: Tx,
+  classGroupId: string,
+  classGroupModuleId: string,
+): Promise<{ id: string; status: GradeRegisterStatus }> {
+  const lockOpen = () =>
+    tx
+      .select({ id: gradeRegisters.id, status: gradeRegisters.status })
+      .from(gradeRegisters)
+      .where(and(eq(gradeRegisters.classGroupModuleId, classGroupModuleId), ne(gradeRegisters.status, "official")))
+      .for("update");
+
+  const [open] = await lockOpen();
+  if (open) return { id: open.id, status: open.status as GradeRegisterStatus };
+
+  await tx
+    .insert(gradeRegisters)
+    .values({
+      classGroupId,
+      classGroupModuleId,
+      round: sql`(select coalesce(max(prior.round), 0) + 1 from "grade_registers" prior where prior.class_group_module_id = ${classGroupModuleId})`,
+    })
+    .onConflictDoNothing();
+  const [created] = await lockOpen();
+  if (!created) throw new Error("grade register could not be opened");
+  return { id: created.id, status: created.status as GradeRegisterStatus };
+}
+
+/** The people and course behind these seats — for every grade e-mail, posting and register alike. */
+export async function gradeEmailFactsOf(
+  db: Db | Tx,
+  classGroupId: string,
+  enrollmentIds: string[],
+): Promise<GradeEmailFacts[]> {
+  if (enrollmentIds.length === 0) return [];
+  const rows = await db
+    .select({
+      enrollmentId: enrollments.id,
+      classGroupModuleId: sql<string>`coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")`,
+      attempt: enrollments.moduleAttempt,
+      firstName: students.firstName,
+      lastName: students.lastName,
+      email: students.email,
+      birthDate: students.birthDate,
+      guardianFirstName: guardians.firstName,
+      guardianEmail: guardians.email,
+      courseName: courses.name,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(students.id, enrollments.studentId))
+    .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
+    .innerJoin(courses, eq(courses.id, classGroups.courseId))
+    .leftJoin(guardians, and(eq(guardians.studentId, students.id), isNull(guardians.deletedAt)))
+    .where(and(eq(enrollments.classGroupId, classGroupId), inArray(enrollments.id, enrollmentIds)));
+
+  return rows.map((row) => ({
+    enrollmentId: row.enrollmentId,
+    classGroupModuleId: row.classGroupModuleId,
+    attempt: row.attempt,
+    student: { firstName: row.firstName, lastName: row.lastName, email: row.email, birthDate: row.birthDate },
+    guardian:
+      row.guardianFirstName !== null && row.guardianEmail !== null
+        ? { firstName: row.guardianFirstName, email: row.guardianEmail }
+        : null,
+    courseName: row.courseName,
+  }));
+}
 
 async function insertAudit(tx: Tx, entry: AuditLogEntry): Promise<void> {
   await tx.insert(auditLog).values({
@@ -96,18 +181,26 @@ export class DrizzleGradeRepository implements IGradeRepository {
         didNotSit: currentGrades.didNotSit,
         recordedAt: currentGrades.recordedAt,
         correctedAt: currentGrades.correctedAt,
+        registerStatus: currentGrades.registerStatus,
+        changeKind: sql<string | null>`(select change.kind from "grade_corrections" change where change.id = ${currentGrades.correctionId})`,
       })
       .from(currentGrades)
       .innerJoin(enrollments, CURRENT_ATTEMPT_OF_VIEW)
       .where(eq(currentGrades.classGroupId, classGroupId))
       .orderBy(asc(currentGrades.recordedAt));
 
-    return rows.map((row) => ({
-      enrollmentId: row.enrollmentId,
-      value: valueOf(row),
-      recordedAt: row.recordedAt,
-      correctedAt: row.correctedAt,
-    }));
+    return rows.map((row) => {
+      const registerStatus = row.registerStatus as GradeRegisterStatus | null;
+      return {
+        enrollmentId: row.enrollmentId,
+        value: valueOf(row),
+        recordedAt: row.recordedAt,
+        correctedAt: row.correctedAt,
+        changedBy: row.changeKind === null ? null : row.changeKind === "teacher_edit" ? "teacher" : "supervision",
+        registerStatus,
+        official: isOfficialGrade(registerStatus),
+      };
+    });
   }
 
   async listWithHistory(classGroupId: string): Promise<GradeWithHistory[]> {
@@ -130,6 +223,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
           gradeId: gradeCorrections.gradeId,
           score: gradeCorrections.score,
           didNotSit: gradeCorrections.didNotSit,
+          kind: gradeCorrections.kind,
           reason: gradeCorrections.reason,
           createdAt: gradeCorrections.createdAt,
           byName: sql<string | null>`(select "name" from "user" where "id" = ${gradeCorrections.correctedBy})`,
@@ -154,8 +248,9 @@ export class DrizzleGradeRepository implements IGradeRepository {
       const original = postedBySeat.get(grade.enrollmentId);
       const history = original
         ? [
-            { value: valueOf(original), at: original.createdAt, byName: original.byName, reason: null },
+            { kind: "posted" as const, value: valueOf(original), at: original.createdAt, byName: original.byName, reason: null },
             ...(correctionsByGrade.get(original.id) ?? []).map((row) => ({
+              kind: row.kind === "teacher_edit" ? ("teacher_edit" as const) : ("correction" as const),
               value: valueOf(row),
               at: row.createdAt,
               byName: row.byName,
@@ -168,49 +263,51 @@ export class DrizzleGradeRepository implements IGradeRepository {
   }
 
   async emailFacts(classGroupId: string, enrollmentIds: string[]): Promise<GradeEmailFacts[]> {
-    if (enrollmentIds.length === 0) return [];
-    const rows = await this.db
-      .select({
-        enrollmentId: enrollments.id,
-        classGroupModuleId: sql<string>`coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")`,
-        attempt: enrollments.moduleAttempt,
-        firstName: students.firstName,
-        lastName: students.lastName,
-        email: students.email,
-        birthDate: students.birthDate,
-        guardianFirstName: guardians.firstName,
-        guardianEmail: guardians.email,
-        courseName: courses.name,
-      })
-      .from(enrollments)
-      .innerJoin(students, eq(students.id, enrollments.studentId))
-      .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
-      .innerJoin(courses, eq(courses.id, classGroups.courseId))
-      .leftJoin(guardians, and(eq(guardians.studentId, students.id), isNull(guardians.deletedAt)))
-      .where(and(eq(enrollments.classGroupId, classGroupId), inArray(enrollments.id, enrollmentIds)));
-
-    return rows.map((row) => ({
-      enrollmentId: row.enrollmentId,
-      classGroupModuleId: row.classGroupModuleId,
-      attempt: row.attempt,
-      student: { firstName: row.firstName, lastName: row.lastName, email: row.email, birthDate: row.birthDate },
-      guardian:
-        row.guardianFirstName !== null && row.guardianEmail !== null
-          ? { firstName: row.guardianFirstName, email: row.guardianEmail }
-          : null,
-      courseName: row.courseName,
-    }));
+    return gradeEmailFactsOf(this.db, classGroupId, enrollmentIds);
   }
 
   async record(params: Parameters<IGradeRepository["record"]>[0]) {
     try {
       return await this.db.transaction(async (tx) => {
+        // The register each new grade goes into (OOC-180): the open one of the
+        // seat's run. Seats that already have a grade this attempt are a retry
+        // or a conflict, judged below — they open nothing and lock nothing.
+        const seats = await tx
+          .select({
+            enrollmentId: enrollments.id,
+            runId: sql<string>`coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")`,
+            graded: sql<boolean>`exists (
+              select 1 from "grades" posted
+              where posted.enrollment_id = "enrollments"."id"
+                and coalesce(posted.class_group_module_id, posted.class_group_id) = coalesce("enrollments"."class_group_module_id", "enrollments"."class_group_id")
+                and posted.attempt = "enrollments"."module_attempt"
+            )`,
+          })
+          .from(enrollments)
+          .where(
+            and(
+              eq(enrollments.classGroupId, params.classGroupId),
+              inArray(
+                enrollments.id,
+                params.entries.map((entry) => entry.enrollmentId),
+              ),
+            ),
+          );
+        const registerOfRun = new Map<string, string>();
+        for (const runId of new Set(seats.filter((seat) => !seat.graded).map((seat) => seat.runId))) {
+          const register = await openRegisterOf(tx, params.classGroupId, runId);
+          if (params.byTeacher && !teacherMayEdit(register.status)) throw new LockedRegister();
+          registerOfRun.set(runId, register.id);
+        }
+        const runOfSeat = new Map(seats.map((seat) => [seat.enrollmentId, seat.runId]));
+
         const inserted = await tx
           .insert(grades)
           .values(
             params.entries.map((entry) => ({
               enrollmentId: entry.enrollmentId,
               classGroupId: params.classGroupId,
+              registerId: registerOfRun.get(runOfSeat.get(entry.enrollmentId) ?? "") ?? null,
               // The run and attempt the seat is on now (OOC-156): read from
               // the enrollment as the row is written, never handed in.
               classGroupModuleId: sql`(
@@ -269,6 +366,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
       });
     } catch (error) {
       if (error instanceof ConflictingGrades) return { conflicts: error.enrollmentIds };
+      if (error instanceof LockedRegister) return { locked: true as const };
       throw error;
     }
   }
@@ -340,6 +438,7 @@ export class DrizzleGradeRepository implements IGradeRepository {
             gradeId: posted.id,
             replacesId: current?.correctionId ?? null,
             ...columnsOf(params.value),
+            kind: "correction",
             reason: params.reason,
             correctedBy: params.correctedBy,
           })
@@ -351,6 +450,63 @@ export class DrizzleGradeRepository implements IGradeRepository {
       });
     } catch (error) {
       // Somebody else's correction replaced the same link first.
+      if (isUniqueViolation(error)) return { kind: "concurrent" };
+      throw error;
+    }
+  }
+
+  /**
+   * The teacher's own change of a posted grade (OOC-180): allowed while the
+   * grade's register is theirs — not sent yet, or returned. The register row
+   * is locked first, so a send to review and an edit never cross: one waits
+   * for the other and sees what it did. A grade from before registers is
+   * official and never the teacher's.
+   */
+  async edit(params: Parameters<IGradeRepository["edit"]>[0]): Promise<EditGradeOutcome> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [posted] = await tx
+          .select({ id: grades.id, registerId: grades.registerId })
+          .from(grades)
+          .innerJoin(enrollments, CURRENT_ATTEMPT_OF_GRADE)
+          .where(and(eq(grades.classGroupId, params.classGroupId), eq(grades.enrollmentId, params.enrollmentId)));
+        if (!posted) return { kind: "not_graded" } as const;
+        if (posted.registerId === null) return { kind: "locked" } as const;
+
+        const [register] = await tx
+          .select({ status: gradeRegisters.status })
+          .from(gradeRegisters)
+          .where(eq(gradeRegisters.id, posted.registerId))
+          .for("update");
+        if (!register || !teacherMayEdit(register.status as GradeRegisterStatus)) return { kind: "locked" } as const;
+
+        const [current] = await tx
+          .select({
+            score: currentGrades.score,
+            didNotSit: currentGrades.didNotSit,
+            correctionId: currentGrades.correctionId,
+          })
+          .from(currentGrades)
+          .where(eq(currentGrades.gradeId, posted.id));
+        if (current && sameGrade(valueOf(current), params.value)) return { kind: "same_value" } as const;
+
+        const [edit] = await tx
+          .insert(gradeCorrections)
+          .values({
+            gradeId: posted.id,
+            replacesId: current?.correctionId ?? null,
+            ...columnsOf(params.value),
+            kind: "teacher_edit",
+            reason: null,
+            correctedBy: params.editedBy,
+          })
+          .returning({ id: gradeCorrections.id });
+
+        await insertOutboxEmails(tx, params.emails(edit.id));
+        await insertAudit(tx, params.audit(edit.id));
+        return { kind: "edited", editId: edit.id } as const;
+      });
+    } catch (error) {
       if (isUniqueViolation(error)) return { kind: "concurrent" };
       throw error;
     }

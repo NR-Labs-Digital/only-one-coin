@@ -39,6 +39,8 @@ export interface ClassGroupModuleItem {
   classroomMissing: boolean;
   /** Its Google Meet (OOC-159); null = nobody pasted one yet. */
   meetUrl: string | null;
+  /** The module's end date in this run (OOC-180); null = not set. */
+  moduleEndsOn: string | null;
   /** Confirmed seats in this run now. */
   students: number;
 }
@@ -82,6 +84,8 @@ export interface ClassGroupItem {
   classroomMissing: boolean;
   /** The first run's Meet (OOC-159) — what the form of a one-run class group edits. */
   meetUrl: string | null;
+  /** The first run's module end date (OOC-180) — what the form of a one-run class group edits. */
+  moduleEndsOn: string | null;
   /** Some run of the class group has no teacher yet. */
   teacherMissing: boolean;
   /** Which of the course's modules the first run teaches (OOC-100), 1-based; null = not set. */
@@ -226,6 +230,7 @@ export class ListClassGroupsQuery {
       classroomLinks: first?.classroomLinks ?? [],
       classroomMissing: modules.some((run) => run.classroomMissing),
       meetUrl: first?.meetUrl ?? null,
+      moduleEndsOn: first?.moduleEndsOn ?? null,
       teacherMissing: modules.some((run) => run.teacherId === null),
       module: first?.module ?? null,
       fullCourse: first?.fullCourse ?? false,
@@ -293,6 +298,7 @@ export class ListClassGroupsQuery {
         classroomLinks: classroomLinksOf(run, courseModules),
         classroomMissing: isMissingClassroom(run, courseModules),
         meetUrl: run.meetUrl,
+        moduleEndsOn: run.moduleEndsOn,
         students: seated,
       };
       byGroup.set(run.classGroupId, [...(byGroup.get(run.classGroupId) ?? []), item]);
