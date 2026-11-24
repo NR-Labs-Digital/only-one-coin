@@ -35,6 +35,8 @@ export const TeacherPropsSchema = SoftDeletableModelPropsSchema.extend({
   nationalIdType: NationalIdTypeSchema,
   nationalId: z.string().min(1),
   email: z.string().email(),
+  /** Optional, any provider (OOC-161) — where the teacher's own mail goes. */
+  personalEmail: z.string().email().nullable(),
   phone: z.string().min(1),
   nationality: z.string().length(2),
   country: z.string().length(2),
@@ -63,6 +65,12 @@ export const TeacherFieldsSchema = z.object({
   nationalIdType: NationalIdTypeSchema,
   nationalId: NationalIdField,
   email: EmailField,
+  /**
+   * Optional (OOC-161), separate from `email` — which stays the panel invite's
+   * and the contract's. The monthly feedback report goes here. Left out of a
+   * write, it keeps what the file has (an older client does not wipe it).
+   */
+  personalEmail: EmailField.nullable().optional(),
   phone: PhoneField,
   nationality: CountryCodeField,
   country: CountryCodeField,
@@ -163,6 +171,7 @@ export class Teacher extends SoftDeletableModel {
   public nationalIdType: NationalIdType;
   public nationalId: string;
   public email: string;
+  public personalEmail: string | null;
   public phone: string;
   public nationality: string;
   public country: string;
@@ -181,6 +190,7 @@ export class Teacher extends SoftDeletableModel {
     this.nationalIdType = props.nationalIdType;
     this.nationalId = props.nationalId;
     this.email = props.email;
+    this.personalEmail = props.personalEmail;
     this.phone = props.phone;
     this.nationality = props.nationality;
     this.country = props.country;
@@ -225,6 +235,7 @@ export class Teacher extends SoftDeletableModel {
     const next = result.data;
     const changed: (keyof TeacherDataDTO)[] = [];
     for (const key of Object.keys(next) as (keyof TeacherDataDTO)[]) {
+      if (next[key] === undefined) continue;
       const same =
         key === "languages" ? sameLanguages(this.languages, next.languages) : this[key] === next[key];
       if (same) continue;
@@ -257,6 +268,12 @@ export class Teacher extends SoftDeletableModel {
       throw new InvalidFieldsError(toFieldErrors(result.error.issues, "teacher"));
     }
 
-    return new Teacher({ id: uuid(), ...result.data, status: "active", userId: null });
+    return new Teacher({
+      id: uuid(),
+      ...result.data,
+      personalEmail: result.data.personalEmail ?? null,
+      status: "active",
+      userId: null,
+    });
   }
 }

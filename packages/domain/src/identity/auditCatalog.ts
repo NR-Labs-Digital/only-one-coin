@@ -277,6 +277,7 @@ export const AUDIT_FIELDS = {
   nationalIdType: "id_type",
   nationalId: "id_number",
   email: "email",
+  personalEmail: "personal_email",
   phone: "phone",
   birthDate: "birth_date",
   country: "country",

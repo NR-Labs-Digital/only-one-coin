@@ -22,6 +22,7 @@ import {
   EmptyState,
   Field,
   Meter,
+  OptionalMark,
   SectionTitle,
   StatusBadge,
   TableShell,
@@ -56,6 +57,7 @@ const labelClass =
 /** What every teacher write answers — the file as the server normalized it. */
 interface SavedTeacher {
   email: string
+  personalEmail: string | null
   phone: string
   nationality: string
   languages: string[]
@@ -113,6 +115,7 @@ export function TeacherFile({
 
   const [editingData, setEditingData] = useState(false)
   const [email, setEmail] = useState(teacher.email)
+  const [personalEmail, setPersonalEmail] = useState(teacher.personalEmail ?? '')
   const [phone, setPhone] = useState(teacher.phone)
   const [nationality, setNationality] = useState(teacher.nationality)
   const [languageIds, setLanguageIds] = useState(
@@ -121,6 +124,7 @@ export function TeacherFile({
   /* What the server last saved — the draft above is reset to these. */
   const [saved, setSaved] = useState({
     email: teacher.email,
+    personalEmail: teacher.personalEmail ?? '',
     phone: teacher.phone,
     nationality: teacher.nationality,
     languageIds: teacher.languages.map((language) => language.id),
@@ -185,6 +189,7 @@ export function TeacherFile({
     const result = await saveTeacher<SavedTeacher>(`/api/v1/teachers/${teacher.id}`, 'PUT', {
       ...record,
       email: email.trim(),
+      personalEmail: personalEmail.trim() === '' ? null : personalEmail.trim(),
       phone,
       nationality,
       languages: languageIds,
@@ -196,12 +201,14 @@ export function TeacherFile({
     }
     const next = {
       email: result.value.email,
+      personalEmail: result.value.personalEmail ?? '',
       phone: result.value.phone,
       nationality: result.value.nationality,
       languageIds: result.value.languages,
     }
     setSaved(next)
     setEmail(next.email)
+    setPersonalEmail(next.personalEmail)
     setPhone(next.phone)
     setNationality(next.nationality)
     setLanguageIds(next.languageIds)
@@ -211,6 +218,7 @@ export function TeacherFile({
 
   function cancelData() {
     setEmail(saved.email)
+    setPersonalEmail(saved.personalEmail)
     setPhone(saved.phone)
     setNationality(saved.nationality)
     setLanguageIds(saved.languageIds)
@@ -409,6 +417,22 @@ export function TeacherFile({
                   <FieldMessage code={fieldError('email')} />
                 </label>
                 <label className="flex flex-col gap-1">
+                  <span className={labelClass}>
+                    {t('teachers.field_personal_email')}
+                    <OptionalMark label={t('common.optional')} />
+                  </span>
+                  <input
+                    type="email"
+                    value={personalEmail}
+                    onChange={(event) => setPersonalEmail(event.target.value)}
+                    className={fieldClass}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {t('teachers.personal_email_hint')}
+                  </span>
+                  <FieldMessage code={fieldError('personalEmail')} />
+                </label>
+                <label className="flex flex-col gap-1">
                   <span className={labelClass}>{t('teachers.field_phone')}</span>
                   <PhoneField value={phone} onChange={setPhone} />
                   <FieldMessage code={fieldError('phone')} />
@@ -493,6 +517,13 @@ export function TeacherFile({
                 })}
               </Field>
               <Field label={t('teachers.field_email')}>{email}</Field>
+              <Field label={t('teachers.field_personal_email')}>
+                {personalEmail === '' ? (
+                  <span className="text-muted-foreground">{t('teachers.personal_email_missing')}</span>
+                ) : (
+                  personalEmail
+                )}
+              </Field>
               <Field label={t('teachers.field_phone')}>{phone}</Field>
               <Field label={t('teachers.field_nationality')}>
                 {`${flagEmoji(nationality)} ${countryName(nationality, locale)}`}
