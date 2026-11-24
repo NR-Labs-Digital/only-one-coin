@@ -74,6 +74,15 @@ export const FEATURE_FLAGS = {
     production: true,
   },
 
+  /**
+   * The complaints book's public form (OOC-63, `/libro-de-reclamaciones`).
+   * Not under `portal`: it is public, and turning the portal off must not
+   * close a legal channel. Off in production until the backoffice inbox
+   * (OOC-58) exists — a sheet nobody on the team can read is worse than the
+   * old form, which the page sends to while this is off.
+   */
+  complaints: { surface: 'portal', production: false },
+
   /* ------------------------------------------------------------ backoffice */
 
   /** The staff panel as a whole — the shell and its dashboard. */

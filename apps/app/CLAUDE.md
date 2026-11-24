@@ -186,6 +186,11 @@ aquilo não está ativo para mais ninguém.
 - **Flag nova nasce desligada em produção** (`production: false`) e é ligada no
   mesmo PR que torna a seção real. Quando a seção deixa de ser novidade, a flag
   sai do registro — flag eterna vira ruído que ninguém confia.
+- **Exceção ao 404: o Libro de Reclamaciones (OOC-63).** A flag `complaints`
+  desligada não some com a página: `/libro-de-reclamaciones` redireciona para o
+  Google Forms antigo (`legacyComplaintsFormUrl`, `lib/org.ts`). O endereço é
+  linkado do rodapé de toda página da landing e o livro é obrigação legal —
+  404 ali seria um canal legal fechado. Sai junto com a flag.
 - **Desligada não vira cadeado.** Cadeado é o vocabulário de "anunciado, não
   construído" (a Área do aluno do portal, `CLAUDE.md` §2), que é uma afirmação
   pública e diferente.

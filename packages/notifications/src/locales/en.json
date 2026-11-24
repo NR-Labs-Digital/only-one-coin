@@ -286,6 +286,42 @@
         "We are still keeping the frozen enrollment of {studentName} in {courseName}. Whenever you want to come back, you pick up in the module you stopped in.",
         "To come back, write to us through Only One Coin’s support channels and we will help you choose the schedule."
       ]
+    },
+    "complaint_filed": {
+      "subject": "Complaint sheet no. {code}",
+      "preheader": "Your copy of the {kind} filed in our Complaints Book.",
+      "paragraphs": [
+        "We recorded your {kind} in the Complaints Book on {filedAt}, under number {code}. This e-mail is your copy of the sheet.",
+        "Supplier: {legalName}, RUC {ruc}, {supplierAddress}.",
+        "Consumer: {consumerName}, {nationalIdType} {nationalId}. Address: {address}. Phone: {phone}. E-mail: {email}.",
+        "Parent or guardian: {guardianName}, {guardianNationalIdType} {guardianNationalId}.",
+        "Purchased: {goodType}. Amount claimed: {amount}. Purchase date: {purchasedOn}.",
+        "Description: {description}",
+        "Details: {detail}",
+        "Request: {request}",
+        "We will reply through this channel within fifteen (15) business days. Filing a complaint does not prevent you from using other ways of settling the dispute, nor is it a prerequisite for filing a report with INDECOPI."
+      ],
+      "values": {
+        "kind": {
+          "claim": "claim",
+          "grievance": "complaint"
+        },
+        "goodType": {
+          "product": "product",
+          "service": "service"
+        },
+        "nationalIdType": {
+          "DNI": "DNI",
+          "CE": "CE",
+          "passport": "passport"
+        },
+        "guardianNationalIdType": {
+          "DNI": "DNI",
+          "CE": "CE",
+          "passport": "passport"
+        }
+      },
+      "missing": "not given"
     }
   }
 }

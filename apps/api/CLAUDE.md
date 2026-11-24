@@ -241,6 +241,18 @@ Constancia e certificado: o que a instituição emite, com **código de verifica
 - **QR no PDF:** toda impressão leva no rodapé `Verifíquelo en <portal>/verificar` e, à direita, um QR para `PORTAL_PUBLIC_URL/verificar/<código>` (`documents/verificationQr.ts`, pacote `qrcode`, SVG em data URI — o render continua sem rede). Vale para documento já emitido, porque o PDF é montado a cada download.
 - **Fora:** a emissão pelo docente nas próprias turmas, "N por emitir" na lista de turmas, e reemitir a constancia anulada.
 
+## Libro de Reclamaciones (OOC-63, 24/11/2026)
+
+O formulário público da hoja de reclamação. Regra de negócio na raiz (§1). Campos e regras em `packages/domain/src/student/fields.ts` (`ComplaintFormSchema`, o mesmo que o app roda no navegador), usecase e tipos em `packages/domain/src/complaint/`, e-mail em `notification/complaintEmails.ts`; SQL em `infra/persistence/complaint/DrizzleComplaintRepository.ts`; rota em `src/http/complaint/FileComplaintRoute.ts`; tabela na `0076` (`packages/db/CLAUDE.md`).
+
+- **Rota:** `POST /public/complaints` (`.public()`, `RATE_LIMITS.complaintSubmit`, 10/10 min por IP, provisório). Corpo `{captchaToken, idempotencyKey, locale, complaint}` — o formulário em `complaint`, então o 400 `validation_error` nomeia os campos como `complaint.consumer.email`. Resposta 201 `{code, filedAt}`, `Cache-Control: no-store`.
+- **Ordem dos guardas:** rate limit (no plugin, antes do corpo); **reenvio da mesma hoja** — `idempotencyKey` já gravada responde 201 com o mesmo número, **sem captcha** (o token do primeiro envio já foi gasto, e é o celular que perdeu a resposta); Turnstile (recusado 422 `captcha.failed`, Cloudflare fora 503 `captcha.unavailable` — fecha, não abre); só então o usecase. Sem cache no Redis: a chave é única no banco (`complaints_idempotency_key_uidx`), e o insert com `ON CONFLICT DO NOTHING` + releitura fecha a corrida de dois envios simultâneos.
+- **Uma transação** (`file`): sorteia o número (`nextval('complaint_number_seq')` e o ano de `now()` em Lima, formatados por `complaintCodeOf` — `2026-000123`, pelo menos seis dígitos, nunca cortado), grava a hoja e o outbox `complaint_filed`. Número queimado por um insert que perdeu a corrida fica como buraco, nunca repetido.
+- **O que o servidor carimba, nunca o corpo:** o fornecedor (`LEGAL_IDENTITY`, congelado na linha), a versão do aviso de privacidade (`COMPLAINT_PRIVACY_NOTICE_VERSION` — mudar o texto do aviso no app é mudar esta constante no mesmo PR), o IP do consumidor (`request.clientIp`) e o idioma.
+- **E-mail `complaint_filed`:** um só, para o e-mail da hoja (o apoderado aparece nela mas não recebe cópia própria), no idioma do formulário, `dedupe_key` `complaint_filed:<hoja>`. É a hoja inteira; os códigos (`kind`, `goodType`, tipo de documento) viram palavra pelo `values` do template e o campo opcional vazio diz o `missing` dele — extensões do `renderEmail` (`packages/notifications`): **parágrafo cujos placeholders são todos nulos sai do e-mail** (é como o bloco do apoderado some para o maior de idade), e `filedAt` (instante, em Lima) e `purchasedOn` (dia de calendário, lido em UTC para não voltar um dia) têm formato próprio. Não está em Não entregues (o consumidor pode não ser aluno).
+- **Nada no `audit_log`:** a hoja já é o registro append-only, e a rota é pública (sem ator).
+- **Fora (OOC-58):** a caixa no backoffice, a leitura das hojas, o vínculo com a ficha pelo documento, a resposta e o prazo. Nenhuma rota lê `complaints` ainda.
+
 ## Antifraude do comprovante (OOC-22, decisões do dono 30/09/2026)
 
 **O bloqueio duro é o nº de operação, não a imagem.** Um recorte não apaga o número impresso no comprovante; um hash perceptual não enxerga esse número.

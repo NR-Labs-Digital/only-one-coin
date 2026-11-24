@@ -2290,3 +2290,75 @@ export const reportRefreshes = pgTable("report_refreshes", {
   refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull().defaultNow(),
   durationMs: integer("duration_ms").notNull(),
 });
+
+// The complaints book (Libro de Reclamaciones, OOC-63): one row per sheet,
+// filed from the public form by anybody — a student or not, so no FK to
+// `students` (linking a sheet to a record by document is OOC-58's, on read).
+// Append-only, like every record the platform promises to keep: a sheet is
+// never edited nor removed, and the company's answer will be a row of its own.
+// The supplier is frozen on the sheet (the company answering for the site has
+// changed twice). `code` is drawn from `complaint_number_seq` in the insert —
+// the year in Lima plus the sequence, which never restarts.
+export const complaintNumberSeq = pgSequence("complaint_number_seq", { startWith: 1 });
+
+export const complaints = pgTable(
+  "complaints",
+  {
+    id: uuidPk(),
+    code: text("code").notNull(),
+    kind: text("kind").notNull(),
+    supplierLegalName: text("supplier_legal_name").notNull(),
+    supplierRuc: text("supplier_ruc").notNull(),
+    supplierAddress: text("supplier_address").notNull(),
+    consumerFirstName: text("consumer_first_name").notNull(),
+    consumerLastName: text("consumer_last_name").notNull(),
+    consumerSecondLastName: text("consumer_second_last_name"),
+    consumerNationalIdType: text("consumer_national_id_type").notNull(),
+    consumerNationalId: text("consumer_national_id").notNull(),
+    consumerPhone: text("consumer_phone").notNull(),
+    consumerEmail: text("consumer_email").notNull(),
+    consumerDepartment: text("consumer_department").notNull(),
+    consumerProvince: text("consumer_province").notNull(),
+    consumerDistrict: text("consumer_district").notNull(),
+    consumerAddress: text("consumer_address").notNull(),
+    consumerAddressReference: text("consumer_address_reference"),
+    consumerIsMinor: boolean("consumer_is_minor").notNull(),
+    guardianFirstName: text("guardian_first_name"),
+    guardianLastName: text("guardian_last_name"),
+    guardianNationalIdType: text("guardian_national_id_type"),
+    guardianNationalId: text("guardian_national_id"),
+    goodType: text("good_type").notNull(),
+    amountCents: integer("amount_cents"),
+    purchasedOn: date("purchased_on", { mode: "string" }),
+    description: text("description").notNull(),
+    detail: text("detail").notNull(),
+    request: text("request").notNull(),
+    // Ley 29733: which notice was accepted, from where. The time is created_at.
+    privacyNoticeVersion: text("privacy_notice_version").notNull(),
+    consumerIp: text("consumer_ip").notNull(),
+    // The language of the form — the copy went out in it, and so will the answer.
+    locale: text("locale").notNull(),
+    idempotencyKey: uuid("idempotency_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("complaints_code_uidx").on(table.code),
+    uniqueIndex("complaints_idempotency_key_uidx").on(table.idempotencyKey),
+    check("complaints_kind_check", sql`${table.kind} in ('claim', 'grievance')`),
+    check("complaints_good_type_check", sql`${table.goodType} in ('product', 'service')`),
+    check("complaints_amount_check", sql`${table.amountCents} is null or ${table.amountCents} >= 0`),
+    check(
+      "complaints_national_id_type_check",
+      sql`${table.consumerNationalIdType} in ('DNI', 'CE', 'passport') and (${table.guardianNationalIdType} is null or ${table.guardianNationalIdType} in ('DNI', 'CE', 'passport'))`,
+    ),
+    check("complaints_locale_check", sql`${table.locale} in ('es-PE', 'pt-BR', 'en')`),
+    // A minor files through a guardian, and only a minor carries one: the
+    // guardian's four columns are there together, exactly when the consumer is a minor.
+    check(
+      "complaints_guardian_check",
+      sql`${table.consumerIsMinor} = (${table.guardianFirstName} is not null) and num_nonnulls(${table.guardianFirstName}, ${table.guardianLastName}, ${table.guardianNationalIdType}, ${table.guardianNationalId}) in (0, 4)`,
+    ),
+    // The book read newest first (OOC-58's inbox).
+    index("complaints_created_at_idx").on(table.createdAt),
+  ],
+);

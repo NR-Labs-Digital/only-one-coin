@@ -286,6 +286,42 @@
         "Seguimos guardando la matrícula congelada de {studentName} en {courseName}. Cuando quieras volver, retomas en el módulo en que te quedaste.",
         "Para volver, escríbenos por los canales de atención de Only One Coin y te ayudamos a elegir el horario."
       ]
+    },
+    "complaint_filed": {
+      "subject": "Hoja de reclamación N.° {code}",
+      "preheader": "Copia de tu {kind} en el Libro de Reclamaciones.",
+      "paragraphs": [
+        "Registramos tu {kind} en el Libro de Reclamaciones el {filedAt}, con el número {code}. Este correo es tu copia de la hoja.",
+        "Proveedor: {legalName}, RUC {ruc}, {supplierAddress}.",
+        "Consumidor: {consumerName}, {nationalIdType} {nationalId}. Domicilio: {address}. Teléfono: {phone}. Correo: {email}.",
+        "Padre, madre o apoderado: {guardianName}, {guardianNationalIdType} {guardianNationalId}.",
+        "Bien contratado: {goodType}. Monto reclamado: {amount}. Fecha de compra: {purchasedOn}.",
+        "Descripción: {description}",
+        "Detalle: {detail}",
+        "Pedido: {request}",
+        "Te responderemos por este medio en un plazo no mayor a quince (15) días hábiles. Presentar un reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI."
+      ],
+      "values": {
+        "kind": {
+          "claim": "reclamación",
+          "grievance": "queja"
+        },
+        "goodType": {
+          "product": "producto",
+          "service": "servicio"
+        },
+        "nationalIdType": {
+          "DNI": "DNI",
+          "CE": "CE",
+          "passport": "pasaporte"
+        },
+        "guardianNationalIdType": {
+          "DNI": "DNI",
+          "CE": "CE",
+          "passport": "pasaporte"
+        }
+      },
+      "missing": "no indicado"
     }
   }
 }

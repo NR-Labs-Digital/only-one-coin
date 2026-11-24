@@ -1138,3 +1138,14 @@ export {
   type FrozenForReengagement,
   type IFreezeReengagementRepository,
 } from "./freeze/reengagement.js";
+
+export {
+  COMPLAINT_PRIVACY_NOTICE_VERSION,
+  complaintCodeOf,
+  type ComplaintSupplier,
+  type FiledComplaint,
+  type NewComplaint,
+} from "./complaint/Complaint.js";
+export type { IComplaintRepository } from "./complaint/ComplaintRepository.js";
+export { FileComplaintUseCase, type FileComplaintInput } from "./complaint/FileComplaintUseCase.js";
+export { complaintFiledEmails, type ComplaintEmailFacts } from "./notification/complaintEmails.js";

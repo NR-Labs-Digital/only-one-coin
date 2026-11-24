@@ -302,5 +302,120 @@
     },
     "period_value": "Del {from} al {to}",
     "check_another": "Verificar otro código"
+  },
+  "complaints": {
+    "meta_title": "Libro de Reclamaciones",
+    "brand_label": "Libro de Reclamaciones",
+    "footer_note": "Conexión segura. Tus datos se usan solo para atender tu reclamo.",
+    "back_to_site": "Volver al sitio",
+    "support": "Ayuda por WhatsApp",
+    "title": "Libro de Reclamaciones",
+    "subtitle": "Conforme al Código de Protección y Defensa del Consumidor, ponemos a tu disposición nuestro Libro de Reclamaciones virtual. Los campos con * son obligatorios.",
+    "kinds_title": "¿Reclamo o queja?",
+    "kind": {
+      "claim": {
+        "title": "Reclamo",
+        "description": "Disconformidad relacionada con los productos o servicios."
+      },
+      "grievance": {
+        "title": "Queja",
+        "description": "Disconformidad no relacionada con los productos o servicios, o malestar o descontento con la atención al público."
+      }
+    },
+    "supplier": {
+      "title": "Proveedor",
+      "legal_name": "Razón social",
+      "ruc": "RUC",
+      "address": "Dirección"
+    },
+    "consumer": {
+      "title": "Identificación del consumidor",
+      "first_name": "Nombres",
+      "last_name": "Primer apellido",
+      "second_last_name": "Segundo apellido",
+      "id_type": "Tipo de documento",
+      "national_id": "Número de documento",
+      "phone": "Celular",
+      "email": "Correo electrónico",
+      "email_hint": "Aquí te enviaremos la copia de esta hoja y la respuesta.",
+      "department": "Departamento",
+      "province": "Provincia",
+      "district": "Distrito",
+      "address": "Dirección",
+      "address_reference": "Referencia",
+      "is_minor": "¿Eres menor de edad?",
+      "yes": "Sí",
+      "no": "No"
+    },
+    "guardian": {
+      "title": "Padre, madre o apoderado",
+      "subtitle": "Un menor de edad presenta su reclamo a través de su padre, madre o apoderado.",
+      "first_name": "Nombres",
+      "last_name": "Apellidos",
+      "id_type": "Tipo de documento",
+      "national_id": "Número de documento"
+    },
+    "good": {
+      "title": "Bien contratado",
+      "good_type": "Tipo de consumo",
+      "product": "Producto",
+      "service": "Servicio",
+      "amount": "Monto reclamado (S/)",
+      "amount_placeholder": "Ej.: 69.90",
+      "purchased_on": "Fecha de compra",
+      "description": "Descripción del producto o servicio",
+      "description_placeholder": "Ej.: Inglés Básico, paquete completo."
+    },
+    "detail": {
+      "title": "Detalle de la reclamación y pedido",
+      "kind": "Tipo",
+      "detail": "Detalle",
+      "detail_hint": "Cuéntanos qué pasó, con las fechas que recuerdes.",
+      "request": "Pedido",
+      "request_hint": "¿Qué solución esperas de nosotros?"
+    },
+    "id_type": {
+      "DNI": "DNI",
+      "CE": "Carné de extranjería",
+      "passport": "Pasaporte"
+    },
+    "optional": "Opcional",
+    "declaration": {
+      "title": "Declaración",
+      "truthfulness": "Declaro bajo declaración jurada que los hechos descritos son verdaderos y que soy el titular del servicio o su representante.",
+      "privacy": "He leído y acepto la <link>Política de privacidad</link>."
+    },
+    "notice": "Te responderemos al correo que indicaste en un plazo no mayor a quince (15) días hábiles. Presentar un reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para interponer una denuncia ante el INDECOPI.",
+    "submit": "Enviar hoja de reclamación",
+    "submitting": "Enviando…",
+    "errors": {
+      "required": "Completa este campo.",
+      "too_long": "Es demasiado largo.",
+      "national_id_format": "Revisa el número de documento.",
+      "phone_format": "Revisa el número de celular.",
+      "email_format": "Revisa el correo electrónico.",
+      "email_gmail_username_invalid": "Esa dirección de Gmail no puede existir. Revísala.",
+      "email_must_be_gmail": "Revisa el correo electrónico.",
+      "birth_date_range": "Revisa este dato.",
+      "operation_format": "Revisa este dato.",
+      "invalid": "Revisa este dato.",
+      "amount": "Escribe solo el monto, por ejemplo 69.90.",
+      "accept": "Marca esta casilla para continuar."
+    },
+    "failure": {
+      "fix_fields": "Revisa los campos marcados.",
+      "rate_limited": "Enviaste muchas hojas seguidas. Espera unos minutos e inténtalo de nuevo.",
+      "captcha": "No pudimos confirmar que eres una persona. Vuelve a intentarlo.",
+      "captcha_unavailable": "La verificación de seguridad no está disponible ahora. Inténtalo de nuevo en unos minutos.",
+      "captcha_missing": "Espera a que termine la verificación de seguridad.",
+      "generic": "No pudimos enviar tu hoja ahora. Inténtalo de nuevo en unos minutos; lo que escribiste sigue aquí."
+    },
+    "done": {
+      "title": "Recibimos tu hoja de reclamación",
+      "number": "Número de hoja",
+      "filed_at": "Registrada el {date}.",
+      "email_sent": "Enviamos una copia a {email}. Guarda este número: te servirá para cualquier consulta sobre tu reclamo.",
+      "back": "Volver al sitio"
+    }
   }
 }

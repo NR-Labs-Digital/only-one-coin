@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger } from "fastify";
 import {
   AttachmentAccess,
+  FileComplaintUseCase,
   ConfirmAttachmentUploadUseCase,
   ExpirePendingAttachmentsUseCase,
   ListAttachmentsUseCase,
@@ -279,6 +280,7 @@ import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPassw
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleIssuedDocumentRepository } from "./infra/persistence/document/DrizzleIssuedDocumentRepository.js";
+import { DrizzleComplaintRepository } from "./infra/persistence/complaint/DrizzleComplaintRepository.js";
 import { IssuedDocumentService } from "./documents/IssuedDocumentService.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
 import { DrizzlePaymentEmailContextLookup } from "./infra/persistence/enrollment/DrizzlePaymentEmailContextLookup.js";
@@ -333,6 +335,10 @@ export interface AppRepositories {
 }
 
 export interface AppUseCases {
+  /** The complaints book's public form (OOC-63). */
+  complaint: {
+    file: FileComplaintUseCase;
+  };
   teacher: {
     register: RegisterTeacherUseCase;
     update: UpdateTeacherUseCase;
@@ -1027,6 +1033,9 @@ function buildContainer(): AppContainer {
       templates: documentTemplateRepository,
     },
     useCases: {
+      complaint: {
+        file: new FileComplaintUseCase(new DrizzleComplaintRepository(db)),
+      },
       teacher: {
         register: registerTeacher,
         completeOnboarding: completeTeacherOnboarding,

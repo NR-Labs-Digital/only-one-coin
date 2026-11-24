@@ -14,6 +14,19 @@ interface TemplateCopy {
   /** One line of a list (OOC-158, the lot e-mails): written once per entry of
    * the `items` var, where a paragraph is exactly `{items}`. */
   item?: string;
+  /**
+   * Words for vars that carry a code (OOC-63, the complaints book copy): the
+   * var's value is the key, the label is what the reader sees — a code never
+   * reaches the e-mail (CLAUDE.md §4). A value missing from the map is a bug.
+   */
+  values?: Record<string, Record<string, string>>;
+  /**
+   * What an optional var says when it is null (OOC-63). Without it, a null
+   * var is a template bug. A paragraph whose every placeholder is null is
+   * left out instead — that is how an optional block (the guardian of a
+   * minor) disappears.
+   */
+  missing?: string;
 }
 
 export interface LocaleCatalog {
@@ -73,15 +86,36 @@ export class TemplateRenderError extends Error {
  * ISO strings and money as cents (they are JSON in `outbox.vars`); here they
  * become "15 de octubre de 2026" and "S/ 250.00" in the reader's locale.
  */
+/** Stands for a null var until `interpolate` decides what it says. */
+const NULL_VALUE = "\u0000null\u0000";
+
 function placeholderValues(
   vars: EmailTemplateVars[EmailTemplateKey] | Record<string, unknown>,
   locale: Locale,
+  copy: TemplateCopy,
 ): Record<string, string> {
   const intlLocale = INTL_LOCALE[locale];
   const values: Record<string, string> = {};
 
   for (const [name, value] of Object.entries(vars)) {
-    if (name === "amountCents" && typeof value === "number") {
+    if (value === null) {
+      values[name === "amountCents" ? "amount" : name] = NULL_VALUE;
+    } else if (copy.values?.[name]) {
+      const label = copy.values[name][String(value)];
+      if (label === undefined) throw new TemplateRenderError(`Var "${name}" has no label for its value`);
+      values[name] = label;
+    } else if (name === "filedAt" && typeof value === "string") {
+      // An instant: the day and the time it happened, in Lima.
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) throw new TemplateRenderError(`Var "${name}" is not a date`);
+      values.filedAt = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeStyle: "short", timeZone: TIME_ZONE }).format(date);
+    } else if (name === "purchasedOn" && typeof value === "string") {
+      // A calendar day (YYYY-MM-DD), not an instant: read in UTC so Lima's
+      // offset never moves it to the day before.
+      const date = new Date(`${value}T00:00:00Z`);
+      if (Number.isNaN(date.getTime())) throw new TemplateRenderError(`Var "${name}" is not a date`);
+      values.purchasedOn = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeZone: "UTC" }).format(date);
+    } else if (name === "amountCents" && typeof value === "number") {
       values.amount = new Intl.NumberFormat(intlLocale, { style: "currency", currency: "PEN" }).format(value / 100);
     } else if (name === "startsOn" && typeof value === "string") {
       const date = new Date(value);
@@ -116,7 +150,7 @@ function listItems(copy: TemplateCopy, vars: Record<string, unknown>, locale: Lo
   if (!Array.isArray(items)) throw new TemplateRenderError('Var "items" is not a list');
   return items.map((entry: unknown) => {
     if (typeof entry !== "object" || entry === null) throw new TemplateRenderError('An entry of "items" is not an object');
-    return interpolate(copy.item!, placeholderValues(entry as Record<string, unknown>, locale));
+    return interpolate(copy.item!, placeholderValues(entry as Record<string, unknown>, locale, copy), copy);
   });
 }
 
@@ -133,13 +167,24 @@ function escapeHtml(value: string): string {
 }
 
 /** Fills `{name}` placeholders. A placeholder with no value is a template
- * bug, not something to send half-written. */
-function interpolate(copy: string, values: Record<string, string>): string {
-  return copy.replace(/\{(\w+)\}/g, (_match, name: string) => {
+ * bug, not something to send half-written; a null one says the template's
+ * `missing` word, and without it is a bug too. */
+function interpolate(text: string, values: Record<string, string>, copy: TemplateCopy): string {
+  return text.replace(/\{(\w+)\}/g, (_match, name: string) => {
     const value = values[name];
     if (value === undefined) throw new TemplateRenderError(`Missing value for placeholder "{${name}}"`);
+    if (value === NULL_VALUE) {
+      if (copy.missing === undefined) throw new TemplateRenderError(`Placeholder "{${name}}" is null`);
+      return copy.missing;
+    }
     return value;
   });
+}
+
+/** A paragraph whose placeholders are all null has nothing to say (OOC-63). */
+function isAllNull(text: string, values: Record<string, string>): boolean {
+  const names = [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!);
+  return names.length > 0 && names.every((name) => values[name] === NULL_VALUE);
 }
 
 function actionUrl(templateKey: EmailTemplateKey, values: Record<string, string>): string | null {
@@ -158,18 +203,20 @@ function actionUrl(templateKey: EmailTemplateKey, values: Record<string, string>
 export function renderEmail(email: OutgoingEmail): RenderedEmail {
   const catalog = LOCALE_CATALOGS[email.locale];
   const copy = catalog.templates[email.templateKey];
-  const values = placeholderValues(email.vars, email.locale);
+  const values = placeholderValues(email.vars, email.locale, copy);
   const url = actionUrl(email.templateKey, values);
 
-  const templateSubject = interpolate(copy.subject, values);
+  const templateSubject = interpolate(copy.subject, values, copy);
   const subject = email.proof ? `${catalog.proof.subjectPrefix} ${templateSubject}` : templateSubject;
-  const preheader = interpolate(copy.preheader, values);
-  const greeting = interpolate(catalog.layout.greeting, values);
-  const blocks: Block[] = copy.paragraphs.map((paragraph) =>
-    paragraph === ITEMS_PARAGRAPH
-      ? { kind: "list", lines: listItems(copy, email.vars as Record<string, unknown>, email.locale) }
-      : { kind: "paragraph", text: interpolate(paragraph, values) },
-  );
+  const preheader = interpolate(copy.preheader, values, copy);
+  const greeting = interpolate(catalog.layout.greeting, values, copy);
+  const blocks: Block[] = copy.paragraphs
+    .filter((paragraph) => !isAllNull(paragraph, values))
+    .map((paragraph) =>
+      paragraph === ITEMS_PARAGRAPH
+        ? { kind: "list", lines: listItems(copy, email.vars as Record<string, unknown>, email.locale) }
+        : { kind: "paragraph", text: interpolate(paragraph, values, copy) },
+    );
 
   const text = [
     greeting,

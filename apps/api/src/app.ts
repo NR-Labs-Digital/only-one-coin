@@ -66,6 +66,7 @@ import {
   revokeIssuedDocumentRoute,
 } from "@/http/issuedDocument/IssuedDocumentRoutes.js";
 import { verifyIssuedDocumentRoute } from "@/http/issuedDocument/VerifyIssuedDocumentRoute.js";
+import { fileComplaintRoute } from "@/http/complaint/FileComplaintRoute.js";
 import {
   downloadPortalIssuedDocumentRoute,
   listPortalIssuedDocumentsRoute,
@@ -292,6 +293,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(downloadIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(revokeIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(verifyIssuedDocumentRoute);
+        // The complaints book's public form (OOC-63).
+        instance.withTypeProvider<ZodTypeProvider>().route(fileComplaintRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPortalIssuedDocumentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(openTeacherContractRoute);
