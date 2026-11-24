@@ -184,6 +184,12 @@ import { regenerateOwnRecoveryCodesRoute } from "@/http/identity/RegenerateOwnRe
 import { disableOwnMfaRoute } from "@/http/identity/DisableOwnMfaRoute.js";
 import { listStaffRoute } from "@/http/identity/ListStaffRoute.js";
 import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesRoute.js";
+import {
+  createStaffProfileRoute,
+  listStaffProfilesRoute,
+  retireStaffProfileRoute,
+  updateStaffProfileRoute,
+} from "@/http/identity/StaffProfileRoutes.js";
 import { exportAuditLogRoute } from "@/http/audit/ExportAuditLogRoute.js";
 import { listEmailFlowsRoute } from "@/http/email/ListEmailFlowsRoute.js";
 import { getEmailFlowRoute } from "@/http/email/GetEmailFlowRoute.js";
@@ -410,6 +416,10 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(disableOwnMfaRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoleChangesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listStaffProfilesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(createStaffProfileRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(updateStaffProfileRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireStaffProfileRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listAuditLogRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listAuditActorsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(exportAuditLogRoute);

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 const StudentParamsSchema = z.object({ studentId: z.string().uuid() });
 
@@ -34,7 +33,7 @@ export const updateStudentRoute = RouteBuilder.put("/students/:studentId")
     description:
       "The only path that rewrites name, document and birth date. Refuses a document already on another file and a minor with no guardian.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.edit")
   .params(StudentParamsSchema)
   .body(CreateStudentSchema)
   .response(200, StudentResponseSchema)

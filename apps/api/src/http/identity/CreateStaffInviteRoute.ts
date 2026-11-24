@@ -20,7 +20,10 @@ const CreateStaffInviteBodySchema = z
       "sales",
       "support",
       "billing",
+      "custom",
     ]),
+    // The cargo created in Equipo a `custom` invite opens the account on (OOC-183).
+    profileId: z.string().uuid().nullish(),
     // The teacher file a `teacher` invite opens an account for (OOC-79).
     // Required for that cargo — the usecase answers 422
     // `staff_invite.teacher_required` — and refused on any other.
@@ -34,6 +37,13 @@ const CreateStaffInviteBodySchema = z
         code: z.ZodIssueCode.custom,
         path: ["role"],
         message: "master_requires_owner_domain",
+      });
+    }
+    if ((body.role === "custom") !== Boolean(body.profileId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["profileId"],
+        message: "profile_only_for_custom_role",
       });
     }
     if (body.teacherId && body.role !== "teacher") {
@@ -60,7 +70,7 @@ export const createStaffInviteRoute = RouteBuilder.post("/staff/invites")
     summary: "Invite somebody to the panel",
     description: "Generates a one-time invite link and e-mails it — the person completes their own registration.",
   })
-  .roles("master", "admin")
+  .can("team.invite")
   .body(CreateStaffInviteBodySchema)
   .response(201, CreateStaffInviteResponseSchema)
   .response(422, ErrorResponseSchema)
@@ -74,6 +84,8 @@ export const createStaffInviteRoute = RouteBuilder.post("/staff/invites")
       lastName: request.body.lastName,
       role: request.body.role,
       teacherId: request.body.teacherId ?? null,
+      profileId: request.body.profileId ?? null,
+      actorPermissions: container.identity.staffAccess.permissionsOf(request.currentUser!),
     });
 
     reply.status(201).send({

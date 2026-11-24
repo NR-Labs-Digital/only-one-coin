@@ -48,7 +48,7 @@ export default async function StudentDetailPage({
     // Every receipt the student sent (OOC-62), for the same tab.
     getStudentPayments(studentId),
   ])
-  if (!canBrowseStudents(staff.role)) notFound()
+  if (!canBrowseStudents(staff)) notFound()
   if (!student) notFound()
 
   const fullName = `${student.firstName} ${student.lastName}`
@@ -91,7 +91,7 @@ export default async function StudentDetailPage({
             <PortalAccessControl
               studentId={student.id}
               state={student.portalAccess}
-              canIssue={canIssuePortalAccess(staff.role)}
+              canIssue={canIssuePortalAccess(staff)}
             />
           </div>
         </div>
@@ -99,15 +99,15 @@ export default async function StudentDetailPage({
 
       <StudentFile
         student={student}
-        canViewPayments={canViewPayments(staff.role)}
-        canEdit={canEditStudent(staff.role)}
+        canViewPayments={canViewPayments(staff)}
+        canEdit={canEditStudent(staff)}
         activity={activity}
         attachments={attachments}
         issuedDocuments={issuedDocuments}
-        canManageAttachments={canManageStudentAttachments(staff.role)}
-        canRevokeIssuedDocuments={canRevokeIssuedDocuments(staff.role)}
+        canManageAttachments={canManageStudentAttachments(staff)}
+        canRevokeIssuedDocuments={canRevokeIssuedDocuments(staff)}
         payments={payments}
-        canOpenReceiptImage={canOpenReceiptImage(staff.role)}
+        canOpenReceiptImage={canOpenReceiptImage(staff)}
       />
     </div>
   )

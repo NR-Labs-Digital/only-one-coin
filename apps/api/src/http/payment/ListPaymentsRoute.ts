@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { PAYMENT_READ_ROLES } from "./paymentRoles.js";
 
 const StatusSchema = z.enum(["pending", "under_review", "approved", "rejected"]);
 
@@ -78,7 +77,7 @@ export const listPaymentsRoute = RouteBuilder.get("/payments")
     description:
       "Backs /backoffice/payments. Opens on the open tab (pending + under review); `counts` says how many each tab holds under the other filters. One page at a time, filtered and searched server-side; the metrics describe the current period.",
   })
-  .roles(...PAYMENT_READ_ROLES)
+  .can("payments.view")
   .query(QuerySchema)
   .response(200, ResponseSchema)
   .response(400, ErrorResponseSchema)

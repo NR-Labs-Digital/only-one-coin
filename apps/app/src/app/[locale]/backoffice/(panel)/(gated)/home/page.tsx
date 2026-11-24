@@ -68,8 +68,8 @@ export default async function BackofficeHomePage({
   const staff = await getStaffSession()
 
   const flags = await getFeatureFlags('backoffice')
-  const readsPayments = canViewPayments(staff.role)
-  const readsCatalog = canBrowseCatalog(staff.role)
+  const readsPayments = canViewPayments(staff)
+  const readsCatalog = canBrowseCatalog(staff)
 
   const [summary, queue, classGroups] = await Promise.all([
     readsCatalog ? getDashboardSummary() : null,

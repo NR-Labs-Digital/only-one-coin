@@ -1484,6 +1484,9 @@ export const staffInvites = pgTable(
     // one, and a pending one must (CHECK below; invites older than 0033 have
     // none, so it binds the pending ones only).
     teacherId: uuid("teacher_id").references(() => teachers.id, { onDelete: "restrict" }),
+    // The cargo created in Equipo an invite opens the account on (OOC-183) —
+    // set exactly when `role` is `custom` (CHECK below).
+    profileId: uuid("profile_id").references(() => staffProfiles.id, { onDelete: "restrict" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ...timestamps(),
   },
@@ -1503,11 +1506,69 @@ export const staffInvites = pgTable(
     ),
     check(
       "staff_invites_role_check",
-      sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'academic_assistant', 'teacher', 'sales', 'support', 'billing')`,
+      sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'academic_assistant', 'teacher', 'sales', 'support', 'billing', 'custom')`,
     ),
+    check("staff_invites_profile_check", sql`(${table.role} = 'custom') = (${table.profileId} is not null)`),
     check("staff_invites_status_check", sql`${table.status} in ('pending', 'completed', 'cancelled')`),
   ],
 );
+
+// The cargos, as data (OOC-57, OOC-183). One row per cargo of the board —
+// `role_key`, the `"user".role` its accounts carry, named by the locale — and
+// one per cargo administration creates in Equipo — `name`, as typed; its
+// accounts carry the `custom` role and point here by `"user".profile_id`. What
+// each holds is `staff_profile_permissions`. A created cargo retires
+// (`deleted_at`) once no account or open invite uses it; a board cargo never
+// does. The board rows are written by the API on boot, not by a migration:
+// the permission catalog is code (`packages/domain`, permissionCatalog.ts).
+export const staffProfiles = pgTable(
+  "staff_profiles",
+  {
+    id: uuidPk(),
+    roleKey: text("role_key"),
+    name: text("name"),
+    createdBy: text("created_by"),
+    ...softDeletable(),
+  },
+  (table) => [
+    uniqueIndex("staff_profiles_role_key_uidx").on(table.roleKey),
+    // Two live cargos never share a name, compared without case.
+    uniqueIndex("staff_profiles_name_live_uidx")
+      .on(sql`lower(${table.name})`)
+      .where(sql`${table.deletedAt} is null and ${table.name} is not null`),
+    check("staff_profiles_kind_check", sql`num_nonnulls(${table.roleKey}, ${table.name}) = 1`),
+    check("staff_profiles_board_live_check", sql`${table.roleKey} is null or ${table.deletedAt} is null`),
+    check(
+      "staff_profiles_role_key_check",
+      sql`${table.roleKey} is null or ${table.roleKey} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'academic_assistant', 'teacher', 'sales', 'support', 'billing')`,
+    ),
+  ],
+);
+
+// What a cargo can do: one row per permission it holds (keys from the domain's
+// permission catalog — no CHECK, a new permission must not cost a migration,
+// like `courses.landing_key`). Editing a cargo replaces its rows; who changed
+// what lands in `audit_log`.
+export const staffProfilePermissions = pgTable(
+  "staff_profile_permissions",
+  {
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => staffProfiles.id, { onDelete: "restrict" }),
+    permission: text("permission").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.profileId, table.permission] })],
+);
+
+// Every permission key the API has already handed to the board's cargos by
+// default. A key not here yet is new: on boot the API grants it to the cargos
+// its catalog entry names, and records it — so what administration takes away
+// afterwards is never granted back.
+export const staffPermissionSeeds = pgTable("staff_permission_seeds", {
+  permission: text("permission").primaryKey(),
+  seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 // One grade per seat in a class group (OOC-38, CLAUDE.md §1, decision
 // 08/10/2026): the final exam's, which is the module's grade, on the 0–20

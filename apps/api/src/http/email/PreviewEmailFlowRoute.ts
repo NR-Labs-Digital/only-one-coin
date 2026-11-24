@@ -3,7 +3,6 @@ import { renderEmail, templateVersion, type OutgoingEmail } from "@ooc/notificat
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
-import { EMAIL_FLOW_ROLES } from "./emailRoles.js";
 import { EmittedEmailKeySchema } from "./emailFlowSchemas.js";
 import { EMAIL_PREVIEW_RECIPIENTS, EMAIL_PREVIEW_SAMPLES } from "./emailPreviewSamples.js";
 
@@ -25,7 +24,7 @@ export const previewEmailFlowRoute = RouteBuilder.get("/emails/flows/:key/previe
     tags: ["Emails"],
     summary: "Render an automatic e-mail's repository template over sample data",
   })
-  .roles(...EMAIL_FLOW_ROLES)
+  .can("emails.view")
   .params(z.object({ key: EmittedEmailKeySchema }))
   .query(z.object({ locale: LocaleSchema.default(DEFAULT_LOCALE) }))
   .response(200, PreviewEmailFlowResponseSchema)

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CLASS_GROUP_WRITE_ROLES } from "./catalogRoles.js";
 import {
   ClassGroupModuleParamsSchema,
   CreateClassGroupModuleBodySchema,
@@ -25,7 +24,7 @@ export const addClassGroupModuleRoute = RouteBuilder.post("/catalog/class-groups
     description:
       "One run per module of the course. A full-course run, or one with no module set, is alone in its class group (422 catalog.class_group_module_alone). 422 catalog.class_group_module_taken when that module already runs.",
   })
-  .roles(...CLASS_GROUP_WRITE_ROLES)
+  .can("catalog.class_groups_edit")
   .params(IdParamsSchema)
   .body(CreateClassGroupModuleBodySchema)
   .response(201, IdResponseSchema)
@@ -43,7 +42,7 @@ export const addClassGroupModuleRoute = RouteBuilder.post("/catalog/class-groups
 
 export const updateClassGroupModuleRoute = RouteBuilder.patch("/catalog/class-groups/:id/modules/:moduleId")
   .docs({ tags: ["Catalog"], summary: "Edit a module run's teacher, module, schedule or Classroom (OOC-156)" })
-  .roles(...CLASS_GROUP_WRITE_ROLES)
+  .can("catalog.class_groups_edit")
   .params(ClassGroupModuleParamsSchema)
   .body(UpdateClassGroupModuleBodySchema)
   .response(200, IdResponseSchema)
@@ -67,7 +66,7 @@ export const retireClassGroupModuleRoute = RouteBuilder.post("/catalog/class-gro
     description:
       "Never the class group's last run (422 catalog.class_group_module_last) nor one a live seat is in (422 catalog.class_group_module_has_students).",
   })
-  .roles(...CLASS_GROUP_WRITE_ROLES)
+  .can("catalog.class_groups_edit")
   .params(ClassGroupModuleParamsSchema)
   .response(204, z.void())
   .response(404, ErrorResponseSchema)

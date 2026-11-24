@@ -5,7 +5,6 @@ import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
 import { container } from "@/container.js";
 import type { StudentListRow } from "@/infra/persistence/student/ListStudentsQuery.js";
 import { ListStudentsQuerySchema, serializeStudentRow } from "./ListStudentsRoute.js";
-import { STUDENT_EXPORT_ROLES } from "./studentRoles.js";
 
 // The directory's own filters, every page at once — the tab, search and age
 // chip the screen shows (OOC-121).
@@ -28,7 +27,7 @@ export const exportStudentsRoute = RouteBuilder.get("/students/export")
     description:
       "Every student the directory's tab, search and age filter match, one JSON row per line. Writes audit_log before the first row; its own per-account rate limit.",
   })
-  .roles(...STUDENT_EXPORT_ROLES)
+  .can("students.export")
   .rateLimit(RATE_LIMITS.staff, RATE_LIMITS.studentExport)
   .query(ExportStudentsQuerySchema)
   .response(400, ErrorResponseSchema)

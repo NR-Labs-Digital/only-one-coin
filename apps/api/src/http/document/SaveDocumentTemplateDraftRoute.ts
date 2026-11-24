@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { DOCUMENT_TEMPLATE_ROLES } from "./documentRoles.js";
 import { DocumentBodySchema, DocumentKindParamsSchema, DocumentTemplateIssueSchema } from "./documentSchemas.js";
 
 /**
@@ -16,7 +15,7 @@ export const saveDocumentTemplateDraftRoute = RouteBuilder.put("/document-templa
     summary: "Save a document template draft",
     description: "The text is sanitized to what a document may carry. The answer lists the issues to fix before publishing.",
   })
-  .roles(...DOCUMENT_TEMPLATE_ROLES)
+  .can("settings.document_templates")
   .params(DocumentKindParamsSchema)
   .body(z.object({ body: DocumentBodySchema }))
   .response(

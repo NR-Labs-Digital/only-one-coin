@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import type { StudentListRow } from "@/infra/persistence/student/ListStudentsQuery.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 // The directory's filters (OOC-76), all applied by Postgres. Absent means
 // "all", except the tab, which opens on who studies now (OOC-116). `q` keeps a two-character floor so a keystroke is not a full-table
@@ -76,7 +75,7 @@ export const listStudentsRoute = RouteBuilder.get("/students")
     description:
       "Opens on the active tab (a current enrollment). Search, tab and age filters applied server-side, paged by offset; `counts` gives every tab and chip over the search alone.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.view")
   .query(ListStudentsQuerySchema)
   .response(200, StudentDirectoryResponseSchema)
   .response(400, ErrorResponseSchema)

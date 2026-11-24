@@ -204,6 +204,7 @@ describe("POST /staff/invites", () => {
         token: "tok",
         status: "pending",
         teacherId: TEACHER_ID,
+        profileId: null,
         expiresAt: new Date(),
       },
     });

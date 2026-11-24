@@ -101,7 +101,7 @@ describe("credential accounts written directly", () => {
 
     const provisioner = new BetterAuthStaffAccountProvisioner(db);
     await expect(
-      provisioner.provision({ email: email.toUpperCase(), name: "Second", role: "teacher", password: "correct-horse-2" }),
+      provisioner.provision({ email: email.toUpperCase(), name: "Second", role: "teacher", profileId: null, password: "correct-horse-2" }),
     ).rejects.toSatisfy((e: unknown) => e instanceof ConflictError && e.reason === "staff_invite.email_taken");
 
     const users = await db.execute(sql`select count(*)::int as n from "user" where "email" = ${email}`);

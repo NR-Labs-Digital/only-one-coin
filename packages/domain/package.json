@@ -14,6 +14,7 @@
     "./legal-identity": "./src/legal/legalIdentity.ts",
     "./password-policy": "./src/identity/StudentPasswordPolicy.ts",
     "./audit-catalog": "./src/identity/auditCatalog.ts",
+    "./permission-catalog": "./src/identity/permissionCatalog.ts",
     "./email-catalog": "./src/notification/emailCatalog.ts",
     "./class-group-offer": "./src/catalog/classGroupOffer.ts",
     "./issued-document": "./src/issuedDocument/IssuedDocument.ts"

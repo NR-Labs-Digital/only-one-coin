@@ -4,7 +4,6 @@ import { container } from "@/container.js";
 import { IdParamsSchema } from "@/http/catalog/CatalogSchemas.js";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
-import { GRADE_READ_ROLES, GRADE_WRITE_ROLES } from "./gradeRoles.js";
 import {
   GradeEntrySchema,
   RecordGradesResponseSchema,
@@ -61,7 +60,7 @@ export const listClassGroupGradesRoute = RouteBuilder.get("/catalog/class-groups
     summary: "A class group's grade sheet, with each grade's history",
     description: "Every confirmed seat, graded or not. The grades are the ones that count — a correction replaces the posted value here.",
   })
-  .roles(...GRADE_READ_ROLES)
+  .can("grades.view")
   .params(IdParamsSchema)
   .response(200, z.object({ seats: z.array(SheetSeatSchema) }))
   .response(404, ErrorResponseSchema)
@@ -84,7 +83,7 @@ export const recordClassGroupGradesRoute = RouteBuilder.post("/catalog/class-gro
     description:
       "The same rules as the teacher's sheet: final once posted, the same value again is a no-op, a different value on a graded seat is 409 — changing a grade is a correction.",
   })
-  .roles(...GRADE_WRITE_ROLES)
+  .can("grades.record")
   .params(IdParamsSchema)
   .body(z.object({ entries: z.array(GradeEntrySchema).min(1).max(500) }))
   .response(200, RecordGradesResponseSchema)
@@ -113,7 +112,7 @@ export const correctClassGroupGradeRoute = RouteBuilder.post("/catalog/class-gro
     description:
       "Appends a correction — the posted grade and earlier corrections are kept. E-mails the student (and a minor's guardian) the new grade.",
   })
-  .roles(...GRADE_WRITE_ROLES)
+  .can("grades.record")
   .params(CorrectionParamsSchema)
   .body(
     z.object({

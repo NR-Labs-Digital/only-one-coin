@@ -73,16 +73,16 @@ export default async function ClassGroupDetailPage({
 
   /* Billing sees no academic data: the page answers 404 (the catalog API
      answers it 403). The role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
   const group = await getCatalogClassGroup(classGroupId)
   if (!group) notFound()
 
-  const canManage = canCreateClassGroup(staff.role)
+  const canManage = canCreateClassGroup(staff)
   // The waitlist carries national ids: not every class-group writer reads it (OOC-95).
-  const managesWaitlist = canManageWaitlist(staff.role)
+  const managesWaitlist = canManageWaitlist(staff)
   /* The grade sheet is the supervision's (OOC-102). Who cannot read it never
      asks — the card is not there, as with the waitlist. */
-  const readsGrades = canReadGrades(staff.role)
+  const readsGrades = canReadGrades(staff)
 
   /* The waitlist carries each student's national id, so the API answers it
      only to who runs class groups (the GET /students rule). Everyone else
@@ -113,7 +113,7 @@ export default async function ClassGroupDetailPage({
   /* The certificate batch (OOC-33) lives on the module group of the course's
      last module. Who cannot read it never asks, as with the grade sheet. */
   const courseModules = courses?.find((course) => course.id === group.courseId)?.modules ?? 1
-  const closingRuns = canReadCertificates(staff.role)
+  const closingRuns = canReadCertificates(staff)
     ? group.modules.filter((run) => runClosesTheCourse(run, courseModules))
     : []
   const certificateBatches = await Promise.all(
@@ -237,7 +237,7 @@ export default async function ClassGroupDetailPage({
         teachers={teachers}
         // A retired class group still gets the card: it is where it comes back.
         canManage={canManage}
-        canRetire={canRetireCatalogEntry(staff.role)}
+        canRetire={canRetireCatalogEntry(staff)}
       />
 
       <ModuleRunsCard
@@ -245,7 +245,7 @@ export default async function ClassGroupDetailPage({
         courses={courses ?? []}
         teachers={teachers}
         canManage={canManage}
-        canProgress={canMoveStudentsOn(staff.role)}
+        canProgress={canMoveStudentsOn(staff)}
       />
 
       <RosterCard roster={roster} />
@@ -257,7 +257,7 @@ export default async function ClassGroupDetailPage({
           classGroupId={group.id}
           registers={gradeRegisters}
           runLabels={runLabels}
-          canEdit={canEditGrades(staff.role)}
+          canEdit={canEditGrades(staff)}
         />
       )}
 
@@ -268,7 +268,7 @@ export default async function ClassGroupDetailPage({
           seats={gradeSheet}
           // The pass mark is the backoffice's (OOC-41) — never a fallback number.
           passingGrade={settings?.passingGrade ?? null}
-          canEdit={canEditGrades(staff.role)}
+          canEdit={canEditGrades(staff)}
         />
       )}
 
@@ -279,7 +279,7 @@ export default async function ClassGroupDetailPage({
           moduleId={run.id}
           module={run.module}
           batch={batch}
-          canIssue={canIssueCertificates(staff.role)}
+          canIssue={canIssueCertificates(staff)}
         />
       ))}
 
@@ -288,7 +288,7 @@ export default async function ClassGroupDetailPage({
           group={group}
           entries={waitlist}
           canManage={managesWaitlist}
-          canEnroll={canCreateEnrollment(staff.role)}
+          canEnroll={canCreateEnrollment(staff)}
         />
       )}
     </div>

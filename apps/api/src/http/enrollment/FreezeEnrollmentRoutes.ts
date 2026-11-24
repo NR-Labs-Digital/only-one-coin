@@ -4,7 +4,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { WeeklySlotSchema } from "@/http/catalog/CatalogSchemas.js";
-import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -18,7 +17,7 @@ export const freezeEnrollmentRoute = RouteBuilder.post("/enrollments/:id/freeze"
     description:
       "The seat goes back to its class group, the enrollment is frozen at the module and attempt it is on. Only a confirmed seat, of a course that allows freezing, in a class group enrolling or in progress. Refusals: 422 enrollment.freeze_<seat_not_confirmed|course_disallows|class_group_not_running|reason_required>; 409 enrollment.freeze_conflict when it changed meanwhile.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.freeze")
   .params(ParamsSchema)
   .body(z.object({ reason: z.string().max(FREEZE_REASON_MAX_LENGTH * 2) }))
   .response(200, z.object({ freezeId: z.string().uuid() }))
@@ -42,7 +41,7 @@ export const listFreezeReturnRunsRoute = RouteBuilder.get("/enrollments/:id/retu
     description:
       "Live runs of the enrollment's course and of the module it stopped in, in class groups enrolling or in progress, full ones included with their seat counters. 422 enrollment.return_not_frozen when it is not frozen.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.freeze")
   .params(ParamsSchema)
   .response(
     200,
@@ -86,7 +85,7 @@ export const returnFromFreezeRoute = RouteBuilder.post("/enrollments/:id/return"
     description:
       "classGroupModuleId is a run of the same course and module, in a class group enrolling or in progress. A full one is 422 enrollment.class_group_full unless allowOverCapacity is true (OOC-155). Refusals: 422 enrollment.return_<not_frozen|target_unavailable>; 409 enrollment.freeze_conflict.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.freeze")
   .params(ParamsSchema)
   .body(z.object({ classGroupModuleId: z.string().uuid(), allowOverCapacity: z.boolean().default(false) }))
   .response(200, z.object({ overCapacity: z.boolean() }))

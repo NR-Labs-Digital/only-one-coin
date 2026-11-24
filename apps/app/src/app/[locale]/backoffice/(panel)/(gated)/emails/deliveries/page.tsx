@@ -53,7 +53,7 @@ export default async function EmailDeliveriesPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canManageEmail(staff.role)) notFound()
+  if (!canManageEmail(staff)) notFound()
 
   const templateFilter = TEMPLATES.find((value) => value === template) ?? null
   const issues = await getEmailDeliveryIssues(templateFilter ?? undefined)
@@ -134,7 +134,7 @@ export default async function EmailDeliveriesPage({
         <DeliveriesView
           rows={issues.items}
           total={issues.total}
-          canResend={canResendEmail(staff.role)}
+          canResend={canResendEmail(staff)}
         />
       )}
     </div>

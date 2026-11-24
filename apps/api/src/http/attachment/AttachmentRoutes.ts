@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { ATTACHMENT_STAFF_ROLES } from "./attachmentRoles.js";
 import { attachmentList, AttachmentListSchema, UploadBodyFields, UploadTargetSchema } from "./attachmentSchemas.js";
 
 /*
@@ -22,11 +21,12 @@ const IdParamsSchema = z.object({ attachmentId: z.string().uuid() });
 const actorOf = (request: { currentUser?: AuthenticatedUser }) => ({
   userId: request.currentUser!.id,
   role: request.currentUser!.role,
+  cargoId: request.currentUser!.profileId ?? null,
 });
 
 export const listAttachmentsRoute = RouteBuilder.get("/attachments")
   .docs({ tags: ["Attachments"], summary: "List an owner's files, newest first" })
-  .roles(...ATTACHMENT_STAFF_ROLES)
+  .can("students.view")
   .query(z.object(OwnerSchema))
   .response(200, AttachmentListSchema)
   .response(403, ErrorResponseSchema)
@@ -45,7 +45,7 @@ export const requestAttachmentUploadRoute = RouteBuilder.post("/attachments/uplo
     summary: "Mint a signed upload target for a new file",
     description: "The row is born pending; the browser POSTs the file straight to the bucket, then confirms.",
   })
-  .roles(...ATTACHMENT_STAFF_ROLES)
+  .can("students.edit")
   .body(z.object({ ...OwnerSchema, ...UploadBodyFields }))
   .response(201, UploadTargetSchema)
   .response(403, ErrorResponseSchema)
@@ -72,7 +72,7 @@ export const confirmAttachmentUploadRoute = RouteBuilder.post("/attachments/:att
     summary: "Confirm a file landed and list it",
     description: "Reads the object: type from its magic bytes, size and sha256 from its bytes.",
   })
-  .roles(...ATTACHMENT_STAFF_ROLES)
+  .can("students.edit")
   .params(IdParamsSchema)
   .body(z.object({}))
   .response(200, z.object({ attachmentId: z.string().uuid() }))
@@ -92,7 +92,7 @@ export const downloadAttachmentRoute = RouteBuilder.get("/attachments/:attachmen
     summary: "A five-minute link to a file, saved under its original name",
     description: "Each call is logged (attachment.downloaded).",
   })
-  .roles(...ATTACHMENT_STAFF_ROLES)
+  .can("students.view")
   .params(IdParamsSchema)
   .response(200, z.object({ url: z.string() }))
   .response(404, ErrorResponseSchema)
@@ -110,7 +110,7 @@ export const removeAttachmentRoute = RouteBuilder.delete("/attachments/:attachme
     summary: "Take a file off the list (soft delete)",
     description: "The row gets deleted_at and the object stays in the bucket. Logged (attachment.removed).",
   })
-  .roles(...ATTACHMENT_STAFF_ROLES)
+  .can("students.edit")
   .params(IdParamsSchema)
   .response(204, z.void())
   .response(404, ErrorResponseSchema)

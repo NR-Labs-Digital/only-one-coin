@@ -29,7 +29,7 @@ export default async function PaymentsPage({
 
   const staff = await getStaffSession()
 
-  if (!canViewPayments(staff.role)) {
+  if (!canViewPayments(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('payments.title')} />
@@ -85,7 +85,7 @@ export default async function PaymentsPage({
       <PaymentsView
         ledger={ledger}
         query={query}
-        canReview={canReviewPayments(staff.role)}
+        canReview={canReviewPayments(staff)}
       />
     </div>
   )

@@ -6,7 +6,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canBrowseCatalog,
   canConfigureCourse,
-  canCreateCourse,
+  canEditCourseIdentity,
   canManagePrices,
   canRetireCatalogEntry,
 } from '@/lib/backoffice/permissions'
@@ -49,7 +49,7 @@ export default async function CourseDetailPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
 
   const [detail, courses, languageList] = await Promise.all([
     getCatalogCourse(courseId),
@@ -60,8 +60,8 @@ export default async function CourseDetailPage({
   const { course, plans } = detail
   const catalog = courses ?? [course]
   const languages = languageList ?? []
-  const canConfigure = canConfigureCourse(staff.role)
-  const canRetire = canRetireCatalogEntry(staff.role)
+  const canConfigure = canConfigureCourse(staff)
+  const canRetire = canRetireCatalogEntry(staff)
   const tabs = TABS.filter((item) => item !== 'settings' || canConfigure || canRetire)
 
   return (
@@ -119,7 +119,7 @@ export default async function CourseDetailPage({
           <CoursePlans
             courseId={course.id}
             plans={plans}
-            canManage={canManagePrices(staff.role)}
+            canManage={canManagePrices(staff)}
             canRetire={canRetire}
           />
         </div>
@@ -136,7 +136,7 @@ export default async function CourseDetailPage({
               course={course}
               courses={catalog}
               languages={languages}
-              canEditIdentity={canCreateCourse(staff.role)}
+              canEditIdentity={canEditCourseIdentity(staff)}
             />
           )}
           {canRetire && <CourseRetire courseId={course.id} active={course.active} />}

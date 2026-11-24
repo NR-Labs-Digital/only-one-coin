@@ -30,7 +30,7 @@ export default async function PendingClassGroupsPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
   const items = await listPendingTeacherClassGroups()
 
   return (

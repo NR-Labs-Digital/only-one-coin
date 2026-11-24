@@ -72,7 +72,7 @@ export async function AccountScreen({
 
           <AutoGrid as="dl" min="11rem" className="mt-5">
             <Field label={t('account.role_label')}>
-              <StatusBadge tone="info" dot={false} label={t(`role.${user.role}`)} />
+              <StatusBadge tone="info" dot={false} label={user.profileName ?? t(`role.${user.role}`)} />
             </Field>
           </AutoGrid>
 

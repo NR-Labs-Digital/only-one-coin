@@ -13,7 +13,7 @@ export const cancelStaffPasswordResetRoute = RouteBuilder.post("/staff/password-
     tags: ["Identity"],
     summary: "Cancel a pending password-reset link",
   })
-  .roles("master", "admin")
+  .can("team.access")
   .params(CancelStaffPasswordResetParamsSchema)
   .response(204, z.void())
   .response(404, ErrorResponseSchema)

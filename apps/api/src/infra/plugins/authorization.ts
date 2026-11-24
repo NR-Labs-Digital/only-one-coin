@@ -4,8 +4,8 @@ import {
   NotAPlatformOwnerError,
   UnauthorizedError,
   isOwnerEmail,
-  requiresMfa,
   type AuthenticatedUser,
+  type PermissionKey,
   type Role,
 } from "@ooc/domain";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -14,18 +14,38 @@ import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 
 /**
- * The three ways a route may declare who it answers to — each one a session
- * check. `beforeMfa` marks the handful of routes a cargo that must have the
- * second factor can still reach before turning it on: the ones that turn it on.
+ * The ways a route may declare who it answers to. A staff route names the
+ * permission it needs (OOC-183); the portal's routes name their roles; the
+ * owners' door is the e-mail domain. `beforeMfa` marks the handful of routes a
+ * cargo that must have the second factor can still reach before turning it
+ * on: the ones that turn it on.
  */
 export type RouteAuth =
   | { public: true }
+  | { public: false; permission: PermissionKey; alsoRoles: Role[]; beforeMfa?: true }
   | { public: false; roles: Role[]; beforeMfa?: true }
   | { public: false; owners: true; beforeMfa?: true };
+
+/** One registered route and what it declared — what the role matrix (OOC-57) reads. */
+export interface DeclaredRoute {
+  method: string;
+  url: string;
+  auth: RouteAuth;
+}
 
 declare module "fastify" {
   interface FastifyContextConfig {
     auth?: RouteAuth;
+  }
+
+  interface FastifyInstance {
+    /**
+     * Every route registered on this app with the access it declared,
+     * collected by the same `onRoute` hook that enforces the declaration. The
+     * role matrix is built from this list, so it can never say something the
+     * routes do not enforce (OOC-57).
+     */
+    declaredRoutes: DeclaredRoute[];
   }
 
   interface FastifyRequest {
@@ -80,12 +100,23 @@ function extractSessionToken(cookieHeader: string | undefined): string | null {
  * (CLAUDE.md §8).
  */
 async function authorizationPlugin(app: FastifyInstance) {
+  const declaredRoutes: DeclaredRoute[] = [];
+  app.decorate("declaredRoutes", declaredRoutes);
+
   app.addHook("onRoute", (routeOptions) => {
-    if (routeOptions.config?.auth === undefined) {
+    const auth = routeOptions.config?.auth;
+    if (auth === undefined) {
       throw new Error(
         `Route ${String(routeOptions.method)} ${routeOptions.url} is missing an auth declaration ` +
-          `— call .roles(...), .owners() or .public() on its RouteBuilder (CLAUDE.md §6).`,
+          `— call .can(...), .roles(...), .owners() or .public() on its RouteBuilder (CLAUDE.md §6).`,
       );
+    }
+
+    const methods = Array.isArray(routeOptions.method) ? routeOptions.method : [routeOptions.method];
+    for (const method of methods) {
+      // Fastify adds a HEAD twin to every GET; it is the same door.
+      if (method === "HEAD") continue;
+      declaredRoutes.push({ method, url: routeOptions.url, auth });
     }
   });
 
@@ -126,19 +157,25 @@ async function authorizationPlugin(app: FastifyInstance) {
       if (!isOwnerEmail(user.email)) {
         throw new NotAPlatformOwnerError({ path: request.url });
       }
+    } else if ("permission" in auth) {
+      // What the cargo holds, as administration last saved it (OOC-183).
+      if (!auth.alsoRoles.includes(user.role) && !container.identity.staffAccess.has(user, auth.permission)) {
+        throw new InsufficientPrivilegeError({ path: request.url });
+      }
     } else if (!auth.roles.includes(user.role)) {
       throw new InsufficientPrivilegeError({ path: request.url });
     }
 
     /**
-     * The second factor is not optional for master/admin/billing (CLAUDE.md
-     * §8). Once it is on, Better Auth itself never opens a session without
+     * The second factor is not optional for master/admin/billing, nor for
+     * any cargo holding a permission that moves money or hands out access
+     * (CLAUDE.md §8, OOC-183). Once it is on, Better Auth itself never opens a session without
      * the code. This covers the account before that: a password alone still
      * opens a session there — an account that never enrolled, one just
      * promoted into the cargo — and that session reaches nothing but the
      * routes that turn the factor on.
      */
-    if (requiresMfa(user.role) && !user.twoFactorEnabled && !auth.beforeMfa) {
+    if (container.identity.staffAccess.requiresMfa(user) && !user.twoFactorEnabled && !auth.beforeMfa) {
       throw new MfaEnrollmentRequiredError({ path: request.url });
     }
 

@@ -3,7 +3,6 @@ import { RECEIPT_FRAUD_SIGNAL_KINDS, RECEIPT_VERDICTS, RECEIPT_VERDICT_REASONS, 
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { PAYMENT_CONTACT_ROLES, PAYMENT_READ_ROLES } from "./paymentRoles.js";
 
 const QuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(100_000).default(1),
@@ -57,7 +56,7 @@ const ItemSchema = z.object({
   procedureKind: ProcedureKindSchema.nullable(),
   studentId: z.string().uuid(),
   studentName: z.string(),
-  // Null for a role outside PAYMENT_CONTACT_ROLES, or a file without one.
+  // Null without `payments.view_contact`, or for a file without one.
   studentPhone: z.string().nullable(),
   courseName: z.string(),
   classGroupName: z.string(),
@@ -90,7 +89,7 @@ export const listPaymentReviewQueueRoute = RouteBuilder.get("/payments/review")
     description:
       "Backs the review queue of /backoffice/payments, one page at a time. `oldest` (default, OOC-146): arrival order, whoever paid first is answered first; `priority`: suggested rejection, then review, then green, least confident reading first within each. A re-read, once answered, replaces the first reading and its verdict.",
   })
-  .roles(...PAYMENT_READ_ROLES)
+  .can("payments.view")
   .query(QuerySchema)
   .response(
     200,
@@ -100,8 +99,9 @@ export const listPaymentReviewQueueRoute = RouteBuilder.get("/payments/review")
   .handler(async (request, reply) => {
     const { page, period, q, sort } = request.query;
     const result = await container.queries.listPaymentReviewQueue.run({ page, academicPeriodId: period, q, sort });
-    const role = request.currentUser!.role;
-    const seesContact = (PAYMENT_CONTACT_ROLES as readonly string[]).includes(role);
+    // The phone is its own permission (OOC-183) — by default who acts on the
+    // payment or answers the student.
+    const seesContact = container.identity.staffAccess.has(request.currentUser!, "payments.view_contact");
     reply.status(200).send({
       items: result.items.map((row) => ({
         ...row,

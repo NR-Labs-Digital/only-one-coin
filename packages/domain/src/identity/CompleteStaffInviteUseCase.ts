@@ -71,6 +71,7 @@ export class CompleteStaffInviteUseCase extends BaseUseCase<CompleteStaffInviteI
       name: `${invite.firstName} ${invite.lastName}`.trim(),
       password: input.password,
       role: invite.role,
+      profileId: invite.profileId,
     });
 
     const teacherLinked = teacherId ? await this.teacherRepository.linkAccount(teacherId, userId) : null;

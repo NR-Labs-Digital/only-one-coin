@@ -248,7 +248,7 @@ A dívida que o PR #136 deixou foi zerada na OOC-82: o formulário de login e se
 
 ## RBAC na UI
 
-A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts` — é gate de UI (esconder/mostrar), **não** o mecanismo de aceite; o mecanismo real é deny-by-default em `apps/api` (`apps/api/CLAUDE.md`). Quadro de papéis, o que cada um pode e o modelo de criação/promoção de staff: `CLAUDE.md` §8 (raiz) e `apps/api/CLAUDE.md` (gestão de cargos).
+A matriz tela-a-tela vive em `apps/app/src/lib/backoffice/permissions.ts` — é gate de UI (esconder/mostrar), **não** o mecanismo de aceite. **Desde a OOC-183 todo gate recebe a sessão (`StaffAccess`) e lê uma permissão de `staff.permissions` (o que `/me` devolve), nunca o nome do cargo** — o cargo é editável em Equipo, e um gate por nome mentiria para o cargo criado. Gate novo lê a mesma chave que a rota declara; o mecanismo real é deny-by-default em `apps/api` (`apps/api/CLAUDE.md`). Quadro de papéis, o que cada um pode e o modelo de criação/promoção de staff: `CLAUDE.md` §8 (raiz) e `apps/api/CLAUDE.md` (gestão de cargos).
 
 ---
 

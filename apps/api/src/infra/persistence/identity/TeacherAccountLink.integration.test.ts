@@ -91,6 +91,7 @@ function teacherInvite(teacherId: string, email: string) {
     token: `tok_ooc79_${email}`,
     invitedBy: ADMIN,
     teacherId,
+    profileId: null,
     expiresAt: new Date(Date.now() + 86_400_000),
   };
 }

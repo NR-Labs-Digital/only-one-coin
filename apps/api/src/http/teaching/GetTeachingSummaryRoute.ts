@@ -10,7 +10,7 @@ export const getTeachingSummaryRoute = RouteBuilder.get("/teaching/summary")
     summary: "The signed-in teacher's home figures",
     description: "Class groups teaching (enrolling or running), class groups in the portal, confirmed students across the ones teaching.",
   })
-  .roles("teacher")
+  .can("teaching.own_class_groups")
   .response(200, z.object({ teaching: z.number().int(), inPortal: z.number().int(), students: z.number().int() }))
   .handler(async (request, reply) => {
     const summary = await container.useCases.teaching.summary.run({ userId: request.currentUser!.id });

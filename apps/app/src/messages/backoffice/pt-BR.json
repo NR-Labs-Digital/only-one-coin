@@ -44,7 +44,8 @@
       "teacher": "Docente",
       "sales": "Vendedor",
       "support": "Atendimento ao cliente",
-      "billing": "Faturamento"
+      "billing": "Faturamento",
+      "custom": "Cargo personalizado"
     },
     "common": {
       "actions": "Ações",
@@ -385,7 +386,10 @@
         "grade_edited": "Nota alterada pelo docente",
         "grade_register_submitted": "Registro de notas enviado para revisão",
         "grade_register_returned": "Registro de notas devolvido ao docente",
-        "grade_register_confirmed": "Registro de notas confirmado como oficial"
+        "grade_register_confirmed": "Registro de notas confirmado como oficial",
+        "staff_profile_created": "Cargo criado",
+        "staff_profile_updated": "Permissões de cargo alteradas",
+        "staff_profile_retired": "Cargo eliminado"
       },
       "field": {
         "first_name": "Nome",
@@ -2030,7 +2034,9 @@
       "cancel_invite_toast": "Convite cancelado",
       "action_failed": "Não foi possível concluir a ação. Tente de novo.",
       "restored_toast": "Acesso desbloqueado",
-      "restore_teacher_inactive": "Esta conta é de um docente fora do quadro: o acesso volta quando ele é reincorporado em Docentes."
+      "restore_teacher_inactive": "Esta conta é de um docente fora do quadro: o acesso volta quando ele é reincorporado em Docentes.",
+      "tab_people": "Pessoas",
+      "change_error_beyond": "Você não pode dar nem tirar um cargo com permissões que o seu cargo não tem."
     },
     "deliveries": {
       "title": "E-mails que não chegaram",
@@ -3062,6 +3068,168 @@
       "col_status": "Estado",
       "col_deadline": "Prazo",
       "no_teacher": "Sem docente"
+    },
+    "permissions": {
+      "tab": "Cargos e permissões",
+      "intro": "O que cada cargo pode fazer na plataforma, lido das mesmas regras que o sistema aplica em cada ação. Uma mudança vale a partir da próxima ação de cada pessoa do cargo.",
+      "mfa_note": "O segundo fator é obrigatório em cada login para os cargos que aprovam pagamentos, gerem a equipe ou mudam regras e preços.",
+      "owners_note": "O que está marcado «Só donos da plataforma» depende do e-mail da conta, não do cargo: nenhum cargo dá esse acesso.",
+      "role_filter": "Ver",
+      "all_roles": "Todos os cargos",
+      "col_action": "Ação",
+      "allowed": "Pode",
+      "denied": "Não pode",
+      "owners_only": "Só donos da plataforma",
+      "mfa_required": "Segundo fator obrigatório",
+      "count": "{count} de {total} ações",
+      "locked_title": "Sem acesso às permissões",
+      "locked_body": "A tabela de permissões é consultada pela administração e pelo analista.",
+      "load_error_title": "Não foi possível carregar a tabela de permissões",
+      "load_error_body": "Tente de novo em alguns minutos.",
+      "area": {
+        "students": "Alunos",
+        "enrollments": "Matrículas",
+        "payments": "Pagamentos",
+        "catalog": "Cursos, períodos e turmas",
+        "grades": "Notas e certificados",
+        "teaching": "Portal do docente",
+        "teachers": "Docentes",
+        "emails": "E-mails",
+        "reports": "Início, relatórios e auditoria",
+        "settings": "Configuração",
+        "team": "Equipe",
+        "account": "Própria conta"
+      },
+      "capability": {
+        "students": {
+          "view": "Ver a ficha do aluno, os pagamentos, documentos e arquivos",
+          "edit": "Cadastrar e corrigir alunos e apoderados, e anexar arquivos",
+          "export": "Exportar o diretório de alunos",
+          "portal_access": "Enviar o acesso ao portal",
+          "revoke_document": "Anular uma constancia ou um certificado"
+        },
+        "enrollments": {
+          "view": "Ver o livro de matrículas",
+          "create_manual": "Abrir uma matrícula manual",
+          "move": "Mover uma matrícula de turma",
+          "transfer": "Transferir uma matrícula para outra pessoa",
+          "freeze": "Congelar uma matrícula e fazê-la voltar"
+        },
+        "payments": {
+          "view": "Ver os pagamentos e a fila de comprovantes",
+          "view_receipt": "Abrir a imagem do comprovante",
+          "settle": "Aprovar, rejeitar e reler um comprovante",
+          "view_contact": "Ver o celular do aluno na fila de comprovantes"
+        },
+        "catalog": {
+          "view": "Ver cursos, períodos, turmas e os alunos delas",
+          "courses_edit": "Editar os dados do curso (nome, idioma, nível, resumo)",
+          "course_options": "Editar as opções do curso (módulos, material, procedimentos)",
+          "plan_prices": "Definir o preço de um plano",
+          "languages": "Criar, renomear e retirar idiomas",
+          "periods": "Criar, editar e duplicar períodos",
+          "class_groups_edit": "Criar e editar turmas e grupos de módulo (docente, Classroom, Meet, status)",
+          "retire": "Aposentar, reativar e eliminar do catálogo",
+          "waitlist": "Gerir a lista de espera",
+          "courses_create": "Criar cursos e planos",
+          "roster_contact": "Ver documento, e-mail e celular na lista de alunos da turma"
+        },
+        "grades": {
+          "view": "Ver notas e registros de notas",
+          "record": "Lançar e corrigir notas",
+          "review_register": "Devolver e confirmar um registro de notas",
+          "progression": "Passar alunos para o módulo seguinte",
+          "certificates_preview": "Ver a lista de certificados de uma turma",
+          "certificates_issue": "Emitir os certificados de uma turma"
+        },
+        "teaching": {
+          "own_class_groups": "Ver as próprias turmas e alunos",
+          "own_grades": "Lançar e enviar as notas das próprias turmas",
+          "own_progression": "Passar alunos para o módulo seguinte nas próprias turmas",
+          "onboarding": "Completar a própria ficha ao entrar"
+        },
+        "teachers": {
+          "view": "Ver o quadro docente",
+          "view_file": "Ver a ficha de um docente (o docente, só a própria)",
+          "register": "Cadastrar docentes",
+          "edit": "Corrigir a ficha, a disponibilidade e a saída do quadro",
+          "contract_generate": "Gerar o contrato",
+          "contract_download": "Baixar contratos"
+        },
+        "emails": {
+          "view": "Ver os e-mails, a prévia e os envios",
+          "send": "Enviar um teste e reenviar um e-mail"
+        },
+        "reports": {
+          "dashboard": "Ver o início com os números",
+          "view": "Ver os relatórios",
+          "audit_log": "Ler a auditoria",
+          "audit_log_export": "Exportar a auditoria"
+        },
+        "settings": {
+          "read": "Consultar as regras e as tarifas da plataforma",
+          "edit": "Alterar as regras da plataforma",
+          "procedure_prices": "Definir a tarifa dos trâmites",
+          "document_templates": "Editar e publicar os textos dos documentos",
+          "feature_flags": "Ligar e desligar seções (Funcionalidades)"
+        },
+        "team": {
+          "view": "Ver a equipe e o histórico de cargos",
+          "permissions": "Ver os cargos e as permissões",
+          "invite": "Convidar uma pessoa",
+          "change_role": "Trocar o cargo de uma conta",
+          "access": "Bloquear, desbloquear e redefinir a senha",
+          "retire": "Eliminar uma conta",
+          "profiles": "Criar, editar e eliminar cargos"
+        },
+        "account": {
+          "self": "Trocar a própria senha, o idioma e o segundo fator"
+        }
+      },
+      "new_profile": "Novo cargo",
+      "new_title": "Novo cargo",
+      "name_label": "Nome do cargo",
+      "new_copy_from": "Começar com as permissões de",
+      "new_copy_none": "Nenhum: começar vazio",
+      "new_hint": "Depois de criar, marque o que o cargo pode fazer. Você só pode dar permissões que o seu próprio cargo tem.",
+      "new_create": "Criar cargo",
+      "creating": "Criando…",
+      "cancel": "Cancelar",
+      "save": "Salvar alterações",
+      "saving": "Salvando…",
+      "discard": "Descartar",
+      "unsaved": "Há alterações não salvas.",
+      "saved_state": "Sem alterações pendentes.",
+      "saved_toast": "Permissões salvas",
+      "created_toast": "Cargo criado. Marque o que ele pode fazer.",
+      "retired_toast": "Cargo eliminado",
+      "retire": "Eliminar cargo",
+      "retire_title": "Eliminar o cargo",
+      "retire_body": "{name} deixa de existir e sai das listas de cargos. O histórico continua nomeando.",
+      "retire_in_use": "{count, plural, one {Uma pessoa ou convite ainda tem este cargo} other {# pessoas ou convites ainda têm este cargo}}. Troque o cargo deles em Pessoas antes de eliminá-lo.",
+      "retire_confirm": "Eliminar",
+      "custom_badge": "Criado na Equipe",
+      "members": "{count, plural, =0 {Sem pessoas} one {1 pessoa} other {# pessoas}}",
+      "locked_note": "Este cargo não se edita: Master tem tudo, e Docente vai com a ficha do quadro.",
+      "readonly_note": "Somente leitura: editar cargos é de quem tem a permissão de gerir cargos.",
+      "not_editable_note": "Você não pode editar este cargo: é o seu, ou tem permissões que o seu cargo não tem.",
+      "grant_teacher": "Só do cargo Docente, nas próprias turmas.",
+      "grant_owners": "Só donos da plataforma, pelo e-mail da conta.",
+      "grant_everyone": "Toda conta do painel tem.",
+      "not_held": "O seu cargo não tem, então você não pode dar.",
+      "mfa_will_require": "Com estas permissões, as pessoas do cargo terão de ativar o segundo fator.",
+      "error": {
+        "staff_profile": {
+          "name_taken": "Já existe um cargo com esse nome.",
+          "name_invalid": "O nome deve ter entre 2 e 60 caracteres.",
+          "beyond_own_permissions": "Você não pode dar permissões que o seu cargo não tem.",
+          "own_profile": "Ninguém edita o próprio cargo.",
+          "locked": "Este cargo não se edita.",
+          "in_use": "Ainda há pessoas ou convites com este cargo.",
+          "permission_not_grantable": "Uma das permissões não pode ser dada a um cargo."
+        },
+        "failed": "Não foi possível salvar. Tente de novo."
+      }
     }
   }
 }

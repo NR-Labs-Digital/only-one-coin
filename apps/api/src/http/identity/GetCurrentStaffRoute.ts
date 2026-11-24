@@ -1,4 +1,4 @@
-import { LocaleSchema } from "@ooc/domain";
+import { LocaleSchema, PERMISSION_KEYS } from "@ooc/domain";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { splitName } from "@/infra/identity/splitName.js";
@@ -15,6 +15,7 @@ const StaffRoleSchema = z.enum([
   "sales",
   "support",
   "billing",
+  "custom",
 ]);
 
 const GetCurrentStaffResponseSchema = z.object({
@@ -32,6 +33,13 @@ const GetCurrentStaffResponseSchema = z.object({
   teacherOnboardingPending: z.boolean(),
   /** The language chosen on the account page (OOC-150); null until one is. */
   preferredLocale: LocaleSchema.nullable(),
+  /**
+   * What the account's cargo can do (OOC-183), as the authorization hook reads
+   * it — the panel decides what to show from this, never from `role`.
+   */
+  permissions: z.array(z.enum(PERMISSION_KEYS as [string, ...string[]])),
+  /** The name of the cargo created in Equipo, for a `custom` account; null otherwise. */
+  profileName: z.string().nullable(),
 });
 
 // The signed-in staff member's own identity, read from the session Better
@@ -50,27 +58,19 @@ export const getCurrentStaffRoute = RouteBuilder.get("/me")
     summary: "Get the signed-in staff member's own identity",
     description: "Backs the backoffice shell's role gating and account chip.",
   })
-  .roles(
-    "master",
-    "admin",
-    "analyst",
-    "enrollment_supervisor",
-    "academic_supervisor",
-    "academic_assistant",
-    "teacher",
-    "sales",
-    "support",
-    "billing",
-  )
+  .can("account.self")
   .response(200, GetCurrentStaffResponseSchema)
   .handler(async (request, reply) => {
     // The authorization plugin's onRequest hook always sets this before a
     // non-public handler runs — narrowed here only so TypeScript knows it.
     const user = request.currentUser!;
     const { firstName, lastName } = splitName(user.name);
-    const [teacher, preferredLocale] = await Promise.all([
+    const [teacher, preferredLocale, profile] = await Promise.all([
       user.role === "teacher" ? container.repositories.teacher.findByUserId(user.id) : null,
       container.identity.userPreferenceRepository.findPreferredLocale(user.id),
+      user.role === "custom" && user.profileId
+        ? container.identity.staffProfileRepository.findLiveById(user.profileId)
+        : null,
     ]);
 
     reply.status(200).send({
@@ -82,5 +82,7 @@ export const getCurrentStaffRoute = RouteBuilder.get("/me")
       teacherId: teacher?.id ?? null,
       teacherOnboardingPending: teacher ? !teacher.profileComplete : false,
       preferredLocale,
+      permissions: [...container.identity.staffAccess.permissionsOf(user)],
+      profileName: profile?.name ?? null,
     });
   });

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STUDENT_FILE_ROLES } from "./studentRoles.js";
 
 const StudentParamsSchema = z.object({ studentId: z.string().uuid() });
 
@@ -64,7 +63,7 @@ export const listStudentActivityRoute = RouteBuilder.get("/students/:studentId/a
     summary: "A student's activity",
     description: "audit_log entries about the student, their enrollments and their payments, newest first.",
   })
-  .roles(...STUDENT_FILE_ROLES)
+  .can("students.view")
   .params(StudentParamsSchema)
   .query(ActivityQuerySchema)
   .response(200, ActivityResponseSchema)

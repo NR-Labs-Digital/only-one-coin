@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { PAYMENT_SETTLE_ROLES } from "./paymentRoles.js";
 
 /**
  * Asks for a new reading of the payment's latest receipt (ROADMAP Sessão 32).
@@ -18,7 +17,7 @@ export const rereadPaymentReceiptRoute = RouteBuilder.post("/payments/:id/reread
     description:
       "One pending re-read per receipt. The new reading and its traffic-light verdict show up in GET /payments/review once the worker answers; the payment's status is never changed. Written to the audit log.",
   })
-  .roles(...PAYMENT_SETTLE_ROLES)
+  .can("payments.settle")
   .params(z.object({ id: z.string().uuid() }))
   .body(z.object({}))
   .response(202, z.object({ rereadId: z.string().uuid() }))

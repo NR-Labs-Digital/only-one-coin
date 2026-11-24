@@ -5,6 +5,8 @@ export interface ProvisionStaffAccountInput {
   name: string;
   password: string;
   role: Role;
+  /** The cargo created in Equipo, for a `custom` account (OOC-183). */
+  profileId: string | null;
 }
 
 export interface ProvisionStaffAccountOutput {

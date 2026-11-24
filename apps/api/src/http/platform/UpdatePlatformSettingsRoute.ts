@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { PlatformSettingsResponseSchema } from "./GetPlatformSettingsRoute.js";
-import { SETTINGS_WRITE_ROLES } from "./settingsRoles.js";
 
 // Bounds are the usecase's (PLATFORM_SETTING_BOUNDS) and the database's; here
 // only the shape — integers and the one on/off switch, any subset, nothing else.
@@ -34,7 +33,7 @@ export const updatePlatformSettingsRoute = RouteBuilder.patch("/settings")
     description:
       "Any subset of the settings. One out of range refuses the whole change (422 platform.invalid_setting). Applies from the next read. Each changed value writes audit_log.",
   })
-  .roles(...SETTINGS_WRITE_ROLES)
+  .can("settings.edit")
   .body(BodySchema)
   .response(200, PlatformSettingsResponseSchema)
   .response(401, ErrorResponseSchema)

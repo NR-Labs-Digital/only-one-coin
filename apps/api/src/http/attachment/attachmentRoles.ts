@@ -1,21 +1,17 @@
-import type { AttachmentStaffPolicy, Role } from "@ooc/domain";
-import { STUDENT_FILE_ROLES } from "@/http/student/studentRoles.js";
+import type { AttachmentOwnerType, AttachmentStaffPolicy, PermissionKey } from "@ooc/domain";
+import { container } from "@/container.js";
 
 /**
- * Which staff cargos reach each owner's files (OOC-143). A student's files are
- * the student file's: the same three who read and correct it list, attach,
- * download and remove them — `sales`, `support` and `billing` do not, since a
- * scanned DNI is the kind of thing the ficha already keeps from them. Proposed
- * in the ticket's spirit, to confirm with the owner; a different answer is one
- * line here.
+ * Which permission reaches each owner's files (OOC-143, as permissions since
+ * OOC-183). A student's files are the student file's: whoever reads the file
+ * lists and downloads them — the routes add `students.edit` to attach and
+ * remove. By default that is the three who keep the file; `sales`, `support`
+ * and `billing` do not, since a scanned DNI is the kind of thing the ficha
+ * already keeps from them.
  */
-export const ATTACHMENT_STAFF_POLICY = {
-  student: STUDENT_FILE_ROLES,
-} as const satisfies AttachmentStaffPolicy;
+const PERMISSION_BY_OWNER: Readonly<Record<AttachmentOwnerType, PermissionKey>> = {
+  student: "students.view",
+};
 
-/** Every staff cargo some owner type lets in — the routes' gate. The usecase
- * then checks the owner type the request actually names. */
-export const ATTACHMENT_STAFF_ROLES = [...new Set(Object.values(ATTACHMENT_STAFF_POLICY).flat())] as [
-  Role,
-  ...Role[],
-];
+export const ATTACHMENT_STAFF_POLICY: AttachmentStaffPolicy = (actor, ownerType) =>
+  container.identity.staffAccess.has({ role: actor.role, profileId: actor.cargoId ?? null }, PERMISSION_BY_OWNER[ownerType]);

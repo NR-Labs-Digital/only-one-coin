@@ -6,12 +6,16 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutStaff } from '../actions'
 import {
   canBrowseCatalog,
+  canBrowseEnrollments,
   canBrowseReports,
+  canBrowseStudents,
+  canManageTeachers,
   canConfigureSettings,
   canViewAuditLog,
   canManageEmail,
   canManageFeatureFlags,
   canManageStaff,
+  canViewPermissionMatrix,
   canViewPayments,
 } from '@/lib/backoffice/permissions'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
@@ -78,7 +82,7 @@ export default async function BackofficePanelLayout({
      just say nothing. A failed read says nothing too: no badge beats a wrong
      zero. */
   const reviewQueue =
-    flags['backoffice.payments'] && canViewPayments(staff.role)
+    flags['backoffice.payments'] && canViewPayments(staff)
       ? await getReviewQueueHead()
       : null
   const pendingReview = reviewQueue?.total ?? 0
@@ -103,7 +107,10 @@ export default async function BackofficePanelLayout({
       key: 'operations',
       label: t('nav.group_operations'),
       items: [
-        ...(flags['backoffice.students']
+        /* Every section of the rail follows the cargo's permission to read it
+           (OOC-183): a cargo created in Equipo sees the sections it was given
+           and no locked door besides. Home is the only unconditional entry. */
+        ...(flags['backoffice.students'] && canBrowseStudents(staff)
           ? [
               {
                 key: 'students' as const,
@@ -113,13 +120,13 @@ export default async function BackofficePanelLayout({
               },
             ]
           : []),
-        ...(flags['backoffice.enrollments'] ? [{
+        ...(flags['backoffice.enrollments'] && canBrowseEnrollments(staff) ? [{
           key: 'enrollments' as const,
           href: '/backoffice/enrollments',
           label: t('nav.enrollments'),
           hiddenFromOthers: hidden('backoffice.enrollments'),
         }] : []),
-        ...(flags['backoffice.payments'] ? [{
+        ...(flags['backoffice.payments'] && canViewPayments(staff) ? [{
           /* One entry for the three screens of the section — the ledger, the
              review queue and the validation parameters. The badge is the queue
              count: what the panel is opened for on a busy day. */
@@ -135,7 +142,7 @@ export default async function BackofficePanelLayout({
       key: 'academic',
       label: t('nav.group_academic'),
       items: [
-        ...(flags['backoffice.academic'] && canBrowseCatalog(staff.role) ? [{
+        ...(flags['backoffice.academic'] && canBrowseCatalog(staff) ? [{
           /* One entry for the two screens the section is made of. They are
              read together — a course is what a class group is an instance of —
              and two sibling items reading "Turmas" and "Cursos" looked like
@@ -148,7 +155,7 @@ export default async function BackofficePanelLayout({
           label: t('nav.academic'),
           hiddenFromOthers: hidden('backoffice.academic'),
         }] : []),
-        ...(flags['backoffice.teachers']
+        ...(flags['backoffice.teachers'] && canManageTeachers(staff)
           ? [
               {
                 key: 'teachers' as const,
@@ -170,7 +177,7 @@ export default async function BackofficePanelLayout({
            funnel; tesorería settles money and a teacher runs a class group.
            Whoever arrives by URL still meets the locked screen, and the role
            on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
-        ...(canManageEmail(staff.role) && flags['backoffice.email']
+        ...(canManageEmail(staff) && flags['backoffice.email']
           ? [
               {
                 key: 'email' as const,
@@ -186,7 +193,7 @@ export default async function BackofficePanelLayout({
            narrowed rail never had this group. Whoever arrives by URL still
            meets the locked screen, and the role on the route in `apps/api` is
            what enforces it (CLAUDE.md §8). */
-        ...(canBrowseReports(staff.role) && flags['backoffice.reports']
+        ...(canBrowseReports(staff) && flags['backoffice.reports']
           ? [
               {
                 key: 'reports' as const,
@@ -201,11 +208,13 @@ export default async function BackofficePanelLayout({
            (CLAUDE.md §8). Coordination runs the academic side and never
            promotes anybody, so it is not shown a roster whose only actions it
            may not take. */
-        ...(canManageStaff(staff.role) && flags['backoffice.staff']
+        ...((canManageStaff(staff) || canViewPermissionMatrix(staff)) && flags['backoffice.staff']
           ? [
               {
                 key: 'staff' as const,
-                href: '/backoffice/team',
+                /* The analyst reads what each cargo can do (OOC-57), not the
+                   people who hold them — Equipo opens on that sheet for them. */
+                href: canManageStaff(staff) ? '/backoffice/team' : '/backoffice/team/permissions',
                 label: t('nav.staff'),
                 hiddenFromOthers: hidden('backoffice.staff'),
               },
@@ -218,7 +227,7 @@ export default async function BackofficePanelLayout({
            opens for coordination or tesorería. The locked state on the page
            stays for whoever arrives by URL, and the role on the route in
            `apps/api` is what actually enforces it (CLAUDE.md §8). */
-        ...(canConfigureSettings(staff.role) && flags['backoffice.settings']
+        ...(canConfigureSettings(staff) && flags['backoffice.settings']
           ? [
               {
                 key: 'settings' as const,
@@ -231,7 +240,7 @@ export default async function BackofficePanelLayout({
         /* The general audit log reads the whole platform's trail, so it is
            shown only to who may read it — management and the analyst. The
            role on the route in `apps/api` is what enforces it (CLAUDE.md §8). */
-        ...(canViewAuditLog(staff.role) && flags['backoffice.audit']
+        ...(canViewAuditLog(staff) && flags['backoffice.audit']
           ? [
               {
                 key: 'audit' as const,
@@ -292,7 +301,7 @@ export default async function BackofficePanelLayout({
     */
     <BoUserMenu
       name={`${staff.firstName} ${staff.lastName}`}
-      roleLabel={t(`role.${staff.role}`)}
+      roleLabel={staff.profileName ?? t(`role.${staff.role}`)}
       monogram={monogram}
       profileLabel={t('nav.profile')}
       teacherFile={null}

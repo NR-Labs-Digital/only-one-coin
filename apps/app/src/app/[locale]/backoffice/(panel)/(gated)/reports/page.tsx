@@ -33,7 +33,7 @@ export default async function ReportsPage({
 
   /* The screen says so; the role declared on the route in `apps/api` is what
      enforces it (CLAUDE.md §8). */
-  if (!canBrowseReports(staff.role)) {
+  if (!canBrowseReports(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('reports.title')} />

@@ -17,7 +17,7 @@ const InvitableTeacherSchema = z.object({
  */
 export const listInvitableTeachersRoute = RouteBuilder.get("/staff/invites/teacher-options")
   .docs({ tags: ["Identity"], summary: "Teacher files that can still receive a panel account" })
-  .roles("master", "admin")
+  .can("team.view")
   .response(200, z.object({ items: z.array(InvitableTeacherSchema) }))
   .handler(async (_request, reply) => {
     reply.status(200).send({ items: await container.queries.listInvitableTeachers.run() });

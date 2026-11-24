@@ -15,7 +15,7 @@ export const removeStaffAccessRoute = RouteBuilder.post("/staff/:userId/access/r
     tags: ["Identity"],
     summary: "Remove a panel account's access",
   })
-  .roles("master", "admin")
+  .can("team.access")
   .params(RemoveStaffAccessParamsSchema)
   .response(204, z.void())
   .response(403, ErrorResponseSchema)

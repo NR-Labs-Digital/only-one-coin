@@ -41,7 +41,7 @@ export default async function ClassGroupsPage({
 
   const staff = await getStaffSession()
 
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
 
   const [periods, courses, pending] = await Promise.all([
     listCatalogPeriods(),
@@ -55,7 +55,7 @@ export default async function ClassGroupsPage({
     (periods ? defaultPeriodId(periods, new Date().toISOString()) : null)
   const items =
     periods && courses ? await listCatalogClassGroups(selectedPeriodId ?? undefined) : null
-  const canManage = canCreateClassGroup(staff.role)
+  const canManage = canCreateClassGroup(staff)
   // Only who opens class groups reads the roster picker (the API gates it the same way).
   const teachers = canManage ? await listTeacherOptions() : null
 
@@ -79,8 +79,8 @@ export default async function ClassGroupsPage({
             teachers={teachers}
             selectedPeriodId={selectedPeriodId}
             canManage={canManage}
-            canManagePeriods={canManagePeriods(staff.role)}
-            canRetire={canRetireCatalogEntry(staff.role)}
+            canManagePeriods={canManagePeriods(staff)}
+            canRetire={canRetireCatalogEntry(staff)}
             pendingCount={pending?.length ?? null}
           />
       )}

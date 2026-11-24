@@ -1,4 +1,4 @@
-import type { Role } from "@ooc/domain";
+import type { PermissionKey, Role } from "@ooc/domain";
 import type { FastifyReply, FastifyRequest, RouteOptions } from "fastify";
 import type { z, ZodType } from "zod";
 import type { RouteAuth } from "@/infra/plugins/authorization.js";
@@ -23,7 +23,7 @@ export class RouteBuilder<
   private readonly url: string;
   private schema: RouteSchema = {};
   // No default — deny-by-default (CLAUDE.md §6) is enforced by requiring
-  // every route to call .roles(...), .owners() or .public() explicitly. A
+  // every route to call .can(...), .roles(...), .owners() or .public() explicitly. A
   // route built without one fails at registration time (authorization
   // plugin's onRoute hook), not silently open.
   private auth?: RouteAuth;
@@ -82,9 +82,22 @@ export class RouteBuilder<
   }
 
   /** Restricts the route to the given roles — checked against the caller's
-   * `user.role` on every request (CLAUDE.md §8). */
+   * `user.role` on every request (CLAUDE.md §8). Since OOC-183 only the
+   * portal's own doors (student, guardian) declare roles: a staff route
+   * declares the permission it needs with `.can(...)`. */
   roles(...roles: [Role, ...Role[]]) {
     this.auth = { public: false, roles };
+    return this;
+  }
+
+  /**
+   * Restricts the route to the staff accounts whose cargo holds this
+   * permission (OOC-183) — read from the cargo on every request, so an edit in
+   * Equipo is felt on the next call. `alsoRoles` lets the portal's own
+   * accounts through the same door (an account's own language, say).
+   */
+  can(permission: PermissionKey, options: { alsoRoles?: Role[] } = {}) {
+    this.auth = { public: false, permission, alsoRoles: options.alsoRoles ?? [] };
     return this;
   }
 
@@ -103,11 +116,11 @@ export class RouteBuilder<
    * Lets a cargo that must have the second factor reach this route before
    * turning it on (CLAUDE.md §8) — only for the routes that turn it on. Every
    * other session-gated route refuses that account with
-   * `auth.mfa_enrollment_required`. Call after `.roles()`/`.owners()`.
+   * `auth.mfa_enrollment_required`. Call after `.can()`/`.roles()`/`.owners()`.
    */
   allowBeforeMfa() {
     if (!this.auth || this.auth.public) {
-      throw new Error("allowBeforeMfa() only applies after .roles(...) or .owners().");
+      throw new Error("allowBeforeMfa() only applies after .can(...), .roles(...) or .owners().");
     }
     this.auth = { ...this.auth, beforeMfa: true };
     return this;

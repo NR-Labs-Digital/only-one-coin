@@ -240,6 +240,11 @@ export const AUDIT_ACTIONS = {
     entity: "staff",
     subject: "target",
   },
+  // The cargos as data (OOC-183): `target_id` is the cargo, which has no page
+  // of its own; the entry keeps the permission keys added and removed.
+  "staff_profile.created": { key: "staff_profile_created", entity: "staff", subject: "none" },
+  "staff_profile.updated": { key: "staff_profile_updated", entity: "staff", subject: "none" },
+  "staff_profile.retired": { key: "staff_profile_retired", entity: "staff", subject: "none" },
 
   ...PLATFORM_SETTING_ACTIONS,
   "feature_flag.override": { key: "feature_flag_changed", entity: "platform", subject: "none" },

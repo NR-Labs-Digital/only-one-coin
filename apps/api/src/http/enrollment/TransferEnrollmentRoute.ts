@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -17,7 +16,7 @@ export const transferEnrollmentRoute = RouteBuilder.post("/enrollments/:id/trans
     description:
       "Traspaso de matrícula: the enrollment's student becomes toStudentId — a student already on file; the seat, the class group, the payment and the monthly modules bought go with it. Only a confirmed seat, of a course that offers it, in a class group enrolling or in progress. The destination's portal account opens as on a first approval. Refusals: 422 enrollment.transfer_<seat_not_confirmed|course_disallows|class_group_not_running|graded|procedure_open|same_student|student_already_enrolled|student_below_minimum_age|guardian_required|reason_required|student_not_found>; 409 enrollment.transfer_conflict when it changed meanwhile.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.transfer")
   .params(ParamsSchema)
   .body(
     z.object({

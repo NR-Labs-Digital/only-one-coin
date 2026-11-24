@@ -18,19 +18,7 @@ export const setOwnPreferredLocaleRoute = RouteBuilder.put("/me/locale")
     summary: "Save the signed-in account's preferred language",
     description: "Any signed-in account, staff or student. The next sign-in opens in this language.",
   })
-  .roles(
-    "master",
-    "admin",
-    "analyst",
-    "enrollment_supervisor",
-    "academic_supervisor",
-    "academic_assistant",
-    "teacher",
-    "sales",
-    "support",
-    "billing",
-    "student",
-  )
+  .can("account.self", { alsoRoles: ["student"] })
   .body(z.object({ locale: LocaleSchema }))
   .response(204, z.null())
   .handler(async (request, reply) => {

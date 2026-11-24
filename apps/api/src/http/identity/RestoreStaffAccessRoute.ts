@@ -13,7 +13,7 @@ export const restoreStaffAccessRoute = RouteBuilder.post("/staff/:userId/access/
     tags: ["Identity"],
     summary: "Restore a panel account's access",
   })
-  .roles("master", "admin")
+  .can("team.access")
   .params(RestoreStaffAccessParamsSchema)
   .response(204, z.void())
   .response(403, ErrorResponseSchema)

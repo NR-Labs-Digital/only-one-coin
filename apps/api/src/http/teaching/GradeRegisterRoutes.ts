@@ -11,7 +11,6 @@ import { container } from "@/container.js";
 import { ClassGroupModuleParamsSchema, IdParamsSchema } from "@/http/catalog/CatalogSchemas.js";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
-import { GRADE_READ_ROLES, GRADE_WRITE_ROLES } from "./gradeRoles.js";
 
 /**
  * The grade register (OOC-180): the teacher changes grades while it is
@@ -75,7 +74,7 @@ export function serializeRegister(view: GradeRegisterView): z.infer<typeof Grade
 
 export const getOwnGradeRegisterRoute = RouteBuilder.get("/teaching/class-groups/:id/grade-register")
   .docs({ tags: ["Teaching"], summary: "The open grade register of one of the signed-in teacher's module runs" })
-  .roles("teacher")
+  .can("teaching.own_grades")
   .params(IdParamsSchema)
   .response(200, z.object({ register: GradeRegisterSchema }))
   .response(404, ErrorResponseSchema)
@@ -94,7 +93,7 @@ export const submitOwnGradeRegisterRoute = RouteBuilder.post("/teaching/class-gr
     description:
       "Only with every seat of the round graded (422 `teaching.grade_register_incomplete`) and from not sent or returned (422 `teaching.grade_register_wrong_status`).",
   })
-  .roles("teacher")
+  .can("teaching.own_grades")
   .params(IdParamsSchema)
   .response(200, z.object({ registerId: z.string().uuid() }))
   .response(404, ErrorResponseSchema)
@@ -117,7 +116,7 @@ export const editOwnClassGroupGradeRoute = RouteBuilder.put("/teaching/class-gro
     description:
       "Appends an edit to the grade's history — the posted value is kept. Only while the grade's register is not sent or returned (422 `teaching.grade_register_locked`). E-mails the student (and a minor's guardian) the new grade.",
   })
-  .roles("teacher")
+  .can("teaching.own_grades")
   .params(SeatParamsSchema)
   .body(z.object({ grade: z.union([z.number().min(MIN_GRADE).max(MAX_GRADE), z.literal("da")]) }))
   .response(200, z.object({ editId: z.string().uuid() }))
@@ -139,7 +138,7 @@ export const editOwnClassGroupGradeRoute = RouteBuilder.put("/teaching/class-gro
 
 export const listClassGroupGradeRegistersRoute = RouteBuilder.get("/catalog/class-groups/:id/grade-registers")
   .docs({ tags: ["Teaching"], summary: "Every grade register of a class group, per module run and round" })
-  .roles(...GRADE_READ_ROLES)
+  .can("grades.view")
   .params(IdParamsSchema)
   .response(200, z.object({ items: z.array(GradeRegisterSchema) }))
   .response(404, ErrorResponseSchema)
@@ -182,7 +181,7 @@ export const listGradeRegistersRoute = RouteBuilder.get("/grade-registers")
     description:
       "One row per register, plus the round the next grade would open in each run with ungraded seats. Only class groups running or finished.",
   })
-  .roles(...GRADE_READ_ROLES)
+  .can("grades.view")
   .query(
     z.object({
       period: z.string().uuid().optional(),
@@ -210,7 +209,7 @@ export const returnGradeRegisterRoute = RouteBuilder.post("/catalog/class-groups
     tags: ["Teaching"],
     summary: "Return a grade register in review to its teacher, saying what to correct",
   })
-  .roles(...GRADE_WRITE_ROLES)
+  .can("grades.review_register")
   .params(ClassGroupModuleParamsSchema)
   .body(z.object({ note: z.string().max(MAX_REGISTER_RETURN_NOTE_LENGTH * 2) }))
   .response(200, z.object({ registerId: z.string().uuid() }))
@@ -234,7 +233,7 @@ export const confirmGradeRegisterRoute = RouteBuilder.post("/catalog/class-group
     description:
       "From any open state, with every seat of the round graded. E-mails each student (and a minor's guardian) the official grade.",
   })
-  .roles(...GRADE_WRITE_ROLES)
+  .can("grades.review_register")
   .params(ClassGroupModuleParamsSchema)
   .response(200, z.object({ registerId: z.string().uuid() }))
   .response(404, ErrorResponseSchema)

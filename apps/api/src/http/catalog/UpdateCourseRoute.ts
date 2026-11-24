@@ -3,7 +3,6 @@ import { UpdateCourseSchema } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_OWNER_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
 
 /**
@@ -14,7 +13,7 @@ import { IdParamsSchema, IdResponseSchema } from "./CatalogSchemas.js";
  */
 export const updateCourseRoute = RouteBuilder.patch("/catalog/courses/:id")
   .docs({ tags: ["Catalog"], summary: "Edit a course (identity and options)" })
-  .roles(...CATALOG_OWNER_ROLES)
+  .can("catalog.courses_edit")
   .params(IdParamsSchema)
   .body(UpdateCourseSchema.omit({ language: true }).extend({ languageId: z.string().uuid().optional() }).refine((patch) => Object.keys(patch).length > 0))
   .response(200, IdResponseSchema)

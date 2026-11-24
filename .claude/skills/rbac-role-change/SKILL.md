@@ -34,6 +34,22 @@ change as touching **all** of the following, in the same PR:
   the constraint — old migrations describe history, not current state
   (`packages/db/CLAUDE.md`).
 
+- **Since OOC-183 routes declare permissions, not roles.** A staff route is
+  `.can("<permission>")`; which cargos hold it is data (`staff_profile_permissions`),
+  seeded from `defaultRoles` in `packages/domain/src/identity/permissionCatalog.ts`.
+  So "change which roles reach a route" is usually **not a code change** any
+  more — administration ticks it in Equipo. A code change is needed when:
+  - a **new board role** is added: put it in `BOARD_ROLES` (the build fails
+    otherwise), in the `defaultRoles` of every permission it should start with,
+    in `staff_profiles_role_key_check` (migration), and label it under `bo.role`
+    in the three locales. Existing databases get the new role's row on boot,
+    but **not** the permissions of keys already seeded — grant those with a
+    migration or from the screen;
+  - a **new staff route** appears: give it a permission (an existing one, or a
+    new catalog entry with `defaultRoles` and labels under
+    `bo.permissions.capability` in the three locales). The API grants a new key
+    to its default roles once, on boot.
+
 ## 3. Frontend gating (`apps/app`)
 
 - `apps/app/src/lib/backoffice/permissions.ts` — the screen-by-screen matrix.
@@ -53,9 +69,8 @@ change as touching **all** of the following, in the same PR:
   per-app `CLAUDE.md`.
 - `apps/app/README.md` — anywhere a screen's permitted roles are named in the
   "Estado por tela" table.
-- `docs/ARCHITECTURE.md` §3 — known pending item: the RBAC table there still
-  describes the pre-07/09/2026 role board as of this writing. If you're
-  already in this area, updating it closes that gap.
+- `docs/ARCHITECTURE.md` §3 — the one-line-per-role table. The action-by-action
+  detail is not kept there: it is the role matrix screen (below).
 
 ## 5. The sweep that catches what the list above misses
 

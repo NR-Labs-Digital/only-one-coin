@@ -49,17 +49,25 @@ Isso não proíbe usar RLS depois como camada **extra** de defesa em profundidad
 
 ## 3. RBAC — papéis, escopo e fase
 
-| Papel | Onde acessa | Fase | Pode | Nunca pode |
-| --- | --- | --- | --- | --- |
-| `admin` | Backoffice | MVP | Gestão completa, cria/promove outros papéis, configura regras | — (toda ação é auditada, sem exceção) |
-| `coordinator` | Backoffice | MVP | Gerencia turmas, períodos, matrículas, relatórios acadêmicos | Não cria nem promove usuários |
-| `treasury` | Backoffice | MVP | Revisão financeira, conciliação de pagamentos, aprovação individual | Sem acesso a dado acadêmico não financeiro |
-| `student` | Portal do aluno | MVP | Vê os próprios dados, status de matrícula, materiais, certificados | Nunca acessa dado de outro aluno, nem manipulando URL |
-| `guardian` | Portal do aluno | MVP | Dá consentimento, acompanha dados do(s) menor(es) sob sua responsabilidade | Vinculado explicitamente ao(s) estudante(s); não é papel genérico |
-| `mass_approver` | Backoffice | **Fase 2** | Aprovação em lote de casos já validados com alta confiança pela IA | No MVP, aprovação é sempre individual por `treasury`/`coordinator`. Aprovação em lote sempre gera auditoria individual por caso, nunca um log agregado |
-| `teacher` (docente) | Portal do docente (`/docente`, porta própria desde 07/10/2026) | **Fase 2** | Vê e edita **apenas as próprias turmas** (frequência, notas) | Não vê aluno/turma de outro docente — checagem no usecase, não escondida na tela |
+Quadro de cargos do dono (07/09/2026; `academic_assistant` desde 24/11/2026, OOC-96). Substituiu o quadro do MVP (`coordinator`, `treasury`, `mass_approver`), que deixou de existir. A descrição de cada cargo e as regras de gestão (anti-escalada, MFA, `master` só no domínio dos donos) vivem no `CLAUDE.md` §8 — não repetidas aqui.
 
-`mass_approver` e `teacher` não bloqueiam o lançamento: aprovação em lote é otimização de operação em escala, e gestão de frequência/notas pode ficar fora do primeiro lançamento se o produto inicial for só matrícula + acesso liberado. `guardian` fica no MVP porque consentimento do responsável é exigência legal desde o dia um (público menor de idade), não conveniência.
+| Papel | Onde acessa | Pode (em linhas gerais) | Nunca pode |
+| --- | --- | --- | --- |
+| `master` | Backoffice | Tudo (não se edita) | Ser carregado por conta fora do domínio dos donos |
+| `admin` | Backoffice | Tudo o que é da escola: autoriza, configura, gere a equipe | Eliminar um `master`; abrir Funcionalidades (é do e-mail de dono, não do cargo) |
+| `analyst` | Backoffice | Lê matrículas, pagamentos, catálogo, notas, docentes, e-mails, relatórios, auditoria e a matriz de permissões | Aprovar ou editar qualquer coisa; abrir a ficha do aluno |
+| `enrollment_supervisor` | Backoffice | Alunos, matrículas (manual inclusive), catálogo, turmas, lote de certificados | Liquidar pagamento |
+| `academic_supervisor` | Backoffice | Docentes, turmas e sub-turmas, notas (lança, corrige, confirma registro), progressão, certificados | Abrir a ficha do aluno |
+| `academic_assistant` | Backoffice | Ficha, disponibilidade e contrato do docente; lê turmas e notas | Lançar, corrigir ou confirmar nota; abrir turma |
+| `teacher` | Portal do docente | **Só as próprias turmas** (alunos, notas, registro, progressão) e a própria ficha | Ver aluno/turma de outro docente — checagem no usecase |
+| `sales` | Backoffice | Lê matrículas, catálogo e o início | Ficha do aluno; qualquer escrita |
+| `support` | Backoffice | Lê matrículas, pagamentos e catálogo | Corrigir a ficha; aprovar pagamento |
+| `billing` | Backoffice | Pagamentos: aprova, rejeita, relê o comprovante | Dado acadêmico não financeiro |
+| `student` | Portal do aluno | Os próprios dados, matrículas, pagamentos e trâmites | Dado de outro aluno, nem manipulando URL |
+| `guardian` | Portal do aluno | Consentimento e os perfis dos filhos ligados à conta | — vinculado explicitamente ao(s) aluno(s) |
+| `custom` | Backoffice | O que o cargo criado em Equipo marcar (`"user".profile_id`) | O portal do docente; Funcionalidades; mais do que o cargo de quem o criou |
+
+**A tabela acima é o padrão do quadro, não uma regra fixa (OOC-57, OOC-183).** O que cada cargo pode é dado, editado em *Equipo → Cargos y permisos* (`/backoffice/team/permissions`), e a administração pode criar cargos com nome próprio. O detalhe ação a ação não é mantido aqui: o catálogo `packages/domain/src/identity/permissionCatalog.ts` nomeia cada ação e os cargos que a têm por padrão, cada rota de staff declara a sua (`.can(...)`), e a tela mostra e edita o que o banco guarda — o mesmo que o hook de autorização lê. Uma tabela escrita à mão aqui envelheceria como a anterior envelheceu. Travas e mecanismo: `CLAUDE.md` §8 e `apps/api/CLAUDE.md`, "Cargos e permissões".
 
 Todo papel implementado sem exceção segue a regra dura de anti-escalada de privilégio do `CLAUDE.md` §8 ("Gestão de cargos") — não repetida aqui.
 

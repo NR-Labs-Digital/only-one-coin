@@ -12,6 +12,9 @@ export type Role =
   | "sales"
   | "support"
   | "billing"
+  /** An account on a cargo administration created in Equipo (OOC-183) — what it
+   * can do is that cargo's, by `"user".profile_id`. */
+  | "custom"
   | "student"
   | "guardian";
 

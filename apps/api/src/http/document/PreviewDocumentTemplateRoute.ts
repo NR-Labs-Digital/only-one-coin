@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { DOCUMENT_TEMPLATE_ROLES } from "./documentRoles.js";
 import { DocumentBodySchema, DocumentKindParamsSchema } from "./documentSchemas.js";
 
 /**
@@ -18,7 +17,7 @@ export const previewDocumentTemplateRoute = RouteBuilder.post("/document-templat
     description:
       "Renders the given text (or the draft, the published version, the starter) with the sample data or a real teacher. Base64 PDF.",
   })
-  .roles(...DOCUMENT_TEMPLATE_ROLES)
+  .can("settings.document_templates")
   .params(DocumentKindParamsSchema)
   .body(z.object({ body: DocumentBodySchema.optional(), teacherId: z.string().uuid().optional() }))
   .response(200, z.object({ pdf: z.string() }))

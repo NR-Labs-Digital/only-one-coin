@@ -49,7 +49,7 @@ export const listOwnClassGroupGradesRoute = RouteBuilder.get("/teaching/class-gr
     tags: ["Teaching"],
     summary: "The final grades posted in one of the signed-in teacher's class groups",
   })
-  .roles("teacher")
+  .can("teaching.own_grades")
   .params(IdParamsSchema)
   .response(200, z.object({ items: z.array(RecordedGradeSchema) }))
   .response(404, ErrorResponseSchema)
@@ -84,7 +84,7 @@ export const recordOwnClassGroupGradesRoute = RouteBuilder.post("/teaching/class
     description:
       "One grade per confirmed seat, into the run's open grade register — only while it is the teacher's (not sent, or returned; 422 `teaching.grade_register_locked` otherwise). Resending the same value is a no-op; a different value on a graded seat is 409 and nothing is written. The batch that leaves every confirmed seat graded moves an in-progress class group to finished.",
   })
-  .roles("teacher")
+  .can("teaching.own_grades")
   .params(IdParamsSchema)
   .body(z.object({ entries: z.array(GradeEntrySchema).min(1).max(500) }))
   .response(200, RecordGradesResponseSchema)

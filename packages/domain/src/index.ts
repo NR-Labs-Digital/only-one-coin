@@ -473,6 +473,61 @@ export type { Role } from "./identity/Role.js";
 export { MASTER_EMAIL_DOMAINS, MFA_REQUIRED_ROLES, canHoldMaster, isOwnerEmail, requiresMfa } from "./identity/Role.js";
 export type { AuthenticatedUser } from "./identity/AuthenticatedUser.js";
 export {
+  BOARD_ROLES,
+  EVERYONE_PERMISSIONS,
+  LOCKED_ROLES,
+  MFA_SENSITIVE_PERMISSIONS,
+  PERMISSION_AREAS,
+  PERMISSION_CATALOG,
+  PERMISSION_KEYS,
+  defaultPermissionsOf,
+  grantOf,
+  holdsMfaSensitive,
+  isGrantable,
+  isPermissionKey,
+} from "./identity/permissionCatalog.js";
+export type {
+  BoardRole,
+  PermissionArea,
+  PermissionGrant,
+  PermissionKey,
+  StaffProfileView,
+} from "./identity/permissionCatalog.js";
+export {
+  assertWithinActor,
+  grantablePermissions,
+  isBoardRole,
+  isLockedRole,
+  normalizeProfileName,
+  profilePermissions,
+  profileRequiresMfa,
+} from "./identity/staffProfile/StaffProfile.js";
+export type { StaffAssignment, StaffProfileRecord } from "./identity/staffProfile/StaffProfile.js";
+export { cargoPermissions, comparablePermissions } from "./identity/staffProfile/cargoPermissions.js";
+export type { IStaffProfileRepository, StaffProfileListing } from "./identity/staffProfile/IStaffProfileRepository.js";
+export {
+  CreateStaffProfileUseCase,
+  RetireStaffProfileUseCase,
+  UpdateStaffProfileUseCase,
+} from "./identity/staffProfile/StaffProfileUseCases.js";
+export type {
+  CreateStaffProfileInput,
+  RetireStaffProfileInput,
+  StaffProfileActor,
+  UpdateStaffProfileInput,
+  UpdateStaffProfileOutput,
+} from "./identity/staffProfile/StaffProfileUseCases.js";
+export {
+  StaffProfileBeyondOwnPermissionsError,
+  StaffProfileInUseError,
+  StaffProfileLockedError,
+  StaffProfileNameInvalidError,
+  StaffProfileNameTakenError,
+  StaffProfileNotFoundError,
+  StaffProfileOwnError,
+  StaffProfilePermissionNotGrantableError,
+} from "./identity/staffProfile/errors.js";
+export {
   NotFreshlyAuthenticatedError,
   InsufficientPrivilegeError,
   CannotActOnSelfError,
@@ -496,7 +551,7 @@ export {
 } from "./identity/StudentPasswordPolicy.js";
 export type { StudentPasswordIssue } from "./identity/StudentPasswordPolicy.js";
 export type { ICurrentSessionPort } from "./identity/ports/ICurrentSessionPort.js";
-export type { IUserRoleRepository } from "./identity/ports/IUserRoleRepository.js";
+export type { IUserRoleRepository, UserRoleAssignment } from "./identity/ports/IUserRoleRepository.js";
 export type { IUserPreferenceRepository } from "./identity/ports/IUserPreferenceRepository.js";
 export type { IAuditLogRepository, AuditLogEntry } from "./identity/ports/IAuditLogRepository.js";
 export type { IFreshAuthVerifier } from "./identity/ports/IFreshAuthVerifier.js";

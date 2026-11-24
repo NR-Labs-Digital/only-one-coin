@@ -1,10 +1,30 @@
+import type { PermissionKey } from '@ooc/domain/permission-catalog'
 import type { StaffRole } from './types'
+
+/**
+ * What a screen needs to know about who is looking: the cargo, and what that
+ * cargo can do (OOC-183) — the permissions `/me` returns, read the same way
+ * the API's authorization hook reads them. `StaffUser` is one.
+ */
+export interface StaffAccess {
+  role: StaffRole
+  permissions: readonly string[]
+}
+
+function has(staff: StaffAccess, permission: PermissionKey): boolean {
+  return staff.permissions.includes(permission)
+}
 
 /**
  * Screen-level gates. These decide what a staff member *sees*, never what they
  * are allowed to do: the real check is deny-by-default in `apps/api`, where
- * every route declares its role (CLAUDE.md §8). Hiding a button is defense in
- * depth, not the defense.
+ * every route declares the permission it needs (CLAUDE.md §8). Hiding a button
+ * is defense in depth, not the defense.
+ *
+ * Since OOC-183 every gate reads a permission of the session's cargo — the
+ * same key the route declares — never the cargo's name, because what a cargo
+ * can do is edited in Equipo. The board below is what each cargo holds by
+ * default (`packages/domain/src/identity/permissionCatalog.ts`).
  *
  * The cargo map (owner's decision, 07/09/2026):
  * - `master` — the platform owners' cargo, everything everywhere. Only an
@@ -57,11 +77,6 @@ export function canManageFeatureFlags(email: string): boolean {
   return isOwnerEmail(email)
 }
 
-/** The two cargos that run the platform itself. */
-function isManagement(role: StaffRole): boolean {
-  return role === 'master' || role === 'admin'
-}
-
 /**
  * Who opens and runs class groups and their module runs — create, edit, move
  * the status along, assign teacher, Classroom and Meet. The roles the API
@@ -70,16 +85,16 @@ function isManagement(role: StaffRole): boolean {
  * Periods, retiring and the waitlist are not part of it (`canManagePeriods`,
  * `canRetireCatalogEntry`, `canManageWaitlist`).
  */
-export function canCreateClassGroup(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+export function canCreateClassGroup(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.class_groups_edit')
 }
 
 /**
  * Who opens, edits and duplicates academic periods — CATALOG_WRITE_ROLES. The
  * academic supervisor runs class groups inside a period, not the period.
  */
-export function canManagePeriods(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canManagePeriods(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.periods')
 }
 
 /**
@@ -87,8 +102,8 @@ export function canManagePeriods(role: StaffRole): boolean {
  * national id, so it follows the student file's readers, not who runs the
  * class group (the API gates it with CATALOG_WRITE_ROLES).
  */
-export function canManageWaitlist(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canManageWaitlist(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.waitlist')
 }
 
 /**
@@ -98,21 +113,21 @@ export function canManageWaitlist(role: StaffRole): boolean {
  * (`docs/REGRAS-NEGOCIO.md` §5). They touch a seat, so they belong to
  * management and the enrollment side.
  */
-export function canManageEnrollment(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canManageEnrollment(staff: StaffAccess): boolean {
+  return has(staff, 'enrollments.move')
 }
 
 /**
  * Opening a course is a management call: it is what the whole catalog, the
  * price table and every future class group hang off.
  */
-export function canCreateCourse(role: StaffRole): boolean {
-  return isManagement(role)
+export function canCreateCourse(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.courses_create')
 }
 
 /** Who may change a course's options — not the same as who may create one. */
-export function canConfigureCourse(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canConfigureCourse(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.course_options')
 }
 
 /**
@@ -121,8 +136,8 @@ export function canConfigureCourse(role: StaffRole): boolean {
  * aposenta e reativa é quem abre turma"). Billing settles money; it does not
  * decide what stops being sold.
  */
-export function canRetireCatalogEntry(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canRetireCatalogEntry(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.retire')
 }
 
 /**
@@ -130,13 +145,8 @@ export function canRetireCatalogEntry(role: StaffRole): boolean {
  * support answers "did my payment go through" — and nobody academic-only needs
  * the money screens.
  */
-export function canViewPayments(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'billing' ||
-    role === 'support'
-  )
+export function canViewPayments(staff: StaffAccess): boolean {
+  return has(staff, 'payments.view')
 }
 
 /**
@@ -145,8 +155,8 @@ export function canViewPayments(role: StaffRole): boolean {
  * reads payments but never the picture. Mirrors `PAYMENT_RECEIPT_ROLES`
  * (apps/api/src/http/payment/paymentRoles.ts), which is what enforces it.
  */
-export function canOpenReceiptImage(role: StaffRole): boolean {
-  return isManagement(role) || role === 'analyst' || role === 'billing'
+export function canOpenReceiptImage(staff: StaffAccess): boolean {
+  return has(staff, 'payments.view_receipt')
 }
 
 /**
@@ -155,8 +165,8 @@ export function canOpenReceiptImage(role: StaffRole): boolean {
  * whole definition of the cargo. The enforcing check is the role declared on
  * the `apps/api` usecase — this only decides whether the button is drawn.
  */
-export function canReviewPayments(role: StaffRole): boolean {
-  return isManagement(role) || role === 'billing'
+export function canReviewPayments(staff: StaffAccess): boolean {
+  return has(staff, 'payments.settle')
 }
 
 /**
@@ -164,8 +174,8 @@ export function canReviewPayments(role: StaffRole): boolean {
  * the docentes and the academic assistant runs them day to day (OOC-96); the
  * analyst reads it, management runs it.
  */
-export function canManageTeachers(role: StaffRole): boolean {
-  return canEditTeachers(role) || role === 'analyst'
+export function canManageTeachers(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.view')
 }
 
 /**
@@ -173,12 +183,8 @@ export function canManageTeachers(role: StaffRole): boolean {
  * roster's readers minus the analyst, who observes and proposes but never
  * edits (CLAUDE.md §8). Mirrors TEACHER_EDIT_ROLES in apps/api.
  */
-export function canEditTeachers(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'academic_supervisor' ||
-    role === 'academic_assistant'
-  )
+export function canEditTeachers(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.edit')
 }
 
 /**
@@ -186,8 +192,8 @@ export function canEditTeachers(role: StaffRole): boolean {
  * supervision and management, and the analyst and the academic assistant
  * (OOC-96), who read and never write. Mirrors GRADE_READ_ROLES in apps/api.
  */
-export function canReadGrades(role: StaffRole): boolean {
-  return canEditGrades(role) || role === 'analyst' || role === 'academic_assistant'
+export function canReadGrades(staff: StaffAccess): boolean {
+  return has(staff, 'grades.view')
 }
 
 /**
@@ -195,8 +201,8 @@ export function canReadGrades(role: StaffRole): boolean {
  * 10/11/2026). The readers minus the analyst and the academic assistant.
  * Mirrors GRADE_WRITE_ROLES in apps/api.
  */
-export function canEditGrades(role: StaffRole): boolean {
-  return isManagement(role) || role === 'academic_supervisor'
+export function canEditGrades(staff: StaffAccess): boolean {
+  return has(staff, 'grades.record')
 }
 
 /**
@@ -209,17 +215,17 @@ export function canEditGrades(role: StaffRole): boolean {
  * `analyst`, who reads and never acts. Mirrors `CERTIFICATE_READ_ROLES` in
  * `apps/api`, which decides.
  */
-export function canReadCertificates(role: StaffRole): boolean {
-  return canIssueCertificates(role) || role === 'analyst'
+export function canReadCertificates(staff: StaffAccess): boolean {
+  return has(staff, 'grades.certificates_preview')
 }
 
 /** Who confirms the batch (OOC-33): mirrors `CERTIFICATE_ISSUE_ROLES`. */
-export function canIssueCertificates(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+export function canIssueCertificates(staff: StaffAccess): boolean {
+  return has(staff, 'grades.certificates_issue')
 }
 
-export function canMoveStudentsOn(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor' || role === 'academic_supervisor'
+export function canMoveStudentsOn(staff: StaffAccess): boolean {
+  return has(staff, 'grades.progression')
 }
 
 /**
@@ -229,8 +235,8 @@ export function canMoveStudentsOn(role: StaffRole): boolean {
  * `…/file` (filed, OOC-81). Generating one records it, so it is an edit:
  * `canEditTeachers`.
  */
-export function canOpenTeacherContracts(role: StaffRole): boolean {
-  return canManageTeachers(role)
+export function canOpenTeacherContracts(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.contract_download')
 }
 
 /**
@@ -238,8 +244,8 @@ export function canOpenTeacherContracts(role: StaffRole): boolean {
  * that will read student grades, and creating one is one step away from
  * creating staff — which `CLAUDE.md` §8 puts behind a dedicated usecase.
  */
-export function canCreateTeacher(role: StaffRole): boolean {
-  return isManagement(role)
+export function canCreateTeacher(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.register')
 }
 
 /**
@@ -248,8 +254,8 @@ export function canCreateTeacher(role: StaffRole): boolean {
  * read the names of their own class groups in the docente portal — and stays
  * refused here all the same, so a matrix read outside the shell cannot say yes.
  */
-export function canBrowseStudents(role: StaffRole): boolean {
-  return role !== 'teacher' && role !== 'billing'
+export function canBrowseStudents(staff: StaffAccess): boolean {
+  return has(staff, 'students.view')
 }
 
 /**
@@ -259,8 +265,8 @@ export function canBrowseStudents(role: StaffRole): boolean {
  * guardian record and the consent behind it (Ley 29733, CLAUDE.md §8), so it
  * stays with management and the enrollment side.
  */
-export function canCreateStudent(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canCreateStudent(staff: StaffAccess): boolean {
+  return has(staff, 'students.edit')
 }
 
 /**
@@ -269,8 +275,8 @@ export function canCreateStudent(role: StaffRole): boolean {
  * not correct contact either. The enforcing check is `STUDENT_FILE_ROLES` on
  * the routes in `apps/api`.
  */
-export function canEditStudent(role: StaffRole): boolean {
-  return canCreateStudent(role)
+export function canEditStudent(staff: StaffAccess): boolean {
+  return has(staff, 'students.edit')
 }
 
 /**
@@ -278,8 +284,8 @@ export function canEditStudent(role: StaffRole): boolean {
  * same three who keep the file — a scanned DNI is not for every reader of the
  * directory. Mirrors `ATTACHMENT_STAFF_POLICY` in `apps/api`, which decides.
  */
-export function canManageStudentAttachments(role: StaffRole): boolean {
-  return canEditStudent(role)
+export function canManageStudentAttachments(staff: StaffAccess): boolean {
+  return has(staff, 'students.edit')
 }
 
 /**
@@ -287,8 +293,8 @@ export function canManageStudentAttachments(role: StaffRole): boolean {
  * with the owner): the same three who keep the file, from its document list.
  * Mirrors `ISSUED_DOCUMENT_REVOKE_ROLES` in `apps/api`, which decides.
  */
-export function canRevokeIssuedDocuments(role: StaffRole): boolean {
-  return canEditStudent(role)
+export function canRevokeIssuedDocuments(staff: StaffAccess): boolean {
+  return has(staff, 'students.revoke_document')
 }
 
 /**
@@ -298,8 +304,8 @@ export function canRevokeIssuedDocuments(role: StaffRole): boolean {
  * not leave with them. The enforcing check is `STUDENT_EXPORT_ROLES` on the
  * route in `apps/api`.
  */
-export function canExportStudents(role: StaffRole): boolean {
-  return canEditStudent(role)
+export function canExportStudents(staff: StaffAccess): boolean {
+  return has(staff, 'students.export')
 }
 
 /**
@@ -308,8 +314,8 @@ export function canExportStudents(role: StaffRole): boolean {
  * and staff across the platform, so a cargo that works one area does not read
  * it. The enforcing check is `AUDIT_LOG_ROLES` on the routes in `apps/api`.
  */
-export function canViewAuditLog(role: StaffRole): boolean {
-  return isManagement(role) || role === 'analyst'
+export function canViewAuditLog(staff: StaffAccess): boolean {
+  return has(staff, 'reports.audit_log')
 }
 
 /**
@@ -318,8 +324,8 @@ export function canViewAuditLog(role: StaffRole): boolean {
  * (`IssuePortalAccessRoute`). Billing settles money; it does not hand out
  * accounts.
  */
-export function canIssuePortalAccess(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canIssuePortalAccess(staff: StaffAccess): boolean {
+  return has(staff, 'students.portal_access')
 }
 
 /**
@@ -329,15 +335,8 @@ export function canIssuePortalAccess(role: StaffRole): boolean {
  * Billing settles money in the payments section; a teacher sees their own
  * class groups, one at a time (CLAUDE.md §8).
  */
-export function canBrowseEnrollments(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor' ||
-    role === 'sales' ||
-    role === 'support'
-  )
+export function canBrowseEnrollments(staff: StaffAccess): boolean {
+  return has(staff, 'enrollments.view')
 }
 
 /**
@@ -348,13 +347,13 @@ export function canBrowseEnrollments(role: StaffRole): boolean {
  * academic data; a teacher reaches their own class groups through their own
  * screen.
  */
-export function canBrowseCatalog(role: StaffRole): boolean {
-  return canBrowseEnrollments(role) || role === 'academic_assistant'
+export function canBrowseCatalog(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.view')
 }
 
 /** Who opens a plan or puts a new price in force — money, so management only. */
-export function canManagePrices(role: StaffRole): boolean {
-  return isManagement(role)
+export function canManagePrices(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.plan_prices')
 }
 
 /**
@@ -362,13 +361,8 @@ export function canManagePrices(role: StaffRole): boolean {
  * supervisors and the analyst; billing's own figure — what came in this ciclo —
  * is on the payments section, next to the receipts it settles.
  */
-export function canBrowseReports(role: StaffRole): boolean {
-  return (
-    isManagement(role) ||
-    role === 'analyst' ||
-    role === 'enrollment_supervisor' ||
-    role === 'academic_supervisor'
-  )
+export function canBrowseReports(staff: StaffAccess): boolean {
+  return has(staff, 'reports.view')
 }
 
 /**
@@ -376,8 +370,8 @@ export function canBrowseReports(role: StaffRole): boolean {
  * student filling `/enrollment` themselves (CLAUDE.md §1); this is the
  * exception for the sale that closed on WhatsApp and never reached the form.
  */
-export function canCreateEnrollment(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canCreateEnrollment(staff: StaffAccess): boolean {
+  return has(staff, 'enrollments.create_manual')
 }
 
 /**
@@ -385,8 +379,18 @@ export function canCreateEnrollment(role: StaffRole): boolean {
  * Management only: it is the surface where a cargo changes, and the
  * anti-escalation rule keeps that with the top of the house (CLAUDE.md §8).
  */
-export function canManageStaff(role: StaffRole): boolean {
-  return isManagement(role)
+export function canManageStaff(staff: StaffAccess): boolean {
+  return has(staff, 'team.view')
+}
+
+/**
+ * Who reads the role matrix (OOC-57) — what each cargo can do. Management, and
+ * the analyst, who observes every area without editing any; the matrix is a
+ * description of the platform's doors, with no personal data in it. The
+ * enforcing check is `PERMISSION_MATRIX_ROLES` on the route in `apps/api`.
+ */
+export function canViewPermissionMatrix(staff: StaffAccess): boolean {
+  return has(staff, 'team.permissions')
 }
 
 /**
@@ -394,10 +398,8 @@ export function canManageStaff(role: StaffRole): boolean {
  * at the moment their enrollment moves, so it belongs to management and the
  * enrollment side; the analyst reads it.
  */
-export function canManageEmail(role: StaffRole): boolean {
-  return (
-    isManagement(role) || role === 'enrollment_supervisor' || role === 'analyst'
-  )
+export function canManageEmail(staff: StaffAccess): boolean {
+  return has(staff, 'emails.view')
 }
 
 /**
@@ -405,8 +407,8 @@ export function canManageEmail(role: StaffRole): boolean {
  * minus the analyst, who observes and never edits (CLAUDE.md §8). The API
  * enforces the same list (`EMAIL_DELIVERY_RESEND_ROLES`).
  */
-export function canResendEmail(role: StaffRole): boolean {
-  return isManagement(role) || role === 'enrollment_supervisor'
+export function canResendEmail(staff: StaffAccess): boolean {
+  return has(staff, 'emails.send')
 }
 
 /**
@@ -414,8 +416,8 @@ export function canResendEmail(role: StaffRole): boolean {
  * resend — a proof is a real e-mail leaving the platform. The API enforces the
  * same list (`EMAIL_PROOF_ROLES`).
  */
-export function canSendEmailProof(role: StaffRole): boolean {
-  return canResendEmail(role)
+export function canSendEmailProof(staff: StaffAccess): boolean {
+  return has(staff, 'emails.send')
 }
 
 /**
@@ -423,16 +425,47 @@ export function canSendEmailProof(role: StaffRole): boolean {
  * that decides who is certified and the tolerance the platform approves a
  * receipt with when nobody is looking.
  */
-export function canConfigureSettings(role: StaffRole): boolean {
-  return isManagement(role)
+export function canConfigureSettings(staff: StaffAccess): boolean {
+  return has(staff, 'settings.edit')
 }
 
+
 /**
- * Whose second factor is not optional (CLAUDE.md §8). These cargos move money
- * or hand out roles, so the panel never offers them a switch to turn it off.
- * Mirrors `MFA_REQUIRED_ROLES` (packages/domain); the enforcing check is the
- * authorization hook in `apps/api`, which refuses them until it is on.
+ * Who edits a course's own data — name, language, level, summary (OOC-183
+ * split it from opening a course). The enforcing check is
+ * `catalog.courses_edit` on `PATCH /catalog/courses/:id`.
  */
-export function isMfaMandatory(role: StaffRole): boolean {
-  return isManagement(role) || role === 'billing'
+export function canEditCourseIdentity(staff: StaffAccess): boolean {
+  return has(staff, 'catalog.courses_edit')
+}
+
+/** Move, freeze and transfer an enrollment — three permissions, one dialog each. */
+export function canFreezeEnrollment(staff: StaffAccess): boolean {
+  return has(staff, 'enrollments.freeze')
+}
+
+export function canTransferEnrollment(staff: StaffAccess): boolean {
+  return has(staff, 'enrollments.transfer')
+}
+
+/** Team actions (OOC-183): each its own permission, enforced on its route. */
+export function canInviteStaff(staff: StaffAccess): boolean {
+  return has(staff, 'team.invite')
+}
+
+export function canChangeStaffRole(staff: StaffAccess): boolean {
+  return has(staff, 'team.change_role')
+}
+
+export function canManageStaffAccess(staff: StaffAccess): boolean {
+  return has(staff, 'team.access')
+}
+
+export function canRetireStaffAccount(staff: StaffAccess): boolean {
+  return has(staff, 'team.retire')
+}
+
+/** Who creates, edits and retires cargos — and only within what they hold, which the API checks. */
+export function canManageProfiles(staff: StaffAccess): boolean {
+  return has(staff, 'team.profiles')
 }

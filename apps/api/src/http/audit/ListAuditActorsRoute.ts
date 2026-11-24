@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { container } from "@/container.js";
-import { AUDIT_LOG_ROLES } from "./auditRoles.js";
 
 const ListAuditActorsResponseSchema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string(), role: z.string() })),
@@ -15,7 +14,7 @@ export const listAuditActorsRoute = RouteBuilder.get("/audit-log/actors")
     tags: ["Audit"],
     summary: "Panel accounts, for the audit log's author filter",
   })
-  .roles(...AUDIT_LOG_ROLES)
+  .can("reports.audit_log")
   .response(200, ListAuditActorsResponseSchema)
   .handler(async (_request, reply) => {
     reply.status(200).send({ items: await container.queries.auditLog.actors() });

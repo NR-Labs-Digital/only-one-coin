@@ -75,6 +75,9 @@ import {
   CreateStaffPasswordResetUseCase,
   ExpireSeatHoldsUseCase,
   PromoteUserRoleUseCase,
+  CreateStaffProfileUseCase,
+  UpdateStaffProfileUseCase,
+  RetireStaffProfileUseCase,
   RegisterStudentUseCase,
   RegisterTeacherUseCase,
   CompleteTeacherOnboardingUseCase,
@@ -164,6 +167,8 @@ import { RedisIdempotencyCache, type IdempotencyCache } from "./infra/edge/Redis
 import { TurnstileCaptchaVerifier, type CaptchaVerifier } from "./infra/edge/TurnstileCaptchaVerifier.js";
 import { createAuth, type Auth } from "./infra/auth/betterAuth.js";
 import { BetterAuthCurrentSessionPort } from "./infra/identity/BetterAuthCurrentSessionPort.js";
+import { DrizzleStaffProfileRepository } from "./infra/identity/DrizzleStaffProfileRepository.js";
+import { StaffAccessRegistry } from "./infra/identity/StaffAccessRegistry.js";
 import { BetterAuthFreshAuthVerifier } from "./infra/identity/BetterAuthFreshAuthVerifier.js";
 import { BetterAuthStaffSecondFactor } from "./infra/identity/BetterAuthStaffSecondFactor.js";
 import { OutboxTwoFactorCodeSender } from "./infra/auth/OutboxTwoFactorCodeSender.js";
@@ -437,6 +442,9 @@ export interface AppUseCases {
   };
   staff: {
     promoteRole: PromoteUserRoleUseCase;
+    createProfile: CreateStaffProfileUseCase;
+    updateProfile: UpdateStaffProfileUseCase;
+    retireProfile: RetireStaffProfileUseCase;
     createInvite: CreateStaffInviteUseCase;
     renewInvite: RenewStaffInviteUseCase;
     cancelInvite: CancelStaffInviteUseCase;
@@ -535,6 +543,9 @@ export interface AppQueries {
 
 export interface AppIdentity {
   currentSession: ICurrentSessionPort;
+  /** What every cargo can do (OOC-183), in memory — the authorization hook asks it on every request. */
+  staffAccess: StaffAccessRegistry;
+  staffProfileRepository: DrizzleStaffProfileRepository;
   freshAuthVerifier: IFreshAuthVerifier;
   userRoleRepository: IUserRoleRepository;
   /** The account's own language (OOC-150), read and written by the session's id. */
@@ -782,7 +793,17 @@ function buildContainer(): AppContainer {
     enrollmentEmailContextLookup,
     paymentEmailContextLookup,
   );
-  const promoteRole = new PromoteUserRoleUseCase(freshAuthVerifier, userRoleRepository, auditLogRepository);
+  const staffProfileRepository = new DrizzleStaffProfileRepository(db);
+  const staffAccess = new StaffAccessRegistry(() => staffProfileRepository.loadLive());
+  const promoteRole = new PromoteUserRoleUseCase(
+    freshAuthVerifier,
+    userRoleRepository,
+    auditLogRepository,
+    staffProfileRepository,
+  );
+  const createProfile = new CreateStaffProfileUseCase(staffProfileRepository, auditLogRepository);
+  const updateProfile = new UpdateStaffProfileUseCase(staffProfileRepository, auditLogRepository);
+  const retireProfile = new RetireStaffProfileUseCase(staffProfileRepository, auditLogRepository);
   const staffDoorOrigins = {
     backoffice: config.BACKOFFICE_PUBLIC_URL,
     teacher: config.TEACHER_PUBLIC_URL ?? config.BACKOFFICE_PUBLIC_URL,
@@ -793,6 +814,7 @@ function buildContainer(): AppContainer {
     teacherRepository,
     auditLogRepository,
     new BackofficeInviteLinkBuilder(staffDoorOrigins),
+    staffProfileRepository,
   );
   const renewInvite = new RenewStaffInviteUseCase(staffInviteRepository, auditLogRepository);
   const cancelInvite = new CancelStaffInviteUseCase(staffInviteRepository, auditLogRepository);
@@ -965,6 +987,8 @@ function buildContainer(): AppContainer {
     edge,
     identity: {
       currentSession,
+      staffAccess,
+      staffProfileRepository,
       freshAuthVerifier,
       userRoleRepository,
       userPreferenceRepository,
@@ -1145,6 +1169,9 @@ function buildContainer(): AppContainer {
       },
       staff: {
         promoteRole,
+        createProfile,
+        updateProfile,
+        retireProfile,
         createInvite,
         renewInvite,
         cancelInvite,

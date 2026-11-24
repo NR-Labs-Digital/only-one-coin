@@ -26,7 +26,7 @@ export const restoreCatalogEntryRoute = RouteBuilder.post("/catalog/:kind/:id/re
     tags: ["Catalog"],
     summary: "Put a retired catalog entry back on offer",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("catalog.retire")
   .params(RestoreCatalogEntryParamsSchema)
   .response(200, CatalogEntryStateSchema)
   .response(403, ErrorResponseSchema)

@@ -1,11 +1,10 @@
 import { z } from "zod";
-import { ACADEMIC_STATUSES, CatalogClassGroupNotFoundError, type Role } from "@ooc/domain";
+import { ACADEMIC_STATUSES, CatalogClassGroupNotFoundError } from "@ooc/domain";
+import type { StaffAccessSubject } from "@/infra/identity/StaffAccessRegistry.js";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import type { ClassGroupRosterRow } from "@/infra/persistence/catalog/ClassGroupRosterQuery.js";
-import { STUDENT_FILE_ROLES } from "@/http/student/studentRoles.js";
-import { CATALOG_READ_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema } from "./CatalogSchemas.js";
 
 const RosterItemSchema = z.object({
@@ -41,8 +40,13 @@ const RosterResponseSchema = z.object({
  * already shows them — name, plan, payment status. Nothing about the guardian
  * leaves this route, for anyone.
  */
-export function shapeRoster(role: Role, rows: ClassGroupRosterRow[]): z.infer<typeof RosterResponseSchema> {
-  const full = (STUDENT_FILE_ROLES as readonly Role[]).includes(role);
+export function shapeRoster(
+  subject: StaffAccessSubject,
+  rows: ClassGroupRosterRow[],
+): z.infer<typeof RosterResponseSchema> {
+  // The contact columns are their own permission (OOC-183) — by default the
+  // three who keep the student file.
+  const full = container.identity.staffAccess.has(subject, "catalog.roster_contact");
   return {
     view: full ? "full" : "limited",
     items: rows.map((row) => ({
@@ -76,12 +80,12 @@ export const getClassGroupRosterRoute = RouteBuilder.get("/catalog/class-groups/
     description:
       "Confirmed seats only, ordered by surname. National id and contact only for master, admin and enrollment_supervisor; never guardian data.",
   })
-  .roles(...CATALOG_READ_ROLES)
+  .can("catalog.view")
   .params(IdParamsSchema)
   .response(200, RosterResponseSchema)
   .response(404, ErrorResponseSchema)
   .handler(async (request, reply) => {
     const rows = await container.queries.classGroupRoster.run(request.params.id, { includeFrozen: true });
     if (!rows) throw new CatalogClassGroupNotFoundError();
-    reply.status(200).send(shapeRoster(request.currentUser!.role, rows));
+    reply.status(200).send(shapeRoster(request.currentUser!, rows));
   });

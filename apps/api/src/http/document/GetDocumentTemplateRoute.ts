@@ -5,7 +5,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { DOCUMENT_KINDS, isDocumentKind } from "@/documents/documentKinds.js";
-import { DOCUMENT_TEMPLATE_ROLES } from "./documentRoles.js";
 import { DocumentKindParamsSchema, DocumentTemplateIssueSchema } from "./documentSchemas.js";
 
 /**
@@ -20,7 +19,7 @@ export const getDocumentTemplateRoute = RouteBuilder.get("/document-templates/:k
     summary: "Open a document template in the editor",
     description: "Placeholders, draft (with its issues), the published version and the starter text.",
   })
-  .roles(...DOCUMENT_TEMPLATE_ROLES)
+  .can("settings.document_templates")
   .params(DocumentKindParamsSchema)
   .response(
     200,

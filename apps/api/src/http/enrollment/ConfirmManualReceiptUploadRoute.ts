@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 export const confirmManualReceiptUploadRoute = RouteBuilder.post("/enrollments/receipt-uploads/:receiptUploadId/confirm")
   .docs({
@@ -11,7 +10,7 @@ export const confirmManualReceiptUploadRoute = RouteBuilder.post("/enrollments/r
     description:
       "A metadata-only HEAD against the bucket. Only the account that started the upload confirms it; anyone else's answers 404.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.create_manual")
   .params(z.object({ receiptUploadId: z.string().uuid() }))
   .response(200, z.object({ receiptUploadId: z.string().uuid() }))
   .response(400, ErrorResponseSchema)

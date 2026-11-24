@@ -27,7 +27,7 @@ export default async function CoursesPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canBrowseCatalog(staff.role)) notFound()
+  if (!canBrowseCatalog(staff)) notFound()
   const [rows, languages] = await Promise.all([listCatalogCourses(), listCatalogLanguages()])
 
   return (
@@ -43,7 +43,7 @@ export default async function CoursesPage({
           />
         </Card>
       ) : (
-        <CoursesView rows={rows} languages={languages ?? []} canCreate={canCreateCourse(staff.role)} />
+        <CoursesView rows={rows} languages={languages ?? []} canCreate={canCreateCourse(staff)} />
       )}
     </div>
   )

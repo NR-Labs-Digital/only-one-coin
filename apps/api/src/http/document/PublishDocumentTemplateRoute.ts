@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { DOCUMENT_TEMPLATE_ROLES } from "./documentRoles.js";
 import { DocumentKindParamsSchema } from "./documentSchemas.js";
 
 /**
@@ -16,7 +15,7 @@ export const publishDocumentTemplateRoute = RouteBuilder.post("/document-templat
     summary: "Publish a document template draft",
     description: "Creates the next numbered, append-only version from the draft. Refused while the draft has issues.",
   })
-  .roles(...DOCUMENT_TEMPLATE_ROLES)
+  .can("settings.document_templates")
   .params(DocumentKindParamsSchema)
   .response(200, z.object({ version: z.number().int(), publishedAt: z.string() }))
   .response(404, ErrorResponseSchema)

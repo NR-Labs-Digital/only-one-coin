@@ -1,7 +1,6 @@
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_EDIT_ROLES } from "./teacherRoles.js";
 import {
   serializeTeacher,
   TeacherParamsSchema,
@@ -21,7 +20,7 @@ export const updateTeacherRoute = RouteBuilder.put("/teachers/:teacherId")
     description:
       "Refuses a document already on another teacher's file. A file still pending onboarding (OOC-103) takes name, e-mail and languages alone, or the whole profile.",
   })
-  .roles(...TEACHER_EDIT_ROLES)
+  .can("teachers.edit")
   .params(TeacherParamsSchema)
   .body(UpdateTeacherBodySchema)
   .response(200, TeacherRecordResponseSchema)

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { PAYMENT_SETTLE_ROLES } from "./paymentRoles.js";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 const ResultSchema = z.object({
@@ -18,7 +17,7 @@ const ResultSchema = z.object({
  * a paid procedure to run (OOC-83). */
 export const approvePaymentRoute = RouteBuilder.post("/payments/:id/approve")
   .docs({ tags: ["Payments"], summary: "Approve a payment: confirms its enrollment or pays its procedure" })
-  .roles(...PAYMENT_SETTLE_ROLES)
+  .can("payments.settle")
   .params(ParamsSchema)
   .body(z.object({}))
   .response(200, ResultSchema)
@@ -37,7 +36,7 @@ export const approvePaymentRoute = RouteBuilder.post("/payments/:id/approve")
  * procedure's request. A procedure never touches a seat. */
 export const rejectPaymentRoute = RouteBuilder.post("/payments/:id/reject")
   .docs({ tags: ["Payments"], summary: "Reject a payment: releases its seat or ends its procedure request" })
-  .roles(...PAYMENT_SETTLE_ROLES)
+  .can("payments.settle")
   .params(ParamsSchema)
   .body(z.object({ reason: PaymentRejectionReasonSchema, note: z.string().trim().max(500) }))
   .response(200, ResultSchema)

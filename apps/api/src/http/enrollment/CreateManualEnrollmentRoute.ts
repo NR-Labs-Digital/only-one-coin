@@ -3,7 +3,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { MANUAL_ENROLLMENT_ROLES } from "./manualEnrollmentRoles.js";
 
 const CreateManualEnrollmentBodySchema = z
   .object({
@@ -59,7 +58,7 @@ export const createManualEnrollmentRoute = RouteBuilder.post("/enrollments")
     description:
       "The manual exception — the documented path is the student enrolling through the public form. Seat is always reserved, payment never starts approved, and the receipt is mandatory: it goes up the same OCR ladder and review queue as the checkout's. A receipt that is not this account's confirmed, unattached upload is 422 enrollment.receipt_not_ready. A full class group is 422 enrollment.class_group_full unless allowOverCapacity is true, in which case the seat is taken above capacity (OOC-155). With placement \"schedule\" (OOC-145), classGroupId names the hour: the seat goes to the first class group of its offer with room, in code order, and above capacity only when all of them are full; the response names the class group it landed in.",
   })
-  .roles(...MANUAL_ENROLLMENT_ROLES)
+  .can("enrollments.create_manual")
   .body(CreateManualEnrollmentBodySchema)
   .response(201, CreateManualEnrollmentResponseSchema)
   .response(400, ErrorResponseSchema)

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STAFF_MFA_ROLES } from "./staffMfaRoles.js";
 
 const RegenerateOwnRecoveryCodesBodySchema = z.object({
   password: z.string().min(1),
@@ -20,7 +19,7 @@ export const regenerateOwnRecoveryCodesRoute = RouteBuilder.post("/me/mfa/recove
     summary: "Issue a new set of recovery codes for the signed-in staff member",
     description: "Requires the current password. Voids every code issued before.",
   })
-  .roles(...STAFF_MFA_ROLES)
+  .can("account.self")
   .body(RegenerateOwnRecoveryCodesBodySchema)
   .response(200, RegenerateOwnRecoveryCodesResponseSchema)
   .response(409, ErrorResponseSchema)

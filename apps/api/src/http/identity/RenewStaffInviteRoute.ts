@@ -21,7 +21,7 @@ export const renewStaffInviteRoute = RouteBuilder.post("/staff/invites/:inviteId
     summary: "Renew an expired or expiring invite",
     description: "Extends the invite's expiry without changing its token.",
   })
-  .roles("master", "admin")
+  .can("team.invite")
   .params(RenewStaffInviteParamsSchema)
   .response(200, RenewStaffInviteResponseSchema)
   .response(404, ErrorResponseSchema)

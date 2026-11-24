@@ -3,7 +3,6 @@ import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
 import { AuditLogFiltersSchema, AuditLogRowSchema, serializeAuditLogRow, toAuditLogFilters } from "./auditSchemas.js";
-import { AUDIT_LOG_ROLES } from "./auditRoles.js";
 
 const ListAuditLogQuerySchema = AuditLogFiltersSchema.and(z.object({ cursor: z.string().max(200).optional() }));
 
@@ -21,7 +20,7 @@ export const listAuditLogRoute = RouteBuilder.get("/audit-log")
     description:
       "Every entry newest first, 50 a page by an opaque cursor. Filters by period (Lima calendar days), author, action and entity, all in Postgres.",
   })
-  .roles(...AUDIT_LOG_ROLES)
+  .can("reports.audit_log")
   .query(ListAuditLogQuerySchema)
   .response(200, ListAuditLogResponseSchema)
   .response(400, ErrorResponseSchema)

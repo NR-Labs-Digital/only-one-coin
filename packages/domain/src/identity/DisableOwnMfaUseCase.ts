@@ -10,6 +10,12 @@ export interface DisableOwnMfaInput {
   userId: string;
   /** The session's own cargo, read from the database by the authorization hook. */
   role: Role;
+  /**
+   * Whether the session's cargo must keep the factor, as the API's access
+   * registry reads it (OOC-183: a cargo holding a sensitive permission must).
+   * Falls back to the board's three when absent.
+   */
+  mfaRequired?: boolean;
   password: string;
 }
 
@@ -29,7 +35,7 @@ export class DisableOwnMfaUseCase extends BaseUseCase<DisableOwnMfaInput, void> 
   }
 
   async run(input: DisableOwnMfaInput): Promise<void> {
-    if (requiresMfa(input.role)) {
+    if (input.mfaRequired ?? requiresMfa(input.role)) {
       throw new MfaRequiredForRoleError();
     }
 

@@ -37,7 +37,7 @@ export const deleteClassGroupsRoute = RouteBuilder.post("/catalog/class-groups/d
     description:
       "Physically deletes each class group with no enrollment, waitlist entry, live checkout hold or copy, with its module runs. One with history is erased instead: retired, hidden from every catalog read and never restored.",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("catalog.retire")
   .body(DeleteClassGroupsBodySchema)
   .response(200, DeleteClassGroupsResponseSchema)
   .response(400, ErrorResponseSchema)

@@ -5,7 +5,6 @@ import { RATE_LIMITS } from "@/shared/http/rateLimit.js";
 import { container } from "@/container.js";
 import type { AuditLogRow } from "@/infra/persistence/audit/AuditLogQuery.js";
 import { AuditLogFiltersSchema, serializeAuditLogRow, toAuditLogFilters } from "./auditSchemas.js";
-import { AUDIT_LOG_ROLES } from "./auditRoles.js";
 
 async function* ndjsonLines(batches: AsyncGenerator<AuditLogRow[]>): AsyncGenerator<string> {
   for await (const batch of batches) {
@@ -25,7 +24,7 @@ export const exportAuditLogRoute = RouteBuilder.get("/audit-log/export")
     description:
       "Every entry the filters match, one JSON row per line. Writes its own audit_log entry before the first row; its own per-account rate limit.",
   })
-  .roles(...AUDIT_LOG_ROLES)
+  .can("reports.audit_log_export")
   .rateLimit(RATE_LIMITS.staff, RATE_LIMITS.auditExport)
   .query(AuditLogFiltersSchema)
   .response(400, ErrorResponseSchema)

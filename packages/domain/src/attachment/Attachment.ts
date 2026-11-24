@@ -79,11 +79,13 @@ export interface AttachmentActor {
   /** A student's chosen profile (OOC-147), unchecked — the owners port only
    * picks among the account's own. Ignored for staff. */
   profileId?: string | null;
+  /** A staff account's cargo created in Equipo, for the `custom` role (OOC-183). */
+  cargoId?: string | null;
 }
 
-/** Which staff cargos reach each kind of owner's files. The API owns the
- * answer (it is the student file's audience for students). */
-export type AttachmentStaffPolicy = Readonly<Record<AttachmentOwnerType, readonly Role[]>>;
+/** Whether a staff actor reaches this kind of owner's files. The API owns the
+ * answer (it is the student file's audience for students, by permission). */
+export type AttachmentStaffPolicy = (actor: AttachmentActor, ownerType: AttachmentOwnerType) => boolean;
 
 const MAX_NAME_LENGTH = 200;
 

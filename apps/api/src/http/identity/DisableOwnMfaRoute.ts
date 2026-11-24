@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { STAFF_MFA_ROLES } from "./staffMfaRoles.js";
 
 const DisableOwnMfaBodySchema = z.object({
   password: z.string().min(1),
@@ -17,7 +16,7 @@ export const disableOwnMfaRoute = RouteBuilder.post("/me/mfa/disable")
     summary: "Turn off the signed-in staff member's second factor",
     description: "Requires the current password. Refused for the cargos that must keep it.",
   })
-  .roles(...STAFF_MFA_ROLES)
+  .can("account.self")
   .body(DisableOwnMfaBodySchema)
   .response(204, z.null())
   .response(403, ErrorResponseSchema)
@@ -28,6 +27,7 @@ export const disableOwnMfaRoute = RouteBuilder.post("/me/mfa/disable")
     await container.useCases.staff.disableOwnMfa.run({
       userId: user.id,
       role: user.role,
+      mfaRequired: container.identity.staffAccess.requiresMfa(user),
       password: request.body.password,
     });
 

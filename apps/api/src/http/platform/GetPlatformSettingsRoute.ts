@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { SETTINGS_READ_ROLES } from "./settingsRoles.js";
 
 export const PlatformSettingsResponseSchema = z.object({
   checkoutHoldMinutes: z.number().int(),
@@ -27,7 +26,7 @@ export const getPlatformSettingsRoute = RouteBuilder.get("/settings")
     tags: ["Platform"],
     summary: "The settings the backoffice can change without a deploy",
   })
-  .roles(...SETTINGS_READ_ROLES)
+  .can("settings.read")
   .response(200, PlatformSettingsResponseSchema)
   .response(401, ErrorResponseSchema)
   .response(403, ErrorResponseSchema)

@@ -37,7 +37,7 @@ export const retireCatalogEntryRoute = RouteBuilder.post("/catalog/:kind/:id/ret
     description:
       "Marks the entry as retired. Enrollments already made on it are untouched and keep showing in the ledger; the answer says how many were still standing.",
   })
-  .roles("master", "admin", "enrollment_supervisor")
+  .can("catalog.retire")
   .params(RetireCatalogEntryParamsSchema)
   .response(200, CatalogEntryStateSchema)
   .response(403, ErrorResponseSchema)

@@ -31,7 +31,7 @@ export default async function SettingsPage({
 
   const staff = await getStaffSession()
 
-  if (!canConfigureSettings(staff.role)) {
+  if (!canConfigureSettings(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('settings.title')} />

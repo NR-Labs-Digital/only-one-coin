@@ -3,7 +3,6 @@ import { CatalogClassGroupNotFoundError } from "@ooc/domain";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { CATALOG_READ_ROLES } from "./catalogRoles.js";
 import { IdParamsSchema } from "./CatalogSchemas.js";
 
 const MonthlyRowSchema = z.object({
@@ -28,7 +27,7 @@ export const getClassGroupMonthlyRoute = RouteBuilder.get("/catalog/class-groups
     summary: "Where each monthly seat of a class group stands on its current module",
     description: "Confirmed seats of monthly plans only, every module group, ordered by surname.",
   })
-  .roles(...CATALOG_READ_ROLES)
+  .can("catalog.view")
   .params(IdParamsSchema)
   .response(200, z.object({ items: z.array(MonthlyRowSchema) }))
   .response(404, ErrorResponseSchema)

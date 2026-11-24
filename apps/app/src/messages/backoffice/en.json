@@ -44,7 +44,8 @@
       "teacher": "Teacher",
       "sales": "Sales",
       "support": "Customer support",
-      "billing": "Billing"
+      "billing": "Billing",
+      "custom": "Custom role"
     },
     "common": {
       "actions": "Actions",
@@ -385,7 +386,10 @@
         "grade_edited": "Grade changed by the teacher",
         "grade_register_submitted": "Grade register sent to review",
         "grade_register_returned": "Grade register returned to the teacher",
-        "grade_register_confirmed": "Grade register confirmed as official"
+        "grade_register_confirmed": "Grade register confirmed as official",
+        "staff_profile_created": "Role created",
+        "staff_profile_updated": "Role permissions changed",
+        "staff_profile_retired": "Role deleted"
       },
       "field": {
         "first_name": "First name",
@@ -2030,7 +2034,9 @@
       "cancel_invite_toast": "Invite cancelled",
       "action_failed": "Couldn't complete the action. Try again.",
       "restored_toast": "Access unblocked",
-      "restore_teacher_inactive": "This account belongs to a teacher off the roster: access comes back when they rejoin it in Teachers."
+      "restore_teacher_inactive": "This account belongs to a teacher off the roster: access comes back when they rejoin it in Teachers.",
+      "tab_people": "People",
+      "change_error_beyond": "You cannot grant or take away a role holding permissions your role does not have."
     },
     "deliveries": {
       "title": "E-mails that did not land",
@@ -3062,6 +3068,168 @@
       "col_status": "Status",
       "col_deadline": "Deadline",
       "no_teacher": "No teacher"
+    },
+    "permissions": {
+      "tab": "Roles and permissions",
+      "intro": "What each role can do on the platform, read from the same rules the system enforces on every action. A change applies from the next action of each person on the role.",
+      "mfa_note": "The second factor is required at every sign-in for roles that approve payments, manage the team or change rules and prices.",
+      "owners_note": "Anything marked “Platform owners only” depends on the account’s e-mail, not on its role: no role grants it.",
+      "role_filter": "Show",
+      "all_roles": "All roles",
+      "col_action": "Action",
+      "allowed": "Allowed",
+      "denied": "Not allowed",
+      "owners_only": "Platform owners only",
+      "mfa_required": "Second factor required",
+      "count": "{count} of {total} actions",
+      "locked_title": "No access to permissions",
+      "locked_body": "The permissions table is read by management and the analyst.",
+      "load_error_title": "The permissions table could not be loaded",
+      "load_error_body": "Try again in a few minutes.",
+      "area": {
+        "students": "Students",
+        "enrollments": "Enrollments",
+        "payments": "Payments",
+        "catalog": "Courses, periods and class groups",
+        "grades": "Grades and certificates",
+        "teaching": "Teacher portal",
+        "teachers": "Teachers",
+        "emails": "E-mails",
+        "reports": "Dashboard, reports and audit log",
+        "settings": "Settings",
+        "team": "Team",
+        "account": "Own account"
+      },
+      "capability": {
+        "students": {
+          "view": "See a student’s file, payments, documents and files",
+          "edit": "Register and correct students and guardians, and attach files",
+          "export": "Export the student directory",
+          "portal_access": "Send portal access",
+          "revoke_document": "Revoke an issued constancia or certificate"
+        },
+        "enrollments": {
+          "view": "See the enrollment ledger",
+          "create_manual": "Open a manual enrollment",
+          "move": "Move an enrollment to another class group",
+          "transfer": "Transfer an enrollment to another person",
+          "freeze": "Freeze an enrollment and bring it back"
+        },
+        "payments": {
+          "view": "See payments and the receipt queue",
+          "view_receipt": "Open the receipt image",
+          "settle": "Approve, reject and re-read a receipt",
+          "view_contact": "See the student’s phone on the receipt queue"
+        },
+        "catalog": {
+          "view": "See courses, periods, class groups and their students",
+          "courses_edit": "Edit a course’s data (name, language, level, summary)",
+          "course_options": "Edit a course’s options (modules, material, procedures)",
+          "plan_prices": "Set a plan’s price",
+          "languages": "Create, rename and retire languages",
+          "periods": "Create, edit and duplicate periods",
+          "class_groups_edit": "Create and edit class groups and module groups (teacher, Classroom, Meet, status)",
+          "retire": "Retire, restore and delete catalog entries",
+          "waitlist": "Manage the waitlist",
+          "courses_create": "Create courses and plans",
+          "roster_contact": "See ID, e-mail and phone on a class group’s roster"
+        },
+        "grades": {
+          "view": "See grades and grade registers",
+          "record": "Post and correct grades",
+          "review_register": "Return and confirm a grade register",
+          "progression": "Move students on to the next module",
+          "certificates_preview": "See a class group’s certificate list",
+          "certificates_issue": "Issue a class group’s certificates"
+        },
+        "teaching": {
+          "own_class_groups": "See their own class groups and students",
+          "own_grades": "Post and submit the grades of their own class groups",
+          "own_progression": "Move students on to the next module in their own class groups",
+          "onboarding": "Complete their own file on first sign-in"
+        },
+        "teachers": {
+          "view": "See the teacher roster",
+          "view_file": "See a teacher’s file (a teacher, only their own)",
+          "register": "Register teachers",
+          "edit": "Correct a teacher’s file, availability and roster status",
+          "contract_generate": "Generate the contract",
+          "contract_download": "Download contracts"
+        },
+        "emails": {
+          "view": "See e-mails, their preview and deliveries",
+          "send": "Send a proof and resend an e-mail"
+        },
+        "reports": {
+          "dashboard": "See the dashboard figures",
+          "view": "See reports",
+          "audit_log": "Read the audit log",
+          "audit_log_export": "Export the audit log"
+        },
+        "settings": {
+          "read": "Read the platform’s rules and fees",
+          "edit": "Change the platform’s rules",
+          "procedure_prices": "Set procedure fees",
+          "document_templates": "Edit and publish document texts",
+          "feature_flags": "Turn sections on and off (Features)"
+        },
+        "team": {
+          "view": "See the team and the role history",
+          "permissions": "See the roles and their permissions",
+          "invite": "Invite someone",
+          "change_role": "Change an account’s role",
+          "access": "Block, unblock and reset a password",
+          "retire": "Delete an account",
+          "profiles": "Create, edit and delete roles"
+        },
+        "account": {
+          "self": "Change their own password, language and second factor"
+        }
+      },
+      "new_profile": "New role",
+      "new_title": "New role",
+      "name_label": "Role name",
+      "new_copy_from": "Start with the permissions of",
+      "new_copy_none": "None: start empty",
+      "new_hint": "Once it is created, tick what the role can do. You can only grant permissions your own role holds.",
+      "new_create": "Create role",
+      "creating": "Creating…",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "discard": "Discard",
+      "unsaved": "There are unsaved changes.",
+      "saved_state": "No pending changes.",
+      "saved_toast": "Permissions saved",
+      "created_toast": "Role created. Tick what it can do.",
+      "retired_toast": "Role deleted",
+      "retire": "Delete role",
+      "retire_title": "Delete the role",
+      "retire_body": "{name} stops existing and leaves the role lists. The history still names it.",
+      "retire_in_use": "{count, plural, one {One person or invite still has this role} other {# people or invites still have this role}}. Change their role under People before deleting it.",
+      "retire_confirm": "Delete",
+      "custom_badge": "Created in Team",
+      "members": "{count, plural, =0 {No people} one {1 person} other {# people}}",
+      "locked_note": "This role is not edited: Master holds everything, and Teacher goes with the roster file.",
+      "readonly_note": "Read only: editing roles belongs to whoever holds the manage-roles permission.",
+      "not_editable_note": "You cannot edit this role: it is your own, or it holds permissions your role does not.",
+      "grant_teacher": "Teacher role only, in their own class groups.",
+      "grant_owners": "Platform owners only, by the account’s e-mail.",
+      "grant_everyone": "Every panel account has it.",
+      "not_held": "Your role does not hold it, so you cannot grant it.",
+      "mfa_will_require": "With these permissions, people on the role will have to turn on the second factor.",
+      "error": {
+        "staff_profile": {
+          "name_taken": "A role with that name already exists.",
+          "name_invalid": "The name must have 2 to 60 characters.",
+          "beyond_own_permissions": "You cannot grant permissions your role does not hold.",
+          "own_profile": "Nobody edits their own role.",
+          "locked": "This role is not edited.",
+          "in_use": "People or invites still have this role.",
+          "permission_not_grantable": "One of the permissions cannot be granted to a role."
+        },
+        "failed": "Could not save. Try again."
+      }
     }
   }
 }

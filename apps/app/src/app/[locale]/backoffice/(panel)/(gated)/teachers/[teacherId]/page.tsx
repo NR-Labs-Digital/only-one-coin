@@ -31,7 +31,7 @@ export default async function TeacherDetailPage({
   const t = await getTranslations('bo')
 
   const staff = await getStaffSession()
-  if (!canManageTeachers(staff.role)) notFound()
+  if (!canManageTeachers(staff)) notFound()
 
   const [teacher, languageList] = await Promise.all([getTeacher(teacherId), listCatalogLanguages()])
   if (!teacher) notFound()
@@ -57,8 +57,8 @@ export default async function TeacherDetailPage({
       <TeacherFile
         teacher={teacher}
         catalogue={catalogue}
-        canEdit={canEditTeachers(staff.role)}
-        canOpenContracts={canOpenTeacherContracts(staff.role)}
+        canEdit={canEditTeachers(staff)}
+        canOpenContracts={canOpenTeacherContracts(staff)}
       />
     </div>
   )

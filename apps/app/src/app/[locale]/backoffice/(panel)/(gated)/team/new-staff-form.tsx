@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { getPathname } from '@/i18n/navigation'
 import type { InvitableTeacher, StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { canHoldMaster } from '@/lib/backoffice/permissions'
+import { cargoValue, parseCargoValue, type CargoValue, type CustomCargo } from '@/lib/backoffice/cargos'
 import { buildInvitePath } from '@/lib/backoffice/invite'
 import { staffAccountOrigin } from '@/lib/hosts'
 import { Card, RequiredMark } from '@/components/backoffice/ui'
@@ -53,10 +54,13 @@ const labelClass =
  */
 export function NewStaffForm({
   teachers,
+  cargos,
   onCancel,
   onCreate,
 }: {
   teachers: InvitableTeacher[]
+  /** The cargos created in Equipo (OOC-183), offered after the board's. */
+  cargos: CustomCargo[]
   onCancel: () => void
   onCreate: (member: StaffMemberRow) => void
 }) {
@@ -67,7 +71,8 @@ export function NewStaffForm({
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<StaffRole>('enrollment_supervisor')
+  const [cargo, setCargo] = useState<CargoValue>('enrollment_supervisor')
+  const { role, profileId } = parseCargoValue(cargo)
   const [teacherId, setTeacherId] = useState('')
   const [created, setCreated] = useState<{ member: StaffMemberRow; link: string } | null>(
     null,
@@ -124,6 +129,7 @@ export function NewStaffForm({
           lastName: lastName.trim(),
           email: email.trim(),
           role,
+          ...(profileId ? { profileId } : {}),
           ...(isTeacher ? { teacherId } : {}),
         }),
       })
@@ -157,6 +163,10 @@ export function NewStaffForm({
         lastName: lastName.trim(),
         email: email.trim(),
         role,
+        profileId,
+        profileName: cargos.find((item) => item.id === profileId)?.name ?? null,
+        // The list reads it again from the API on refresh; a new invite has no account to gate yet.
+        mfaRequired: false,
         status: 'invited',
         teacherId: isTeacher ? teacherId : null,
         // Nobody enrolls somebody else's second factor: the account starts
@@ -266,13 +276,18 @@ export function NewStaffForm({
         <AutoGrid min="15rem" gap="gap-3" className="max-w-3xl">
           <Labelled label={t('team.field_role')} required>
             <select
-              value={role}
-              onChange={(event) => setRole(event.target.value as StaffRole)}
+              value={cargo}
+              onChange={(event) => setCargo(event.target.value)}
               className={fieldClass}
             >
               {roles.map((item) => (
                 <option key={item} value={item}>
                   {t(`role.${item}`)}
+                </option>
+              ))}
+              {cargos.map((item) => (
+                <option key={item.id} value={cargoValue('custom', item.id)}>
+                  {item.name}
                 </option>
               ))}
             </select>

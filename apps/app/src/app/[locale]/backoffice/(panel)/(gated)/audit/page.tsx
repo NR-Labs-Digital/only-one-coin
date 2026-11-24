@@ -35,7 +35,7 @@ export default async function AuditPage({
   const actorsRequest = getAuditActors()
   const staff = await getStaffSession()
 
-  if (!canViewAuditLog(staff.role)) {
+  if (!canViewAuditLog(staff)) {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader title={t('audit_log.title')} />
@@ -66,10 +66,10 @@ export default async function AuditPage({
         query={query}
         actors={actors}
         links={{
-          student: canEditStudent(staff.role),
-          payment: canViewPayments(staff.role),
-          classGroup: canBrowseCatalog(staff.role),
-          teacher: canManageTeachers(staff.role),
+          student: canEditStudent(staff),
+          payment: canViewPayments(staff),
+          classGroup: canBrowseCatalog(staff),
+          teacher: canManageTeachers(staff),
         }}
       />
     </div>

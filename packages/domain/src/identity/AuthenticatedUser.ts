@@ -12,4 +12,10 @@ export interface AuthenticatedUser {
    * authorization hook (CLAUDE.md §8).
    */
   twoFactorEnabled: boolean;
+  /**
+   * The cargo created in Equipo an account with the `custom` role is on
+   * (OOC-183). Null — or absent — for every other account: a board cargo is
+   * found by `role`.
+   */
+  profileId?: string | null;
 }

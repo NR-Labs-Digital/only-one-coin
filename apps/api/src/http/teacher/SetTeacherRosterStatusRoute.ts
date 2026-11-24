@@ -2,7 +2,6 @@ import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
 import { container } from "@/container.js";
-import { TEACHER_EDIT_ROLES } from "./teacherRoles.js";
 import { serializeTeacher, TeacherParamsSchema, TeacherRecordResponseSchema } from "./teacherSchemas.js";
 
 const SetTeacherRosterStatusBodySchema = z.object({ status: z.enum(["active", "inactive"]) });
@@ -19,7 +18,7 @@ export const setTeacherRosterStatusRoute = RouteBuilder.put("/teachers/:teacherI
     summary: "Take a teacher off the roster or back on",
     description: "Never deletes. Answers how many class groups were still running with them.",
   })
-  .roles(...TEACHER_EDIT_ROLES)
+  .can("teachers.edit")
   .params(TeacherParamsSchema)
   .body(SetTeacherRosterStatusBodySchema)
   .response(
