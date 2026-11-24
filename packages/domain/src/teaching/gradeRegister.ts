@@ -41,7 +41,7 @@ export interface GradeRegisterStep {
   note: string | null;
 }
 
-/** How long a return note may be — the database CHECK (0072). */
+/** How long a return note may be — the database CHECK (0073). */
 export const MAX_REGISTER_RETURN_NOTE_LENGTH = 1000;
 
 /** The teacher posts and changes grades while the register is theirs. */
