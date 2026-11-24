@@ -1,5 +1,5 @@
 import { apiFetch } from './api-client'
-import type { GradeRegister, GradeRegisterStatus } from '@/lib/docente/teaching'
+import type { GradeRegister, GradeRegisterStatus } from '@/lib/docente/grade-register'
 import type { WeeklySlotItem } from './types'
 
 /**

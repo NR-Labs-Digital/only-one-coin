@@ -3,13 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
-import {
-  registerIsTeachers,
-  type GradeRegister,
-  type TeachingClassGroup,
-  type TeachingGrade,
-  type TeachingStudent,
-} from '@/lib/docente/teaching'
+import type { TeachingClassGroup, TeachingGrade, TeachingStudent } from '@/lib/docente/teaching'
+import { registerIsTeachers, type GradeRegister } from '@/lib/docente/grade-register'
 import { editGrade, submitGradeRegister, type RegisterWriteResult } from '@/lib/docente/grade-register-client'
 import { GradeRegisterSummary } from '@/components/grades/grade-register-summary'
 import {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import type { GradeRegister, GradeRegisterStatus } from '@/lib/docente/teaching'
+import type { GradeRegister, GradeRegisterStatus } from '@/lib/docente/grade-register'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import { StatusBadge, type Tone } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
