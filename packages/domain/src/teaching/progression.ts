@@ -21,6 +21,9 @@ import type { ITeachingReader, TeachingClassGroup } from "./TeachingReader.js";
  *   gates this while `progression_requires_passing_grade` is on.
  * - **Repeating stays in the run** and opens a new attempt: the grade of the
  *   time before stays in the history, the next one is a grade of its own.
+ * - **Only an official grade moves anybody** (OOC-180, decision of
+ *   18/11/2026): a grade still in review — its register not yet confirmed by
+ *   coordination — neither advances nor repeats the student.
  * - **The next run is opened by the staff.** Without a live run of the next
  *   module there is nowhere to advance to, and the preview says so.
  * - **Who:** the teacher of the run, from the portal, never forcing; and
@@ -31,7 +34,7 @@ import type { ITeachingReader, TeachingClassGroup } from "./TeachingReader.js";
  * the portal's lock (OOC-86), not progression's.
  */
 
-export type ProgressionVerdict = "passed" | "below_passing" | "did_not_sit" | "not_graded";
+export type ProgressionVerdict = "passed" | "below_passing" | "did_not_sit" | "not_graded" | "not_official";
 
 export interface ProgressionSeat {
   enrollmentId: string;
@@ -41,6 +44,8 @@ export interface ProgressionSeat {
   attempt: number;
   /** The grade that counts for this attempt, null while none was posted. */
   grade: GradeValue | null;
+  /** Its register was confirmed by coordination (OOC-180) — or it predates registers. */
+  official: boolean;
 }
 
 export interface ProgressionPreviewSeat extends ProgressionSeat {
@@ -90,8 +95,9 @@ export interface IProgressionRepository {
   }): Promise<{ advanced: number; repeated: number } | { conflicts: string[] }>;
 }
 
-export function verdictOf(grade: GradeValue | null, passingGrade: number): ProgressionVerdict {
+export function verdictOf(grade: GradeValue | null, passingGrade: number, official = true): ProgressionVerdict {
   if (grade === null) return "not_graded";
+  if (!official) return "not_official";
   if (grade.kind === "did_not_sit") return "did_not_sit";
   return grade.score >= passingGrade ? "passed" : "below_passing";
 }
@@ -140,7 +146,7 @@ async function previewOf(deps: ProgressionDeps, run: TeachingClassGroup): Promis
     lastModule: run.module !== null && run.module >= courseModules,
     passingGrade: settings.passingGrade,
     requiresPassingGrade: settings.progressionRequiresPassingGrade,
-    seats: seats.map((seat) => ({ ...seat, verdict: verdictOf(seat.grade, settings.passingGrade) })),
+    seats: seats.map((seat) => ({ ...seat, verdict: verdictOf(seat.grade, settings.passingGrade, seat.official) })),
   };
 }
 
@@ -180,6 +186,9 @@ async function applyTo(
     if (seen.has(enrollmentId)) refuse("duplicate_enrollment", "The same student twice.");
     seen.add(enrollmentId);
     if (seat.verdict === "not_graded") refuse("not_graded", "A student moves on once their grade is posted.");
+    if (seat.verdict === "not_official") {
+      refuse("not_official", "A student moves on once coordination confirms the grade register.");
+    }
   }
 
   if (input.advance.length > 0) {

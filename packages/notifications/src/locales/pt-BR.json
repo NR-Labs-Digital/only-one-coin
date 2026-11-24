@@ -188,20 +188,20 @@
       ]
     },
     "grade_posted": {
-      "subject": "Nota final de {courseName}: {grade}",
-      "preheader": "A nota do exame final já foi lançada.",
+      "subject": "Nota final de {courseName}: {grade} (em revisão)",
+      "preheader": "A nota do exame final já foi registrada e está em revisão.",
       "paragraphs": [
         "A nota final de {studentName} em {courseName} é {grade}, na escala de 0 a 20. É a nota do exame final, que é a nota do módulo.",
         "A nota mínima para aprovação é {passingGrade}.",
-        "A nota já está lançada e você pode vê-la no portal do aluno."
+        "A nota está em revisão: a coordenação acadêmica a confirma antes de ela ser oficial, e avisaremos quando for. Você pode vê-la no portal do aluno."
       ]
     },
     "grade_did_not_sit": {
-      "subject": "Resultado de {courseName}: não fez o exame final",
-      "preheader": "O módulo ficou registrado como DA.",
+      "subject": "Resultado de {courseName}: não fez o exame final (em revisão)",
+      "preheader": "O módulo foi registrado como DA, em revisão.",
       "paragraphs": [
-        "{studentName} não fez o exame final de {courseName}, então o módulo ficou registrado como DA (reprovado por não fazer o exame).",
-        "Você pode ver o resultado no portal do aluno."
+        "{studentName} não fez o exame final de {courseName}, então o módulo foi registrado como DA (reprovado por não fazer o exame).",
+        "O resultado está em revisão: a coordenação acadêmica o confirma antes de ele ser oficial. Você pode vê-lo no portal do aluno."
       ]
     },
     "grade_corrected": {
@@ -219,6 +219,40 @@
       "paragraphs": [
         "A coordenação acadêmica corrigiu o resultado de {studentName} em {courseName}: o módulo ficou registrado como DA (reprovado por não fazer o exame).",
         "Você pode ver o resultado no portal do aluno."
+      ]
+    },
+    "grade_updated": {
+      "subject": "Nota atualizada de {courseName}: {grade}",
+      "preheader": "O docente atualizou a nota do exame final, que continua em revisão.",
+      "paragraphs": [
+        "O docente atualizou a nota final de {studentName} em {courseName}. A nota agora é {grade}, na escala de 0 a 20.",
+        "A nota mínima para aprovação é {passingGrade}.",
+        "A nota continua em revisão até a coordenação acadêmica confirmá-la. Você pode vê-la no portal do aluno."
+      ]
+    },
+    "grade_updated_did_not_sit": {
+      "subject": "Resultado atualizado de {courseName}: não fez o exame final",
+      "preheader": "O docente atualizou o resultado do módulo, que continua em revisão.",
+      "paragraphs": [
+        "O docente atualizou o resultado de {studentName} em {courseName}: o módulo foi registrado como DA (reprovado por não fazer o exame).",
+        "O resultado continua em revisão até a coordenação acadêmica confirmá-lo. Você pode vê-lo no portal do aluno."
+      ]
+    },
+    "grade_official": {
+      "subject": "Nota oficial de {courseName}: {grade}",
+      "preheader": "A coordenação acadêmica confirmou a nota do exame final.",
+      "paragraphs": [
+        "A coordenação acadêmica confirmou a nota final de {studentName} em {courseName}: {grade}, na escala de 0 a 20. A partir de agora é a nota oficial do módulo.",
+        "A nota mínima para aprovação é {passingGrade}.",
+        "Você pode vê-la no portal do aluno."
+      ]
+    },
+    "grade_official_did_not_sit": {
+      "subject": "Resultado oficial de {courseName}: não fez o exame final",
+      "preheader": "A coordenação acadêmica confirmou o resultado do módulo.",
+      "paragraphs": [
+        "A coordenação acadêmica confirmou o resultado de {studentName} em {courseName}: o módulo foi registrado como DA (reprovado por não fazer o exame). A partir de agora é o resultado oficial.",
+        "Você pode vê-lo no portal do aluno."
       ]
     },
     "enrollment_certificate_issued": {

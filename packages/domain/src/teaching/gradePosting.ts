@@ -35,14 +35,20 @@ export interface GradingScope {
  * (OOC-102). Who may post in this class group is the caller's check; what a
  * grade is, which seats take one, and what a retry does is this function's.
  *
- * A posted grade is final as posted: the same value again is a no-op, a
- * different value on a graded seat refuses the whole batch (409
- * `teaching.grade_already_recorded`) and writes nothing — changing it is a
- * correction (`CorrectClassGroupGradeUseCase`), never a second posting.
+ * Posting is not changing: the same value again is a no-op, a different
+ * value on a graded seat refuses the whole batch (409
+ * `teaching.grade_already_recorded`) and writes nothing — changing it is the
+ * teacher's edit while the register is theirs (`EditOwnClassGroupGradeUseCase`,
+ * OOC-180) or the supervision's correction, never a second posting.
+ *
+ * Each grade goes into its run's open register (OOC-180). The teacher posts
+ * only while that register is theirs — not sent yet, or returned —, and the
+ * supervision posts into one in review too (422
+ * `teaching.grade_register_locked`).
  *
  * Each grade written e-mails the student — and a minor's guardian — in the
  * same transaction (OOC-38, request of 09/11/2026, to confirm with the
- * owner). es-PE, like the payment e-mails: the platform does not keep a
+ * owner); the e-mail says the grade is in review (OOC-180). es-PE, like the payment e-mails: the platform does not keep a
  * student's language.
  *
  * Sending the grades finishes the module (OOC-102, decision of 10/11/2026):
@@ -57,6 +63,7 @@ export async function postGrades(
   group: GradingScope,
   actorId: string,
   entries: GradeEntry[],
+  byTeacher: boolean,
 ): Promise<RecordGradesResult> {
   if (!GRADING_OPEN.has(group.status)) {
     throw new UnableToProcessEntryError({
@@ -106,6 +113,7 @@ export async function postGrades(
     classGroupId: group.classGroupId,
     recordedBy: actorId,
     entries,
+    byTeacher,
     emails: (recorded) =>
       recorded.flatMap((entry) => {
         const fact = factsBySeat.get(entry.enrollmentId);
@@ -134,6 +142,12 @@ export async function postGrades(
     }),
   });
 
+  if ("locked" in result) {
+    throw new UnableToProcessEntryError({
+      reason: "teaching.grade_register_locked",
+      message: "The grade register is in review or official; it is not the teacher's to change.",
+    });
+  }
   if ("conflicts" in result) {
     throw new ConflictError({
       reason: "teaching.grade_already_recorded",

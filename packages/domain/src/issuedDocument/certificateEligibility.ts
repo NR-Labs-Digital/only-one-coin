@@ -5,7 +5,8 @@
  * reached it and passed it. The rule:
  *
  * - the last module's grade (the current attempt) is at least the pass mark
- *   (`passing_grade`, OOC-41) — never DA;
+ *   (`passing_grade`, OOC-41) — never DA — and **official**: coordination
+ *   confirmed its grade register (OOC-180, decision of 18/11/2026);
  * - every earlier module that has a grade on the platform passed it too (its
  *   latest attempt). An earlier module with no grade does not block: grades
  *   only exist on the platform since 09/11/2026 (OOC-38), and a student who
@@ -23,6 +24,7 @@
 export const CERTIFICATE_BLOCK_REASONS = [
   "already_issued",
   "grade_pending",
+  "grade_not_official",
   "did_not_sit",
   "grade_below_minimum",
   "earlier_module_failed",
@@ -37,6 +39,8 @@ export interface CertificateCandidate {
   enrollmentId: string;
   /** The current attempt's grade in the last module; null while none is posted. */
   lastModuleGrade: CertificateGrade | null;
+  /** That grade's register is official (OOC-180), or it predates registers. */
+  lastModuleGradeOfficial: boolean;
   /** The latest grade of each earlier module that has one on the platform. */
   earlierModuleGrades: { module: number; grade: CertificateGrade }[];
   /** A certificate already issued for this enrollment. */
@@ -61,6 +65,7 @@ export function certificateBlockReason(
   if (candidate.alreadyIssued) return "already_issued";
   const last = candidate.lastModuleGrade;
   if (last === null) return "grade_pending";
+  if (!candidate.lastModuleGradeOfficial) return "grade_not_official";
   if (last.didNotSit) return "did_not_sit";
   // Compared as typed: no rounding rule was set (CLAUDE.md §1).
   if (last.score < context.passingGrade) return "grade_below_minimum";

@@ -72,6 +72,7 @@ export const AUDITED_PLATFORM_SETTINGS = [
   "passing_grade",
   "certificate_deadline_business_days",
   "contract_alert_days",
+  "grade_submission_hours",
   "progression_requires_passing_grade",
 ] as const;
 
@@ -175,6 +176,14 @@ export const AUDIT_ACTIONS = {
   // The supervision correcting a posted grade (OOC-102): the seat and the
   // correction travel in metadata; the grades and the reason never do.
   "teaching.grade_corrected": { key: "grade_corrected", entity: "class_group", subject: "target" },
+  // The teacher's own change of a posted grade while the register was theirs
+  // (OOC-180); the seat and the edit travel in metadata, never the grade.
+  "teaching.grade_edited": { key: "grade_edited", entity: "class_group", subject: "target" },
+  // The grade register's steps (OOC-180): the register in metadata; the
+  // return note lives in the register's steps, never here.
+  "teaching.grade_register_submitted": { key: "grade_register_submitted", entity: "class_group", subject: "target" },
+  "teaching.grade_register_returned": { key: "grade_register_returned", entity: "class_group", subject: "target" },
+  "teaching.grade_register_confirmed": { key: "grade_register_confirmed", entity: "class_group", subject: "target" },
   "teaching.progression_applied": { key: "progression_applied", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },
@@ -309,6 +318,7 @@ export const AUDIT_FIELDS = {
   classroomUrl: "classroom_url",
   classroomLinks: "classroom_links",
   meetUrl: "meet_url",
+  moduleEndsOn: "module_ends_on",
   module: "module",
   fullCourse: "full_course",
   slots: "schedule",
@@ -326,6 +336,7 @@ export const AUDIT_FIELDS = {
   certificate_deadline_business_days: "certificate_deadline_business_days",
   constancia_fee_cents: "constancia_fee_cents",
   contract_alert_days: "contract_alert_days",
+  grade_submission_hours: "grade_submission_hours",
   progression_requires_passing_grade: "progression_requires_passing_grade",
 } as const;
 

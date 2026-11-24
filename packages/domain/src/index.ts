@@ -84,8 +84,10 @@ export {
   MIN_GRADE,
   isValidScore,
   sameGrade,
+  isOfficialGrade,
   MAX_CORRECTION_REASON_LENGTH,
   type CorrectGradeOutcome,
+  type EditGradeOutcome,
   type GradeEntry,
   type GradeHistoryEntry,
   type GradeValue,
@@ -121,9 +123,42 @@ export {
 export {
   ListOwnClassGroupGradesUseCase,
   RecordOwnClassGroupGradesUseCase,
+  EditOwnClassGroupGradeUseCase,
+  GetOwnGradeRegisterUseCase,
+  SubmitOwnGradeRegisterUseCase,
   type RecordOwnClassGroupGradesInput,
+  type EditOwnClassGroupGradeInput,
 } from "./teaching/OwnClassGroupGradesUseCases.js";
-export { gradeEmails, correctedGradeEmails, type GradeEmailFacts } from "./notification/gradeEmails.js";
+export {
+  GRADE_REGISTER_STATUSES,
+  MAX_REGISTER_RETURN_NOTE_LENGTH,
+  lateness,
+  registerDeadline,
+  teacherMayEdit,
+  type ConfirmedSeat,
+  type GradeRegisterListFilters,
+  type GradeRegisterListRow,
+  type GradeRegisterStatus,
+  type GradeRegisterStep,
+  type GradeRegisterStepKind,
+  type GradeRegisterView,
+  type IGradeRegisterRepository,
+  type RegisterTransitionOutcome,
+} from "./teaching/gradeRegister.js";
+export {
+  ConfirmGradeRegisterUseCase,
+  ListClassGroupGradeRegistersUseCase,
+  ListGradeRegistersUseCase,
+  ReturnGradeRegisterUseCase,
+  type RegisterStepInput,
+} from "./teaching/GradeRegisterUseCases.js";
+export {
+  gradeEmails,
+  correctedGradeEmails,
+  updatedGradeEmails,
+  officialGradeEmails,
+  type GradeEmailFacts,
+} from "./notification/gradeEmails.js";
 export { issuedDocumentEmails, type IssuedDocumentEmailFacts } from "./notification/issuedDocumentEmails.js";
 export {
   ISSUED_DOCUMENT_KINDS,

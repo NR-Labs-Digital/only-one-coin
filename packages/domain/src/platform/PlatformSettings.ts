@@ -28,6 +28,11 @@ export interface PlatformSettings {
   /** How early a teacher's contract starts warning. 45 is provisional. */
   contractAlertDays: number;
   /**
+   * Hours a teacher has, after the module's end date, to send the grade
+   * register to review before it reads "out of time" (OOC-180, 48 today).
+   */
+  gradeSubmissionHours: number;
+  /**
    * Advancing a student to the next module asks for the pass mark (OOC-156).
    * Coordination may still advance below it, with a reason; off, any posted
    * grade lets the student advance. On by default.
@@ -60,6 +65,8 @@ export const PLATFORM_SETTING_BOUNDS = {
   certificateDeadlineBusinessDays: { min: 1, max: 90 },
   // S/1 to S/1,000: a procedure is paid (CLAUDE.md §1), never free.
   contractAlertDays: { min: 1, max: 180 },
+  // Up to 30 days: past that the register is not "late", it is forgotten.
+  gradeSubmissionHours: { min: 1, max: 720 },
 } as const satisfies Record<PlatformNumberKey, { min: number; max: number }>;
 
 export const PLATFORM_NUMBER_KEYS = Object.keys(PLATFORM_SETTING_BOUNDS) as PlatformNumberKey[];
@@ -76,6 +83,7 @@ export const PLATFORM_SETTING_COLUMNS: Record<PlatformSettingKey, string> = {
   passingGrade: "passing_grade",
   certificateDeadlineBusinessDays: "certificate_deadline_business_days",
   contractAlertDays: "contract_alert_days",
+  gradeSubmissionHours: "grade_submission_hours",
   progressionRequiresPassingGrade: "progression_requires_passing_grade",
 };
 
