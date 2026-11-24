@@ -28,7 +28,7 @@ const PORTAL_ROUTES: [string, string][] = [
   ["GET", `/api/v1/portal/attachments/${ID}/download`],
 ];
 
-const STAFF_REFUSED: Role[] = ["support", "sales", "billing", "analyst", "academic_supervisor", "teacher", "student"];
+const STAFF_REFUSED: Role[] = ["support", "sales", "billing", "analyst", "academic_supervisor", "academic_assistant", "teacher", "student"];
 const PORTAL_REFUSED: Role[] = ["master", "admin", "enrollment_supervisor", "support", "billing", "teacher"];
 
 const CASES = [

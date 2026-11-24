@@ -1503,7 +1503,7 @@ export const staffInvites = pgTable(
     ),
     check(
       "staff_invites_role_check",
-      sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'teacher', 'sales', 'support', 'billing')`,
+      sql`${table.role} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'academic_assistant', 'teacher', 'sales', 'support', 'billing')`,
     ),
     check("staff_invites_status_check", sql`${table.status} in ('pending', 'completed', 'cancelled')`),
   ],

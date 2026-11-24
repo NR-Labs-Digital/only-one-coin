@@ -45,7 +45,7 @@ describe("GET /dashboard/summary", () => {
     expect(response.statusCode).toBe(403);
   });
 
-  it.each<Role>(["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "sales", "support"])(
+  it.each<Role>(["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "sales", "support"])(
     "serves %s",
     async (role) => {
       signIn(role);

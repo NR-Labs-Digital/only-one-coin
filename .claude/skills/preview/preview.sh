@@ -3,7 +3,7 @@
 # signs a local preview account in and opens a browser already in session.
 #
 #   preview.sh [role] [path]
-#   role  enrollment_supervisor (default) | academic_supervisor | analyst | sales | support
+#   role  enrollment_supervisor (default) | academic_supervisor | academic_assistant | analyst | sales | support
 #   path  where to land, default /backoffice/home
 #
 # Local only: the account comes from `seed:preview`, which refuses any

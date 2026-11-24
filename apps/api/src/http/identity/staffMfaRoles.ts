@@ -12,6 +12,7 @@ export const STAFF_MFA_ROLES = [
   "analyst",
   "enrollment_supervisor",
   "academic_supervisor",
+  "academic_assistant",
   "teacher",
   "sales",
   "support",

@@ -3,7 +3,8 @@ import type { Role } from "@ooc/domain";
 /**
  * Who opens the roster and the teacher file — mirrors `canManageTeachers` in
  * `apps/app/src/lib/backoffice/permissions.ts`. The academic supervisor exists
- * to supervise the teachers; the analyst observes every area.
+ * to supervise the teachers, the academic assistant (OOC-96) runs the roster
+ * day to day; the analyst observes every area.
  *
  * A teacher reads their own file only, through `GET /teachers/:teacherId`
  * (TEACHER_OWN_FILE_ROLES): the file is the one `teachers.user_id` links to
@@ -13,6 +14,7 @@ export const TEACHER_READ_ROLES = [
   "master",
   "admin",
   "academic_supervisor",
+  "academic_assistant",
   "analyst",
 ] as const satisfies readonly Role[];
 
@@ -20,10 +22,17 @@ export const TEACHER_READ_ROLES = [
 export const TEACHER_OWN_FILE_ROLES = [...TEACHER_READ_ROLES, "teacher"] as const satisfies readonly Role[];
 
 /**
- * Who corrects a file, its week and its place on the roster. The analyst reads
- * and proposes, never edits (CLAUDE.md §8).
+ * Who corrects a file, its week and its place on the roster — and generates the
+ * contract, which records it. The academic assistant (OOC-96) manages the
+ * teachers as the supervisor does; the analyst reads and proposes, never edits
+ * (CLAUDE.md §8).
  */
-export const TEACHER_EDIT_ROLES = ["master", "admin", "academic_supervisor"] as const satisfies readonly Role[];
+export const TEACHER_EDIT_ROLES = [
+  "master",
+  "admin",
+  "academic_supervisor",
+  "academic_assistant",
+] as const satisfies readonly Role[];
 
 /**
  * Who registers a new teacher — mirrors `canCreateTeacher`. Management only: a

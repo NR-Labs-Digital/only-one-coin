@@ -17,7 +17,7 @@ const ROUTES = [
   "/api/v1/emails/flows/payment_approved/preview",
 ];
 
-const REFUSED: Role[] = ["academic_supervisor", "teacher", "sales", "support", "billing", "student"];
+const REFUSED: Role[] = ["academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing", "student"];
 
 const CASES = ROUTES.flatMap((url) => REFUSED.map((role) => [url, role] as const));
 

@@ -16,6 +16,7 @@ const PromoteStaffRoleBodySchema = z.object({
     "analyst",
     "enrollment_supervisor",
     "academic_supervisor",
+    "academic_assistant",
     "sales",
     "support",
     "billing",

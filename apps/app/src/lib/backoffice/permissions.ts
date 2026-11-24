@@ -15,6 +15,9 @@ import type { StaffRole } from './types'
  * - `enrollment_supervisor` — everything academic on the enrollment side:
  *   students, enrollments (manual included), courses and class groups.
  * - `academic_supervisor` — supervises the teachers.
+ * - `academic_assistant` — runs the teachers day to day (OOC-96): manages the
+ *   roster and the files, reads the class groups, the teachers' week and their
+ *   grades, and never posts or corrects a grade.
  * - `teacher` — runs their own class groups, nothing else.
  * - `sales` — follows the enrollments their WhatsApp sales become.
  * - `support` — answers students: reads people, enrollments and payments.
@@ -158,12 +161,11 @@ export function canReviewPayments(role: StaffRole): boolean {
 
 /**
  * Who opens the teacher roster. The academic supervisor exists to supervise
- * the docentes; the analyst reads it, management runs it.
+ * the docentes and the academic assistant runs them day to day (OOC-96); the
+ * analyst reads it, management runs it.
  */
 export function canManageTeachers(role: StaffRole): boolean {
-  return (
-    isManagement(role) || role === 'academic_supervisor' || role === 'analyst'
-  )
+  return canEditTeachers(role) || role === 'analyst'
 }
 
 /**
@@ -172,22 +174,26 @@ export function canManageTeachers(role: StaffRole): boolean {
  * edits (CLAUDE.md §8). Mirrors TEACHER_EDIT_ROLES in apps/api.
  */
 export function canEditTeachers(role: StaffRole): boolean {
-  return isManagement(role) || role === 'academic_supervisor'
+  return (
+    isManagement(role) ||
+    role === 'academic_supervisor' ||
+    role === 'academic_assistant'
+  )
 }
 
 /**
  * Who reads a class group's grades in the backoffice (OOC-102): the academic
- * supervision and management, and the analyst, who reads and never writes.
- * Mirrors GRADE_READ_ROLES in apps/api.
+ * supervision and management, and the analyst and the academic assistant
+ * (OOC-96), who read and never write. Mirrors GRADE_READ_ROLES in apps/api.
  */
 export function canReadGrades(role: StaffRole): boolean {
-  return isManagement(role) || role === 'academic_supervisor' || role === 'analyst'
+  return canEditGrades(role) || role === 'analyst' || role === 'academic_assistant'
 }
 
 /**
  * Who posts a missing grade and corrects a posted one (OOC-102, decision of
- * 10/11/2026). The readers minus the analyst. Mirrors GRADE_WRITE_ROLES in
- * apps/api.
+ * 10/11/2026). The readers minus the analyst and the academic assistant.
+ * Mirrors GRADE_WRITE_ROLES in apps/api.
  */
 export function canEditGrades(role: StaffRole): boolean {
   return isManagement(role) || role === 'academic_supervisor'
@@ -335,12 +341,15 @@ export function canBrowseEnrollments(role: StaffRole): boolean {
 }
 
 /**
- * Who reads the catalog (courses, plans, class groups) — mirrors
- * CATALOG_READ_ROLES in apps/api. Billing sees no academic data; a teacher
- * reaches their own class groups through their own screen.
+ * Who reads the catalog (courses, plans, class groups, the teachers' week) —
+ * mirrors CATALOG_READ_ROLES in apps/api. The ledger's readers, plus the
+ * academic assistant (OOC-96), who needs the class groups and the teacher
+ * calendar to run the roster but not the enrollment ledger. Billing sees no
+ * academic data; a teacher reaches their own class groups through their own
+ * screen.
  */
 export function canBrowseCatalog(role: StaffRole): boolean {
-  return canBrowseEnrollments(role)
+  return canBrowseEnrollments(role) || role === 'academic_assistant'
 }
 
 /** Who opens a plan or puts a new price in force — money, so management only. */

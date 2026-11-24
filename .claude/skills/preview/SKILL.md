@@ -9,7 +9,7 @@ description: Abre o app local num navegador já logado, para ver uma tela do bac
 .claude/skills/preview/preview.sh [cargo] [caminho]
 ```
 
-- **cargo**: `enrollment_supervisor` (padrão), `academic_supervisor`, `analyst`, `sales` ou `support`.
+- **cargo**: `enrollment_supervisor` (padrão), `academic_supervisor`, `academic_assistant`, `analyst`, `sales` ou `support`.
 - **caminho**: onde abrir, padrão `/backoffice/home` (ex.: `/backoffice/class-groups`, `/en/backoffice/payments`).
 
 Escolha o cargo pela tela: turmas, cursos, alunos e matrícula manual → `enrollment_supervisor`; docentes → `academic_supervisor`; só leitura → `analyst`. Na dúvida, o padrão.
