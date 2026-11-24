@@ -85,7 +85,7 @@ describe("requiresMfa", () => {
   });
 
   it("is optional for every other staff cargo", () => {
-    const optional = ["analyst", "enrollment_supervisor", "academic_supervisor", "teacher", "sales", "support"] as const;
+    const optional = ["analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support"] as const;
     expect(optional.some((role) => requiresMfa(role))).toBe(false);
   });
 });

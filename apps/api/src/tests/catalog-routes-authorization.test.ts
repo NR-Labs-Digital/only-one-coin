@@ -58,6 +58,15 @@ const CASES: [string, string, Role][] = [
   // The roster: a teacher gets their own students through their own scope,
   // never through the catalog; billing sees no academic data.
   ["GET", `/api/v1/catalog/class-groups/${ID}/roster`, "teacher"],
+  // The academic assistant (OOC-96) reads the catalog and runs the teachers,
+  // never the class groups, their progression or the waitlist.
+  ["POST", "/api/v1/catalog/class-groups", "academic_assistant"],
+  ["PATCH", `/api/v1/catalog/class-groups/${ID}`, "academic_assistant"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/status`, "academic_assistant"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules`, "academic_assistant"],
+  ["POST", `/api/v1/catalog/class-groups/${ID}/modules/${ID}/progression`, "academic_assistant"],
+  ["GET", `/api/v1/catalog/class-groups/${ID}/waitlist`, "academic_assistant"],
+  ["POST", "/api/v1/catalog/periods", "academic_assistant"],
   ["GET", `/api/v1/catalog/class-groups/${ID}/roster`, "billing"],
   // The teacher picker (OOC-80) follows who opens class groups — reading the
   // directory is not enough, and the roster carries no contact.

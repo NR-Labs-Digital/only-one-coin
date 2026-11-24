@@ -52,7 +52,7 @@ describe("GET /reports", () => {
     expect(response.statusCode).toBe(401);
   });
 
-  it.each<Role>(["billing", "sales", "support", "teacher", "student"])("refuses %s", async (role) => {
+  it.each<Role>(["billing", "sales", "support", "teacher", "academic_assistant", "student"])("refuses %s", async (role) => {
     signIn(role);
     const response = await app.inject({ method: "GET", url: URL, cookies: { [SESSION_COOKIE_NAME]: "token" } });
     expect(response.statusCode).toBe(403);

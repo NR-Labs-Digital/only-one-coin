@@ -8,6 +8,7 @@ const StaffRoleSchema = z.enum([
   "analyst",
   "enrollment_supervisor",
   "academic_supervisor",
+  "academic_assistant",
   "teacher",
   "sales",
   "support",

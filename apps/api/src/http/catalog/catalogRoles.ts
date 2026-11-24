@@ -2,9 +2,11 @@ import type { Role } from "@ooc/domain";
 
 /**
  * Who reads the catalog in the backoffice — the same people who read the
- * enrollment ledger (apps/app permissions.ts canBrowseEnrollments). Billing
- * settles money and sees no academic data; a teacher sees their own class
- * groups through `/teaching` (OOC-82), scoped by the session in the usecase.
+ * enrollment ledger (apps/app permissions.ts canBrowseEnrollments), plus the
+ * academic assistant (OOC-96), who reads the class groups and the teachers'
+ * week to run the roster but not the ledger. Billing settles money and sees no
+ * academic data; a teacher sees their own class groups through `/teaching`
+ * (OOC-82), scoped by the session in the usecase.
  */
 export const CATALOG_READ_ROLES = [
   "master",
@@ -12,6 +14,7 @@ export const CATALOG_READ_ROLES = [
   "analyst",
   "enrollment_supervisor",
   "academic_supervisor",
+  "academic_assistant",
   "sales",
   "support",
 ] as const satisfies readonly Role[];

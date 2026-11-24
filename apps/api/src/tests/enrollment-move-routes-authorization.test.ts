@@ -12,7 +12,7 @@ import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
  */
 
 const ID = "018f2b5c-0000-7000-8000-000000000001";
-const REFUSED: Role[] = ["billing", "analyst", "sales", "support", "academic_supervisor", "teacher", "student"];
+const REFUSED: Role[] = ["billing", "analyst", "sales", "support", "academic_supervisor", "academic_assistant", "teacher", "student"];
 
 const ROUTES: [string, string][] = [
   ["GET", `/api/v1/enrollments/${ID}/move-targets`],

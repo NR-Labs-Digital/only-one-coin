@@ -7,6 +7,7 @@ const STAFF_ROLES = new Set([
   'analyst',
   'enrollment_supervisor',
   'academic_supervisor',
+  'academic_assistant',
   'teacher',
   'sales',
   'support',

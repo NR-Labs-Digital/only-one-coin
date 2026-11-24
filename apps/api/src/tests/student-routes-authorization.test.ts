@@ -26,7 +26,7 @@ const ROUTES: [string, string][] = [
   ["GET", `/api/v1/students/${ID}/payments`],
 ];
 
-const REFUSED: Role[] = ["support", "sales", "billing", "analyst", "academic_supervisor", "teacher"];
+const REFUSED: Role[] = ["support", "sales", "billing", "analyst", "academic_supervisor", "academic_assistant", "teacher"];
 
 const CASES = ROUTES.flatMap(([method, url]) => REFUSED.map((role) => [method, url, role] as const));
 

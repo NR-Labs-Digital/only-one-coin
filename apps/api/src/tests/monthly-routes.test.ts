@@ -21,7 +21,7 @@ const ROUTES = [
   `/api/v1/portal/enrollments/${ENROLLMENT}/monthly-payment`,
 ];
 
-const STAFF: Role[] = ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "teacher", "sales", "support", "billing"];
+const STAFF: Role[] = ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"];
 
 let app: FastifyInstance;
 

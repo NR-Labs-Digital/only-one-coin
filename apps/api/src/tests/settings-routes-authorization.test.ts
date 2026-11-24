@@ -20,6 +20,7 @@ const CASES: [string, string, Role][] = [
   ["PATCH", "/api/v1/settings", "analyst"],
   ["PATCH", "/api/v1/settings", "enrollment_supervisor"],
   ["PATCH", "/api/v1/settings", "academic_supervisor"],
+  ["PATCH", "/api/v1/settings", "academic_assistant"],
   ["PATCH", "/api/v1/settings", "support"],
   ["PATCH", "/api/v1/settings", "teacher"],
 ];

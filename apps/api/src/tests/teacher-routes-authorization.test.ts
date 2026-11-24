@@ -7,8 +7,9 @@ import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 
 /**
  * CI gate §6.5 for the teacher file (OOC-78): every teacher route answers 403
- * to a cargo it did not declare. Reading is management, academic supervision
- * and the analyst; editing drops the analyst; registering is management only.
+ * to a cargo it did not declare. Reading is management, academic supervision,
+ * the academic assistant (OOC-96) and the analyst; editing drops the analyst;
+ * registering is management only.
  * The handler never runs, so no database is needed.
  */
 
@@ -23,7 +24,7 @@ const CASES: [string, string, Role[]][] = [
   ["PUT", `/api/v1/teachers/${ID}`, [...NEVER, "analyst"]],
   ["PUT", `/api/v1/teachers/${ID}/availability`, [...NEVER, "analyst"]],
   ["PUT", `/api/v1/teachers/${ID}/status`, [...NEVER, "analyst"]],
-  ["POST", "/api/v1/teachers", [...NEVER, "analyst", "academic_supervisor"]],
+  ["POST", "/api/v1/teachers", [...NEVER, "analyst", "academic_supervisor", "academic_assistant"]],
   // Contracts (OOC-124): generating records one, so it is an edit; opening a
   // filed one or printing a recorded one again is a read, not for the teacher.
   ["POST", `/api/v1/teachers/${ID}/contract-document`, [...NEVER, "analyst"]],
@@ -56,5 +57,37 @@ describe("teacher routes refuse undeclared roles", () => {
     });
 
     expect(response.statusCode).toBe(403);
+  });
+});
+
+/**
+ * The academic assistant (OOC-96) manages the teachers: the authorization hook
+ * lets them through the edit routes, so the empty body reaches validation (400)
+ * instead of a 403.
+ */
+describe("the academic assistant manages the teachers", () => {
+  it.each([
+    ["PUT", `/api/v1/teachers/${ID}`],
+    ["PUT", `/api/v1/teachers/${ID}/availability`],
+    ["PUT", `/api/v1/teachers/${ID}/status`],
+    ["POST", `/api/v1/teachers/${ID}/contract-document`],
+  ])("%s %s lets academic_assistant through", async (method, url) => {
+    const user: AuthenticatedUser = {
+      id: "u1",
+      email: "x@example.com",
+      name: "X",
+      role: "academic_assistant",
+      twoFactorEnabled: true,
+    };
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
+
+    const response = await app.inject({
+      method: method as "PUT",
+      url,
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 });
