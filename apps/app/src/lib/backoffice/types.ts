@@ -70,6 +70,12 @@ export interface StaffUser {
    * the client sends (CLAUDE.md §8).
    */
   teacherId: string | null
+  /**
+   * True while the linked teacher file waits for the teacher's own onboarding
+   * (OOC-103) — the docente portal opens on that form instead of its screens.
+   * Optional because an API from before it does not send it: absent is false.
+   */
+  teacherOnboardingPending?: boolean
 }
 
 /**
@@ -838,10 +844,10 @@ export interface TeacherRow {
    * The document, same shape as a student's. A teacher signs a contract, and a
    * contract is signed by somebody the institution can name on paper.
    */
-  nationalIdType: NationalIdType
-  nationalId: string
+  nationalIdType: NationalIdType | null
+  nationalId: string | null
   email: string
-  phone: string
+  phone: string | null
   status: TeacherStatus
   /**
    * Languages the teacher is cleared to run a class group in — catalogue rows,
@@ -856,17 +862,22 @@ export interface TeacherRow {
    * (`docs/REGRAS-NEGOCIO.md` §3, `docs/REQUISITOS.md` RF03) — not only
    * because it is personal data.
    */
-  nationality: string
+  nationality: string | null
   /**
    * Where they live — not the same question as `nationality`, which is where
    * they are from. The contract needs an address; the catalog needs an origin.
    */
-  country: string
+  country: string | null
   /** First-level division — `departamento` in Peru. Null outside it. */
   region: string | null
-  city: string
+  city: string | null
   /** Street line: what is missing from country/region/city to post a letter. */
-  addressLine: string
+  addressLine: string | null
+  /**
+   * False while the file waits for the teacher's onboarding (OOC-103): document,
+   * phone, nationality and address above are all null until they fill them.
+   */
+  profileComplete: boolean
   /** Null while nobody has filed one — which is itself worth flagging. */
   contract: TeacherContract | null
   /**

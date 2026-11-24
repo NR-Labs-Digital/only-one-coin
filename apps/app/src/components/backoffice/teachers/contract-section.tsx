@@ -146,7 +146,13 @@ export function ContractSection({
         </p>
       )}
 
-      {canEdit && (
+      {/* A file still pending onboarding has no document nor address to print
+          (OOC-103) — the API refuses it, so the button is not offered. */}
+      {canEdit && !teacher.profileComplete && (
+        <p className="mt-3 text-xs text-muted-foreground">{t('teachers.contract_needs_profile')}</p>
+      )}
+
+      {canEdit && teacher.profileComplete && (
         <div className="mt-3 flex flex-wrap gap-2">
           {/* The contract to print and sign, filled from this file and the
               published template; generating it records the period (OOC-124). */}

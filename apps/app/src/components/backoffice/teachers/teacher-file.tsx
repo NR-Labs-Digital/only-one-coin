@@ -56,8 +56,8 @@ const labelClass =
 /** What every teacher write answers — the file as the server normalized it. */
 interface SavedTeacher {
   email: string
-  phone: string
-  nationality: string
+  phone: string | null
+  nationality: string | null
   languages: string[]
   availability: AvailabilitySlot[]
   status: TeacherStatus
@@ -280,9 +280,12 @@ export function TeacherFile({
                 {`${teacher.firstName} ${teacher.lastName}`}
               </h1>
               <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                {`${flagEmoji(nationality)} ${countryName(nationality, locale)} · ${languages
-                  .map((language) => language.name)
-                  .join(' · ')}`}
+                {[
+                  nationality ? `${flagEmoji(nationality)} ${countryName(nationality, locale)}` : null,
+                  ...languages.map((language) => language.name),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </div>
           </div>
@@ -362,6 +365,24 @@ export function TeacherFile({
         )}
       </Card>
 
+      {/* A file coordination left for the teacher to complete (OOC-103):
+          document, phone, origin and address arrive with their onboarding. */}
+      {!teacher.profileComplete && (
+        <div role="status" className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <BoIcon name="clock" size={16} className="mt-0.5 shrink-0 text-amber-700" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink">{t('teacher_file.onboarding_pending_title')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t(
+                classGroupBase === DOCENTE_BASE
+                  ? 'teacher_file.onboarding_pending_body_self'
+                  : 'teacher_file.onboarding_pending_body',
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-1 overflow-x-auto border-b border-line [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((value) => {
           const active = tab === value
@@ -408,25 +429,31 @@ export function TeacherFile({
                   />
                   <FieldMessage code={fieldError('email')} />
                 </label>
-                <label className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('teachers.field_phone')}</span>
-                  <PhoneField value={phone} onChange={setPhone} />
-                  <FieldMessage code={fieldError('phone')} />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('teachers.field_nationality')}</span>
-                  <select
-                    value={nationality}
-                    onChange={(event) => setNationality(event.target.value)}
-                    className={fieldClass}
-                  >
-                    {COUNTRIES.map((country) => (
-                      <option key={country.code} value={country.code}>
-                        {`${flagEmoji(country.code)} ${countryName(country.code, locale)}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {/* A pending file's profile is the teacher's to fill (OOC-103):
+                    only the e-mail and the languages are coordination's here. */}
+                {phone !== null && (
+                  <label className="flex flex-col gap-1">
+                    <span className={labelClass}>{t('teachers.field_phone')}</span>
+                    <PhoneField value={phone} onChange={setPhone} />
+                    <FieldMessage code={fieldError('phone')} />
+                  </label>
+                )}
+                {nationality !== null && (
+                  <label className="flex flex-col gap-1">
+                    <span className={labelClass}>{t('teachers.field_nationality')}</span>
+                    <select
+                      value={nationality}
+                      onChange={(event) => setNationality(event.target.value)}
+                      className={fieldClass}
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {`${flagEmoji(country.code)} ${countryName(country.code, locale)}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </AutoGrid>
 
               <div>
@@ -487,27 +514,35 @@ export function TeacherFile({
           ) : (
             <AutoGrid as="dl" min="17rem">
               <Field label={t('teachers.field_id_number')}>
-                {t('students.document', {
-                  type: t(`national_id_type.${teacher.nationalIdType}`),
-                  number: teacher.nationalId,
-                })}
+                {teacher.nationalIdType && teacher.nationalId
+                  ? t('students.document', {
+                      type: t(`national_id_type.${teacher.nationalIdType}`),
+                      number: teacher.nationalId,
+                    })
+                  : t('teacher_file.onboarding_pending_value')}
               </Field>
               <Field label={t('teachers.field_email')}>{email}</Field>
-              <Field label={t('teachers.field_phone')}>{phone}</Field>
+              <Field label={t('teachers.field_phone')}>
+                {phone ?? t('teacher_file.onboarding_pending_value')}
+              </Field>
               <Field label={t('teachers.field_nationality')}>
-                {`${flagEmoji(nationality)} ${countryName(nationality, locale)}`}
+                {nationality
+                  ? `${flagEmoji(nationality)} ${countryName(nationality, locale)}`
+                  : t('teacher_file.onboarding_pending_value')}
               </Field>
               {/* Where they live, which the contract is signed against — not
                   the same question as the origin above it. */}
               <Field label={t('teachers.field_address_line')} wrap>
-                {[
-                  teacher.addressLine,
-                  teacher.city,
-                  teacher.region,
-                  countryName(teacher.country, locale),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {teacher.country
+                  ? [
+                      teacher.addressLine,
+                      teacher.city,
+                      teacher.region,
+                      countryName(teacher.country, locale),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : t('teacher_file.onboarding_pending_value')}
               </Field>
               <Field label={t('teachers.field_languages')}>
                 {languages.map((language) => language.name).join(' · ')}

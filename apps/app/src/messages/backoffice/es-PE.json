@@ -335,6 +335,7 @@
         "catalog_restored": "Reactivado en el catálogo",
         "teacher_registered": "Docente registrado",
         "teacher_updated": "Datos del docente editados",
+        "teacher_onboarding_completed": "Ficha completada por el docente",
         "teacher_availability_updated": "Disponibilidad del docente editada",
         "teacher_left_roster": "Docente salió del cuadro",
         "teacher_rejoined_roster": "Docente volvió al cuadro",
@@ -1820,7 +1821,14 @@
       "contract_download_error_not_published": "Todavía no hay un modelo de contrato publicado.",
       "contract_download_error_missing_value": "El modelo usa un dato que esta ficha no tiene. Completa la ficha o ajusta el modelo.",
       "contract_download_error_unavailable": "No se pudo generar el PDF ahora. Inténtalo de nuevo en unos minutos.",
-      "contract_download_error_failed": "No se pudo descargar el contrato. Inténtalo de nuevo."
+      "contract_download_error_failed": "No se pudo descargar el contrato. Inténtalo de nuevo.",
+      "fill_mode_title": "¿Quién completa los datos personales?",
+      "fill_mode_staff": "Los completo yo ahora",
+      "fill_mode_staff_hint": "Documento, teléfono, nacionalidad, dirección y disponibilidad, en este formulario.",
+      "fill_mode_teacher": "Los completa el docente",
+      "fill_mode_teacher_hint": "Registras nombre, correo e idiomas. Al aceptar la invitación, el docente completa el resto en su portal, una sola vez.",
+      "onboarding_pending_badge": "Ficha por completar",
+      "contract_needs_profile": "El contrato se genera cuando el docente complete su ficha: le faltan el documento y la dirección."
     },
     "teacher_status": {
       "active": "Activo",
@@ -1852,7 +1860,11 @@
       "deactivate_body": "Sale de la asignación: no aparece para aulas nuevas y su contrato deja de vigilarse. No se borra nada — las notas que firmó y las aulas que dictó siguen siendo suyas.",
       "deactivate_class_groups": "Cuidado: {count, plural, one {# aula en curso sigue apuntando} other {# aulas en curso siguen apuntando}} a él. Reasígnalas.",
       "deactivated_toast": "Docente dejado inactivo. Solo en pantalla.",
-      "activated_toast": "Docente reactivado. Solo en pantalla."
+      "activated_toast": "Docente reactivado. Solo en pantalla.",
+      "onboarding_pending_title": "Ficha por completar",
+      "onboarding_pending_body": "El docente completa documento, teléfono, nacionalidad, dirección y disponibilidad en su portal, al aceptar la invitación. Envía la invitación desde Equipo.",
+      "onboarding_pending_body_self": "Completa tus datos para empezar a usar el portal.",
+      "onboarding_pending_value": "Por completar"
     },
     "availability": {
       "title": "Disponibilidad",
@@ -2301,6 +2313,18 @@
       "panel_label": "Portal del docente",
       "no_file_title": "Tu ficha todavía no está cargada",
       "no_file_body": "Coordinación registra tus datos, idiomas y disponibilidad. Cuando lo haga, aparecen aquí."
+    },
+    "teacher_onboarding": {
+      "title": "Completa tu ficha",
+      "subtitle": "Antes de empezar, necesitamos tus datos personales y tu disponibilidad. Coordinación los usa para tu contrato y para asignarte aulas.",
+      "registered_title": "Lo que registró coordinación",
+      "field_name": "Nombre",
+      "registered_hint": "Si algo de esto está mal, avisa a coordinación.",
+      "address_hint": "La dirección donde vives: es la que figura en tu contrato.",
+      "availability_hint": "Los días y horarios en que puedes dictar clases (hora de Lima).",
+      "submit": "Enviar mis datos",
+      "once_hint": "Se envía una sola vez. Después, para corregir algo, habla con coordinación.",
+      "error_duplicate": "Ya hay otra ficha con este documento. Habla con coordinación."
     },
     "agenda": {
       "today": "Hoy",

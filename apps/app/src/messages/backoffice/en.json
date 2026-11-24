@@ -335,6 +335,7 @@
         "catalog_restored": "Restored to the catalogue",
         "teacher_registered": "Teacher registered",
         "teacher_updated": "Teacher details edited",
+        "teacher_onboarding_completed": "File completed by the teacher",
         "teacher_availability_updated": "Teacher availability edited",
         "teacher_left_roster": "Teacher left the roster",
         "teacher_rejoined_roster": "Teacher back on the roster",
@@ -1820,7 +1821,14 @@
       "contract_download_error_not_published": "There is no published contract template yet.",
       "contract_download_error_missing_value": "The template uses a detail this file does not have. Complete the file or adjust the template.",
       "contract_download_error_unavailable": "The PDF could not be generated right now. Try again in a few minutes.",
-      "contract_download_error_failed": "The contract could not be downloaded. Try again."
+      "contract_download_error_failed": "The contract could not be downloaded. Try again.",
+      "fill_mode_title": "Who fills in the personal details?",
+      "fill_mode_staff": "I fill them in now",
+      "fill_mode_staff_hint": "Document, phone, nationality, address and availability, on this form.",
+      "fill_mode_teacher": "The teacher fills them in",
+      "fill_mode_teacher_hint": "You register name, e-mail and languages. Once they accept the invite, the teacher fills in the rest on their portal, once.",
+      "onboarding_pending_badge": "File to complete",
+      "contract_needs_profile": "The contract can be generated once the teacher completes their file: the document and address are missing."
     },
     "teacher_status": {
       "active": "Active",
@@ -1852,7 +1860,11 @@
       "deactivate_body": "They leave allocation: they no longer show up for new class groups and their contract stops being watched. Nothing is deleted — the grades they signed and the class groups they ran stay theirs.",
       "deactivate_class_groups": "Careful: {count, plural, one {# running class group still points} other {# running class groups still point}} at them. Reassign them.",
       "deactivated_toast": "Teacher made inactive. On screen only.",
-      "activated_toast": "Teacher reactivated. On screen only."
+      "activated_toast": "Teacher reactivated. On screen only.",
+      "onboarding_pending_title": "File to complete",
+      "onboarding_pending_body": "The teacher fills in document, phone, nationality, address and availability on their portal after accepting the invite. Send the invite from Team.",
+      "onboarding_pending_body_self": "Complete your details to start using the portal.",
+      "onboarding_pending_value": "To complete"
     },
     "availability": {
       "title": "Availability",
@@ -2301,6 +2313,18 @@
       "panel_label": "Teacher portal",
       "no_file_title": "Your file is not set up yet",
       "no_file_body": "Coordination records your details, languages and availability. Once it does, they show up here."
+    },
+    "teacher_onboarding": {
+      "title": "Complete your file",
+      "subtitle": "Before you start, we need your personal details and your availability. Coordination uses them for your contract and to assign you class groups.",
+      "registered_title": "What coordination registered",
+      "field_name": "Name",
+      "registered_hint": "If any of this is wrong, let coordination know.",
+      "address_hint": "The address where you live: it is the one on your contract.",
+      "availability_hint": "The days and times you can teach (Lima time).",
+      "submit": "Send my details",
+      "once_hint": "This is sent once. After that, to correct anything, talk to coordination.",
+      "error_duplicate": "Another file already has this document. Talk to coordination."
     },
     "agenda": {
       "today": "Today",
