@@ -14,6 +14,7 @@ const ACTIONS = {
   "student.guardian_added": "guardian_added",
   "student.guardian_updated": "guardian_updated",
   "student.guardian_consent_accepted": "guardian_consent_accepted",
+  "student.phone_self_updated": "student_phone_self_updated",
   "enrollment.created": "enrollment_created",
   "payment.approved": "payment_approved",
   "payment.rejected": "payment_rejected",

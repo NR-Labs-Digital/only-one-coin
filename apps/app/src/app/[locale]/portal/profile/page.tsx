@@ -12,12 +12,12 @@ export default async function ProfilePage({
   setRequestLocale(locale)
   const t = await getTranslations('portal')
 
-  const { student } = await getPortalView()
+  const { student, profileId } = await getPortalView()
 
   return (
     <div>
       <PageHeader title={t('profile.title')} />
-      <ProfileView student={student} />
+      <ProfileView student={student} profileId={profileId} />
     </div>
   )
 }

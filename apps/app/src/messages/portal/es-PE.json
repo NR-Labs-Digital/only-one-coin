@@ -314,7 +314,19 @@
       "edit_note": "Los datos con candado solo los corrige la coordinación — escríbenos por WhatsApp.",
       "locked_hint": "Este dato solo lo corrige la coordinación.",
       "preferences_title": "Preferencias",
-      "language_label": "Idioma"
+      "language_label": "Idioma",
+      "phone_edit": "Corregir",
+      "phone_save": "Guardar",
+      "phone_saving": "Guardando…",
+      "phone_cancel": "Cancelar",
+      "phone_saved": "Celular actualizado.",
+      "phone_hint": "Es el número con el que la coordinación te contacta.",
+      "phone_error": {
+        "required": "Escribe tu número de celular.",
+        "phone_format": "Escribe un número de celular válido.",
+        "too_long": "El número es demasiado largo.",
+        "generic": "No pudimos guardar el número. Inténtalo de nuevo."
+      }
     },
     "notifications": {
       "title": "Notificaciones",

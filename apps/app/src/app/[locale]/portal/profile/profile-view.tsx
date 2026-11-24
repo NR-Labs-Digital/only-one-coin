@@ -7,14 +7,16 @@ import { Card, SectionTitle } from '@/components/portal/ui'
 import { Icon } from '@/components/portal/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { ProfilePreferences } from './profile-preferences'
+import { OwnPhoneField } from '@/components/portal/own-phone-field'
 
 /**
  * Profile, read from the student's file (OOC-32): name, document, birth date,
  * the class-access Gmail (CLAUDE.md §1), the phone, and everything about the
- * guardian. Every field carries a padlock — correcting the file is the
- * coordination's, with an audit trail (OOC-74), never self-service. The
- * student editing their own phone is OOC-110; the mock's extra e-mail
- * and phone never had a column to land in, so they left with the mock.
+ * guardian. Every field but the student's phone carries a padlock —
+ * correcting the file is the coordination's, with an audit trail (OOC-74).
+ * The phone is the account's own to correct (OOC-110, `OwnPhoneField`); the
+ * mock's extra e-mail and phone never had a column to land in, so they left
+ * with the mock.
  *
  * Plus what the student chooses about the portal itself (`ProfilePreferences`):
  * the language. Neither the record nor a contact — a preference, and it lives
@@ -43,7 +45,7 @@ function LockedField({
   )
 }
 
-export function ProfileView({ student }: { student: Student }) {
+export function ProfileView({ student, profileId }: { student: Student; profileId: string }) {
   const t = useTranslations('portal')
   const locale = useLocale() as Locale
   const { guardian } = student
@@ -81,9 +83,7 @@ export function ProfileView({ student }: { student: Student }) {
             >
               {formatDate(student.birthDate, locale)}
             </LockedField>
-            <LockedField label={t('profile.phone_label')} lockedHint={lockedHint}>
-              {student.phone}
-            </LockedField>
+            <OwnPhoneField label={t('profile.phone_label')} phone={student.phone} profileId={profileId} />
           </AutoGrid>
 
         </Card>
