@@ -151,3 +151,38 @@ describe("Teacher roster", () => {
     expect(teacher.isActive).toBe(true);
   });
 });
+
+describe("Teacher personal e-mail (OOC-161)", () => {
+  const { availability: _week, ...DATA } = VALID;
+
+  it("is optional, and stored normalized when given", () => {
+    expect(Teacher.create(VALID).personalEmail).toBeNull();
+    expect(Teacher.create({ ...VALID, personalEmail: null }).personalEmail).toBeNull();
+    expect(Teacher.create({ ...VALID, personalEmail: " Ana@Hotmail.com " }).personalEmail).toBe("ana@hotmail.com");
+  });
+
+  it("is any provider's, held to the e-mail format", () => {
+    expect(codesOf({ ...VALID, personalEmail: "ana@yahoo.es" })).toEqual([]);
+    expect(codesOf({ ...VALID, personalEmail: "ana" })).toEqual(["teacher.personalEmail:email_format"]);
+  });
+
+  it("is a field of its own: setting it leaves the file's e-mail alone", () => {
+    const teacher = Teacher.create(VALID);
+
+    const changed = teacher.rewrite({ ...DATA, personalEmail: "ana@hotmail.com" });
+
+    expect(changed).toEqual(["personalEmail"]);
+    expect(teacher.personalEmail).toBe("ana@hotmail.com");
+    expect(teacher.email).toBe("ana.quispe@example.com");
+  });
+
+  it("is cleared by null, and kept when a write leaves it out", () => {
+    const teacher = Teacher.create({ ...VALID, personalEmail: "ana@hotmail.com" });
+
+    expect(teacher.rewrite(DATA)).toEqual([]);
+    expect(teacher.personalEmail).toBe("ana@hotmail.com");
+
+    expect(teacher.rewrite({ ...DATA, personalEmail: null })).toEqual(["personalEmail"]);
+    expect(teacher.personalEmail).toBeNull();
+  });
+});
