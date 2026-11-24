@@ -76,9 +76,13 @@ export function FieldGroup({
   hint,
   htmlFor,
   onLeave,
+  optional = false,
   children,
 }: {
   label: string
+  /** No asterisk: the field may stay empty (the complaints book, OOC-63, has
+      a few). The checkout has none — every field there is required. */
+  optional?: boolean
   error?: string
   hint?: string
   htmlFor?: string
@@ -103,9 +107,11 @@ export function FieldGroup({
         className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
       >
         {label}
-        <span aria-hidden="true" className="ml-1 text-brand-blue">
-          *
-        </span>
+        {!optional && (
+          <span aria-hidden="true" className="ml-1 text-brand-blue">
+            *
+          </span>
+        )}
       </label>
       {children}
       {error ? (

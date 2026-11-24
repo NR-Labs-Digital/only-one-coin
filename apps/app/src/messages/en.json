@@ -302,5 +302,120 @@
     },
     "period_value": "{from} to {to}",
     "check_another": "Check another code"
+  },
+  "complaints": {
+    "meta_title": "Complaints Book",
+    "brand_label": "Complaints Book",
+    "footer_note": "Secure connection. Your data is used only to handle your complaint.",
+    "back_to_site": "Back to the site",
+    "support": "Help on WhatsApp",
+    "title": "Complaints Book",
+    "subtitle": "As required by Peru's Consumer Protection and Defense Code, our virtual Complaints Book (Libro de Reclamaciones) is at your disposal. Fields marked * are required.",
+    "kinds_title": "Claim or complaint?",
+    "kind": {
+      "claim": {
+        "title": "Claim",
+        "description": "Disagreement about the products or services."
+      },
+      "grievance": {
+        "title": "Complaint",
+        "description": "Disagreement not about the products or services, or dissatisfaction with how you were attended."
+      }
+    },
+    "supplier": {
+      "title": "Supplier",
+      "legal_name": "Company name",
+      "ruc": "RUC",
+      "address": "Address"
+    },
+    "consumer": {
+      "title": "Who is filing",
+      "first_name": "First names",
+      "last_name": "First surname",
+      "second_last_name": "Second surname",
+      "id_type": "Document type",
+      "national_id": "Document number",
+      "phone": "Mobile",
+      "email": "E-mail",
+      "email_hint": "We will send the copy of this sheet and our reply here.",
+      "department": "Department",
+      "province": "Province",
+      "district": "District",
+      "address": "Address",
+      "address_reference": "Reference",
+      "is_minor": "Are you under 18?",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "guardian": {
+      "title": "Parent or guardian",
+      "subtitle": "A minor files through their parent or guardian.",
+      "first_name": "First names",
+      "last_name": "Surnames",
+      "id_type": "Document type",
+      "national_id": "Document number"
+    },
+    "good": {
+      "title": "What you purchased",
+      "good_type": "Type",
+      "product": "Product",
+      "service": "Service",
+      "amount": "Amount claimed (S/)",
+      "amount_placeholder": "E.g. 69.90",
+      "purchased_on": "Purchase date",
+      "description": "Description of the product or service",
+      "description_placeholder": "E.g. Basic English, full package."
+    },
+    "detail": {
+      "title": "Details and request",
+      "kind": "Type",
+      "detail": "Details",
+      "detail_hint": "Tell us what happened, with any dates you remember.",
+      "request": "Request",
+      "request_hint": "What solution do you expect from us?"
+    },
+    "id_type": {
+      "DNI": "DNI",
+      "CE": "Foreigner's card (CE)",
+      "passport": "Passport"
+    },
+    "optional": "Optional",
+    "declaration": {
+      "title": "Statement",
+      "truthfulness": "I declare under oath that the facts described are true and that I am the holder of the service or their representative.",
+      "privacy": "I have read and accept the <link>Privacy policy</link>."
+    },
+    "notice": "We will reply to the e-mail you gave within fifteen (15) business days. Filing a complaint does not prevent you from using other ways of settling the dispute, nor is it a prerequisite for filing a report with INDECOPI.",
+    "submit": "Send complaint sheet",
+    "submitting": "Sending…",
+    "errors": {
+      "required": "Fill in this field.",
+      "too_long": "This is too long.",
+      "national_id_format": "Check the document number.",
+      "phone_format": "Check the mobile number.",
+      "email_format": "Check the e-mail address.",
+      "email_gmail_username_invalid": "That Gmail address cannot exist. Check it.",
+      "email_must_be_gmail": "Check the e-mail address.",
+      "birth_date_range": "Check this field.",
+      "operation_format": "Check this field.",
+      "invalid": "Check this field.",
+      "amount": "Type just the amount, for example 69.90.",
+      "accept": "Tick this box to continue."
+    },
+    "failure": {
+      "fix_fields": "Check the highlighted fields.",
+      "rate_limited": "You sent several sheets in a row. Wait a few minutes and try again.",
+      "captcha": "We could not confirm you are a person. Please try again.",
+      "captcha_unavailable": "The security check is not available right now. Try again in a few minutes.",
+      "captcha_missing": "Wait for the security check to finish.",
+      "generic": "We could not send your sheet right now. Try again in a few minutes; what you wrote is still here."
+    },
+    "done": {
+      "title": "We received your complaint sheet",
+      "number": "Sheet number",
+      "filed_at": "Filed on {date}.",
+      "email_sent": "We sent a copy to {email}. Keep this number: you will need it for anything about your complaint.",
+      "back": "Back to the site"
+    }
   }
 }
