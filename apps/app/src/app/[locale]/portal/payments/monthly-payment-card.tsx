@@ -9,6 +9,7 @@ import { submitMonthlyPayment, type MonthlySubmitFailure } from '@/lib/portal/mo
 import { Card, StatusBadge } from '@/components/portal/ui'
 import { Icon } from '@/components/portal/icons'
 import { ReceiptUploadForm, type ReceiptSubmission } from '@/components/portal/receipt-upload'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 type BoughtModule = MonthlyBilling['bought'][number]
 
@@ -51,6 +52,7 @@ export function MonthlyPaymentCard({
   locked: boolean
 }) {
   const t = useTranslations('portal')
+  const tb = useTranslations('bo')
   const locale = useLocale() as Locale
   const router = useRouter()
   const currentIsDue =
@@ -225,9 +227,16 @@ export function MonthlyPaymentCard({
              container query, never a viewport breakpoint (CLAUDE.md §5). */
           <div className="grid gap-4 @2xl/page:grid-cols-[minmax(0,1fr)_19rem]">
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('payments.modules_title')}
-              </p>
+              <div className="mb-2 flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t('payments.modules_title')}
+                </p>
+                {/* The prefix rule and "no discount, no debt" (decision 06/09/2026). */}
+                <HelpHint
+                  what={tb('help.portal_advance_modules_what')}
+                  how={tb('help.portal_advance_modules_how')}
+                />
+              </div>
               <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line">
                 {/* What is already settled, first: the ledger reads top to
                     bottom in course order, and a student checking what to pay

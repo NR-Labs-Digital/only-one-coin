@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation'
 import type { ClassGroupRoster } from '@/lib/backoffice/types'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { paymentTone } from '@/components/backoffice/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 /**
  * Who is enrolled in this class group — the confirmed seats, read from
@@ -44,9 +45,10 @@ export function RosterCard({ roster }: { roster: ClassGroupRoster | null }) {
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-5">
         <p className="text-sm font-semibold text-ink">{t('roster.title')}</p>
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-sm tabular-nums text-muted-foreground">
           {/* The frozen seats went back to the class group (OOC-84): listed, not counted. */}
           {t('roster.count', { count: roster.items.filter((item) => item.academicStatus !== 'frozen').length })}
+          <HelpHint what={t('help.cg_roster_count_what')} how={t('help.cg_roster_count_how')} />
         </span>
       </div>
       {!full && <p className="px-5 pt-1 text-xs text-muted-foreground">{t('roster.limited_note')}</p>}

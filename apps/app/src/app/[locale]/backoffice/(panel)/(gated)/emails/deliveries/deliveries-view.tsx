@@ -16,6 +16,7 @@ import {
   rowActionClass,
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 
 /**
@@ -91,7 +92,12 @@ export function DeliveriesView({
             <tr>
               <th className={thClass}>{t('deliveries.col_student')}</th>
               <th className={thClass}>{t('deliveries.col_email')}</th>
-              <th className={thClass}>{t('deliveries.col_reason')}</th>
+              <th className={thClass}>
+                <span className="inline-flex items-center gap-1.5">
+                  {t('deliveries.col_reason')}
+                  <HelpHint what={t('help.admin_email_reason_what')} how={t('help.admin_email_reason_how')} />
+                </span>
+              </th>
               <th className={thClass}>{t('deliveries.col_when')}</th>
               <th className={thClass}>
                 <span className="sr-only">{t('common.actions')}</span>

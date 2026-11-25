@@ -4,6 +4,7 @@ import { formatDateNumeric, formatMoney } from '@/lib/portal/format'
 import type { Locale, Payment } from '@/lib/portal/types'
 import { Card, PageHeader, SectionTitle, StatusBadge } from '@/components/portal/ui'
 import { paymentTone } from '@/components/portal/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { MonthlyPaymentCard } from './monthly-payment-card'
 
 /**
@@ -21,6 +22,7 @@ export default async function PaymentsPage({
   const locale = raw as Locale
   setRequestLocale(raw)
   const t = await getTranslations('portal')
+  const tb = await getTranslations('bo')
 
   const { enrollments, requests } = await getPortalView()
 
@@ -126,7 +128,13 @@ export default async function PaymentsPage({
                       {t('payments.col_amount')}
                     </th>
                     <th className="px-5 py-3 text-center font-medium">
-                      {t('payments.col_status')}
+                      <span className="inline-flex items-center gap-1.5">
+                        {t('payments.col_status')}
+                        <HelpHint
+                          what={tb('help.portal_payment_status_what')}
+                          how={tb('help.portal_payment_status_how')}
+                        />
+                      </span>
                     </th>
                   </tr>
                 </thead>

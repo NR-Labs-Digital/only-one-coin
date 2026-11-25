@@ -37,6 +37,7 @@ import {
   teacherTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { AvailabilityFields, slotsAreValid } from './availability-fields'
 import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
 import { FieldMessage } from '../field-message'
@@ -303,6 +304,10 @@ export function TeacherFile({
               tone={teacherTone[status]}
               label={t(`teacher_status.${status}`)}
             />
+            {/* Staff's (?): the teacher reading their own file has nothing to change here. */}
+            {classGroupBase !== DOCENTE_BASE && (
+              <HelpHint what={t('help.teacher_status_what')} how={t('help.teacher_status_how')} />
+            )}
             {canEdit &&
               !confirmingExit &&
               (status === 'active' ? (
@@ -481,7 +486,10 @@ export function TeacherFile({
               </AutoGrid>
 
               <div>
-                <p className={`${labelClass} mb-2`}>{t('teachers.field_languages')}</p>
+                <p className={`${labelClass} mb-2 flex items-center gap-1.5`}>
+                  {t('teachers.field_languages')}
+                  <HelpHint what={t('help.teacher_languages_what')} how={t('help.teacher_languages_how')} />
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {choices.map((language) => {
                     const active = languageIds.includes(language.id)
@@ -605,7 +613,15 @@ export function TeacherFile({
       {tab === 'availability' && (
         <Card className="p-5">
           <div className="mb-1 flex items-center justify-between gap-3">
-            <SectionTitle icon="clock">{t('availability.title')}</SectionTitle>
+            <span className="flex items-center gap-1.5">
+              <SectionTitle icon="clock">{t('availability.title')}</SectionTitle>
+              {classGroupBase !== DOCENTE_BASE && (
+                <HelpHint
+                  what={t('help.teacher_availability_what')}
+                  how={t('help.teacher_availability_how')}
+                />
+              )}
+            </span>
             {canEdit &&
               !editingAvailability &&
               editButton(() => {

@@ -22,6 +22,7 @@ import {
 } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { OwnGradeRegisters } from './own-grade-registers'
 
@@ -150,7 +151,15 @@ export async function TeacherHome({
                 <th className={thClass}>{t('teacher_file.col_schedule')}</th>
                 <th className={thClass}>{t('teacher_file.col_period')}</th>
                 <th className={thClass}>{t('teacher_file.col_seats')}</th>
-                <th className={thClass}>{t('teacher_file.col_status')}</th>
+                <th className={thClass}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('teacher_file.col_status')}
+                    <HelpHint
+                      what={t('help.teach_class_status_what')}
+                      how={t('help.teach_class_status_how')}
+                    />
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>

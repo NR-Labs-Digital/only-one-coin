@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { stackLabels } from '@/lib/table-stack'
+import { HelpHint } from './help-hint'
 import { BoIcon, type BoIconName } from './icons'
 
 /**
@@ -168,11 +169,14 @@ export function StatCard({
   value,
   icon,
   tone = 'info',
+  hint,
 }: {
   label: string
   value: string
   icon: BoIconName
   tone?: Tone
+  /** The (?) beside the label, for a figure whose count is not obvious. */
+  hint?: { what: string; how?: string }
 }) {
   const iconTone: Record<Tone, string> = {
     success: 'bg-emerald-50 text-emerald-600',
@@ -185,8 +189,9 @@ export function StatCard({
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {label}
+          <p className="flex min-w-0 items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="min-w-0 truncate">{label}</span>
+            {hint && <HelpHint what={hint.what} how={hint.how} />}
           </p>
           <p className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
             {value}

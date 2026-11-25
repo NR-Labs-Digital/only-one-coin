@@ -325,6 +325,31 @@
     display: none;
   }
 
+  /* O (?) de uma coluna (skill screen-help) não pode sumir com o cabeçalho:
+     no celular, os títulos que levam um (?) ficam numa faixa acima da lista,
+     e só eles — o resto do cabeçalho continua escondido. */
+  table.table-stack > thead:has([data-help-hint]) {
+    display: block;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  table.table-stack > thead:has([data-help-hint]) > tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+  }
+
+  table.table-stack > thead > tr > th {
+    display: none;
+  }
+
+  table.table-stack > thead > tr > th:has([data-help-hint]) {
+    display: block;
+    width: auto;
+    padding: 0 !important;
+  }
+
   table.table-stack > tbody {
     display: block;
   }

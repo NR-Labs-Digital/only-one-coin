@@ -25,6 +25,7 @@ import {
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { fraudSignalTone, receiptStateTone, verdictTone } from '@/components/backoffice/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
 import {
@@ -389,6 +390,19 @@ export function ReviewQueueView({
     '',
   ]
 
+  /** The (?) of each heading, by position in `columns` — null where the
+   * heading explains itself. */
+  const columnHelp: ({ what: string; how?: string } | null)[] = [
+    null,
+    { what: t('help.payment_paid_for_what'), how: t('help.payment_paid_for_how') },
+    { what: t('help.payment_expected_what'), how: t('help.payment_expected_how') },
+    { what: t('help.payment_verdict_what'), how: t('help.payment_verdict_how') },
+    null,
+    { what: t('help.payment_deadline_what'), how: t('help.payment_deadline_how') },
+    { what: t('help.payment_receipt_state_what'), how: t('help.payment_receipt_state_how') },
+    { what: t('help.payment_signals_what'), how: t('help.payment_signals_how') },
+  ]
+
   return (
     <div className="flex flex-col gap-4">
       <Toolbar>
@@ -409,14 +423,17 @@ export function ReviewQueueView({
           />
         </label>
 
-        <button
-          type="button"
-          onClick={() => navigate({ sort: query.sort === 'priority' ? 'oldest' : 'priority' })}
-          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
-        >
-          <BoIcon name="sort" size={16} />
-          {t(query.sort === 'priority' ? 'review_queue.sort_priority' : 'review_queue.sort_oldest')}
-        </button>
+        <div className="flex items-center gap-1.5 self-start">
+          <button
+            type="button"
+            onClick={() => navigate({ sort: query.sort === 'priority' ? 'oldest' : 'priority' })}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+          >
+            <BoIcon name="sort" size={16} />
+            {t(query.sort === 'priority' ? 'review_queue.sort_priority' : 'review_queue.sort_oldest')}
+          </button>
+          <HelpHint what={t('help.payment_queue_sort_what')} how={t('help.payment_queue_sort_how')} />
+        </div>
 
         <button
           type="button"
@@ -456,11 +473,21 @@ export function ReviewQueueView({
             <TableShell columns={columns}>
               <thead>
                 <tr>
-                  {columns.slice(0, -1).map((label) => (
-                    <th key={label} className={thClass}>
-                      {label}
-                    </th>
-                  ))}
+                  {columns.slice(0, -1).map((label, index) => {
+                    const help = columnHelp[index]
+                    return (
+                      <th key={label} className={thClass}>
+                        {help ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            {label}
+                            <HelpHint what={help.what} how={help.how} />
+                          </span>
+                        ) : (
+                          label
+                        )}
+                      </th>
+                    )
+                  })}
                   <th className={thClass}>
                     <span className="sr-only">{t('common.actions')}</span>
                   </th>

@@ -14,6 +14,7 @@ import {
 import { groupByArea, profileHolds, type StaffProfileItem } from '@/lib/backoffice/permission-matrix'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -331,6 +332,7 @@ function ProfileEditor({
           {(editable ? willRequireMfa || profile.mfaRequired : profile.mfaRequired) && (
             <StatusBadge tone="warning" dot={false} label={t('permissions.mfa_required')} />
           )}
+          <HelpHint what={t('help.admin_perm_badges_what')} how={t('help.admin_perm_badges_how')} />
         </div>
         {note && <p className="text-sm text-muted-foreground">{t(note)}</p>}
         {editable && profile.role === null && (

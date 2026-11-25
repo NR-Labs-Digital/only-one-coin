@@ -10,6 +10,7 @@ import { Card, EmptyState, SectionTitle, StatusBadge } from '@/components/portal
 import { requestTone } from '@/components/portal/status-tone'
 import { Icon, type IconName } from '@/components/portal/icons'
 import { ReceiptUploadForm, type ReceiptSubmission } from '@/components/portal/receipt-upload'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { submitProcedureRequest, type ProcedureSubmitFailure } from '@/lib/portal/procedure-request'
 
 /**
@@ -62,6 +63,7 @@ export function RequestsView({
   initialRequests: RequestView[]
 }) {
   const t = useTranslations('portal')
+  const tb = useTranslations('bo')
   const locale = useLocale() as Locale
 
   const router = useRouter()
@@ -120,8 +122,10 @@ export function RequestsView({
       {/* Catalog — one list, and the form opens right under the row that was
           clicked instead of somewhere further down the page. */}
       <section>
-        <div className="mb-3">
+        <div className="mb-3 flex items-center gap-1.5">
           <SectionTitle>{t('requests.catalog_title')}</SectionTitle>
+          {/* Request + payment, decided by a person (OOC-83, OOC-33). */}
+          <HelpHint what={tb('help.portal_requests_what')} how={tb('help.portal_requests_how')} />
         </div>
         {procedures.length === 0 ? (
           /* No procedure has a price in force: the catalog says how to ask
@@ -252,8 +256,14 @@ export function RequestsView({
 
       {/* My requests */}
       <section>
-        <div className="mb-3">
+        {/* By the title, not in the Estado header: below 48rem the table
+            stacks and its header row is hidden. */}
+        <div className="mb-3 flex items-center gap-1.5">
           <SectionTitle>{t('requests.my_title')}</SectionTitle>
+          <HelpHint
+            what={tb('help.portal_request_status_what')}
+            how={tb('help.portal_request_status_how')}
+          />
         </div>
         {requests.length === 0 ? (
           <EmptyState

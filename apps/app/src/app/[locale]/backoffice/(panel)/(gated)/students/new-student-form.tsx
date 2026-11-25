@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import {
   CityField,
@@ -30,6 +30,7 @@ import { Card, OptionalMark, RequiredMark } from '@/components/backoffice/ui'
 import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { Toggle } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FieldMessage } from '@/components/backoffice/field-message'
 import type { EditableStudent } from './[studentId]/student-edit-form'
@@ -136,6 +137,10 @@ export function NewStudentForm({
   const locale = useLocale()
 
   const [student, setStudent] = useState<EditableStudent>(EMPTY_STUDENT)
+  /* Fields with a (?) are not wrapped in their <label>: a button inside it
+     would become the label's control. */
+  const nationalIdFieldId = useId()
+  const emailFieldId = useId()
   const [guardian, setGuardian] = useState<EditableGuardian>(EMPTY_GUARDIAN)
   const [guardianAsked, setGuardianAsked] = useState(false)
   const [pending, setPending] = useState(false)
@@ -371,25 +376,36 @@ export function NewStudentForm({
                 ))}
               </select>
             </label>
-            <label className={labelClass} onBlur={leave('student.nationalId')}>
-              <span>
-                {t('student_file.field_id_number')}
-                <RequiredMark label={t('common.required')} />
+            <div className={labelClass} onBlur={leave('student.nationalId')}>
+              <span className="flex items-center gap-1.5">
+                <label htmlFor={nationalIdFieldId}>
+                  {t('student_file.field_id_number')}
+                  <RequiredMark label={t('common.required')} />
+                </label>
+                <HelpHint
+                  what={t('help.stu_national_id_what')}
+                  how={t('help.stu_national_id_how_new')}
+                />
               </span>
               <input
+                id={nationalIdFieldId}
                 className={`${fieldClass} tabular-nums`}
                 value={student.nationalId}
                 onChange={(e) => set('nationalId', e.target.value)}
                 required
               />
               <FieldMessage code={shown('student.nationalId')} />
-            </label>
-            <label className={labelClass} onBlur={leave('student.email')}>
-              <span>
-                {t('student_file.field_email')}
-                <RequiredMark label={t('common.required')} />
+            </div>
+            <div className={labelClass} onBlur={leave('student.email')}>
+              <span className="flex items-center gap-1.5">
+                <label htmlFor={emailFieldId}>
+                  {t('student_file.field_email')}
+                  <RequiredMark label={t('common.required')} />
+                </label>
+                <HelpHint what={t('help.stu_email_what')} how={t('help.stu_email_how')} />
               </span>
               <input
+                id={emailFieldId}
                 type="email"
                 className={fieldClass}
                 value={student.email}
@@ -397,7 +413,7 @@ export function NewStudentForm({
                 required
               />
               <FieldMessage code={shown('student.email')} />
-            </label>
+            </div>
             <label className={labelClass} onBlur={leave('student.phone')}>
               <span>
                 {t('student_file.field_phone')}

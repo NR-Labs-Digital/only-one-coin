@@ -16,6 +16,7 @@ import { slotsLabel } from '@/lib/backoffice/schedule'
 import { Card, StatusBadge } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Sheet,
   SheetContent,
@@ -123,7 +124,11 @@ export function ModuleRunsCard({
     <Card className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-ink">{t('class_group_runs.title')}</h2>
+          <span className="flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-ink">{t('class_group_runs.title')}</h2>
+            {/* One (?) for the warnings every run card carries, not one per badge. */}
+            <HelpHint what={t('help.cg_runs_badges_what')} how={t('help.cg_runs_badges_how')} />
+          </span>
           <p className="mt-0.5 max-w-prose text-xs text-muted-foreground">{t('class_group_runs.subtitle')}</p>
         </div>
         {canManage && group.active && (
@@ -338,7 +343,10 @@ export function ModuleRunsCard({
           {progressing && (
             <>
               <DialogHeader className="gap-2 border-b border-line p-5 pr-14">
-                <DialogTitle className="text-base font-semibold text-ink">{t('progression.title')}</DialogTitle>
+                <span className="flex items-center gap-1.5">
+                  <DialogTitle className="text-base font-semibold text-ink">{t('progression.title')}</DialogTitle>
+                  <HelpHint what={t('help.cg_progression_what')} how={t('help.cg_progression_how')} />
+                </span>
                 <DialogDescription>
                   {progressing.module === null
                     ? group.code

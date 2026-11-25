@@ -7,6 +7,7 @@ import type { GradeRegister } from '@/lib/backoffice/grade-registers'
 import { confirmRegister, returnRegister, type RegisterStepResult } from '@/lib/backoffice/grades-client'
 import { Card } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { GradeRegisterSteps, GradeRegisterSummary } from '@/components/grades/grade-register-summary'
 import {
   Dialog,
@@ -39,6 +40,7 @@ export function GradeRegistersCard({
   classGroupId,
   registers,
   runLabels,
+  submissionHours,
   canEdit,
 }: {
   classGroupId: string
@@ -46,9 +48,12 @@ export function GradeRegistersCard({
   registers: GradeRegister[] | null
   /** Module group id → how the page names it. */
   runLabels: Record<string, string>
+  /** `platform_settings.grade_submission_hours`; null when the settings read failed. */
+  submissionHours: number | null
   canEdit: boolean
 }) {
   const t = useTranslations('bo.grade_register')
+  const tHelp = useTranslations('bo.help')
   const router = useRouter()
   const [acting, setActing] = useState<Acting | null>(null)
   const [note, setNote] = useState('')
@@ -56,7 +61,20 @@ export function GradeRegistersCard({
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
-  const header = <p className="text-sm font-semibold text-ink">{t('title')}</p>
+  const header = (
+    <span className="flex items-center gap-1.5">
+      <p className="text-sm font-semibold text-ink">{t('title')}</p>
+      {/* One (?) for the states and seals of every register below. */}
+      <HelpHint
+        what={tHelp('cg_register_states_what')}
+        how={
+          submissionHours === null
+            ? tHelp('cg_register_states_how_no_hours')
+            : tHelp('cg_register_states_how', { hours: submissionHours })
+        }
+      />
+    </span>
+  )
 
   if (registers === null) {
     return (

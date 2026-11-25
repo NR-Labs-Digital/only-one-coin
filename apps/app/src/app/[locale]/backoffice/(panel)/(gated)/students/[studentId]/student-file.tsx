@@ -33,6 +33,7 @@ import {
   academicTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { EnrollmentDetailSheet } from './enrollment-detail-sheet'
 import { GuardianEditForm, type EditableGuardian } from './guardian-edit-form'
 import { StudentDocuments } from './student-documents'
@@ -369,6 +370,7 @@ export function StudentFile({
                         tone="success"
                         label={t('student_file.consent_given')}
                       />
+                      <HelpHint what={t('help.stu_consent_what')} how={t('help.stu_consent_how')} />
                       <span>
                         {t('student_file.consent_detail', {
                           version: consent.version,
@@ -383,6 +385,7 @@ export function StudentFile({
                         tone="warning"
                         label={t('student_file.consent_missing')}
                       />
+                      <HelpHint what={t('help.stu_consent_what')} how={t('help.stu_consent_how')} />
                       <span>{t('student_file.consent_missing_detail')}</span>
                     </div>
                   ) : (
@@ -393,6 +396,7 @@ export function StudentFile({
                         tone="neutral"
                         label={t('student_file.consent_not_required')}
                       />
+                      <HelpHint what={t('help.stu_consent_what')} how={t('help.stu_consent_how')} />
                       <span>{t('student_file.consent_not_required_detail')}</span>
                     </div>
                   )}
@@ -439,9 +443,24 @@ export function StudentFile({
                 <tr>
                   <th className={thClass}>{t('student_file.col_course')}</th>
                   <th className={thClass}>{t('student_file.col_period')}</th>
-                  <th className={thClass}>{t('student_file.col_enrollment_status')}</th>
-                  <th className={thClass}>{t('student_file.col_seat')}</th>
-                  <th className={thClass}>{t('student_file.col_payment')}</th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('student_file.col_enrollment_status')}
+                      <HelpHint what={t('help.enr_status_what')} how={t('help.enr_status_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('student_file.col_seat')}
+                      <HelpHint what={t('help.enr_seat_what')} how={t('help.enr_seat_academic_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('student_file.col_payment')}
+                      <HelpHint what={t('help.payment_status_what')} how={t('help.payment_status_how')} />
+                    </span>
+                  </th>
                   <th className={thClass}>{t('student_file.col_amount')}</th>
                   <th className={thClass}>{t('student_file.col_created')}</th>
                 </tr>

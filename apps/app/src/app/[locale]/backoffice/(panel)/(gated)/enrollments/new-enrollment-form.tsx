@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { NationalIdType, PaymentMethod, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
@@ -26,6 +26,7 @@ import {
   StatusBadge,
 } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 
 const fieldClass =
@@ -147,6 +148,8 @@ export function NewEnrollmentForm({
   // A picker value (`lib/backoffice/class-group-offers`): a class group's id,
   // or its schedule — the API then takes the first one of it with room (OOC-145).
   const [pick, setPick] = useState('')
+  const classGroupFieldId = useId()
+  const operationFieldId = useId()
   // A full class group takes the seat only after an explicit "yes" (OOC-155).
   // `fullOnServer` covers the list on screen being a moment old: the API
   // said full for a group the picker still showed with room.
@@ -457,12 +460,19 @@ export function NewEnrollmentForm({
           </p>
         ) : (
           <AutoGrid min="18rem" gap="gap-3">
-            <label className="flex flex-col gap-1">
-              <span className={labelClass}>
-                {t('new_enrollment.field_class_group')}
-                <RequiredMark label={t('common.required')} />
+            <div className="flex flex-col gap-1">
+              <span className="flex items-center gap-1.5">
+                <label htmlFor={classGroupFieldId} className={labelClass}>
+                  {t('new_enrollment.field_class_group')}
+                  <RequiredMark label={t('common.required')} />
+                </label>
+                <HelpHint
+                  what={t('help.enr_new_class_group_what')}
+                  how={t('help.enr_new_class_group_how')}
+                />
               </span>
               <select
+                id={classGroupFieldId}
                 value={pick}
                 onChange={(event) => {
                   setPick(event.target.value)
@@ -484,7 +494,7 @@ export function NewEnrollmentForm({
                   memberLabel={(item) => `${item.code} · ${item.courseName}`}
                 />
               </select>
-            </label>
+            </div>
 
             {group && (
               <dl className="grid grid-cols-1 gap-x-4 gap-y-2 self-end rounded-lg border border-line bg-sky-soft px-3 py-2.5 @md/page:grid-cols-2">
@@ -520,27 +530,30 @@ export function NewEnrollmentForm({
         {/* Full: the seat goes above capacity only with an explicit yes
             (OOC-155), and the trail records who said it. */}
         {groupFull && (
-          <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-            <input
-              type="checkbox"
-              checked={overCapacityConfirmed}
-              onChange={(event) => setOverCapacityConfirmed(event.target.checked)}
-              className="mt-0.5 size-4 shrink-0 accent-amber-600"
-            />
-            <span>
-              {bySchedule && group ? (
-                <>
-                  <span className="block font-semibold">{t('class_group_picker.all_full_title')}</span>
-                  <span className="block text-xs">{t('class_group_picker.all_full_body', { code: group.code })}</span>
-                </>
-              ) : (
-                <>
-                  <span className="block font-semibold">{t('new_enrollment.over_capacity_title')}</span>
-                  <span className="block text-xs">{t('new_enrollment.over_capacity_body')}</span>
-                </>
-              )}
-            </span>
-          </label>
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+            <label className="flex flex-1 items-start gap-2">
+              <input
+                type="checkbox"
+                checked={overCapacityConfirmed}
+                onChange={(event) => setOverCapacityConfirmed(event.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-amber-600"
+              />
+              <span>
+                {bySchedule && group ? (
+                  <>
+                    <span className="block font-semibold">{t('class_group_picker.all_full_title')}</span>
+                    <span className="block text-xs">{t('class_group_picker.all_full_body', { code: group.code })}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block font-semibold">{t('new_enrollment.over_capacity_title')}</span>
+                    <span className="block text-xs">{t('new_enrollment.over_capacity_body')}</span>
+                  </>
+                )}
+              </span>
+            </label>
+            <HelpHint what={t('help.enr_over_capacity_what')} how={t('help.enr_over_capacity_how')} />
+          </div>
         )}
 
         {/* The price, shown and not asked for. */}
@@ -608,12 +621,16 @@ export function NewEnrollmentForm({
             </label>
           )}
 
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>
-              {t('new_enrollment.field_operation')}
-              <RequiredMark label={t('common.required')} />
+          <div className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5">
+              <label htmlFor={operationFieldId} className={labelClass}>
+                {t('new_enrollment.field_operation')}
+                <RequiredMark label={t('common.required')} />
+              </label>
+              <HelpHint what={t('help.enr_operation_what')} how={t('help.enr_operation_how')} />
             </span>
             <input
+              id={operationFieldId}
               value={operationNumber}
               onChange={(event) => setOperationNumber(event.target.value)}
               placeholder={t('new_enrollment.operation_placeholder')}
@@ -621,7 +638,7 @@ export function NewEnrollmentForm({
               aria-required="true"
               className={`${fieldClass} tabular-nums`}
             />
-          </label>
+          </div>
 
           {/* Mandatory (OOC-146). The image goes straight to the bucket on a
               signed POST and never through the app (CLAUDE.md §6); the upload

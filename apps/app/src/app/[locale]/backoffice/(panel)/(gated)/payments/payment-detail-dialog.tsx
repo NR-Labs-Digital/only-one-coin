@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { PaymentRow } from '@/lib/backoffice/types'
@@ -8,6 +9,7 @@ import { formatDateTime, formatMoney, type Locale } from '@/lib/format'
 import { formatPaymentMethod } from '@/lib/payment-method'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone } from '@/components/backoffice/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { LotBadge, LotEnrollments } from './payment-lot'
 import {
@@ -144,6 +146,12 @@ export function PaymentDetailDialog({
                   />
                   <DataRow
                     label={t('receipt_review.check_expected')}
+                    help={
+                      <HelpHint
+                        what={t('help.payment_expected_what')}
+                        how={t('help.payment_expected_how')}
+                      />
+                    }
                     value={formatMoney(
                       payment.expectedAmountCents,
                       payment.currency,
@@ -213,15 +221,19 @@ function DataRow({
   label,
   value,
   tone = 'default',
+  help,
 }: {
   label: string
   value: string
   tone?: 'default' | 'danger'
+  /** The (?) beside the label, when the row is not self-explanatory. */
+  help?: ReactNode
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line/70 py-2.5 last:border-b-0">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
+        {help}
       </dt>
       <dd
         className={`text-right text-sm font-medium tabular-nums ${

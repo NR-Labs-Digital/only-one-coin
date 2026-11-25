@@ -28,6 +28,7 @@ import { studentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { NewStudentForm } from './new-student-form'
 
 /** A pause in typing before the search reaches the URL — and the database. */
@@ -162,16 +163,19 @@ export function StudentsTable({
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
         {/* The counters come from the server, over the search alone. */}
-        <ListStateTabs
-          label={t('students.tabs_label')}
-          active={query.status}
-          onSelect={(status) => navigate({ status })}
-          tabs={STUDENT_DIRECTORY_TABS.map((tab) => ({
-            key: tab,
-            label: t(`students.tab_${tab}`),
-            count: tabCount[tab],
-          }))}
-        />
+        <div className="flex max-w-full items-center gap-1.5 self-start">
+          <ListStateTabs
+            label={t('students.tabs_label')}
+            active={query.status}
+            onSelect={(status) => navigate({ status })}
+            tabs={STUDENT_DIRECTORY_TABS.map((tab) => ({
+              key: tab,
+              label: t(`students.tab_${tab}`),
+              count: tabCount[tab],
+            }))}
+          />
+          <HelpHint what={t('help.stu_situation_what')} how={t('help.stu_situation_how')} />
+        </div>
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('students.search_label')}</span>
@@ -213,21 +217,24 @@ export function StudentsTable({
             {/* Who still owes the guardian's consent (OOC-72): the guardian
                 accepts in the portal, and the file's "send portal access"
                 asks again. An API from before it sends no count. */}
-            <button
-              type="button"
-              onClick={() => navigate({ consentPending: !query.consentPending })}
-              aria-pressed={query.consentPending}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                query.consentPending
-                  ? 'bg-brand-blue text-white'
-                  : 'border border-line bg-white text-muted-foreground hover:bg-cream hover:text-ink'
-              }`}
-            >
-              {t('students.consent_pending')}
-              <span className={query.consentPending ? 'text-white/70' : 'text-slate-400'}>
-                {counts.consentPending ?? 0}
-              </span>
-            </button>
+            <span className="inline-flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => navigate({ consentPending: !query.consentPending })}
+                aria-pressed={query.consentPending}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  query.consentPending
+                    ? 'bg-brand-blue text-white'
+                    : 'border border-line bg-white text-muted-foreground hover:bg-cream hover:text-ink'
+                }`}
+              >
+                {t('students.consent_pending')}
+                <span className={query.consentPending ? 'text-white/70' : 'text-slate-400'}>
+                  {counts.consentPending ?? 0}
+                </span>
+              </button>
+            <HelpHint what={t('help.stu_consent_pending_what')} how={t('help.stu_consent_how')} />
+            </span>
           </FiltersDropdown>
 
           {/* The exception path, not the way in: most students arrive by
@@ -305,7 +312,12 @@ export function StudentsTable({
                   <th className={thClass}>{t('students.col_student')}</th>
                   <th className={thClass}>{t('students.col_document')}</th>
                   <th className={thClass}>{t('students.col_status')}</th>
-                  <th className={`${thClass} text-right`}>{t('students.col_courses')}</th>
+                  <th className={`${thClass} text-right`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('students.col_courses')}
+                      <HelpHint what={t('help.stu_active_courses_what')} />
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

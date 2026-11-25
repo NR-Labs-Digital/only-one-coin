@@ -17,6 +17,7 @@ import {
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
 import { CatalogConfirmation } from '@/components/backoffice/retire-confirmation'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 const fieldClass =
   'w-full min-w-0 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -89,6 +90,7 @@ export function LanguagesView({ languages, canManage }: { languages: LanguageIte
               <BoIcon name="plus" size={16} />
               {t('languages.create')}
             </button>
+            <HelpHint what={t('help.acad_language_what')} how={t('help.acad_language_how')} />
             {error && (
               <p role="alert" className="basis-full text-sm text-red-700">
                 {t(`catalog_errors.${error}`)}
@@ -125,8 +127,14 @@ export function LanguagesView({ languages, canManage }: { languages: LanguageIte
                 <th className={thClass}>{t('languages.col_courses')}</th>
                 <th className={thClass}>{t('languages.col_teachers')}</th>
                 {canManage && (
-                  <th className={thClass}>
+                  <th className={`${thClass} text-right`}>
                     <span className="sr-only">{t('languages.col_actions')}</span>
+                    <span className="inline-flex align-middle">
+                      <HelpHint
+                        what={t('help.acad_language_manage_what')}
+                        how={t('help.acad_language_manage_how')}
+                      />
+                    </span>
                   </th>
                 )}
               </tr>

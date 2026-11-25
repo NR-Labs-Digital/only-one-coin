@@ -14,6 +14,7 @@ import {
   toolbarSearchClass,
 } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { Toast } from '@/components/backoffice/controls'
 import { Link, useRouter } from '@/i18n/navigation'
 import { NewCourseForm } from './new-course-form'
@@ -235,7 +236,15 @@ export function CoursesView({
                   {/* Units live in the header, not repeated down every cell. */}
                   <th className={thClass}>{t('courses.col_load')}</th>
                   <th className={thClass}>{t('courses.col_class_groups')}</th>
-                  <th className={thClass}>{t('courses.col_status')}</th>
+                  <th className={thClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('courses.col_status')}
+                      <HelpHint
+                        what={t('help.acad_course_status_what')}
+                        how={t('help.acad_course_status_how')}
+                      />
+                    </span>
+                  </th>
                   <th className={thClass}>{t('courses.plans')}</th>
                 </tr>
               </thead>

@@ -13,6 +13,7 @@ import {
   StatusBadge,
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { sendEmailProof } from '@/lib/backoffice/email-proof-client'
 import { ProofSend } from '../proof-send'
@@ -180,9 +181,15 @@ export function EmailFlowDetail({
         {/* The figures, and the proof */}
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3">
-            <SectionTitle icon="trend-up">
-              {t('emails.metrics_title', { days: windowDays })}
-            </SectionTitle>
+            <span className="flex items-center gap-1.5">
+              <SectionTitle icon="trend-up">
+                {t('emails.metrics_title', { days: windowDays })}
+              </SectionTitle>
+              <HelpHint
+                what={t('help.admin_email_counts_what', { days: windowDays })}
+                how={t('help.admin_email_failed_what')}
+              />
+            </span>
             <AutoGrid min="8rem" gap="gap-2" as="dl">
               <Metric
                 label={t('emails.metric_sent')}

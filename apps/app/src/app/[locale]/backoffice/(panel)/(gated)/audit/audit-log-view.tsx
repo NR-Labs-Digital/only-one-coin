@@ -19,6 +19,7 @@ import { paymentLedgerSearchParams } from '@/lib/backoffice/payment-ledger-query
 import { formatDateTime, type Locale } from '@/lib/format'
 import { Card, EmptyState, TableShell, tdClass, thClass, Toolbar } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 
 const fieldClass =
@@ -282,6 +283,7 @@ export function AuditLogView({
             <BoIcon name="download" size={16} />
             {exporting ? t('audit_log.exporting') : t('audit_log.export')}
           </button>
+          <HelpHint what={t('audit_log.export_hint')} />
         </div>
       </Toolbar>
 
@@ -301,7 +303,16 @@ export function AuditLogView({
                 <tr>
                   {columns.map((column) => (
                     <th key={column} className={thClass}>
-                      {column}
+                      {/* "What changed" is the column people misread: names of
+                          fields, never what they held (OOC-74). */}
+                      {column === t('audit_log.col_fields') ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {column}
+                          <HelpHint what={t('help.admin_audit_fields_what')} how={t('help.admin_audit_fields_how')} />
+                        </span>
+                      ) : (
+                        column
+                      )}
                     </th>
                   ))}
                 </tr>

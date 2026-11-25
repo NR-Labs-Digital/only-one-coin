@@ -7,6 +7,7 @@ import type { TeacherContract, TeacherDetail, TeacherStatus } from '@/lib/backof
 import { formatDateRange, formatDateTime, formatFileSize, type Locale } from '@/lib/format'
 import { ContractBadge } from '@/components/backoffice/contract-badge'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { ContractDownloadDialog } from './contract-download-dialog'
 import { downloadRecordedContract, filedContractUrl } from '@/lib/backoffice/contract-download'
 
@@ -103,8 +104,15 @@ export function ContractSection({
   return (
     <div className="mt-5 border-t border-line pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t('teachers.section_contract')}
+          {/* For staff who read or keep the contracts, not for the teacher's own file. */}
+          {(canEdit || canOpen) && (
+            <HelpHint
+              what={t('help.teacher_contract_what', { days: teacher.contractAlertDays })}
+              how={t('help.teacher_contract_how')}
+            />
+          )}
         </p>
         {/* Nothing to warn about off the roster: the countdown is there to stop
             somebody teaching on a lapsed contract, and nobody inactive is

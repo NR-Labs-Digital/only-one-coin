@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { formatDate, formatFileSize, type Locale } from '@/lib/format'
 import {
   attachmentDownloadUrl,
@@ -77,6 +78,7 @@ export function AttachmentsSection({
   canRevokeIssued?: boolean
 }) {
   const t = useTranslations('attachments')
+  const tb = useTranslations('bo')
   const locale = useLocale() as Locale
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -323,6 +325,12 @@ export function AttachmentsSection({
                 <span className="tabular-nums opacity-80">{countOf(filter)}</span>
               </button>
             ))}
+            <span className="inline-flex min-h-tap items-center">
+              <HelpHint
+                what={tb(`help.attach_origin_${variant}_what`)}
+                how={tb(`help.attach_origin_${variant}_how`)}
+              />
+            </span>
           </div>
 
           {issued === null && (

@@ -32,6 +32,7 @@ import { paymentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { PaymentDetailDialog } from './payment-detail-dialog'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { LotLine } from './payment-lot'
@@ -137,24 +138,28 @@ export function PaymentsView({
           icon="alert"
           tone="warning"
           label={t('payments.metric_in_review')}
+          hint={{ what: t('help.payment_metric_in_review_what') }}
           value={String(metrics.inReview)}
         />
         <StatCard
           icon="check"
           tone="success"
           label={t('payments.metric_approved')}
+          hint={{ what: t('help.payment_metric_decided_what') }}
           value={String(metrics.approved)}
         />
         <StatCard
           icon="payments"
           tone="info"
           label={t('payments.metric_collected')}
+          hint={{ what: t('help.payment_metric_decided_what') }}
           value={formatMoney(metrics.collectedCents, 'PEN', locale)}
         />
         <StatCard
           icon="close"
           tone="danger"
           label={t('payments.metric_rejected')}
+          hint={{ what: t('help.payment_metric_decided_what') }}
           value={String(metrics.rejected)}
         />
       </AutoGrid>
@@ -164,16 +169,19 @@ export function PaymentsView({
         {/* The tab drops the fine status: one from the other tab would be an
             empty list. The counters come from the server, under the search
             and the other filters. */}
-        <ListStateTabs
-          label={t('payments.state_label')}
-          active={query.state}
-          onSelect={(state) => navigate({ state, status: null })}
-          tabs={PAYMENT_LEDGER_STATES.map((state) => ({
-            key: state,
-            label: t(`payments.state_${state}`),
-            count: state === 'all' ? counts.open + counts.closed : counts[state],
-          }))}
-        />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <ListStateTabs
+            label={t('payments.state_label')}
+            active={query.state}
+            onSelect={(state) => navigate({ state, status: null })}
+            tabs={PAYMENT_LEDGER_STATES.map((state) => ({
+              key: state,
+              label: t(`payments.state_${state}`),
+              count: state === 'all' ? counts.open + counts.closed : counts[state],
+            }))}
+          />
+          <HelpHint what={t('help.payment_state_tabs_what')} how={t('help.payment_state_tabs_how')} />
+        </div>
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('payments.search_label')}</span>
@@ -277,9 +285,24 @@ export function PaymentsView({
               <thead>
                 <tr>
                   <th className={thClass}>{t('payments.col_student')}</th>
-                  <th className={thClass}>{t('payments.col_course')}</th>
-                  <th className={thClass}>{t('payments.col_amount')}</th>
-                  <th className={thClass}>{t('payments.col_status')}</th>
+                  <th className={thClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('payments.col_course')}
+                      <HelpHint what={t('help.payment_paid_for_what')} how={t('help.payment_paid_for_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('payments.col_amount')}
+                      <HelpHint what={t('help.payment_amount_what')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('payments.col_status')}
+                      <HelpHint what={t('help.payment_status_what')} how={t('help.payment_status_how')} />
+                    </span>
+                  </th>
                   <th className={thClass}>{t('payments.col_operation')}</th>
                   <th className={thClass}>
                     {t(closedTab ? 'payments.col_decided' : 'payments.col_submitted')}

@@ -8,6 +8,7 @@ import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDateRange, type Locale } from '@/lib/format'
 import { Meter, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { useClassGroupSelection } from './class-group-selection'
 
 /** How many cells a row has — a divider row spans all of them. */
@@ -46,6 +47,15 @@ export function ClassGroupTable({
     t('class_groups.col_status'),
   ]
   const columns = selection ? [t('class_groups.col_select'), ...dataColumns] : dataColumns
+  /* The (?) of the columns whose content is not obvious: teacher, seats, status. */
+  const columnHelp: ({ what: string; how: string } | null)[] = [
+    null,
+    { what: t('help.acad_teacher_col_what'), how: t('help.acad_teacher_col_how') },
+    null,
+    null,
+    { what: t('help.acad_seats_what'), how: t('help.acad_seats_how') },
+    { what: t('help.acad_status_what'), how: t('help.acad_status_how') },
+  ]
   return (
     <TableShell columns={columns}>
       <thead>
@@ -62,11 +72,21 @@ export function ClassGroupTable({
               />
             </th>
           )}
-          {dataColumns.map((column) => (
-            <th key={column} className={thClass}>
-              {column}
-            </th>
-          ))}
+          {dataColumns.map((column, index) => {
+            const help = columnHelp[index]
+            return (
+              <th key={column} className={thClass}>
+                {help ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {column}
+                    <HelpHint what={help.what} how={help.how} />
+                  </span>
+                ) : (
+                  column
+                )}
+              </th>
+            )
+          })}
         </tr>
       </thead>
       {children}

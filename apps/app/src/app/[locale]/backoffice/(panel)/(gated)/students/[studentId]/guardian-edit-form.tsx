@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { GuardianRelationship, NationalIdType } from '@/lib/backoffice/types'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpField } from '@/components/backoffice/help-hint'
 import { PhoneField } from '@/components/backoffice/phone-field'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FieldMessage } from '@/components/backoffice/field-message'
@@ -167,17 +168,25 @@ export function GuardianEditForm({
           />
           <FieldMessage code={fieldError('nationalId')} />
         </label>
-        <label className={labelClass}>
-          {t('student_file.field_email')}
-          <input
-            type="email"
-            className={fieldClass}
-            value={draft.email}
-            onChange={(e) => set('email', e.target.value)}
-            required
-          />
-          <FieldMessage code={fieldError('email')} />
-        </label>
+        <HelpField
+          label={t('student_file.field_email')}
+          what={t('help.stu_guardian_email_what')}
+          how={t('help.stu_guardian_email_how')}
+        >
+          {(id) => (
+            <>
+              <input
+                id={id}
+                type="email"
+                className={fieldClass}
+                value={draft.email}
+                onChange={(e) => set('email', e.target.value)}
+                required
+              />
+              <FieldMessage code={fieldError('email')} />
+            </>
+          )}
+        </HelpField>
         <label className={labelClass}>
           {t('student_file.field_phone')}
           <PhoneField

@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { ClassResources } from '../class-resources'
 import { DA_MARK, gradeSheet, isDa, parseGrade, type GradeSheetRow } from '@/lib/grade-sheet'
 import { BatchGrades, type BatchEntry } from '../batch-grades'
@@ -67,6 +67,7 @@ export function ClassGroupWorkspace({
   teacherName,
   tools,
   passingGrade,
+  submissionHours,
   grades,
   register,
 }: {
@@ -76,6 +77,8 @@ export function ClassGroupWorkspace({
   tools: WorkspaceTools
   /** Minimum final grade, from `platform_settings` (OOC-41). Null when the grade sheet is off or the read failed. */
   passingGrade: number | null
+  /** Hours to send the register after the module ends, from `platform_settings` (OOC-180). Null when unread. */
+  submissionHours: number | null
   /** The grades already posted (OOC-38). Null when the sheet is off or the read failed. */
   grades: TeachingGrade[] | null
   /** The run's open grade register (OOC-180). Null when the sheet is off or the read failed. */
@@ -350,22 +353,6 @@ export function ClassGroupWorkspace({
           <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
             <BoIcon name="students" size={16} className="text-brand-blue" />
             {t('class_list.students_title', { count: students.length })}
-            {grading && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="rounded-full text-muted-foreground transition hover:text-brand-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
-                  >
-                    <BoIcon name="help" size={15} />
-                    <span className="sr-only">{t('class_list.grades_locked')}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={6}>
-                  {t('class_list.grades_locked')}
-                </TooltipContent>
-              </Tooltip>
-            )}
           </h2>
           {grading && batchRows.length > 0 && (
             <button
@@ -382,10 +369,21 @@ export function ClassGroupWorkspace({
         {grading && register && (
           <div className="flex flex-col gap-3 border-b border-line bg-sky-soft/40 px-5 py-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t('grade_register.title')}
+                <HelpHint what={t('help.teach_register_what')} how={t('help.teach_register_how')} />
               </p>
-              <GradeRegisterSummary register={register} />
+              <div className="flex items-start gap-1.5">
+                <GradeRegisterSummary register={register} />
+                {submissionHours !== null && (
+                  <span className="mt-1">
+                    <HelpHint
+                      what={t('help.teach_register_deadline_what', { hours: submissionHours })}
+                      how={t('help.teach_register_deadline_how')}
+                    />
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{t(`grade_register.teacher_${register.status}`)}</p>
             </div>
             {gradingOpen && registerIsTeachers(register.status) && (
@@ -454,9 +452,19 @@ export function ClassGroupWorkspace({
           <TableShell columns={columns}>
             <thead>
               <tr>
-                {columns.map((label) => (
+                {columns.map((label, index) => (
                   <th key={label} className={thClass}>
-                    {label}
+                    {index === 1 && passingGrade !== null ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        {label}
+                        <HelpHint
+                          what={t('help.teach_grade_what', { grade: formatNumber(passingGrade, locale) })}
+                          how={t('help.teach_grade_how')}
+                        />
+                      </span>
+                    ) : (
+                      label
+                    )}
                   </th>
                 ))}
               </tr>
@@ -542,6 +550,7 @@ export function ClassGroupWorkspace({
             <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
               <BoIcon name="trend-up" size={16} className="text-brand-blue" />
               {t('progression.title')}
+              <HelpHint what={t('help.teach_progression_what')} how={t('help.teach_progression_how')} />
             </h2>
             {!progressionOpen && (
               <button

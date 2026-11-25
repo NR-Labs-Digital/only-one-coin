@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { EnrollmentRow, NationalIdType } from '@/lib/backoffice/types'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ export function TransferEnrollmentDialog({
   const t = useTranslations('bo')
 
   const [query, setQuery] = useState('')
+  const studentFieldId = useId()
   const [matches, setMatches] = useState<StudentMatch[] | null>(null)
   const [picked, setPicked] = useState<StudentMatch | null>(null)
   const [reason, setReason] = useState('')
@@ -168,7 +170,10 @@ export function TransferEnrollmentDialog({
             <div className="flex flex-col gap-4 p-5">
               {picked ? (
                 <div className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('transfer_enrollment.field_student')}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className={labelClass}>{t('transfer_enrollment.field_student')}</span>
+                    <HelpHint what={t('help.enr_transfer_student_what')} how={t('help.enr_transfer_student_how')} />
+                  </span>
                   <div className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2">
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate text-sm font-medium text-ink">{`${picked.firstName} ${picked.lastName}`}</span>
@@ -189,8 +194,13 @@ export function TransferEnrollmentDialog({
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1">
-                    <span className={labelClass}>{t('transfer_enrollment.field_student')}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-1.5">
+                      <label htmlFor={studentFieldId} className={labelClass}>
+                        {t('transfer_enrollment.field_student')}
+                      </label>
+                      <HelpHint what={t('help.enr_transfer_student_what')} how={t('help.enr_transfer_student_how')} />
+                    </span>
                     <span className="relative">
                       <BoIcon
                         name="search"
@@ -198,6 +208,7 @@ export function TransferEnrollmentDialog({
                         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                       />
                       <input
+                        id={studentFieldId}
                         type="search"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
@@ -205,7 +216,7 @@ export function TransferEnrollmentDialog({
                         className={`${fieldClass} pl-9`}
                       />
                     </span>
-                  </label>
+                  </div>
                   {offered &&
                     (offered.length === 0 ? (
                       <p className="text-xs text-muted-foreground">{t('transfer_enrollment.no_students_found')}</p>

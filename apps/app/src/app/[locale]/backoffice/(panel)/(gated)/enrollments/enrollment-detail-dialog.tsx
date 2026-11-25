@@ -13,6 +13,7 @@ import {
   seatTone,
 } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -94,6 +95,10 @@ export function EnrollmentDetailDialog({
                 <StatusBadge
                   tone={paymentTone[enrollment.paymentStatus]}
                   label={t(`payment_status.${enrollment.paymentStatus}`)}
+                />
+                <HelpHint
+                  what={t('help.enr_detail_badges_what')}
+                  how={t('help.enr_detail_badges_how')}
                 />
               </div>
             </DialogHeader>

@@ -22,6 +22,7 @@ import {
 } from '@/components/backoffice/ui'
 import { AcademicTabs } from '@/components/backoffice/academic-tabs'
 import { registerTone } from '@/components/grades/register-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 const STATUS_FILTERS = ['open', 'draft', 'in_review', 'returned', 'official', 'all'] as const
 type StatusFilter = (typeof STATUS_FILTERS)[number]
@@ -102,6 +103,21 @@ export default async function GradeRegistersPage({
     t('grade_register.col_deadline'),
   ]
 
+  /* The (?) of the columns that carry a rule: the count, the states, the deadline. */
+  const columnHelp: ({ what: string; how: string } | null)[] = [
+    null,
+    null,
+    null,
+    { what: t('help.acad_register_grades_what'), how: t('help.acad_register_grades_how') },
+    { what: t('help.acad_register_status_what'), how: t('help.acad_register_status_how') },
+    result
+      ? {
+          what: t('help.acad_register_deadline_what', { hours: result.submissionHours }),
+          how: t('help.acad_register_deadline_how'),
+        }
+      : null,
+  ]
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('nav.academic')} />
@@ -146,9 +162,17 @@ export default async function GradeRegistersPage({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
-          {t('grade_register.filter_status')}
-          <select name="status" defaultValue={status} className={selectClass}>
+        {/* Not a <label> around the select: the (?) is a button, and a button
+            inside the label would become its control. */}
+        <div className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <label htmlFor="grade-register-status">{t('grade_register.filter_status')}</label>
+            <HelpHint
+              what={t('help.acad_register_filter_what')}
+              how={t('help.acad_register_filter_how')}
+            />
+          </span>
+          <select id="grade-register-status" name="status" defaultValue={status} className={selectClass}>
             {STATUS_FILTERS.map((value) => (
               <option key={value} value={value}>
                 {value === 'open' || value === 'all'
@@ -157,7 +181,7 @@ export default async function GradeRegistersPage({
               </option>
             ))}
           </select>
-        </label>
+        </div>
         <label className="flex min-h-tap items-center gap-2 text-sm text-ink sm:min-h-0 sm:pb-2">
           <input type="checkbox" name="overdue" value="true" defaultChecked={overdue} />
           {t('grade_register.filter_overdue')}
@@ -191,11 +215,21 @@ export default async function GradeRegistersPage({
           <TableShell columns={columns}>
             <thead>
               <tr>
-                {columns.map((label) => (
-                  <th key={label} className={thClass}>
-                    {label}
-                  </th>
-                ))}
+                {columns.map((label, index) => {
+                  const help = columnHelp[index]
+                  return (
+                    <th key={label} className={thClass}>
+                      {help ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {label}
+                          <HelpHint what={help.what} how={help.how} />
+                        </span>
+                      ) : (
+                        label
+                      )}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>

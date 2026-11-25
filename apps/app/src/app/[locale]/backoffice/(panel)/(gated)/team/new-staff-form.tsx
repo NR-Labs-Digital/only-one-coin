@@ -10,6 +10,7 @@ import { buildInvitePath } from '@/lib/backoffice/invite'
 import { staffAccountOrigin } from '@/lib/hosts'
 import { Card, RequiredMark } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpField } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { formatDate, type Locale } from '@/lib/format'
 
@@ -274,8 +275,14 @@ export function NewStaffForm({
         {/* Capped: a lone select stretched across a wide panel reads as a
             form with a field missing. */}
         <AutoGrid min="15rem" gap="gap-3" className="max-w-3xl">
-          <Labelled label={t('team.field_role')} required>
+          <HelpField
+            label={t('team.field_role')}
+            what={t('help.admin_team_invite_role_what')}
+            how={t('help.admin_team_invite_role_how')}
+          >
+            {(id) => (
             <select
+              id={id}
               value={cargo}
               onChange={(event) => setCargo(event.target.value)}
               className={fieldClass}
@@ -291,7 +298,8 @@ export function NewStaffForm({
                 </option>
               ))}
             </select>
-          </Labelled>
+            )}
+          </HelpField>
         </AutoGrid>
 
         {isTeacher &&
