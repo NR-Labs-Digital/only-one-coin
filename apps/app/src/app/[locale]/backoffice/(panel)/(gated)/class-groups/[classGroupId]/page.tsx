@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
@@ -41,6 +42,7 @@ import {
 } from '@/components/backoffice/ui'
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { ClassGroupActions } from './class-group-actions'
 import { TeacherCell } from '../class-group-table'
 import { WaitlistCard } from './waitlist-card'
@@ -157,11 +159,12 @@ export default async function ClassGroupDetailPage({
               {`${group.language} · ${group.academicPeriodName}`}
             </p>
           </div>
-          <span className="flex flex-wrap gap-1.5">
+          <span className="flex flex-wrap items-center gap-1.5">
             <StatusBadge
               tone={classGroupTone[group.status]}
               label={t(`class_group_status.${group.status}`)}
             />
+            <HelpHint what={t('help.cg_status_what')} how={t('help.cg_status_how')} />
             {!group.active && <StatusBadge tone="neutral" label={t('class_groups.retired')} />}
             {!group.courseActive && (
               <StatusBadge tone="warning" label={t('class_groups.course_off_catalog')} />
@@ -191,20 +194,32 @@ export default async function ClassGroupDetailPage({
           <Field label={t('class_group.field_end')}>
             {group.endsOn ? formatDate(group.endsOn, locale as Locale) : t('class_groups.no_dates')}
           </Field>
-          <Field label={t('class_group.field_window')}>
-            {group.enrollmentOpensAt === null && group.enrollmentClosesAt === null
-              ? t('class_group.window_open_ended')
-              : (
-                <>
-                  {windowSide(group.enrollmentOpensAt)} – {windowSide(group.enrollmentClosesAt)}
-                </>
-              )}
-          </Field>
-          <SeatsField
+          <HintedField
+            label={t('class_group.field_window')}
+            hint={<HelpHint what={t('help.cg_window_what')} how={t('help.cg_window_how')} />}
+          >
+            <span className="block truncate text-sm font-medium text-ink">
+              {group.enrollmentOpensAt === null && group.enrollmentClosesAt === null
+                ? t('class_group.window_open_ended')
+                : (
+                  <>
+                    {windowSide(group.enrollmentOpensAt)} – {windowSide(group.enrollmentClosesAt)}
+                  </>
+                )}
+            </span>
+          </HintedField>
+          <HintedField
             label={t('class_group.field_seats')}
-            taken={group.seatsTaken}
-            capacity={group.capacity}
-          />
+            hint={<HelpHint what={t('help.cg_seats_what')} how={t('help.cg_seats_how')} />}
+          >
+            <SeatsValue
+              taken={group.seatsTaken}
+              over={group.seatsOver}
+              capacity={group.capacity}
+              overLabel={t('class_groups.seats_over', { count: group.seatsOver })}
+              overHint={t('class_groups.seats_over_hint', { count: group.seatsOver })}
+            />
+          </HintedField>
         </AutoGrid>
 
         {deadline && (
@@ -212,6 +227,10 @@ export default async function ClassGroupDetailPage({
             <span className="flex items-center gap-2 text-sm font-semibold text-ink">
               <BoIcon name="clock" size={16} />
               {t('class_group.deadline_title')}
+              <HelpHint
+                what={t('help.cg_cert_deadline_what', { days: settings?.certificateDeadlineBusinessDays ?? 0 })}
+                how={t('help.cg_cert_deadline_how')}
+              />
             </span>
             <span className="text-sm text-ink">
               {t('class_group.deadline_value', {
@@ -259,6 +278,8 @@ export default async function ClassGroupDetailPage({
             classGroupId={group.id}
             registers={gradeRegisters}
             runLabels={runLabels}
+            // The deadline's hours are the backoffice's (OOC-41); null says it without a number.
+            submissionHours={settings?.gradeSubmissionHours ?? null}
             canEdit={canEditGrades(staff)}
           />
           <GradesCard
@@ -307,26 +328,62 @@ function BackToList({ t }: { t: Translate }) {
   )
 }
 
-function SeatsField({
+/**
+ * A label/value pair like `Field`, with a (?) beside the label — `Field` takes
+ * its label as text only.
+ */
+function HintedField({
   label,
-  taken,
-  capacity,
+  hint,
+  children,
 }: {
   label: string
-  taken: number
-  capacity: number
+  hint: ReactNode
+  children: ReactNode
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
+        {hint}
       </dt>
-      <dd className="mt-0.5 flex flex-col gap-1.5">
-        <span className="text-sm font-medium tabular-nums text-ink">
-          {`${taken} / ${capacity}`}
-        </span>
-        <Meter value={taken} max={capacity} tone={seatPressureTone(taken, capacity)} />
-      </dd>
+      <dd className="mt-0.5">{children}</dd>
     </div>
+  )
+}
+
+/**
+ * Seats as Académico's list reads them: "30 / 30 +2", the seats above capacity
+ * (OOC-155) apart, so "30 / 30" keeps meaning the class group's real size.
+ */
+function SeatsValue({
+  taken,
+  over,
+  capacity,
+  overLabel,
+  overHint,
+}: {
+  taken: number
+  over: number
+  capacity: number
+  overLabel: string
+  overHint: string
+}) {
+  return (
+    <span className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium tabular-nums text-ink">
+        {`${taken} / ${capacity}`}
+        {over > 0 && (
+          <span className="ml-1 text-amber-700" title={overHint}>
+            {overLabel}
+          </span>
+        )}
+      </span>
+      <Meter
+        value={Math.min(capacity, taken + over)}
+        max={capacity}
+        tone={seatPressureTone(taken + over, capacity)}
+      />
+    </span>
   )
 }

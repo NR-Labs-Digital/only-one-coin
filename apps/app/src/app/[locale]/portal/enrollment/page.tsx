@@ -15,6 +15,7 @@ import { StatusTabs, type StatusTab } from '@/components/portal/status-tabs'
 import { Icon } from '@/components/portal/icons'
 import { ReceiptLink } from '@/components/portal/receipt-link'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 /**
  * Mi matrícula, one tab per enrollment state. Four enrollments stacked in one
@@ -57,11 +58,21 @@ const noteFor: Partial<Record<PaymentStatus, { key: string; className: string }>
  * Label over value, not label beside value: a fixed label column leaves a wide
  * empty gutter and drags a rule across the whole card for every field.
  */
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Row({
+  label,
+  help,
+  children,
+}: {
+  label: string
+  /** The (?) by the label, for what a student would not know. */
+  help?: { what: string; how?: string }
+  children: ReactNode
+}) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
+        {help && <HelpHint what={help.what} how={help.how} />}
       </dt>
       <dd className="mt-0.5 text-sm text-ink">{children}</dd>
     </div>
@@ -76,6 +87,7 @@ export default async function EnrollmentPage({
   const { locale: raw } = await params
   setRequestLocale(raw)
   const t = await getTranslations('portal')
+  const tb = await getTranslations('bo')
 
   const flags = await getFeatureFlags('portal')
   const { enrollments } = await getPortalView()
@@ -145,7 +157,13 @@ export default async function EnrollmentPage({
 
         <AutoGrid as="dl" min="11rem" gap="gap-x-6 gap-y-4" className="mt-4">
           <Row label={t('enrollments.days_label')}>{days}</Row>
-          <Row label={t('enrollments.billing_label')}>
+          <Row
+            label={t('enrollments.billing_label')}
+            help={{
+              what: tb('help.portal_billing_mode_what'),
+              how: tb('help.portal_billing_mode_how'),
+            }}
+          >
             {t(`billing_mode.${e.billingMode}`)}
           </Row>
           <Row label={t('enrollments.code_label')}>

@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { EnrollmentRow, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDate, type Locale } from '@/lib/format'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ export function FreezeEnrollmentDialog({
   const [runs, setRuns] = useState<ReturnRun[] | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
   const [runId, setRunId] = useState('')
+  const runFieldId = useId()
   const [fullOnServer, setFullOnServer] = useState(false)
   const [overCapacityConfirmed, setOverCapacityConfirmed] = useState(false)
   const [pending, setPending] = useState(false)
@@ -167,8 +169,11 @@ export function FreezeEnrollmentDialog({
         {enrollment && (
           <>
             <DialogHeader className="gap-2 border-b border-line p-5 pr-14">
-              <DialogTitle className="text-base font-semibold text-ink">
+              <DialogTitle className="flex items-center gap-1.5 text-base font-semibold text-ink">
                 {t(mode === 'freeze' ? 'freeze_enrollment.freeze_title' : 'freeze_enrollment.return_title')}
+                {mode === 'freeze' && (
+                  <HelpHint what={t('help.enr_freeze_what')} how={t('help.enr_freeze_how')} />
+                )}
               </DialogTitle>
               <DialogDescription>
                 {mode === 'freeze'
@@ -203,9 +208,15 @@ export function FreezeEnrollmentDialog({
                 <p className="text-sm text-muted-foreground">{t('freeze_enrollment.no_runs')}</p>
               ) : (
                 <>
-                  <label className="flex flex-col gap-1">
-                    <span className={labelClass}>{t('freeze_enrollment.field_run')}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-1.5">
+                      <label htmlFor={runFieldId} className={labelClass}>
+                        {t('freeze_enrollment.field_run')}
+                      </label>
+                      <HelpHint what={t('help.enr_return_run_what')} how={t('help.enr_return_run_how')} />
+                    </span>
                     <select
+                      id={runFieldId}
                       value={runId}
                       onChange={(event) => {
                         setRunId(event.target.value)
@@ -222,7 +233,7 @@ export function FreezeEnrollmentDialog({
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
                   {run && (
                     <p className="text-xs text-muted-foreground">
                       {t('freeze_enrollment.seats', { taken: run.seatsTaken, capacity: run.capacity })}
@@ -230,7 +241,10 @@ export function FreezeEnrollmentDialog({
                   )}
                   {runFull && (
                     <div className="flex flex-col gap-2 rounded-lg border border-amber-600/20 bg-amber-50 p-3">
-                      <p className="text-sm font-semibold text-amber-900">{t('freeze_enrollment.over_capacity_title')}</p>
+                      <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                        {t('freeze_enrollment.over_capacity_title')}
+                        <HelpHint what={t('help.enr_over_capacity_what')} how={t('help.enr_over_capacity_how')} />
+                      </p>
                       <label className="flex items-start gap-2 text-sm text-amber-900">
                         <input
                           type="checkbox"

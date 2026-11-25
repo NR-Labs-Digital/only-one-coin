@@ -78,6 +78,7 @@ export default async function TeacherClassGroupPage({
         notices: flags['teacher.notices'],
       }}
       passingGrade={settings?.passingGrade ?? null}
+      submissionHours={settings?.gradeSubmissionHours ?? null}
       grades={grades}
       register={register}
     />

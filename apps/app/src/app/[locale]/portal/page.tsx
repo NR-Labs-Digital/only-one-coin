@@ -8,6 +8,7 @@ import { Card, ProgressBar, SectionTitle, StatusBadge } from '@/components/porta
 import { enrollmentTone } from '@/components/portal/status-tone'
 import { Icon, type IconName } from '@/components/portal/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 /**
  * Dashboard: greeting, the blue next-class bar, the courses right under it,
@@ -22,6 +23,7 @@ export default async function DashboardPage({
   const locale = raw as Locale
   setRequestLocale(raw)
   const t = await getTranslations('portal')
+  const tb = await getTranslations('bo')
 
   const flags = await getFeatureFlags('portal')
   const { student, enrollments, nextClass } = await getPortalView()
@@ -181,6 +183,10 @@ export default async function DashboardPage({
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
                   <Icon name="lock" size={13} className="shrink-0" />
                   {t(`access_lock.${e.classAccessLock}`)}
+                  <HelpHint
+                    what={tb('help.portal_class_lock_what')}
+                    how={tb('help.portal_class_lock_how')}
+                  />
                 </p>
               )}
               {e.status === 'under_review' ? (
@@ -195,6 +201,10 @@ export default async function DashboardPage({
                   <p className="flex items-center gap-1.5 text-xs font-medium text-brand-yellow-deep">
                     <Icon name="clock" size={13} className="shrink-0" />
                     {t('enrollment_status.under_review')}
+                    <HelpHint
+                      what={tb('help.portal_enrollment_review_what')}
+                      how={tb('help.portal_enrollment_review_how')}
+                    />
                   </p>
                 </div>
               ) : (

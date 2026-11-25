@@ -18,6 +18,7 @@ import {
   toolbarSearchClass,
   rowActionClass,
 } from '@/components/backoffice/ui'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { EmailFlowState } from './email-flow-state'
 
@@ -43,7 +44,14 @@ const AUDIENCE_FILTERS: AudienceFilter[] = ['all', 'external', 'internal']
  * read its webhook yet: the figure says "unavailable", never a zero that reads
  * as "none".
  */
-export function EmailsView({ flows }: { flows: EmailFlow[] }) {
+export function EmailsView({
+  flows,
+  windowDays,
+}: {
+  flows: EmailFlow[]
+  /** The counting window the API used, so the (?) states it, never a constant. */
+  windowDays: number
+}) {
   const t = useTranslations('bo')
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -213,9 +221,27 @@ export function EmailsView({ flows }: { flows: EmailFlow[] }) {
               <tr>
                 <th className={thClass}>{t('emails.col_flow')}</th>
                 <th className={thClass}>{t('emails.col_audience')}</th>
-                <th className={thClass}>{t('emails.col_state')}</th>
-                <th className={`${thClass} text-right`}>{t('emails.col_sent')}</th>
-                <th className={`${thClass} text-right`}>{t('emails.col_failed')}</th>
+                <th className={thClass}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('emails.col_state')}
+                    <HelpHint what={t('help.admin_email_state_what')} how={t('help.admin_email_state_how')} />
+                  </span>
+                </th>
+                <th className={`${thClass} text-right`}>
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {t('emails.col_sent')}
+                    <HelpHint
+                      what={t('help.admin_email_counts_what', { days: windowDays })}
+                      how={t('help.admin_email_counts_how')}
+                    />
+                  </span>
+                </th>
+                <th className={`${thClass} text-right`}>
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {t('emails.col_failed')}
+                    <HelpHint what={t('help.admin_email_failed_what')} how={t('help.admin_email_failed_how')} />
+                  </span>
+                </th>
                 <th className={thClass}>
                   <span className="sr-only">{t('common.actions')}</span>
                 </th>

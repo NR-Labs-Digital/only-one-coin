@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { issuePortalAccess, type IssuePortalAccessOutcome } from '@/lib/backoffice/portal-access-client'
 import type { PortalAccessState } from '@/lib/backoffice/types'
 
@@ -55,6 +56,7 @@ export function PortalAccessControl({
         <BoIcon name="email" size={14} />
         {t(`student_file.portal_access_state.${state}`)}
       </span>
+      <HelpHint what={t('help.stu_portal_access_what')} how={t('help.stu_portal_access_how')} />
       {canIssue && (
         <button
           type="button"

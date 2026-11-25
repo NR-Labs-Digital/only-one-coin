@@ -31,6 +31,8 @@ API no ar.
 O que já fala com `apps/api` e o que ainda é mock. Atualize a linha no mesmo PR
 que muda a tela.
 
+Toda tela do backoffice, do portal do docente e do portal do aluno explica o que não é óbvio pelo (?) (`components/backoffice/help-hint.tsx`, textos em `bo.help`, nos três idiomas) — varredura de 25/11/2026; tela nova segue a skill `screen-help`.
+
 | Tela | Estado |
 | --- | --- |
 | Libro de Reclamaciones (`/libro-de-reclamaciones`) | **Real** (OOC-63, em PR): formulário público trilíngue, sem sessão, na mesma moldura do checkout (`components/public-form-shell.tsx`): fornecedor impresso de `LEGAL_IDENTITY`, consumidor, apoderado se menor, bem contratado, reclamo × queja com as definições, detalhe e pedido, declaração jurada e política de privacidade; Turnstile; valida com o mesmo `ComplaintFormSchema` da API e envia a `POST /public/complaints`; a confirmação mostra o número da hoja e avisa da cópia por e-mail. Atrás da flag `complaints` (desligada em produção até a caixa do backoffice, OOC-58): desligada, o endereço redireciona para o Google Forms antigo. A landing linka no rodapé de toda página. |

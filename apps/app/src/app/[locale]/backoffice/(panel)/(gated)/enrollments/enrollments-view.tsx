@@ -35,6 +35,7 @@ import {
 import { BoIcon } from '@/components/backoffice/icons'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { ListStateTabs } from '@/components/backoffice/list-state-tabs'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { EnrollmentDetailDialog } from './enrollment-detail-dialog'
 import { MoveEnrollmentDialog } from './move-enrollment-dialog'
 import { FreezeEnrollmentDialog, type FreezeMode } from './freeze-enrollment-dialog'
@@ -197,9 +198,14 @@ export function EnrollmentsView({
         {/* What each channel brought in the period (OOC-139) — the same rows
             as the total, so the three add up to it. */}
         <Card className="p-4">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {t('enrollments.metric_by_origin')}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="min-w-0 truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('enrollments.metric_by_origin')}
+            </p>
+            {/* One (?) for the whole header: the three cards count different
+                rows, and none of them follows the filters below. */}
+            <HelpHint what={t('help.enr_metrics_what')} how={t('help.enr_metrics_how')} />
+          </div>
           <dl className="mt-2 flex flex-col gap-1">
             {ENROLLMENT_SOURCES.map((origin) => (
               <div key={origin} className="flex items-baseline justify-between gap-3 text-sm">
@@ -215,16 +221,19 @@ export function EnrollmentsView({
       <div className="flex flex-col gap-3">
         {/* The counters come from the server, under the search and the other
             filters. */}
-        <ListStateTabs
-          label={t('enrollments.state_label')}
-          active={query.state}
-          onSelect={(state) => navigate({ state })}
-          tabs={ENROLLMENT_LEDGER_STATES.map((state) => ({
-            key: state,
-            label: t(`enrollments.state_${state}`),
-            count: counts[state],
-          }))}
-        />
+        <div className="flex max-w-full items-center gap-1.5 self-start">
+          <ListStateTabs
+            label={t('enrollments.state_label')}
+            active={query.state}
+            onSelect={(state) => navigate({ state })}
+            tabs={ENROLLMENT_LEDGER_STATES.map((state) => ({
+              key: state,
+              label: t(`enrollments.state_${state}`),
+              count: counts[state],
+            }))}
+          />
+          <HelpHint what={t('help.enr_ledger_state_what')} how={t('help.enr_ledger_state_how')} />
+        </div>
         <Toolbar>
           <label className={toolbarSearchClass}>
             <span className="sr-only">{t('enrollments.search_label')}</span>
@@ -385,10 +394,30 @@ export function EnrollmentsView({
                   {showGroupStatus && (
                     <th className={thClass}>{t('enrollments.col_class_group_status')}</th>
                   )}
-                  <th className={thClass}>{t('enrollments.col_status')}</th>
-                  <th className={thClass}>{t('enrollments.col_seat')}</th>
-                  <th className={thClass}>{t('enrollments.col_payment')}</th>
-                  <th className={thClass}>{t('enrollments.col_origin')}</th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('enrollments.col_status')}
+                      <HelpHint what={t('help.enr_status_what')} how={t('help.enr_status_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('enrollments.col_seat')}
+                      <HelpHint what={t('help.enr_seat_what')} how={t('help.enr_seat_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('enrollments.col_payment')}
+                      <HelpHint what={t('help.payment_status_what')} how={t('help.payment_status_how')} />
+                    </span>
+                  </th>
+                  <th className={thClass}>
+                    <span className="flex items-center gap-1.5">
+                      {t('enrollments.col_origin')}
+                      <HelpHint what={t('help.enr_origin_what')} how={t('help.enr_origin_how')} />
+                    </span>
+                  </th>
                   <th className={thClass}>{t('enrollments.col_created')}</th>
                 </tr>
               </thead>

@@ -34,6 +34,7 @@ import {
   thClass,
   Toolbar,
 } from '@/components/backoffice/ui'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import {
   BarSeries,
@@ -581,15 +582,38 @@ export function ReportsView({ report }: { report: Report }) {
               <tr>
                 <th className={thClass}>{t(`reports.col_${dimension}`)}</th>
                 <th className={`${thClass} text-right`}>
-                  {t('reports.col_enrollments')}
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {t('reports.col_enrollments')}
+                    <HelpHint
+                      what={t('help.admin_report_enrollments_what')}
+                      how={t('help.admin_report_enrollments_how')}
+                    />
+                  </span>
                 </th>
                 <th className={`${thClass} text-right`}>
-                  {t('reports.col_collected')}
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {t('reports.col_collected')}
+                    <HelpHint
+                      what={t('help.admin_report_collected_what')}
+                      how={t('help.admin_report_collected_how')}
+                    />
+                  </span>
                 </th>
                 <th className={`${thClass} text-right`}>
-                  {t('reports.col_pending')}
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {t('reports.col_pending')}
+                    <HelpHint what={t('help.admin_report_pending_what')} />
+                  </span>
                 </th>
-                <th className={thClass}>{t('reports.col_occupancy')}</th>
+                <th className={thClass}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('reports.col_occupancy')}
+                    <HelpHint
+                      what={t('help.admin_report_occupancy_what')}
+                      how={t('help.admin_report_occupancy_how')}
+                    />
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>

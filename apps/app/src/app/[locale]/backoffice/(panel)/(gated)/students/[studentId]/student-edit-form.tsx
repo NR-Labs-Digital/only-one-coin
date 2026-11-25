@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { NationalIdType } from '@/lib/backoffice/types'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpField } from '@/components/backoffice/help-hint'
 import { PhoneField } from '@/components/backoffice/phone-field'
 import {
   COUNTRIES,
@@ -157,16 +158,24 @@ export function StudentEditForm({
             ))}
           </select>
         </label>
-        <label className={labelClass}>
-          {t('student_file.field_id_number')}
-          <input
-            className={`${fieldClass} tabular-nums`}
-            value={draft.nationalId}
-            onChange={(e) => set('nationalId', e.target.value)}
-            required
-          />
-          <FieldMessage code={fieldError('nationalId')} />
-        </label>
+        <HelpField
+          label={t('student_file.field_id_number')}
+          what={t('help.stu_national_id_what')}
+          how={t('help.stu_national_id_how_edit')}
+        >
+          {(id) => (
+            <>
+              <input
+                id={id}
+                className={`${fieldClass} tabular-nums`}
+                value={draft.nationalId}
+                onChange={(e) => set('nationalId', e.target.value)}
+                required
+              />
+              <FieldMessage code={fieldError('nationalId')} />
+            </>
+          )}
+        </HelpField>
         <label className={labelClass}>
           {t('student_file.field_email')}
           <input

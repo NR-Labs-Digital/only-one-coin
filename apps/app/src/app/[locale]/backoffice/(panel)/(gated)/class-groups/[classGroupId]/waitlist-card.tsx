@@ -15,6 +15,7 @@ import { formatDate, type Locale } from '@/lib/format'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 const fieldClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -113,7 +114,10 @@ export function WaitlistCard({
 
   return (
     <Card className="p-5">
-      <p className="text-sm font-semibold text-ink">{t('waitlist.title')}</p>
+      <span className="flex items-center gap-1.5">
+        <p className="text-sm font-semibold text-ink">{t('waitlist.title')}</p>
+        <HelpHint what={t('help.cg_waitlist_what')} how={t('help.cg_waitlist_how')} />
+      </span>
 
       {free > 0 && first && (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">

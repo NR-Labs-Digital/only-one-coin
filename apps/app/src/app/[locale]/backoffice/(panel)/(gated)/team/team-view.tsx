@@ -21,6 +21,7 @@ import {
 } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import {
@@ -397,6 +398,9 @@ export function TeamView({
             </button>
           )
         })}
+        <span className="flex min-h-tap shrink-0 items-center px-2">
+          <HelpHint what={t('help.admin_team_tabs_what')} how={t('help.admin_team_tabs_how')} />
+        </span>
       </nav>
 
       {/* Toolbar */}
@@ -528,7 +532,12 @@ export function TeamView({
               <thead>
                 <tr>
                   <th className={thClass}>{t('team.col_member')}</th>
-                  <th className={thClass}>{t('team.col_role')}</th>
+                  <th className={thClass}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('team.col_role')}
+                      <HelpHint what={t('help.admin_team_cargo_what')} how={t('help.admin_team_cargo_how')} />
+                    </span>
+                  </th>
                   <th className={thClass}>{t('team.col_last_access')}</th>
                   {/* Off the active tab the row still ends in an action: giving
                       a door back is done from the same line it was taken. */}
@@ -580,9 +589,12 @@ export function TeamView({
                                 group at all — a finding, not a blank cell. Only
                                 accounts opened before OOC-79 can be in this state. */}
                             {row.role === 'teacher' && !row.teacherId && (
-                              <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
-                                <BoIcon name="alert" size={12} />
-                                {t('team.teacher_unlinked')}
+                              <span className="mt-0.5 inline-flex items-center gap-1.5">
+                                <span className="inline-flex w-fit items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
+                                  <BoIcon name="alert" size={12} />
+                                  {t('team.teacher_unlinked')}
+                                </span>
+                                <HelpHint what={t('help.admin_team_unlinked_what')} />
                               </span>
                             )}
                           </span>

@@ -18,6 +18,7 @@ import { initials } from '@/lib/format'
 import { Card, StatusBadge } from '@/components/backoffice/ui'
 import { studentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { StudentFile } from './student-file'
 import { PortalAccessControl } from './portal-access-control'
 
@@ -84,10 +85,13 @@ export default async function StudentDetailPage({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge
-              tone={studentTone[student.status]}
-              label={t(`student_status.${student.status}`)}
-            />
+            <span className="inline-flex items-center gap-1.5">
+              <StatusBadge
+                tone={studentTone[student.status]}
+                label={t(`student_status.${student.status}`)}
+              />
+              <HelpHint what={t('help.stu_situation_what')} how={t('help.stu_situation_how')} />
+            </span>
             <PortalAccessControl
               studentId={student.id}
               state={student.portalAccess}

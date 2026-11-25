@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { EnrollmentRow, WeeklySlotItem } from '@/lib/backoffice/types'
 import { slotsLabel } from '@/lib/backoffice/schedule'
@@ -9,6 +9,7 @@ import { ClassGroupOfferOptions } from '@/components/backoffice/class-group-offe
 import { formatMoney, type Locale } from '@/lib/format'
 import { RequiredMark } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -95,6 +96,7 @@ export function MoveEnrollmentDialog({
   // A picker value (`lib/backoffice/class-group-offers`): a run by code, or
   // its schedule — the API then picks the class group (OOC-145).
   const [pick, setPick] = useState('')
+  const targetFieldId = useId()
   const [planId, setPlanId] = useState('')
   const [overCapacityConfirmed, setOverCapacityConfirmed] = useState(false)
   const [fullOnServer, setFullOnServer] = useState(false)
@@ -252,12 +254,19 @@ export function MoveEnrollmentDialog({
                 <p className="text-sm text-muted-foreground">{t('move_enrollment.no_targets')}</p>
               ) : (
                 <>
-                  <label className="flex flex-col gap-1">
-                    <span className={labelClass}>
-                      {t('move_enrollment.field_class_group')}
-                      <RequiredMark label={t('common.required')} />
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-1.5">
+                      <label htmlFor={targetFieldId} className={labelClass}>
+                        {t('move_enrollment.field_class_group')}
+                        <RequiredMark label={t('common.required')} />
+                      </label>
+                      <HelpHint
+                        what={t('help.enr_move_target_what')}
+                        how={t('help.enr_move_target_how')}
+                      />
                     </span>
                     <select
+                      id={targetFieldId}
                       value={pick}
                       onChange={(event) => {
                         setPick(event.target.value)
@@ -301,7 +310,7 @@ export function MoveEnrollmentDialog({
                         }
                       />
                     </select>
-                  </label>
+                  </div>
 
                   {group && bySchedule && (
                     <p className="text-xs text-muted-foreground">
@@ -352,24 +361,27 @@ export function MoveEnrollmentDialog({
                   )}
 
                   {groupFull && (
-                    <label className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-                      <input
-                        type="checkbox"
-                        checked={overCapacityConfirmed}
-                        onChange={(event) => setOverCapacityConfirmed(event.target.checked)}
-                        className="mt-0.5 size-4 shrink-0 accent-amber-600"
-                      />
-                      <span>
-                        <span className="block font-semibold">
-                          {bySchedule ? t('class_group_picker.all_full_title') : t('move_enrollment.over_capacity_title')}
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                      <label className="flex flex-1 items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={overCapacityConfirmed}
+                          onChange={(event) => setOverCapacityConfirmed(event.target.checked)}
+                          className="mt-0.5 size-4 shrink-0 accent-amber-600"
+                        />
+                        <span>
+                          <span className="block font-semibold">
+                            {bySchedule ? t('class_group_picker.all_full_title') : t('move_enrollment.over_capacity_title')}
+                          </span>
+                          <span className="block text-xs">
+                            {bySchedule
+                              ? t('class_group_picker.all_full_body', { code: group!.code })
+                              : t('move_enrollment.over_capacity_body')}
+                          </span>
                         </span>
-                        <span className="block text-xs">
-                          {bySchedule
-                            ? t('class_group_picker.all_full_body', { code: group!.code })
-                            : t('move_enrollment.over_capacity_body')}
-                        </span>
-                      </span>
-                    </label>
+                      </label>
+                      <HelpHint what={t('help.enr_over_capacity_what')} how={t('help.enr_over_capacity_how')} />
+                    </div>
                   )}
 
                   <label className="flex flex-col gap-1">

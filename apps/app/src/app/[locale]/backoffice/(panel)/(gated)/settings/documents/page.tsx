@@ -5,6 +5,7 @@ import { DOCUMENT_KINDS, getDocumentTemplate, isDocumentKind } from '@/lib/backo
 import { Link } from '@/i18n/navigation'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { DocumentEditor } from '@/components/backoffice/documents/document-editor'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { SettingsTabs } from '../settings-tabs'
 
 /**
@@ -68,7 +69,10 @@ export default async function DocumentSettingsPage({
       {view ? (
         <>
           <div className="flex flex-col gap-1">
-            <h2 className="text-base font-semibold text-ink">{t(`documents.kind.${kind}`)}</h2>
+            <span className="flex items-center gap-1.5">
+              <h2 className="text-base font-semibold text-ink">{t(`documents.kind.${kind}`)}</h2>
+              <HelpHint what={t('help.admin_doc_versions_what')} how={t('help.admin_doc_versions_how')} />
+            </span>
             <p className="text-sm text-muted-foreground">{t(`documents.intro.${kind}`)}</p>
           </div>
           {/* Keyed by kind: switching documents starts a fresh editor. */}

@@ -16,6 +16,7 @@ import { NEXT_CLASS_GROUP_STATUS } from '@/lib/backoffice/class-group-status'
 import { Card } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 import {
   Sheet,
@@ -182,6 +183,11 @@ export function ClassGroupActions({
     </button>
   )
 
+  /* Retire and delete sit side by side and do very different things (§1). */
+  const removeHint = canRetire && (
+    <HelpHint what={t('help.cg_remove_what')} how={t('help.cg_remove_how')} />
+  )
+
   const deleteConfirmation = confirming === 'delete' && (
     <Confirmation
       text={
@@ -238,6 +244,7 @@ export function ClassGroupActions({
               {t('class_group_actions.restore')}
             </button>
             {deleteButton}
+            {removeHint}
           </div>
         )}
         {errorLine}
@@ -293,6 +300,7 @@ export function ClassGroupActions({
           </button>
         )}
         {deleteButton}
+        {removeHint}
       </div>
 
       {deleteConfirmation}

@@ -5,6 +5,7 @@ import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { registerTone } from '@/components/grades/register-tone'
 
 /**
@@ -49,6 +50,17 @@ export async function OwnGradeRegisters({
     t('grade_register.col_status'),
     t('grade_register.col_deadline'),
   ]
+  /* One (?) per column that is not obvious (screen-help): the round, the
+     count, the states and the deadline — never one per row. */
+  const hints: Record<number, { what: string; how?: string }> = {
+    1: { what: t('help.teach_register_round_what') },
+    2: { what: t('help.teach_register_progress_what'), how: t('help.teach_register_progress_how') },
+    3: { what: t('help.teach_register_status_what'), how: t('help.teach_register_status_how') },
+    4: {
+      what: t('help.teach_register_deadline_what', { hours: registers.submissionHours }),
+      how: t('help.teach_register_deadline_how'),
+    },
+  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -66,11 +78,21 @@ export async function OwnGradeRegisters({
         <TableShell columns={columns}>
           <thead>
             <tr>
-              {columns.map((label) => (
-                <th key={label} className={thClass}>
-                  {label}
-                </th>
-              ))}
+              {columns.map((label, index) => {
+                const hint = hints[index]
+                return (
+                  <th key={label} className={thClass}>
+                    {hint ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        {label}
+                        <HelpHint what={hint.what} how={hint.how} />
+                      </span>
+                    ) : (
+                      label
+                    )}
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody>

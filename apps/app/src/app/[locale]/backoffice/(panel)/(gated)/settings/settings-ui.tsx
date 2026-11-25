@@ -5,24 +5,21 @@ import { useTranslations } from 'next-intl'
 import type { PlatformSettings } from '@/lib/backoffice/platform-settings'
 import { changedSettings, saveSettings } from '@/lib/backoffice/settings-client'
 import { BoIcon } from '@/components/backoffice/icons'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 export const numberClass =
   'w-32 rounded-lg border border-line bg-white px-3 py-2 text-sm tabular-nums text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
 
 /**
  * Label, what the value currently reads as, and the control — with the reason
- * the setting exists folded into a `?` beside the label.
+ * the setting exists folded into the (?) beside the label: a popover, so it
+ * opens on a tap too, not only on hover (OOC-133).
  *
  * Folded rather than printed: these rows are read by someone who already knows
  * what a tolerance is and comes here to change a number, and four paragraphs of
  * explanation between them turns a four-line list into a page of scrolling. The
  * explanation still has to be reachable, though — a number nobody can justify is
- * a number nobody dares touch — so it is one hover or one tab-stop away, never
+ * a number nobody dares touch — so it is one tap or one tab-stop away, never
  * deleted.
  *
  * The rendered value sits apart from the input on purpose: a fee typed as `25`
@@ -31,14 +28,13 @@ export const numberClass =
 export function Row({
   label,
   hint,
-  helpLabel,
   value,
   children,
 }: {
   label: string
   hint: string
-  /** Names the `?` for a screen reader; the hint itself is the description. */
-  helpLabel: string
+  /** Kept for the callers; the (?) is named by `HelpHint` itself now. */
+  helpLabel?: string
   value: string
   children: ReactNode
 }) {
@@ -46,20 +42,7 @@ export function Row({
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <span className="flex min-w-64 flex-1 items-center gap-1.5">
         <span className="text-sm font-semibold text-ink">{label}</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="shrink-0 rounded-full text-muted-foreground transition hover:text-brand-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40"
-            >
-              <BoIcon name="help" size={15} />
-              <span className="sr-only">{helpLabel}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={6} className="max-w-xs leading-relaxed">
-            {hint}
-          </TooltipContent>
-        </Tooltip>
+        <HelpHint what={hint} />
       </span>
       <span className="flex shrink-0 items-center gap-3">
         <span className="w-32 text-right text-sm font-semibold tabular-nums text-ink">

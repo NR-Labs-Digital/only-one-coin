@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import type { ClassGroupItem } from '@/lib/backoffice/types'
 import { deleteClassGroups, setCatalogEntryOnOffer } from '@/lib/backoffice/catalog-client'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -129,6 +130,7 @@ export function ClassGroupSelectionBar({
         <button type="button" onClick={onClear} className={secondaryButtonClass}>
           {t('class_groups.selection_cancel')}
         </button>
+        <HelpHint what={t('help.acad_bulk_what')} how={t('help.acad_bulk_how')} />
       </div>
 
       <Dialog open={confirming !== null} onOpenChange={(open) => !open && !pending && setConfirming(null)}>

@@ -7,6 +7,7 @@ import { enrollmentTone, moduleTone, paymentTone } from '@/components/portal/sta
 import { Icon, type IconName } from '@/components/portal/icons'
 import { DialogTitle } from '@/components/ui/dialog'
 import { ClassroomQuickLinks } from '@/components/portal/classroom-quick-links'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 const materialIcon: Record<CourseMaterial['kind'], IconName> = {
   doc: 'doc',
@@ -37,6 +38,7 @@ export async function EnrollmentDetail({
   paymentsEnabled: boolean
 }) {
   const t = await getTranslations('portal')
+  const tb = await getTranslations('bo')
   const { course, classGroup, plan, academicPeriod, monthly } = enrollment
   const locked = enrollment.classAccessLock !== null
 
@@ -144,7 +146,17 @@ export async function EnrollmentDetail({
               student stands. */}
           {enrollment.modules.length > 0 && (
             <Card className="p-5 sm:p-6">
-              <SectionTitle>{t('course_detail.modules_title')}</SectionTitle>
+              {/* Monthly only: the (?) says what the per-module payment badge
+                  means — each module bought on its own (OOC-86). */}
+              <div className="flex items-center gap-1.5">
+                <SectionTitle>{t('course_detail.modules_title')}</SectionTitle>
+                {monthly !== null && (
+                  <HelpHint
+                    what={tb('help.portal_module_purchase_what')}
+                    how={tb('help.portal_module_purchase_how')}
+                  />
+                )}
+              </div>
               <ul className="mt-3 flex flex-col gap-2">
                 {enrollment.modules.map((m) => {
                   // The latest purchase of this module, if any (OOC-86).
@@ -250,14 +262,20 @@ export async function EnrollmentDetail({
             <Card className="p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <SectionTitle>{t('course_detail.result_title')}</SectionTitle>
-                <StatusBadge
-                  tone={enrollment.finalGradeOfficial ? 'success' : 'warning'}
-                  label={
-                    enrollment.finalGradeOfficial
-                      ? t('course_detail.result_official')
-                      : t('course_detail.result_in_review')
-                  }
-                />
+                <span className="flex items-center gap-1.5">
+                  <StatusBadge
+                    tone={enrollment.finalGradeOfficial ? 'success' : 'warning'}
+                    label={
+                      enrollment.finalGradeOfficial
+                        ? t('course_detail.result_official')
+                        : t('course_detail.result_in_review')
+                    }
+                  />
+                  <HelpHint
+                    what={tb('help.portal_grade_status_what')}
+                    how={tb('help.portal_grade_status_how')}
+                  />
+                </span>
               </div>
               {enrollment.finalGrade === 'did_not_attempt' ? (
                 <p className="mt-3 text-sm text-muted-foreground">

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { cargoLabel, cargoValue, type CargoValue, type CustomCargo } from '@/lib/backoffice/cargos'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpField } from '@/components/backoffice/help-hint'
 import {
   Dialog,
   DialogContent,
@@ -160,22 +161,28 @@ export function RoleChangeDialog({
                   </span>
                 </div>
 
-                <label className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('team.change_new')}</span>
-                  <select
-                    value={role}
-                    onChange={(event) => setRole(event.target.value)}
-                    className={fieldClass}
-                  >
-                    {options
-                      .filter((option) => option.value !== current)
-                      .map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                  </select>
-                </label>
+                <HelpField
+                  label={t('team.change_new')}
+                  what={t('help.admin_team_cargo_what')}
+                  how={t('help.admin_team_change_role_how')}
+                >
+                  {(id) => (
+                    <select
+                      id={id}
+                      value={role}
+                      onChange={(event) => setRole(event.target.value)}
+                      className={fieldClass}
+                    >
+                      {options
+                        .filter((option) => option.value !== current)
+                        .map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                </HelpField>
 
 
                 <div className="flex flex-col gap-1">

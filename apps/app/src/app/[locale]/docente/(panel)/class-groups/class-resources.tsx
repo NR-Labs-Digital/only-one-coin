@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { parseClassLink, type ClassroomLink } from '@/lib/backoffice/class-links'
 import { ClassLinks, ExternalButton } from '@/components/backoffice/class-links'
 
@@ -37,8 +38,9 @@ export function ClassResources({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {t('class_resources.title')}
+        <HelpHint what={t('help.teach_resources_what')} how={t('help.teach_resources_how')} />
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <ClassLinks classroomLinks={classroomLinks} meetUrl={meetUrl} />

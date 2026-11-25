@@ -10,6 +10,7 @@ import { formatDate, formatMoney, type Locale } from '@/lib/format'
 import { BoIcon } from '@/components/backoffice/icons'
 import { Card, SectionTitle } from '@/components/backoffice/ui'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { HelpField } from '@/components/backoffice/help-hint'
 import { CatalogConfirmation, RetireConfirmation } from '@/components/backoffice/retire-confirmation'
 
 const fieldClass =
@@ -371,17 +372,25 @@ function PriceForm({
           className={fieldClass}
         />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className={labelClass}>{t('plans.start')}</span>
-        <input
-          type="date"
-          min={today}
-          value={date}
-          onChange={(event) => setDate(event.target.value)}
-          className={fieldClass}
-        />
-        <span className="text-xs text-muted-foreground">{t('plans.start_hint')}</span>
-      </label>
+      <HelpField
+        label={t('plans.start')}
+        what={t('help.acad_price_start_what')}
+        how={t('help.acad_price_start_how')}
+      >
+        {(id) => (
+          <>
+            <input
+              id={id}
+              type="date"
+              min={today}
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className={fieldClass}
+            />
+            <span className="text-xs text-muted-foreground">{t('plans.start_hint')}</span>
+          </>
+        )}
+      </HelpField>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -465,20 +474,28 @@ function NewPlanForm({
           className={fieldClass}
         />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className={labelClass}>{t('plans.billing')}</span>
-        <select
-          value={billing}
-          onChange={(event) => setBilling(event.target.value === 'monthly' ? 'monthly' : 'package')}
-          className={fieldClass}
-        >
-          <option value="package">{t('plans.billing_package')}</option>
-          <option value="monthly">{t('plans.billing_monthly')}</option>
-        </select>
-        <span className="text-xs text-muted-foreground">
-          {billing === 'monthly' ? t('plans.billing_monthly_hint') : t('plans.billing_fixed')}
-        </span>
-      </label>
+      <HelpField
+        label={t('plans.billing')}
+        what={t('help.acad_plan_billing_what')}
+        how={t('help.acad_plan_billing_how')}
+      >
+        {(id) => (
+          <>
+            <select
+              id={id}
+              value={billing}
+              onChange={(event) => setBilling(event.target.value === 'monthly' ? 'monthly' : 'package')}
+              className={fieldClass}
+            >
+              <option value="package">{t('plans.billing_package')}</option>
+              <option value="monthly">{t('plans.billing_monthly')}</option>
+            </select>
+            <span className="text-xs text-muted-foreground">
+              {billing === 'monthly' ? t('plans.billing_monthly_hint') : t('plans.billing_fixed')}
+            </span>
+          </>
+        )}
+      </HelpField>
       <PriceForm
         busy={busy}
         disabled={name.trim().length === 0}

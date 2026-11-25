@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { Link } from '@/i18n/navigation'
 import type { TeachingClassGroup } from '@/lib/docente/teaching'
 import { slotsLabel } from '@/lib/backoffice/schedule'
@@ -53,9 +54,19 @@ export async function ClassGroupList({ groups }: { groups: TeachingClassGroup[] 
             <TableShell columns={columns}>
               <thead>
                 <tr>
-                  {columns.map((label) => (
+                  {columns.map((label, index) => (
                     <th key={label} className={thClass}>
-                      {label}
+                      {index === 2 ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {label}
+                          <HelpHint
+                            what={t('help.teach_class_status_what')}
+                            how={t('help.teach_class_status_how')}
+                          />
+                        </span>
+                      ) : (
+                        label
+                      )}
                     </th>
                   ))}
                 </tr>

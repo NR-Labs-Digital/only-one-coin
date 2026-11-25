@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { RecoveryCodes } from '@/components/backoffice/recovery-codes'
 import {
@@ -151,9 +152,10 @@ export function AccountMfa({ initial, email }: { initial: OwnMfa | null; email: 
 
       {mfa.enabled && mode !== 'codes' && (
         <p
-          className={`mt-3 text-sm ${mfa.recoveryCodesLeft <= 2 ? 'font-semibold text-amber-700' : 'text-muted-foreground'}`}
+          className={`mt-3 flex items-center gap-1.5 text-sm ${mfa.recoveryCodesLeft <= 2 ? 'font-semibold text-amber-700' : 'text-muted-foreground'}`}
         >
-          {t('account.mfa_codes_left', { count: mfa.recoveryCodesLeft })}
+          <span>{t('account.mfa_codes_left', { count: mfa.recoveryCodesLeft })}</span>
+          <HelpHint what={t('help.admin_account_recovery_what')} how={t('help.admin_account_recovery_how')} />
         </p>
       )}
 

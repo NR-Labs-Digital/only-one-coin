@@ -12,6 +12,7 @@ import {
 import { formatDate, formatNumber, type Locale } from '@/lib/format'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 /**
  * The certificate batch of the module group that closes the course (OOC-33):
@@ -91,7 +92,10 @@ export function CertificatesCard({
   return (
     <Card className="p-5">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-ink">{t('certificates.title')}</h2>
+        <span className="flex items-center gap-1.5">
+          <h2 className="text-base font-semibold text-ink">{t('certificates.title')}</h2>
+          <HelpHint what={t('help.cg_cert_batch_what')} how={t('help.cg_cert_batch_how')} />
+        </span>
         <p className="text-sm text-muted-foreground">
           {module === null ? t('certificates.subtitle_single') : t('certificates.subtitle', { module })}
         </p>

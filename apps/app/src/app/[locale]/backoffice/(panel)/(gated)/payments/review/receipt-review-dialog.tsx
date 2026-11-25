@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type {
   PaymentReviewItem,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/backoffice/receipt-comparison'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { paymentTone, receiptStateTone } from '@/components/backoffice/status-tone'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { BoIcon } from '@/components/backoffice/icons'
 import { StudentQuickActions } from '@/components/backoffice/student-quick-actions'
 import { LotBadge, LotEnrollments } from '../payment-lot'
@@ -573,6 +574,7 @@ export function ReceiptReviewDialog({
                   <dl>
                     <DataRow
                       label={t('review.col_deadline')}
+                      help={<HelpHint what={t('help.payment_deadline_what')} how={t('help.payment_deadline_how')} />}
                       value={
                         deadline === 'overdue'
                           ? `${formatDateTime(payment.reviewDeadline, locale)} · ${t('review.deadline_overdue')}`
@@ -582,7 +584,10 @@ export function ReceiptReviewDialog({
                     />
                   </dl>
                   <section>
-                    <SectionTitle icon="shield">{t('receipt_review.signals_title')}</SectionTitle>
+                    <SectionTitle icon="shield">
+                      {t('receipt_review.signals_title')}
+                      <HelpHint what={t('help.payment_signals_what')} how={t('help.payment_signals_how')} />
+                    </SectionTitle>
                     {payment.fraudSignals.length === 0 ? (
                       <p className="mt-2 text-sm text-muted-foreground">
                         {t('receipt_review.signals_none')}
@@ -743,7 +748,10 @@ function VerdictNotice({ verdict }: { verdict: ReviewVerdict }) {
 
   return (
     <section>
-      <SectionTitle icon="shield">{t('receipt_review.verdict_title')}</SectionTitle>
+      <SectionTitle icon="shield">
+        {t('receipt_review.verdict_title')}
+        <HelpHint what={t('help.payment_verdict_what')} how={t('help.payment_verdict_how')} />
+      </SectionTitle>
       <p className={`mt-2 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${tone}`}>
         <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
         <span>
@@ -847,7 +855,10 @@ function ComparisonSection({
 
   return (
     <section>
-      <SectionTitle icon="payments">{t('receipt_review.compare_title')}</SectionTitle>
+      <SectionTitle icon="payments">
+        {t('receipt_review.compare_title')}
+        <HelpHint what={t('help.payment_compare_what')} how={t('help.payment_compare_how')} />
+      </SectionTitle>
       <div className={`${grid} mt-2 border-b border-line pb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground`}>
         <span aria-hidden="true" />
         <span>{t('receipt_review.compare_col_expected')}</span>
@@ -998,16 +1009,20 @@ function DataRow({
   value,
   strong = false,
   danger = false,
+  help,
 }: {
   label: string
   value: string
   strong?: boolean
   danger?: boolean
+  /** The (?) beside the label, when the row is not self-explanatory. */
+  help?: ReactNode
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line/70 py-2.5 last:border-b-0">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
+        {help}
       </dt>
       <dd
         className={`text-right text-sm tabular-nums ${

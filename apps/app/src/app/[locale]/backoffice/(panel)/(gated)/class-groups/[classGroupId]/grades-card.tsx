@@ -11,6 +11,7 @@ import { formatDateTime, formatNumber, type Locale } from '@/lib/format'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
 import { gradeTone } from '@/components/backoffice/status-tone'
 import { Toast } from '@/components/backoffice/controls'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
 /** A posting is open while the class group runs and after its last class — the API's GRADING_OPEN. */
@@ -89,6 +90,17 @@ export function GradesCard({
     t('class_group_grades.col_status'),
     ...(canEdit ? [t('class_group_grades.col_actions')] : []),
   ]
+  /* The (?) of a header, by position — the grade and the result are the ones
+     with a meaning of their own; the pass mark is the backoffice's (OOC-41). */
+  const headerHints = [
+    null,
+    <HelpHint key="grade" what={t('help.cg_grade_what')} how={t('help.cg_grade_how')} />,
+    <HelpHint
+      key="result"
+      what={t('help.cg_grade_result_what', { grade: formatNumber(passingGrade, locale) })}
+    />,
+    null,
+  ]
 
   function toggle(enrollmentId: string) {
     setOpen((current) => {
@@ -119,9 +131,16 @@ export function GradesCard({
           <TableShell columns={columns}>
             <thead>
               <tr>
-                {columns.map((column) => (
+                {columns.map((column, index) => (
                   <th key={column} className={thClass}>
-                    {column}
+                    {headerHints[index] ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        {column}
+                        {headerHints[index]}
+                      </span>
+                    ) : (
+                      column
+                    )}
                   </th>
                 ))}
               </tr>

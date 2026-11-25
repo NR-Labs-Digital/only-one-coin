@@ -2,6 +2,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { ClassGroupMonthlySeat } from '@/lib/backoffice/types'
 import { formatDate, type Locale } from '@/lib/format'
 import { Card, StatusBadge, TableShell, tdClass, thClass } from '@/components/backoffice/ui'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 const STATE_TONE = {
   paid: 'success',
@@ -41,6 +42,13 @@ export function MonthlyCard({ seats }: { seats: ClassGroupMonthlySeat[] | null }
   const sorted = [...seats].sort((a, b) => order[a.state] - order[b.state])
   const owing = seats.filter((seat) => seat.state === 'due').length
   const columns = [t('monthly.col_student'), t('monthly.col_module'), t('monthly.col_state'), t('monthly.col_ahead')]
+  // One (?) per header that carries a rule, by position (OOC-86).
+  const headerHints = [
+    null,
+    null,
+    <HelpHint key="state" what={t('help.cg_monthly_state_what')} how={t('help.cg_monthly_state_how')} />,
+    <HelpHint key="ahead" what={t('help.cg_monthly_ahead_what')} />,
+  ]
 
   return (
     <Card className="overflow-hidden">
@@ -55,9 +63,16 @@ export function MonthlyCard({ seats }: { seats: ClassGroupMonthlySeat[] | null }
         <TableShell columns={columns}>
           <thead>
             <tr>
-              {columns.map((column) => (
+              {columns.map((column, index) => (
                 <th key={column} className={thClass}>
-                  {column}
+                  {headerHints[index] ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      {column}
+                      {headerHints[index]}
+                    </span>
+                  ) : (
+                    column
+                  )}
                 </th>
               ))}
             </tr>

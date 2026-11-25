@@ -23,6 +23,7 @@ import {
 } from '@/components/backoffice/ui'
 import { ContractBadge } from '@/components/backoffice/contract-badge'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 import { FiltersDropdown } from '@/components/backoffice/filters-dropdown'
 import { NewTeacherForm } from './new-teacher-form'
@@ -151,6 +152,10 @@ export function TeachersView({
             </button>
           )
         })}
+        {/* What the two tabs split: on the roster or off it. */}
+        <span className="flex items-center px-2">
+          <HelpHint what={t('help.teacher_status_what')} how={t('help.teacher_status_how')} />
+        </span>
       </nav>
 
       {/* Toolbar */}
@@ -295,13 +300,24 @@ export function TeachersView({
                   <th className={thClass}>{t('teachers.col_teacher')}</th>
                   <th className={thClass}>{t('teachers.col_languages')}</th>
                   <th className={`${thClass} text-right`}>
-                    {t('teachers.col_class_groups')}
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('teachers.col_class_groups')}
+                      <HelpHint what={t('help.teacher_load_what')} how={t('help.teacher_load_how')} />
+                    </span>
                   </th>
                   {/* The contract is a question about somebody who is still
                       teaching; off the roster every row answers it the same
                       way. */}
                   {onRoster && (
-                    <th className={thClass}>{t('teachers.col_contract')}</th>
+                    <th className={thClass}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {t('teachers.col_contract')}
+                        <HelpHint
+                          what={t('help.teacher_contract_what', { days: directory.contractAlertDays })}
+                          how={t('help.teacher_contract_how')}
+                        />
+                      </span>
+                    </th>
                   )}
                 </tr>
               </thead>

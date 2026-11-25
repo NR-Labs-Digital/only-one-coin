@@ -14,6 +14,7 @@ import {
 import { Card, OptionalMark, RequiredMark } from '@/components/backoffice/ui'
 import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { AvailabilityFields, slotsAreValid } from '@/components/backoffice/teachers/availability-fields'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FieldMessage } from '@/components/backoffice/field-message'
@@ -176,7 +177,10 @@ export function NewTeacherForm({
       {/* Who fills the personal data (OOC-103): coordination, here, or the
           teacher, at onboarding after accepting the invite. */}
       <fieldset className="flex flex-col gap-2">
-        <legend className={`mb-2 ${labelClass}`}>{t('teachers.fill_mode_title')}</legend>
+        <legend className={`mb-2 flex items-center gap-1.5 ${labelClass}`}>
+          {t('teachers.fill_mode_title')}
+          <HelpHint what={t('help.teacher_fill_mode_what')} how={t('help.teacher_fill_mode_how')} />
+        </legend>
         {([false, true] as const).map((value) => (
           <label
             key={String(value)}

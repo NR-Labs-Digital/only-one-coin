@@ -44,6 +44,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { HelpHint } from '@/components/backoffice/help-hint'
 
 /**
  * Backoffice home. Two jobs: surface what needs a human right now (the receipt
@@ -87,11 +88,14 @@ export default async function BackofficeHomePage({
     value: string
     icon: LucideIcon
     accent: string
+    /** What the number counts — each is a rule, not a raw count (OOC-67). */
+    help: { what: string; how: string }
   }[] = []
 
   if (summary) {
     stats.push({
       label: t('dashboard.metric_enrollments_today'),
+      help: { what: t('help.admin_home_today_what'), how: t('help.admin_home_today_how') },
       value: String(summary.enrollmentsToday),
       icon: ClipboardList,
       accent: 'bg-sky text-brand-blue',
@@ -100,6 +104,7 @@ export default async function BackofficeHomePage({
   if (queue) {
     stats.push({
       label: t('dashboard.metric_pending_review'),
+      help: { what: t('help.admin_home_review_what'), how: t('help.admin_home_review_how') },
       value: String(queue.total),
       icon: AlertTriangle,
       accent: 'bg-amber-50 text-amber-600',
@@ -108,6 +113,7 @@ export default async function BackofficeHomePage({
   if (summary) {
     stats.push({
       label: t('dashboard.metric_active_students'),
+      help: { what: t('help.admin_home_active_what'), how: t('help.admin_home_active_how') },
       value: String(summary.activeStudents),
       icon: Users,
       accent: 'bg-emerald-50 text-emerald-600',
@@ -116,6 +122,7 @@ export default async function BackofficeHomePage({
   if (occupancy) {
     stats.push({
       label: t('dashboard.metric_seats'),
+      help: { what: t('help.admin_home_seats_what'), how: t('help.admin_home_seats_how') },
       value: `${occupancy.capacity === 0 ? 0 : Math.round((occupancy.taken / occupancy.capacity) * 100)}%`,
       icon: Armchair,
       accent: 'bg-cream text-brand-yellow-deep',
@@ -133,12 +140,13 @@ export default async function BackofficeHomePage({
       {/* Headline numbers — only the ones this cargo's reads produced. */}
       {stats.length > 0 && (
       <AutoGrid as="section" min="15rem" gap="gap-3">
-        {stats.map(({ label, value, icon: Icon, accent }) => (
+        {stats.map(({ label, value, icon: Icon, accent, help }) => (
           <Card key={label} className="gap-0 py-4">
             <CardContent className="flex items-start justify-between gap-3 px-4">
               <div className="min-w-0">
-                <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {label}
+                <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="truncate">{label}</span>
+                  <HelpHint what={help.what} how={help.how} />
                 </p>
                 <p className="mt-1.5 text-3xl font-semibold tracking-tight text-foreground">
                   {value}
@@ -197,7 +205,12 @@ export default async function BackofficeHomePage({
                       <TableHead className="pl-5">{t('review.col_student')}</TableHead>
                       <TableHead>{t('review.col_course')}</TableHead>
                       <TableHead>{t('review.col_amount')}</TableHead>
-                      <TableHead>{t('review.col_verdict')}</TableHead>
+                      <TableHead>
+                        <span className="inline-flex items-center gap-1.5">
+                          {t('review.col_verdict')}
+                          <HelpHint what={t('help.payment_verdict_what')} how={t('help.payment_verdict_how')} />
+                        </span>
+                      </TableHead>
                       <TableHead>{t('review.col_submitted')}</TableHead>
                       <TableHead className="pr-5 text-right">
                         <span className="sr-only">{t('common.actions')}</span>
@@ -308,6 +321,7 @@ export default async function BackofficeHomePage({
               <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
                 <Armchair className="size-4 text-brand-blue" />
                 {t('seats.title')}
+                <HelpHint what={t('help.admin_home_pressure_what')} />
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">{t('seats.subtitle')}</p>
             </div>

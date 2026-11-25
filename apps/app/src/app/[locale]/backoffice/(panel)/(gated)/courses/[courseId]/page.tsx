@@ -11,6 +11,7 @@ import {
   canRetireCatalogEntry,
 } from '@/lib/backoffice/permissions'
 import { BoIcon } from '@/components/backoffice/icons'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { StatusBadge } from '@/components/backoffice/ui'
 import { tabClass, tabStripClass } from '@/components/backoffice/tab-strip'
 import { CourseOptionsForm } from '../course-options-form'
@@ -95,6 +96,11 @@ export default async function CourseDetailPage({
               />
             )}
           </>
+        )}
+        {/* One (?) for every badge the header can wear, the same one as the
+            status column of the course list. */}
+        {(!course.active || !course.hasPriceInForce || course.missingModuleMaterials) && (
+          <HelpHint what={t('help.acad_course_status_what')} how={t('help.acad_course_status_how')} />
         )}
         <p className="basis-full text-sm text-muted-foreground">
           {[course.language.name, course.level].filter(Boolean).join(' · ')}
