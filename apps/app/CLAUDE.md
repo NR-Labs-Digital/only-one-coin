@@ -44,6 +44,10 @@ monitor do lado.
 
 Detalhe e histórico da decisão: `docs/ARCHITECTURE.md` §7.
 
+## Ajuda na tela — o (?) (25/11/2026)
+
+**A tela explica o próprio sistema.** Campo, coluna, filtro, estado, número calculado ou ação com consequência que não é óbvio para quem chega leva o (?) — `HelpHint`/`HelpField` (`src/components/backoffice/help-hint.tsx`, OOC-133/134), com o texto em `bo.help.*_what`/`_how` nos três idiomas, tirado das regras do `CLAUDE.md`, sem regra inventada nem número de `platform_settings` digitado. Vale para backoffice, portal do docente e portal do aluno, em toda tela criada ou alterada. O passo a passo é a skill `screen-help` (`.claude/skills/screen-help/SKILL.md`).
+
 ## Celular — decisão 06/09/2026
 
 **O app é operado no celular de ponta a ponta.** O aluno vive no portal pelo
