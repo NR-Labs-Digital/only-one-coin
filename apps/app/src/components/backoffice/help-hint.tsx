@@ -17,6 +17,7 @@ export function HelpHint({ what, how }: { what: string; how?: string }) {
     <Popover.Root>
       <Popover.Trigger
         aria-label={t('help.open')}
+        data-help-hint=""
         className="relative inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground transition after:absolute after:-inset-3.5 hover:text-brand-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40 data-[state=open]:text-brand-blue"
         type="button"
       >
