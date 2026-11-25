@@ -126,6 +126,7 @@ export {
   EditOwnClassGroupGradeUseCase,
   GetOwnGradeRegisterUseCase,
   SubmitOwnGradeRegisterUseCase,
+  ListOwnGradeRegistersUseCase,
   type RecordOwnClassGroupGradesInput,
   type EditOwnClassGroupGradeInput,
 } from "./teaching/OwnClassGroupGradesUseCases.js";

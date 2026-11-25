@@ -174,6 +174,20 @@ function serializeRow(row: GradeRegisterListRow): z.infer<typeof ListRowSchema> 
   };
 }
 
+export const listOwnGradeRegistersRoute = RouteBuilder.get("/teaching/grade-registers")
+  .docs({
+    tags: ["Teaching"],
+    summary: "The signed-in teacher's grade registers, across their module runs",
+    description:
+      "The portal's list of registers (OOC-170): one row per register of the teacher's own runs, plus the round the next grade would open. Only class groups running or finished. A teacher with no run gets an empty list.",
+  })
+  .can("teaching.own_grades")
+  .response(200, z.object({ items: z.array(ListRowSchema), submissionHours: z.number().int() }))
+  .handler(async (request, reply) => {
+    const result = await container.useCases.teaching.listOwnGradeRegisters.run({ userId: request.currentUser!.id });
+    reply.status(200).send({ items: result.rows.map(serializeRow), submissionHours: result.submissionHours });
+  });
+
 export const listGradeRegistersRoute = RouteBuilder.get("/grade-registers")
   .docs({
     tags: ["Teaching"],

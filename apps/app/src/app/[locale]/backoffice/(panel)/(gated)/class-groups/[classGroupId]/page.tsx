@@ -252,24 +252,24 @@ export default async function ClassGroupDetailPage({
 
       <MonthlyCard seats={monthly} />
 
+      {/* `#grades` is where a row of Académico → Registros de notas lands (OOC-170). */}
       {readsGrades && (
-        <GradeRegistersCard
-          classGroupId={group.id}
-          registers={gradeRegisters}
-          runLabels={runLabels}
-          canEdit={canEditGrades(staff)}
-        />
-      )}
-
-      {readsGrades && (
-        <GradesCard
-          classGroupId={group.id}
-          status={group.status}
-          seats={gradeSheet}
-          // The pass mark is the backoffice's (OOC-41) — never a fallback number.
-          passingGrade={settings?.passingGrade ?? null}
-          canEdit={canEditGrades(staff)}
-        />
+        <div id="grades" className="flex scroll-mt-20 flex-col gap-5">
+          <GradeRegistersCard
+            classGroupId={group.id}
+            registers={gradeRegisters}
+            runLabels={runLabels}
+            canEdit={canEditGrades(staff)}
+          />
+          <GradesCard
+            classGroupId={group.id}
+            status={group.status}
+            seats={gradeSheet}
+            // The pass mark is the backoffice's (OOC-41) — never a fallback number.
+            passingGrade={settings?.passingGrade ?? null}
+            canEdit={canEditGrades(staff)}
+          />
+        </div>
       )}
 
       {certificateBatches.map(({ run, batch }) => (

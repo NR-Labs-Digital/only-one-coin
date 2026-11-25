@@ -45,6 +45,7 @@ import {
   getOwnGradeRegisterRoute,
   listClassGroupGradeRegistersRoute,
   listGradeRegistersRoute,
+  listOwnGradeRegistersRoute,
   returnGradeRegisterRoute,
   submitOwnGradeRegisterRoute,
 } from "@/http/teaching/GradeRegisterRoutes.js";
@@ -315,6 +316,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(editOwnClassGroupGradeRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getOwnGradeRegisterRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(submitOwnGradeRegisterRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listOwnGradeRegistersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listClassGroupGradeRegistersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listGradeRegistersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(returnGradeRegisterRoute);

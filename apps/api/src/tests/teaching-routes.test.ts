@@ -4,7 +4,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { buildApp } from "@/app.js";
 import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
+import { DrizzleGradeRegisterRepository } from "@/infra/persistence/teaching/DrizzleGradeRegisterRepository.js";
 import { DrizzleGradeRepository } from "@/infra/persistence/teaching/DrizzleGradeRepository.js";
+import { TEST_SETTINGS } from "./fakes/platformSettings.js";
 
 /**
  * The docente portal over HTTP (OOC-82). CI gate §6.5 both ways: the
@@ -42,6 +44,7 @@ const TEACHING_ROUTES = [
   `/api/v1/teaching/class-groups/${ID}/grades`,
   `/api/v1/teaching/class-groups/${ID}/progression`,
   "/api/v1/teaching/summary",
+  "/api/v1/teaching/grade-registers",
 ];
 
 /** Pagos and the coordination's screens — none of it is a teacher's door. */
@@ -367,6 +370,75 @@ describe("a teacher with no active class group gets an empty portal", () => {
 
     expect((await inject("GET", "/api/v1/teaching/class-groups")).json()).toEqual({ items: [] });
     expect((await inject("GET", "/api/v1/teaching/summary")).json()).toEqual(EMPTY_SUMMARY);
+    expect(list).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The teacher's list of grade registers (OOC-170) is scoped like the list of
+ * class groups: the runs are the session's teacher's, and a row of another
+ * teacher's run that the query underneath let through still stays out.
+ */
+describe("the teacher's grade registers are only their own runs' (OOC-170)", () => {
+  function row(classGroupModuleId: string, teacherId: string) {
+    return {
+      registerId: null,
+      classGroupId: classGroupModuleId,
+      classGroupModuleId,
+      round: 1,
+      status: "draft" as const,
+      moduleEndsOn: "2026-11-30",
+      deadlineAt: new Date("2026-12-03T05:00:00.000Z"),
+      overdue: false,
+      submittedLate: false,
+      graded: 3,
+      total: 12,
+      returnNote: null,
+      steps: [],
+      classGroupCode: "A-00011",
+      classGroupStatus: "in_progress",
+      courseName: "Inglés Básico",
+      academicPeriodId: ID,
+      academicPeriodName: "Ciclo 2026-II",
+      module: 3,
+      slots: [],
+      teacherId,
+      teacherName: "Ana Docente",
+    };
+  }
+
+  it("asks for the session's teacher and answers only rows of their own runs", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.platformSettings, "get").mockResolvedValue(TEST_SETTINGS);
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(teacherFile(A_TEACHER));
+    vi.spyOn(container.repositories.teaching, "listClassGroupsOf").mockResolvedValue([group(A_GROUP, A_TEACHER)]);
+    const list = vi
+      .spyOn(DrizzleGradeRegisterRepository.prototype, "list")
+      .mockResolvedValue([row(A_GROUP, A_TEACHER), row(B_GROUP, B_TEACHER), row(ID, A_TEACHER)]);
+
+    const response = await inject("GET", "/api/v1/teaching/grade-registers");
+
+    expect(response.statusCode).toBe(200);
+    expect(list).toHaveBeenCalledWith(
+      expect.objectContaining({ teacherId: A_TEACHER }),
+      TEST_SETTINGS.gradeSubmissionHours,
+      expect.any(Date),
+    );
+    const body = response.json() as { items: { classGroupModuleId: string }[]; submissionHours: number };
+    expect(body.items.map((item) => item.classGroupModuleId)).toEqual([A_GROUP]);
+    expect(body.submissionHours).toBe(TEST_SETTINGS.gradeSubmissionHours);
+  });
+
+  it("answers an empty list to an account linked to no file, without reading a register", async () => {
+    signIn("teacher");
+    vi.spyOn(container.repositories.platformSettings, "get").mockResolvedValue(TEST_SETTINGS);
+    vi.spyOn(container.repositories.teacher, "findByUserId").mockResolvedValue(null);
+    const list = vi.spyOn(DrizzleGradeRegisterRepository.prototype, "list");
+
+    const response = await inject("GET", "/api/v1/teaching/grade-registers");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ items: [], submissionHours: TEST_SETTINGS.gradeSubmissionHours });
     expect(list).not.toHaveBeenCalled();
   });
 });

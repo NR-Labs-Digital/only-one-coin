@@ -1,18 +1,11 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import type { GradeRegister, GradeRegisterStatus } from '@/lib/docente/grade-register'
+import type { GradeRegister } from '@/lib/docente/grade-register'
 import { formatDate, formatDateTime, type Locale } from '@/lib/format'
-import { StatusBadge, type Tone } from '@/components/backoffice/ui'
+import { StatusBadge } from '@/components/backoffice/ui'
+import { registerTone } from './register-tone'
 import { BoIcon } from '@/components/backoffice/icons'
-
-/** The tone of each register state, shared by the teacher's portal and the backoffice (OOC-180). */
-export const registerTone: Record<GradeRegisterStatus, Tone> = {
-  draft: 'neutral',
-  in_review: 'warning',
-  returned: 'danger',
-  official: 'success',
-}
 
 /**
  * What a grade register says about itself (OOC-180): its state, how many of

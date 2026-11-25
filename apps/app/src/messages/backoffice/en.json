@@ -1923,7 +1923,10 @@
       "load_error_title": "We could not load your class groups",
       "load_error_body": "Try again in a few minutes. If it keeps happening, let coordination know.",
       "finished_waiting": "{count, plural, one {You have one finished class group.} other {You have # finished class groups.}} They stay in My class groups until coordination closes them, in case a grade is missing.",
-      "finished_waiting_link": "See my class groups"
+      "finished_waiting_link": "See my class groups",
+      "registers_title": "Pending grade registers",
+      "registers_subtitle": "The ones not yet official. You have {hours} hours from the end of the module to send each one to review.",
+      "registers_load_error": "We could not load your grade registers. Reload the page in a few minutes."
     },
     "team": {
       "title": "Team",

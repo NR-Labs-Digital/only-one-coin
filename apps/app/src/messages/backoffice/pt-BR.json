@@ -1923,7 +1923,10 @@
       "load_error_title": "Não conseguimos carregar suas turmas",
       "load_error_body": "Tente de novo em alguns minutos. Se continuar, avise a coordenação.",
       "finished_waiting": "{count, plural, one {Você tem uma turma finalizada.} other {Você tem # turmas finalizadas.}} Elas ficam em Minhas turmas até a coordenação fechá-las, caso falte alguma nota.",
-      "finished_waiting_link": "Ver minhas turmas"
+      "finished_waiting_link": "Ver minhas turmas",
+      "registers_title": "Registros de notas pendentes",
+      "registers_subtitle": "Os que ainda não são oficiais. Você tem {hours} horas desde o fim do módulo para enviar cada um à revisão.",
+      "registers_load_error": "Não conseguimos carregar seus registros de notas. Recarregue a página em alguns minutos."
     },
     "team": {
       "title": "Equipe",
