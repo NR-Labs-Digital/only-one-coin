@@ -21,7 +21,7 @@ import {
   thClass,
 } from '@/components/backoffice/ui'
 import { AcademicTabs } from '@/components/backoffice/academic-tabs'
-import { registerTone } from '@/components/grades/grade-register-summary'
+import { registerTone } from '@/components/grades/register-tone'
 
 const STATUS_FILTERS = ['open', 'draft', 'in_review', 'returned', 'official', 'all'] as const
 type StatusFilter = (typeof STATUS_FILTERS)[number]
@@ -228,7 +228,7 @@ function RegisterRow({
     <tr>
       <td className={tdClass}>
         <Link
-          href={`/backoffice/class-groups/${row.classGroupId}`}
+          href={`/backoffice/class-groups/${row.classGroupId}#grades`}
           className="font-semibold text-brand-blue hover:underline"
         >
           {row.classGroupCode}

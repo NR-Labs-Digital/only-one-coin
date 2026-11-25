@@ -170,6 +170,32 @@ export const listOwnClassGroupGrades = cache(
   },
 )
 
+/** One of the teacher's registers, with the run it is of (OOC-170). */
+export interface OwnGradeRegisterRow extends GradeRegister {
+  classGroupCode: string
+  courseName: string
+  academicPeriodName: string
+  module: number | null
+  slots: WeeklySlotItem[]
+}
+
+/**
+ * The teacher's grade registers across their runs (OOC-170), running or
+ * finished class groups only; null when the read failed. `submissionHours` is
+ * the deadline rule as the API read it — never a number of the screen's.
+ */
+export const listOwnGradeRegisters = cache(
+  async (): Promise<{ items: OwnGradeRegisterRow[]; submissionHours: number } | null> => {
+    try {
+      const response = await apiFetch('/api/v1/teaching/grade-registers')
+      if (!response.ok) return null
+      return (await response.json()) as { items: OwnGradeRegisterRow[]; submissionHours: number }
+    } catch {
+      return null
+    }
+  },
+)
+
 export const getTeachingSummary = cache(async (): Promise<TeachingSummary | null> => {
   try {
     const response = await apiFetch('/api/v1/teaching/summary')

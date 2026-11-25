@@ -1,7 +1,12 @@
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import type { StaffUser } from '@/lib/backoffice/types'
-import { getTeachingSummary, isTeaching, listOwnClassGroups } from '@/lib/docente/teaching'
+import {
+  getTeachingSummary,
+  isTeaching,
+  listOwnClassGroups,
+  listOwnGradeRegisters,
+} from '@/lib/docente/teaching'
 import { isoToLimaDate } from '@/lib/backoffice/lima-date'
 import { slotsLabel } from '@/lib/backoffice/schedule'
 import { formatDateRange, type Locale } from '@/lib/format'
@@ -18,6 +23,7 @@ import {
 import { classGroupTone, seatPressureTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
+import { OwnGradeRegisters } from './own-grade-registers'
 
 /**
  * The home a teacher gets. Not the coordinator's home with the money taken out:
@@ -25,9 +31,10 @@ import { AutoGrid } from '@/components/layout/auto-grid'
  * teaching, and to how many.
  *
  * Read from `GET /teaching/summary` and `/teaching/class-groups`, both scoped
- * by the session in the API's usecase (CLAUDE.md §8). The grades and the
- * certificates the class groups still owe join the home when they have an API
- * (OOC-38, OOC-33) — until then they are not on it, not even as a zero.
+ * by the session in the API's usecase (CLAUDE.md §8). The grade registers
+ * still open (OOC-170, `/teaching/grade-registers`) come first under the
+ * figures — a finished class group can still owe one, so they show even with
+ * no active class group.
  */
 export async function TeacherHome({
   staff,
@@ -37,7 +44,11 @@ export async function TeacherHome({
   locale: Locale
 }) {
   const t = await getTranslations('bo')
-  const [summary, classGroups] = await Promise.all([getTeachingSummary(), listOwnClassGroups()])
+  const [summary, classGroups, registers] = await Promise.all([
+    getTeachingSummary(),
+    listOwnClassGroups(),
+    listOwnGradeRegisters(),
+  ])
 
   const greeting = (
     <header>
@@ -87,6 +98,7 @@ export async function TeacherHome({
             </Link>
           </p>
         )}
+        <OwnGradeRegisters registers={registers} locale={locale} />
       </div>
     )
   }
@@ -108,6 +120,8 @@ export async function TeacherHome({
           tone="success"
         />
       </AutoGrid>
+
+      <OwnGradeRegisters registers={registers} locale={locale} />
 
       <section className="flex flex-col gap-3">
         <div>

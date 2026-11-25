@@ -14,8 +14,9 @@ import {
   type RecordGradesResult,
 } from "./Grade.js";
 import { GRADING_OPEN, postGrades } from "./gradePosting.js";
-import type { GradeRegisterView, IGradeRegisterRepository } from "./gradeRegister.js";
+import type { GradeRegisterListRow, GradeRegisterView, IGradeRegisterRepository } from "./gradeRegister.js";
 import { registerTransitionError } from "./gradeRegisterErrors.js";
+import type { ListOwnClassGroupsInput, ListOwnClassGroupsUseCase } from "./ListOwnClassGroupsUseCase.js";
 import type { ITeachingReader } from "./TeachingReader.js";
 
 /**
@@ -228,5 +229,44 @@ export class SubmitOwnGradeRegisterUseCase extends BaseUseCase<GetOwnClassGroupI
     });
     if (outcome.kind !== "done") throw registerTransitionError(outcome);
     return { registerId: outcome.registerId };
+  }
+}
+
+/**
+ * The signed-in teacher's grade registers across their module runs (OOC-170):
+ * the portal's list of what they still owe, are waiting on, or had returned.
+ * The runs are the teacher's own class groups — the same scope as listing
+ * them —, and every row is checked against that set again, so what leaves
+ * here is the teacher's whatever the query underneath does. A teacher with no
+ * run (or an account linked to no file) gets an empty list, never a read for
+ * a null id.
+ */
+export class ListOwnGradeRegistersUseCase extends BaseUseCase<
+  ListOwnClassGroupsInput,
+  { rows: GradeRegisterListRow[]; submissionHours: number }
+> {
+  constructor(
+    private readonly listOwnClassGroups: ListOwnClassGroupsUseCase,
+    private readonly registers: IGradeRegisterRepository,
+    private readonly settings: IPlatformSettingsRepository,
+  ) {
+    super();
+  }
+
+  async run(input: ListOwnClassGroupsInput): Promise<{ rows: GradeRegisterListRow[]; submissionHours: number }> {
+    const { gradeSubmissionHours } = await this.settings.get();
+    const groups = await this.listOwnClassGroups.run(input);
+    const teacherId = groups[0]?.teacherId ?? null;
+    if (teacherId === null) return { rows: [], submissionHours: gradeSubmissionHours };
+    const own = new Set(groups.map((group) => group.id));
+    const rows = await this.registers.list(
+      { academicPeriodId: null, teacherId, module: null, status: null, overdueOnly: false },
+      gradeSubmissionHours,
+      new Date(),
+    );
+    return {
+      rows: rows.filter((row) => row.teacherId === teacherId && own.has(row.classGroupModuleId)),
+      submissionHours: gradeSubmissionHours,
+    };
   }
 }

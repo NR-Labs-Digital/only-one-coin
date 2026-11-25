@@ -56,6 +56,7 @@ import {
   EditOwnClassGroupGradeUseCase,
   GetOwnGradeRegisterUseCase,
   SubmitOwnGradeRegisterUseCase,
+  ListOwnGradeRegistersUseCase,
   ListClassGroupGradeRegistersUseCase,
   ListGradeRegistersUseCase,
   ReturnGradeRegisterUseCase,
@@ -363,6 +364,7 @@ export interface AppUseCases {
     editOwnClassGroupGrade: EditOwnClassGroupGradeUseCase;
     getOwnGradeRegister: GetOwnGradeRegisterUseCase;
     submitOwnGradeRegister: SubmitOwnGradeRegisterUseCase;
+    listOwnGradeRegisters: ListOwnGradeRegistersUseCase;
     /** Coordination's side of the register: read, return, confirm. */
     listClassGroupGradeRegisters: ListClassGroupGradeRegistersUseCase;
     listGradeRegisters: ListGradeRegistersUseCase;
@@ -1095,6 +1097,11 @@ function buildContainer(): AppContainer {
           platformSettingsRepository,
         ),
         submitOwnGradeRegister: new SubmitOwnGradeRegisterUseCase(getOwnClassGroup, gradeRegisterRepository),
+        listOwnGradeRegisters: new ListOwnGradeRegistersUseCase(
+          listOwnClassGroups,
+          gradeRegisterRepository,
+          platformSettingsRepository,
+        ),
         listClassGroupGradeRegisters: new ListClassGroupGradeRegistersUseCase(
           teachingReader,
           gradeRegisterRepository,

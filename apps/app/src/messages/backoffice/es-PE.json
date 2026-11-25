@@ -1923,7 +1923,10 @@
       "load_error_title": "No pudimos cargar tus aulas",
       "load_error_body": "Vuelve a intentarlo en unos minutos. Si sigue igual, avisa a coordinación.",
       "finished_waiting": "{count, plural, one {Tienes un aula finalizada.} other {Tienes # aulas finalizadas.}} Siguen en Mis aulas hasta que coordinación las cierre, por si falta alguna nota.",
-      "finished_waiting_link": "Ver mis aulas"
+      "finished_waiting_link": "Ver mis aulas",
+      "registers_title": "Registros de notas pendientes",
+      "registers_subtitle": "Los que todavía no son oficiales. Tienes {hours} horas desde el fin del módulo para enviar cada uno a revisión.",
+      "registers_load_error": "No pudimos cargar tus registros de notas. Recarga la página en unos minutos."
     },
     "team": {
       "title": "Equipo",
