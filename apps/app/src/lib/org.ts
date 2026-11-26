@@ -12,12 +12,5 @@ export const org = {
   whatsapp: '51951153323',
 } as const
 
-/**
- * The Google Form the complaints book lived in before OOC-63. Where
- * `/libro-de-reclamaciones` sends people while the `complaints` flag is off
- * in production; goes away with the flag.
- */
-export const legacyComplaintsFormUrl = 'https://forms.gle/55Z6uner33ZZxZ1cA'
-
 /** Full wa.me link for the help button on the public checkout. */
 export const whatsappUrl = `https://wa.me/${org.whatsapp}`
