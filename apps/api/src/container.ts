@@ -288,6 +288,8 @@ import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/
 import { DrizzleIssuedDocumentRepository } from "./infra/persistence/document/DrizzleIssuedDocumentRepository.js";
 import { DrizzleComplaintRepository } from "./infra/persistence/complaint/DrizzleComplaintRepository.js";
 import { IssuedDocumentService } from "./documents/IssuedDocumentService.js";
+import { GradeRegisterRecordService } from "./documents/GradeRegisterRecordService.js";
+import { DrizzleGradeRegisterRecordRepository } from "./infra/persistence/teaching/DrizzleGradeRegisterRecordRepository.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./infra/persistence/enrollment/DrizzleEnrollmentEmailContextLookup.js";
 import { DrizzlePaymentEmailContextLookup } from "./infra/persistence/enrollment/DrizzlePaymentEmailContextLookup.js";
 import {
@@ -585,6 +587,8 @@ export interface AppDocuments {
   teacherContract: TeacherContractDocumentService;
   /** The constancia and the certificate (OOC-33): issued, previewed, printed. */
   issued: IssuedDocumentService;
+  /** The teacher's acta de notas of an official grade register (OOC-176). */
+  gradeRegisterRecords: GradeRegisterRecordService;
 }
 
 /** The public-route protection (OOC-24): what stands between a burst of
@@ -1028,6 +1032,14 @@ function buildContainer(): AppContainer {
         platformSettingsRepository,
         auditLogRepository,
         config.PORTAL_PUBLIC_URL,
+      ),
+      gradeRegisterRecords: new GradeRegisterRecordService(
+        documentPreview,
+        documentTemplateRepository,
+        new DrizzleGradeRegisterRecordRepository(db),
+        teacherRepository,
+        platformSettingsRepository,
+        auditLogRepository,
       ),
     },
     repositories: {

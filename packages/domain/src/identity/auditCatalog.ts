@@ -187,6 +187,8 @@ export const AUDIT_ACTIONS = {
   "teaching.grade_register_submitted": { key: "grade_register_submitted", entity: "class_group", subject: "target" },
   "teaching.grade_register_returned": { key: "grade_register_returned", entity: "class_group", subject: "target" },
   "teaching.grade_register_confirmed": { key: "grade_register_confirmed", entity: "class_group", subject: "target" },
+  // The acta de notas (OOC-176): the target is the register; the class group travels in metadata.
+  "grade_register_record.downloaded": { key: "grade_register_record_downloaded", entity: "class_group", subject: "metadata_class_group" },
   "teaching.progression_applied": { key: "progression_applied", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },

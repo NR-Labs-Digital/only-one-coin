@@ -25,6 +25,8 @@ import { BoIcon } from '@/components/backoffice/icons'
 import { HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { OwnGradeRegisters } from './own-grade-registers'
+import { OwnGradeRecords } from './own-grade-records'
+import { listOwnGradeRecords } from '@/lib/grade-records/server'
 
 /**
  * The home a teacher gets. Not the coordinator's home with the money taken out:
@@ -45,10 +47,11 @@ export async function TeacherHome({
   locale: Locale
 }) {
   const t = await getTranslations('bo')
-  const [summary, classGroups, registers] = await Promise.all([
+  const [summary, classGroups, registers, records] = await Promise.all([
     getTeachingSummary(),
     listOwnClassGroups(),
     listOwnGradeRegisters(),
+    listOwnGradeRecords(),
   ])
 
   const greeting = (
@@ -100,6 +103,7 @@ export async function TeacherHome({
           </p>
         )}
         <OwnGradeRegisters registers={registers} locale={locale} />
+        <OwnGradeRecords records={records} locale={locale} />
       </div>
     )
   }
@@ -217,6 +221,8 @@ export async function TeacherHome({
           </TableShell>
         </Card>
       </section>
+
+      <OwnGradeRecords records={records} locale={locale} />
     </div>
   )
 }

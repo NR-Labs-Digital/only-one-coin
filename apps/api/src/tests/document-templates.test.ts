@@ -136,6 +136,44 @@ describe("the teacher contract kind", () => {
   });
 });
 
+describe("the acta de notas kind (OOC-176)", () => {
+  const kind = DOCUMENT_KINDS.grade_register_record;
+
+  it("starts from a text that passes the check, so a fresh editor is publishable", () => {
+    expect(compiler.check("grade_register_record", kind.starterBody)).toEqual([]);
+    expect(compiler.check("grade_register_record", compiler.sanitize(kind.starterBody))).toEqual([]);
+  });
+
+  it("prints the counts and leaves out the correction line while nothing was corrected", async () => {
+    const html = await engine.render(kind.kind, kind.starterBody, kind.kind.sample, { locale: "es-PE" });
+    expect(html).toContain("Ana María Quispe Peña");
+    expect(html).toContain("Aprobados (nota mínima 14): 22");
+    expect(html).toContain("DA (no rindió el examen final): 2");
+    expect(html).not.toContain("Acta corregida");
+  });
+
+  it("says when a grade was corrected after official", async () => {
+    const html = await engine.render(
+      kind.kind,
+      kind.starterBody,
+      { ...kind.kind.sample, correctedOn: "2026-11-20" },
+      { locale: "es-PE" },
+    );
+    expect(html).toContain("Acta corregida el 20 de noviembre de 2026");
+  });
+
+  it("prints a teacher whose file is still to be completed, without the document", async () => {
+    const html = await engine.render(
+      kind.kind,
+      kind.starterBody,
+      { ...kind.kind.sample, teacher: { ...kind.kind.sample.teacher, documentType: null, nationalId: null } },
+      { locale: "es-PE" },
+    );
+    expect(html).toContain("Ana María Quispe Peña");
+    expect(html).not.toContain("N.º 12345678");
+  });
+});
+
 describe("DocumentTemplateCompiler.sanitize", () => {
   it("keeps structure, emphasis and alignment", () => {
     const html = '<h1 style="text-align: center">T</h1><p style="text-align: justify"><strong>a</strong> <em>b</em> <u>c</u></p><ul><li>x</li></ul>';

@@ -32,7 +32,8 @@
       "account": "My account",
       "profile": "Profile",
       "agenda": "Agenda",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "grade_records": "Grade records"
     },
     "role": {
       "master": "Master",
@@ -387,6 +388,7 @@
         "grade_register_submitted": "Grade register sent to review",
         "grade_register_returned": "Grade register returned to the teacher",
         "grade_register_confirmed": "Grade register confirmed as official",
+        "grade_register_record_downloaded": "Grade record downloaded",
         "staff_profile_created": "Role created",
         "staff_profile_updated": "Role permissions changed",
         "staff_profile_retired": "Role deleted"
@@ -2502,7 +2504,22 @@
         "document": {
           "code": "Verification code"
         },
-        "finalGrade": "Final grade"
+        "finalGrade": "Final grade",
+        "module": {
+          "label": "Module",
+          "round": "Round"
+        },
+        "confirmed": {
+          "byName": "Confirmed by",
+          "on": "Confirmation date"
+        },
+        "counts": {
+          "students": "Students",
+          "passed": "Passed",
+          "failed": "Failed",
+          "didNotSit": "DA (did not sit)"
+        },
+        "passingGrade": "Passing grade"
       },
       "groups": {
         "teacher": "Teacher",
@@ -2511,17 +2528,22 @@
         "student": "Student",
         "course": "Course",
         "class_group": "Class group",
-        "document": "Document"
+        "document": "Document",
+        "module": "Module",
+        "confirmation": "Confirmation",
+        "counts": "Grades"
       },
       "kind": {
         "teacher_contract": "Teacher contract",
         "enrollment_certificate": "Enrollment certificate",
-        "certificate": "Course certificate"
+        "certificate": "Course certificate",
+        "grade_register_record": "Grade record"
       },
       "intro": {
         "teacher_contract": "Write the text as in any document. Each teacher's details go in with “Insert data” and fill themselves in when the contract is downloaded. The preview shows the PDF as it will come out, with sample data.",
         "enrollment_certificate": "Write the text as in any document. The student's and the enrollment's details go in with “Insert field” and fill themselves in when the enrollment certificate is issued. The verification code prints in every page's footer.",
-        "certificate": "Write the text as in any document. The student's and the course's details go in with “Insert field” and fill themselves in when the certificate is issued. The verification code prints in every page's footer."
+        "certificate": "Write the text as in any document. The student's and the course's details go in with “Insert field” and fill themselves in when the certificate is issued. The verification code prints in every page's footer.",
+        "grade_register_record": "Write the text as in a normal document. The teacher's, class group's and grades' data are added with “Insert data” and fill in on their own when the record is downloaded. The counts of students, passed, failed and DA are taken at each download."
       },
       "editor_label": "Document text",
       "preview_label": "PDF preview",
@@ -2545,14 +2567,16 @@
       "publish_confirm_body": {
         "teacher_contract": "From now on, every contract downloaded will use this text. Ones already downloaded do not change.",
         "enrollment_certificate": "From now on, every enrollment certificate issued will use this text. Ones already issued do not change.",
-        "certificate": "From now on, every certificate issued will use this text. Ones already issued do not change."
+        "certificate": "From now on, every certificate issued will use this text. Ones already issued do not change.",
+        "grade_register_record": "From now on, every record downloaded for the first time will use this text. Those already downloaded keep their version's text."
       },
       "publish_confirm": "Yes, publish",
       "notice_saved": "Draft saved.",
       "notice_published": {
         "teacher_contract": "Published. New contracts already use this text.",
         "enrollment_certificate": "Published. New enrollment certificates already use this text.",
-        "certificate": "Published. New certificates already use this text."
+        "certificate": "Published. New certificates already use this text.",
+        "grade_register_record": "Published. The next records already use this text."
       },
       "notice_unchanged": "This text was already the published version.",
       "error_save_failed": "The draft could not be saved. Try again.",
@@ -2865,7 +2889,17 @@
       "attach_origin_portal_what": "All your documents are here. The badge says where each one came from: what you sent, what the coordination uploaded and what the institution issued (enrollment certificate or certificate).",
       "attach_origin_portal_how": "Only documents issued by the institution carry a verification code. What you send stays as a record for the coordination, so you can't remove it.",
       "payment_metric_in_review_what": "Payments waiting for a person in Payments, from every period, like the Open tab.",
-      "payment_metric_decided_what": "Counts only the current period: what was approved, collected or rejected in it."
+      "payment_metric_decided_what": "Counts only the current period: what was approved, collected or rejected in it.",
+      "grade_record_page_what": "Each row is a grade register coordination confirmed as official: a module group in one round. The record is the document the teacher is paid against.",
+      "grade_record_page_how": "Downloads as a PDF, built on the spot from the text in Settings → Documents. Every download is logged. Closed class groups show up too.",
+      "grade_record_counts_what": "Students graded in this register: passed have the passing grade set in Settings or more; failed, less; DA did not sit the final exam.",
+      "grade_record_counts_how": "Counted from today's grades: if supervision corrects a grade after official, the number changes and the next download shows it.",
+      "grade_record_confirmed_what": "When and by whom the register was confirmed as official. “Corrected on” shows if a grade was corrected afterwards.",
+      "grade_record_confirmed_how": "The downloaded record states the correction date; a record downloaded earlier does not change on its own: download it again.",
+      "grade_record_download_what": "The record's PDF: teacher, class group, course, module, period, grade counts and who confirmed.",
+      "grade_record_download_how": "The first download keeps the record with that day's teacher and text; later ones come out the same, with up-to-date counts.",
+      "grade_record_own_what": "The record of each of your grade registers coordination confirmed as official. It is the document your payment goes by.",
+      "grade_record_own_how": "Download it as a PDF whenever you want, also after the class group closes."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -3355,6 +3389,7 @@
           "view": "See grades and grade registers",
           "record": "Post and correct grades",
           "review_register": "Return and confirm a grade register",
+          "register_records": "Download the teachers' grade records",
           "progression": "Move students on to the next module",
           "certificates_preview": "See a class group’s certificate list",
           "certificates_issue": "Issue a class group’s certificates"
@@ -3447,6 +3482,28 @@
         },
         "failed": "Could not save. Try again."
       }
+    },
+    "grade_record": {
+      "title": "Grade records",
+      "intro": "The record of each official grade register: what the teacher is paid against. Replaces Coordination's confirmation e-mail.",
+      "col_counts": "Students",
+      "col_confirmed": "Official since",
+      "col_action": "Record",
+      "students": "{count, plural, one {# student} other {# students}}",
+      "breakdown": "{passed} passed · {failed} failed · {didNotSit} DA",
+      "confirmed_by": "Confirmed by {name}",
+      "corrected_on": "Corrected on {date}",
+      "download": "Download record",
+      "downloading": "Preparing…",
+      "failure_not_published": "The record has no published text yet. Publish it in Settings → Documents.",
+      "failure_no_teacher": "The module group has no teacher assigned. Assign one before downloading the record.",
+      "failure_unavailable": "The PDF is not available right now. Try again in a few minutes.",
+      "failure_generic": "The record could not be downloaded.",
+      "load_error": "The grade records could not be loaded.",
+      "empty_title": "No records yet",
+      "empty_body": "A record shows up here when coordination confirms a grade register as official.",
+      "own_title": "My grade records",
+      "own_subtitle": "One per grade register confirmed as official in your class groups."
     }
   }
 }

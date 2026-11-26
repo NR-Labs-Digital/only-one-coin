@@ -236,6 +236,15 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("grade_register_events"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A teacher's acta de notas is what they are paid against (OOC-176).
+  it("refuses UPDATE on grade_register_records", async () => {
+    expect(await answerTo(`update grade_register_records set data = data where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on grade_register_records", async () => {
+    expect(await answerTo(deleteFrom("grade_register_records"))).toBe(DENIED_BY_GRANT);
+  });
+
   // A complaints book sheet is a legal record (OOC-63).
   it("refuses UPDATE on complaints", async () => {
     expect(await answerTo(`update complaints set detail = detail where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
@@ -433,6 +442,15 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on grade_register_events", async () => {
     expect(await answerTo(deleteFrom("grade_register_events"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // A teacher's acta de notas is what they are paid against (OOC-176).
+  it("refuses UPDATE on grade_register_records", async () => {
+    expect(await answerTo(`update grade_register_records set data = data where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on grade_register_records", async () => {
+    expect(await answerTo(deleteFrom("grade_register_records"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // A complaints book sheet is a legal record (OOC-63).

@@ -3,6 +3,7 @@ import { type TemplateKind, TemplateEngine } from "@ooc/templates";
 import sanitizeHtml from "sanitize-html";
 import { certificateKind, certificateStarterBody } from "./kinds/certificate.js";
 import { enrollmentCertificateKind, enrollmentCertificateStarterBody } from "./kinds/enrollmentCertificate.js";
+import { gradeRegisterRecordKind, gradeRegisterRecordStarterBody } from "./kinds/gradeRegisterRecord.js";
 import { teacherContractKind, teacherContractStarterBody } from "./kinds/teacherContract.js";
 
 /**
@@ -16,6 +17,8 @@ export const DOCUMENT_KINDS = {
   // Issued documents (OOC-33): the key is the issued document's kind.
   enrollment_certificate: { kind: enrollmentCertificateKind, starterBody: enrollmentCertificateStarterBody },
   certificate: { kind: certificateKind, starterBody: certificateStarterBody },
+  // The teacher's acta de notas of an official grade register (OOC-176).
+  grade_register_record: { kind: gradeRegisterRecordKind, starterBody: gradeRegisterRecordStarterBody },
 } as const satisfies Record<string, { kind: TemplateKind; starterBody: string }>;
 
 export type DocumentKindKey = keyof typeof DOCUMENT_KINDS;

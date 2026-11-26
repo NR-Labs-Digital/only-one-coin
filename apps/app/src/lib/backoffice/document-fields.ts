@@ -100,6 +100,49 @@ export const DOCUMENT_FIELDS: Record<DocumentKind, DocumentFieldGroup[]> = {
     { key: 'document', fields: [text('document.code'), date('issuedOn')] },
     { key: 'org', fields: ORG_FIELDS },
   ],
+  // The teacher's acta de notas (OOC-176). The teacher's document may be
+  // missing (a file still to be completed, OOC-103). `correctedOn` is not a
+  // chip: it only exists once a grade was corrected after official, and a
+  // date that may be missing cannot print through `local_date` — the starter
+  // text carries it inside `{% if correctedOn %}`.
+  grade_register_record: [
+    {
+      key: 'teacher',
+      fields: [
+        text('teacher.fullName'),
+        text('teacher.firstName'),
+        text('teacher.lastName'),
+        optional('teacher.documentType'),
+        optional('teacher.nationalId'),
+      ],
+    },
+    { key: 'course', fields: COURSE_FIELDS },
+    {
+      key: 'class_group',
+      fields: [
+        text('classGroup.code'),
+        date('classGroup.startsOn'),
+        date('classGroup.endsOn'),
+        text('period.name'),
+      ],
+    },
+    { key: 'module', fields: [text('module.label'), text('module.round')] },
+    {
+      key: 'counts',
+      fields: [
+        text('counts.students'),
+        text('counts.passed'),
+        text('counts.failed'),
+        text('counts.didNotSit'),
+        text('passingGrade'),
+      ],
+    },
+    {
+      key: 'confirmation',
+      fields: [text('confirmed.byName'), date('confirmed.on'), date('issuedOn')],
+    },
+    { key: 'org', fields: ORG_FIELDS },
+  ],
 }
 
 /** The path a stored expression prints — `teacher.region | default: "—"` → `teacher.region`. */

@@ -32,7 +32,8 @@
       "account": "Minha conta",
       "profile": "Perfil",
       "agenda": "Agenda",
-      "audit": "Auditoria"
+      "audit": "Auditoria",
+      "grade_records": "Atas de notas"
     },
     "role": {
       "master": "Master",
@@ -387,6 +388,7 @@
         "grade_register_submitted": "Registro de notas enviado para revisão",
         "grade_register_returned": "Registro de notas devolvido ao docente",
         "grade_register_confirmed": "Registro de notas confirmado como oficial",
+        "grade_register_record_downloaded": "Ata de notas baixada",
         "staff_profile_created": "Cargo criado",
         "staff_profile_updated": "Permissões de cargo alteradas",
         "staff_profile_retired": "Cargo eliminado"
@@ -2502,7 +2504,22 @@
         "document": {
           "code": "Código de verificação"
         },
-        "finalGrade": "Nota final"
+        "finalGrade": "Nota final",
+        "module": {
+          "label": "Módulo",
+          "round": "Rodada"
+        },
+        "confirmed": {
+          "byName": "Confirmado por",
+          "on": "Data da confirmação"
+        },
+        "counts": {
+          "students": "Alunos",
+          "passed": "Aprovados",
+          "failed": "Reprovados",
+          "didNotSit": "DA (não fez a prova)"
+        },
+        "passingGrade": "Nota mínima"
       },
       "groups": {
         "teacher": "Docente",
@@ -2511,17 +2528,22 @@
         "student": "Aluno",
         "course": "Curso",
         "class_group": "Turma",
-        "document": "Documento"
+        "document": "Documento",
+        "module": "Módulo",
+        "confirmation": "Confirmação",
+        "counts": "Notas"
       },
       "kind": {
         "teacher_contract": "Contrato do docente",
         "enrollment_certificate": "Constância de matrícula",
-        "certificate": "Certificado do curso"
+        "certificate": "Certificado do curso",
+        "grade_register_record": "Ata de notas"
       },
       "intro": {
         "teacher_contract": "Escreva o texto como num documento comum. Os dados de cada docente entram por «Inserir dado» e são preenchidos sozinhos ao baixar o contrato. Na pré-visualização você vê o PDF como vai sair, com dados de exemplo.",
         "enrollment_certificate": "Escreva o texto como num documento comum. Os dados do aluno e da matrícula entram com «Inserir dado» e se preenchem sozinhos ao emitir a constância. O código de verificação sai no rodapé de cada página.",
-        "certificate": "Escreva o texto como num documento comum. Os dados do aluno e do curso entram com «Inserir dado» e se preenchem sozinhos ao emitir o certificado. O código de verificação sai no rodapé de cada página."
+        "certificate": "Escreva o texto como num documento comum. Os dados do aluno e do curso entram com «Inserir dado» e se preenchem sozinhos ao emitir o certificado. O código de verificação sai no rodapé de cada página.",
+        "grade_register_record": "Escreva o texto como num documento normal. Os dados do docente, da turma e das notas entram com «Inserir dado» e se preenchem sozinhos ao baixar a ata. Os números de alunos, aprovados, reprovados e DA são contados a cada download."
       },
       "editor_label": "Texto do documento",
       "preview_label": "Pré-visualização do PDF",
@@ -2545,14 +2567,16 @@
       "publish_confirm_body": {
         "teacher_contract": "A partir de agora, todo contrato baixado usará este texto. Os que já foram baixados não mudam.",
         "enrollment_certificate": "A partir de agora, toda constância emitida usará este texto. As já emitidas não mudam.",
-        "certificate": "A partir de agora, todo certificado emitido usará este texto. Os já emitidos não mudam."
+        "certificate": "A partir de agora, todo certificado emitido usará este texto. Os já emitidos não mudam.",
+        "grade_register_record": "A partir de agora, toda ata baixada pela primeira vez usará este texto. As já baixadas continuam com o texto da sua versão."
       },
       "publish_confirm": "Sim, publicar",
       "notice_saved": "Rascunho salvo.",
       "notice_published": {
         "teacher_contract": "Publicado. Os próximos contratos já usam este texto.",
         "enrollment_certificate": "Publicado. As próximas constâncias já usam este texto.",
-        "certificate": "Publicado. Os próximos certificados já usam este texto."
+        "certificate": "Publicado. Os próximos certificados já usam este texto.",
+        "grade_register_record": "Publicado. As próximas atas já usam este texto."
       },
       "notice_unchanged": "Este texto já era a versão publicada.",
       "error_save_failed": "Não foi possível salvar o rascunho. Tente de novo.",
@@ -2865,7 +2889,17 @@
       "attach_origin_portal_what": "Aqui estão todos os seus documentos. O selo diz de onde veio cada um: o que você enviou, o que a coordenação enviou e o que a instituição emitiu (constancia ou certificado).",
       "attach_origin_portal_how": "Só os emitidos pela instituição levam código de verificação. O que você envia fica como registro da coordenação, por isso você não pode removê-lo.",
       "payment_metric_in_review_what": "Pagamentos esperando uma pessoa em Pagos, de todos os períodos, como a aba Abertos.",
-      "payment_metric_decided_what": "Conta só o período atual: o aprovado, o arrecadado ou o rejeitado nele."
+      "payment_metric_decided_what": "Conta só o período atual: o aprovado, o arrecadado ou o rejeitado nele.",
+      "grade_record_page_what": "Cada linha é um registro de notas que a coordenação confirmou como oficial: um grupo de módulo numa rodada. A ata é o documento com que se paga o docente.",
+      "grade_record_page_how": "Baixa em PDF, montado na hora com o texto de Configuração → Documentos. Cada download fica na bitácora. Aparecem também as turmas já fechadas.",
+      "grade_record_counts_what": "Alunos com nota neste registro: aprovados têm a nota mínima da Configuração ou mais; reprovados, menos; DA não fizeram a prova final.",
+      "grade_record_counts_how": "Contados com as notas de hoje: se a supervisão corrige uma nota depois de oficial, o número muda e o próximo download mostra.",
+      "grade_record_confirmed_what": "Quando e quem confirmou o registro como oficial. «Corrigida em» aparece se uma nota foi corrigida depois.",
+      "grade_record_confirmed_how": "A ata baixada diz a data da correção; uma ata baixada antes não muda sozinha: baixe de novo.",
+      "grade_record_download_what": "O PDF da ata: docente, turma, curso, módulo, período, números de notas e quem confirmou.",
+      "grade_record_download_how": "O primeiro download guarda a ata com o docente e o texto vigentes nesse dia; os seguintes saem iguais, com os números atualizados.",
+      "grade_record_own_what": "A ata de cada registro de notas seu que a coordenação confirmou como oficial. É o documento usado para o seu pagamento.",
+      "grade_record_own_how": "Baixe em PDF quando quiser, também depois de a turma fechar."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
@@ -3355,6 +3389,7 @@
           "view": "Ver notas e registros de notas",
           "record": "Lançar e corrigir notas",
           "review_register": "Devolver e confirmar um registro de notas",
+          "register_records": "Baixar a ata de notas dos docentes",
           "progression": "Passar alunos para o módulo seguinte",
           "certificates_preview": "Ver a lista de certificados de uma turma",
           "certificates_issue": "Emitir os certificados de uma turma"
@@ -3447,6 +3482,28 @@
         },
         "failed": "Não foi possível salvar. Tente de novo."
       }
+    },
+    "grade_record": {
+      "title": "Atas de notas",
+      "intro": "A ata de cada registro de notas oficial: o que se usa para o pagamento do docente. Substitui o e-mail de confirmação da Coordenação.",
+      "col_counts": "Alunos",
+      "col_confirmed": "Oficial desde",
+      "col_action": "Ata",
+      "students": "{count, plural, one {# aluno} other {# alunos}}",
+      "breakdown": "{passed} aprovados · {failed} reprovados · {didNotSit} DA",
+      "confirmed_by": "Confirmou {name}",
+      "corrected_on": "Corrigida em {date}",
+      "download": "Baixar ata",
+      "downloading": "Preparando…",
+      "failure_not_published": "A ata ainda não tem texto publicado. Publique em Configuração → Documentos.",
+      "failure_no_teacher": "O grupo de módulo não tem docente atribuído. Atribua antes de baixar a ata.",
+      "failure_unavailable": "O PDF não está disponível agora. Tente em alguns minutos.",
+      "failure_generic": "Não foi possível baixar a ata.",
+      "load_error": "Não foi possível carregar as atas de notas.",
+      "empty_title": "Ainda não há atas",
+      "empty_body": "Uma ata aparece aqui quando a coordenação confirma um registro de notas como oficial.",
+      "own_title": "Minhas atas de notas",
+      "own_subtitle": "Uma por registro de notas confirmado como oficial nas suas turmas."
     }
   }
 }
