@@ -13,6 +13,8 @@ export const PlatformSettingsResponseSchema = z.object({
   certificateDeadlineBusinessDays: z.number().int(),
   contractAlertDays: z.number().int(),
   gradeSubmissionHours: z.number().int(),
+  /** OOC-58: business days to answer a complaints book sheet. */
+  complaintResponseBusinessDays: z.number().int(),
   /** OOC-156: advancing to the next module asks for the pass mark. */
   progressionRequiresPassingGrade: z.boolean(),
 });

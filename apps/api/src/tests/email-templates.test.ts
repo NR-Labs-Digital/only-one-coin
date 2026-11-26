@@ -94,6 +94,15 @@ const SAMPLE_VARS: EmailTemplateVars = {
     detail: "Nadie respondió mis mensajes.",
     request: "Que me respondan.",
   },
+  complaint_answered: {
+    recipientName: "Rosa",
+    code: "2026-000001",
+    filedAt: "2026-11-24T15:30:00.000Z",
+    kind: "grievance",
+    legalName: "ONLY ONE ACADEMY SAC",
+    ruc: "20615261271",
+    answer: "Lo sentimos.\nYa respondimos tus mensajes.",
+  },
   portal_credentials: {
     recipientName: "Rosa",
     loginEmail: "rosa.quispe@gmail.com",

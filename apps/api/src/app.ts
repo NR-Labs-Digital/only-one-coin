@@ -75,6 +75,14 @@ import {
 import { verifyIssuedDocumentRoute } from "@/http/issuedDocument/VerifyIssuedDocumentRoute.js";
 import { fileComplaintRoute } from "@/http/complaint/FileComplaintRoute.js";
 import {
+  answerComplaintRoute,
+  complaintInboxSummaryRoute,
+  getComplaintRoute,
+  listComplaintsRoute,
+  listStudentComplaintsRoute,
+  takeComplaintRoute,
+} from "@/http/complaint/ComplaintInboxRoutes.js";
+import {
   downloadPortalIssuedDocumentRoute,
   listPortalIssuedDocumentsRoute,
 } from "@/http/issuedDocument/PortalIssuedDocumentRoutes.js";
@@ -308,6 +316,13 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(verifyIssuedDocumentRoute);
         // The complaints book's public form (OOC-63).
         instance.withTypeProvider<ZodTypeProvider>().route(fileComplaintRoute);
+        // The team's inbox of the complaints book (OOC-58).
+        instance.withTypeProvider<ZodTypeProvider>().route(listComplaintsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(complaintInboxSummaryRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getComplaintRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(takeComplaintRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(answerComplaintRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listStudentComplaintsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listPortalIssuedDocumentsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(downloadPortalIssuedDocumentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(openTeacherContractRoute);

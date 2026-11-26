@@ -176,6 +176,17 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     detail: "Pagué la matrícula y todavía no recibo el acceso al aula.",
     request: "Que me envíen el acceso o me indiquen cuándo empiezan las clases.",
   },
+  // The answer to the sheet above, written by the team on two lines.
+  complaint_answered: {
+    recipientName: "María Fernanda",
+    code: "2026-000123",
+    filedAt: "2026-11-24T15:30:00.000Z",
+    kind: "claim",
+    legalName: LEGAL_IDENTITY.legalName,
+    ruc: LEGAL_IDENTITY.ruc,
+    answer:
+      "Revisamos tu caso con la coordinación académica. El acceso a tu aula ya está habilitado en el portal.\nSi vuelves a tener un problema, escríbenos por WhatsApp.",
+  },
   portal_credentials: {
     recipientName: "María Fernanda",
     loginEmail: "maria.quispe@gmail.com",
