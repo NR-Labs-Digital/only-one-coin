@@ -117,6 +117,9 @@ export const PERMISSION_CATALOG = [
   { key: "grades.view", area: "grades", defaultRoles: ["master", "admin", "analyst", "academic_supervisor", "academic_assistant"] },
   { key: "grades.record", area: "grades", defaultRoles: ["master", "admin", "academic_supervisor"] },
   { key: "grades.review_register", area: "grades", defaultRoles: ["master", "admin", "academic_supervisor"] },
+  // The teacher's acta de notas of an official register (OOC-176): counts,
+  // never a grade — so administration, which pays the teacher, holds it too.
+  { key: "grades.register_records", area: "grades", defaultRoles: ["master", "admin", "analyst", "academic_supervisor", "academic_assistant", "billing"] },
   { key: "grades.progression", area: "grades", defaultRoles: ["master", "admin", "enrollment_supervisor", "academic_supervisor"] },
   { key: "grades.certificates_preview", area: "grades", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor"] },
   { key: "grades.certificates_issue", area: "grades", defaultRoles: ["master", "admin", "enrollment_supervisor", "academic_supervisor"] },

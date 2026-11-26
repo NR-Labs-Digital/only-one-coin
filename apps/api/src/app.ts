@@ -40,6 +40,12 @@ import {
 } from "@/http/teaching/ClassGroupGradesRoutes.js";
 import { getTeachingSummaryRoute } from "@/http/teaching/GetTeachingSummaryRoute.js";
 import {
+  downloadGradeRegisterRecordRoute,
+  downloadOwnGradeRegisterRecordRoute,
+  listGradeRegisterRecordsRoute,
+  listOwnGradeRegisterRecordsRoute,
+} from "@/http/teaching/GradeRegisterRecordRoutes.js";
+import {
   confirmGradeRegisterRoute,
   editOwnClassGroupGradeRoute,
   getOwnGradeRegisterRoute,
@@ -321,6 +327,11 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listGradeRegistersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(returnGradeRegisterRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(confirmGradeRegisterRoute);
+        // The teacher's acta de notas (OOC-176).
+        instance.withTypeProvider<ZodTypeProvider>().route(listGradeRegisterRecordsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadGradeRegisterRecordRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listOwnGradeRegisterRecordsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(downloadOwnGradeRegisterRecordRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getTeachingSummaryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createManualEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listEnrollmentMoveTargetsRoute);

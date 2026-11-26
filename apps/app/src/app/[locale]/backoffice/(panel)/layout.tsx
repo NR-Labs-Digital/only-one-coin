@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutStaff } from '../actions'
 import {
   canBrowseCatalog,
+  canDownloadGradeRecords,
   canBrowseEnrollments,
   canBrowseReports,
   canBrowseStudents,
@@ -162,6 +163,19 @@ export default async function BackofficePanelLayout({
                 href: '/backoffice/teachers',
                 label: t('nav.teachers'),
                 hiddenFromOthers: hidden('backoffice.teachers'),
+              },
+            ]
+          : []),
+        /* The teachers' actas de notas (OOC-176): an entry of its own, not a
+           tab of Académico, because administration (billing) pays the teacher
+           against it and sees nothing else of the section. */
+        ...(flags['backoffice.academic'] && canDownloadGradeRecords(staff)
+          ? [
+              {
+                key: 'grade_records' as const,
+                href: '/backoffice/grade-records',
+                label: t('nav.grade_records'),
+                hiddenFromOthers: hidden('backoffice.academic'),
               },
             ]
           : []),

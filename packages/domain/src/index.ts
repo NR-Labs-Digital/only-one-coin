@@ -74,7 +74,7 @@ export {
   type SetTeacherRosterStatusOutput,
 } from "./teacher/SetTeacherRosterStatusUseCase.js";
 export type { GradingClassGroup, ITeachingReader, TeachingClassGroup, TeachingStudent } from "./teaching/TeachingReader.js";
-export { isOwnClassGroup, isTeaching } from "./teaching/teachingScope.js";
+export { isOwnClassGroup, isTeaching, ownTeacherId } from "./teaching/teachingScope.js";
 export { ListOwnClassGroupsUseCase, type ListOwnClassGroupsInput } from "./teaching/ListOwnClassGroupsUseCase.js";
 export { GetOwnClassGroupUseCase, type GetOwnClassGroupInput } from "./teaching/GetOwnClassGroupUseCase.js";
 export { ListOwnClassGroupStudentsUseCase } from "./teaching/ListOwnClassGroupStudentsUseCase.js";

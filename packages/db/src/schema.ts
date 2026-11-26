@@ -1726,6 +1726,42 @@ export const gradeRegisterEvents = pgTable(
   ],
 );
 
+// The teacher's "acta de notas" of an official register (OOC-176): what the
+// teacher is paid against. Recorded on the first download — one per register
+// — with the published template version and the data frozen then (teacher,
+// class group, course, module, who confirmed). The PDF is never stored, and
+// the counts (passed, failed, DA) are read from the grades on every print, so
+// a grade corrected after official shows in the next download. Append-only
+// (REVOKE + trigger, 0078). `recorded_by` is Better Auth's "user".id — FK
+// written by hand in 0078.
+export const gradeRegisterRecords = pgTable(
+  "grade_register_records",
+  {
+    id: uuidPk(),
+    registerId: uuid("register_id")
+      .notNull()
+      .references(() => gradeRegisters.id, { onDelete: "restrict" }),
+    // The teacher of the acta, from the roster (never typed): the run's
+    // teacher when it was recorded. Scopes the teacher portal's downloads, so
+    // a run handed to somebody else later does not hand them this acta.
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => teachers.id, { onDelete: "restrict" }),
+    templateVersionId: uuid("template_version_id").notNull(),
+    data: jsonb("data").notNull(),
+    recordedBy: text("recorded_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("grade_register_records_register_uidx").on(table.registerId),
+    foreignKey({
+      name: "grade_register_records_template_version_fk",
+      columns: [table.templateVersionId],
+      foreignColumns: [documentTemplateVersions.id],
+    }).onDelete("restrict"),
+  ],
+);
+
 // The grade that counts for each graded seat (OOC-102): the last correction
 // when there is one, the posted grade otherwise. A view written by hand in
 // 0052, so every reader — the teacher's sheet, the backoffice and the

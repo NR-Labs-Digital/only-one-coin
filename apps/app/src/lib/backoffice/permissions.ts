@@ -197,6 +197,15 @@ export function canReadGrades(staff: StaffAccess): boolean {
 }
 
 /**
+ * Who lists and downloads the teachers' actas de notas (OOC-176): who reads
+ * grades, and billing — administration pays the teacher against the acta,
+ * which carries counts, never a grade.
+ */
+export function canDownloadGradeRecords(staff: StaffAccess): boolean {
+  return has(staff, 'grades.register_records')
+}
+
+/**
  * Who posts a missing grade and corrects a posted one (OOC-102, decision of
  * 10/11/2026). The readers minus the analyst and the academic assistant.
  * Mirrors GRADE_WRITE_ROLES in apps/api.
