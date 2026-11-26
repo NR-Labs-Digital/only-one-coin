@@ -18,8 +18,10 @@ import {
   canManageStaff,
   canViewPermissionMatrix,
   canViewPayments,
+  canViewComplaints,
 } from '@/lib/backoffice/permissions'
 import { getReviewQueueHead } from '@/lib/backoffice/dashboard'
+import { getComplaintSummary } from '@/lib/backoffice/complaints'
 import { getBackofficeSession } from '@/lib/backoffice/session'
 import { getFeatureView } from '@/lib/feature-flags/server'
 import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
@@ -82,10 +84,13 @@ export default async function BackofficePanelLayout({
      serves the queue to — anybody else would get a 403, and the badge would
      just say nothing. A failed read says nothing too: no badge beats a wrong
      zero. */
-  const reviewQueue =
-    flags['backoffice.payments'] && canViewPayments(staff)
-      ? await getReviewQueueHead()
-      : null
+  /* The complaints book's badge (OOC-58): sheets nobody took yet. Same
+     rule as the queue — asked only by who reads the book, and a failed read
+     says nothing. Asked together with the queue: one round trip, not two. */
+  const [reviewQueue, complaintSummary] = await Promise.all([
+    flags['backoffice.payments'] && canViewPayments(staff) ? getReviewQueueHead() : Promise.resolve(null),
+    flags['backoffice.complaints'] && canViewComplaints(staff) ? getComplaintSummary() : Promise.resolve(null),
+  ])
   const pendingReview = reviewQueue?.total ?? 0
 
   /* A group whose every section is off is not an empty dropdown — it is not a
@@ -136,6 +141,16 @@ export default async function BackofficePanelLayout({
           label: t('nav.payments'),
           hiddenFromOthers: hidden('backoffice.payments'),
           badge: pendingReview,
+        }] : []),
+        ...(flags['backoffice.complaints'] && canViewComplaints(staff) ? [{
+          /* The complaints book (OOC-58), next to the money: a complaint is
+             most often about a payment. The badge is the sheets nobody took
+             yet — what the panel has to answer for, by law. */
+          key: 'complaints' as const,
+          href: '/backoffice/complaints',
+          label: t('nav.complaints'),
+          hiddenFromOthers: hidden('backoffice.complaints'),
+          badge: complaintSummary?.received ?? 0,
         }] : []),
       ],
     },

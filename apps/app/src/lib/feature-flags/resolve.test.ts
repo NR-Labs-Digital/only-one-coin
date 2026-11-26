@@ -86,12 +86,14 @@ describe('resolveFlags', () => {
   })
 
   it('tells each staff surface apart when deciding whether to show the banner', () => {
-    // In the registry today, only docente sections are off in production.
+    // In the registry today, docente sections and the complaints book's
+    // inbox (OOC-58) are off in production; nothing of the portal is.
     const view = resolveFlags(production(), 'owner')
 
     expect(surfaceHasHiddenFlags(view, 'teacher')).toBe(true)
-    expect(surfaceHasHiddenFlags(view, 'backoffice')).toBe(false)
+    expect(surfaceHasHiddenFlags(view, 'backoffice')).toBe(true)
     expect(surfaceHasHiddenFlags(resolveFlags(production(), null), 'teacher')).toBe(false)
+    expect(surfaceHasHiddenFlags(resolveFlags(production(), null), 'backoffice')).toBe(false)
   })
 })
 

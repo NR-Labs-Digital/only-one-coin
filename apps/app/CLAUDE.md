@@ -194,7 +194,7 @@ aquilo não está ativo para mais ninguém.
   desligada não some com a página: `/libro-de-reclamaciones` redireciona para o
   Google Forms antigo (`legacyComplaintsFormUrl`, `lib/org.ts`). O endereço é
   linkado do rodapé de toda página da landing e o livro é obrigação legal —
-  404 ali seria um canal legal fechado. Sai junto com a flag.
+  404 ali seria um canal legal fechado. Sai junto com a flag. A caixa da equipe tem flag própria, `backoffice.complaints` (OOC-58, essa sim com o 404 de sempre), e as duas ligam juntas: formulário no ar sem ninguém lendo as hojas é o que a `complaints` desligada existe para evitar.
 - **Desligada não vira cadeado.** Cadeado é o vocabulário de "anunciado, não
   construído" (a Área do aluno do portal, `CLAUDE.md` §2), que é uma afirmação
   pública e diferente.

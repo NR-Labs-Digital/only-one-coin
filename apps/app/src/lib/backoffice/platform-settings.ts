@@ -24,6 +24,8 @@ export interface PlatformSettings {
   contractAlertDays: number
   /** Hours after the module's end date to send the grade register before it is out of time (OOC-180). */
   gradeSubmissionHours: number
+  /** Business days to answer a complaints book sheet (OOC-58), Monday to Friday in Lima. */
+  complaintResponseBusinessDays: number
   /**
    * Moving a student on to the next module asks for the pass mark (OOC-156).
    * Coordination may still advance below it, with a reason.

@@ -33,7 +33,8 @@
       "profile": "Profile",
       "agenda": "Agenda",
       "audit": "Audit log",
-      "grade_records": "Grade records"
+      "grade_records": "Grade records",
+      "complaints": "Complaints Book"
     },
     "role": {
       "master": "Master",
@@ -391,7 +392,9 @@
         "grade_register_record_downloaded": "Grade record downloaded",
         "staff_profile_created": "Role created",
         "staff_profile_updated": "Role permissions changed",
-        "staff_profile_retired": "Role deleted"
+        "staff_profile_retired": "Role deleted",
+        "complaint_taken": "Complaint sheet taken",
+        "complaint_answered": "Complaint sheet answered"
       },
       "field": {
         "first_name": "First name",
@@ -448,7 +451,8 @@
         "full_course": "Full course",
         "progression_requires_passing_grade": "Pass mark to move on to the next module",
         "grade_submission_hours": "Grade register deadline",
-        "module_ends_on": "Module end date"
+        "module_ends_on": "Module end date",
+        "complaint_response_business_days": "Complaints Book answer deadline"
       }
     },
     "student_status": {
@@ -951,7 +955,8 @@
       "grade_updated": "Grade updated by the teacher",
       "grade_updated_did_not_sit": "Result updated to DA",
       "grade_official": "Official grade",
-      "grade_official_did_not_sit": "Official result: DA"
+      "grade_official_did_not_sit": "Official result: DA",
+      "complaint_answered": "Answer to the complaint sheet"
     },
     "email_trigger": {
       "enrollment_received": "When the enrollment data arrives, after the student fills in the form.",
@@ -987,7 +992,8 @@
       "grade_updated": "The teacher changes a grade before the register is official",
       "grade_updated_did_not_sit": "The teacher changes a grade to DA before the register is official",
       "grade_official": "Coordination confirms the grade register",
-      "grade_official_did_not_sit": "Coordination confirms the register with the module as DA"
+      "grade_official_did_not_sit": "Coordination confirms the register with the module as DA",
+      "complaint_answered": "When the team answers a Complaints Book sheet."
     },
     "email_audience": {
       "student": "Student",
@@ -2189,7 +2195,9 @@
       "progression_requires_passing_toggle": "Require",
       "grade_submission_label": "Grade register deadline",
       "grade_submission_hint": "Hours after the module ends for the teacher to send the register to review. After that it reads «Out of time».",
-      "hours_value": "{hours} hours"
+      "hours_value": "{hours} hours",
+      "complaint_deadline_label": "Complaints Book answer deadline",
+      "complaint_deadline_hint": "Business days, Monday to Friday, from the day the sheet is filed to send the answer. Holidays still count as business days."
     },
     "features": {
       "title": "Features",
@@ -2237,7 +2245,8 @@
         "teacher_grades": "Grades and certificates",
         "teacher_notices": "Notices to the class group",
         "teacher_class_links": "Class group links",
-        "backoffice_audit": "Audit log"
+        "backoffice_audit": "Audit log",
+        "backoffice_complaints": "Complaints Book (inbox)"
       },
       "details_label": "Details for {name}",
       "source": {
@@ -2899,7 +2908,23 @@
       "grade_record_download_what": "The record's PDF: teacher, class group, course, module, period, grade counts and who confirmed.",
       "grade_record_download_how": "The first download keeps the record with that day's teacher and text; later ones come out the same, with up-to-date counts.",
       "grade_record_own_what": "The record of each of your grade registers coordination confirmed as official. It is the document your payment goes by.",
-      "grade_record_own_how": "Download it as a PDF whenever you want, also after the class group closes."
+      "grade_record_own_how": "Download it as a PDF whenever you want, also after the class group closes.",
+      "complaint_page_what": "The online Complaints Book is a legal obligation. Every sheet arrives from the public form with a correlative number and is never edited nor deleted.",
+      "complaint_page_how": "Open a sheet, take it so the team knows who is handling it, and send the answer. The list opens on the ones still open.",
+      "complaint_tabs_what": "Open are the sheets still waiting for the team: not taken and in progress. Answered ones already got the answer by e-mail.",
+      "complaint_tabs_how": "Each tab's number follows the search. The menu shows how many are still not taken.",
+      "complaint_status_what": "Not taken: nobody took the sheet. In progress: somebody took it and has not answered yet. Answered: the answer went out by e-mail.",
+      "complaint_status_how": "Overdue marks a sheet still unanswered after the deadline.",
+      "complaint_deadline_what": "The answer has {days} business days, Monday to Friday, counted from the day after filing, in Lima time. It is due at the end of the last day.",
+      "complaint_deadline_how": "Holidays still count as business days. The number of days is changed in Settings.",
+      "complaint_student_what": "The sheet joins the student file with the same document. If nobody has it, it stands alone: you do not need to be a student to complain.",
+      "complaint_student_how": "The link is read on the spot, by document; never by name or e-mail.",
+      "complaint_kind_what": "Claim: disagreement with the product or service bought. Grievance: discontent with the service at the counter, unrelated to the product or service.",
+      "complaint_kind_how": "The consumer picks it on the form; it does not change the deadline.",
+      "complaint_take_what": "Taking the sheet tells the team you are handling it; it stops counting as not taken in the menu.",
+      "complaint_take_how": "A sheet is taken once and it cannot be undone. You may answer without taking it first.",
+      "complaint_answer_what": "The company's answer to the consumer. It is e-mailed to the sheet's address, in the language of the form.",
+      "complaint_answer_how": "It is sent once: it cannot be changed afterwards and no second one goes out. It is kept with the sheet and in the audit log."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -3349,7 +3374,8 @@
         "reports": "Dashboard, reports and audit log",
         "settings": "Settings",
         "team": "Team",
-        "account": "Own account"
+        "account": "Own account",
+        "complaints": "Complaints Book"
       },
       "capability": {
         "students": {
@@ -3436,6 +3462,10 @@
         },
         "account": {
           "self": "Change their own password, language and second factor"
+        },
+        "complaints": {
+          "view": "See the Complaints Book: the sheets, the deadline and the answer",
+          "answer": "Take and answer a Complaints Book sheet"
         }
       },
       "new_profile": "New role",
@@ -3504,6 +3534,104 @@
       "empty_body": "A record shows up here when coordination confirms a grade register as official.",
       "own_title": "My grade records",
       "own_subtitle": "One per grade register confirmed as official in your class groups."
+    },
+    "complaints": {
+      "title": "Complaints Book",
+      "intro": "Every sheet sent from the public form, with its number. There are {days} business days to answer; the answer is e-mailed to the consumer.",
+      "tab_open": "Open",
+      "tab_received": "Not taken",
+      "tab_in_progress": "In progress",
+      "tab_answered": "Answered",
+      "tab_all": "All",
+      "search_label": "Search",
+      "search_placeholder": "Number, name or document",
+      "filter_overdue": "Overdue only",
+      "filter_apply": "Filter",
+      "col_code": "Sheet",
+      "col_consumer": "Consumer",
+      "col_kind": "Type",
+      "col_status": "Status",
+      "col_deadline": "Deadline",
+      "kind": {
+        "claim": "Claim",
+        "grievance": "Grievance"
+      },
+      "good_type": {
+        "product": "Product",
+        "service": "Service"
+      },
+      "status": {
+        "received": "Not taken",
+        "in_progress": "In progress",
+        "answered": "Answered"
+      },
+      "overdue": "Overdue",
+      "answered_late": "Answered late",
+      "due_on": "Due on {date}",
+      "days_left": "{count, plural, =0 {Due today} one {# business day left} other {# business days left}}",
+      "answered_on": "Answered on {date}",
+      "minor": "Minor",
+      "no_student": "No student file",
+      "student_link": "File: {name}",
+      "student_label": "Student file",
+      "load_error": "The Complaints Book could not be read",
+      "empty_title": "No sheets here",
+      "empty_body": "When somebody sends a sheet from the public form, it shows up in this list.",
+      "back": "Back to the book",
+      "sheet_heading": "Sheet no. {code}",
+      "filed_at": "filed on {date}",
+      "form_locale_label": "Language of the form",
+      "form_locale": {
+        "es-PE": "Spanish",
+        "pt-BR": "Portuguese",
+        "en": "English"
+      },
+      "consumer_title": "Consumer",
+      "guardian_title": "Parent or guardian",
+      "sheet_title": "The sheet",
+      "field_name": "Name",
+      "field_document": "Document",
+      "field_phone": "Mobile",
+      "field_email": "E-mail",
+      "field_address": "Address",
+      "field_minor": "Minor",
+      "field_good": "What was bought",
+      "field_amount": "Amount claimed",
+      "field_purchased_on": "Purchase date",
+      "field_supplier": "Supplier",
+      "field_description": "Description",
+      "field_detail": "Detail",
+      "field_request": "Request",
+      "yes": "Yes",
+      "no": "No",
+      "not_given": "Not given",
+      "attention_title": "Handling",
+      "step_filed": "Filed on {date}.",
+      "step_taken": "Taken by {name} on {date}.",
+      "step_answered": "Answered by {name} on {date}.",
+      "someone": "somebody on the team",
+      "take": "Take the sheet",
+      "taking": "Taking…",
+      "answer_label": "Answer to the consumer",
+      "answer_placeholder": "Write the answer as the consumer will read it.",
+      "answer_counter": "{count} / {max}",
+      "answer_send": "Send answer",
+      "answer_confirm_title": "Send the answer?",
+      "answer_confirm_body": "It is e-mailed to {email}, in {language}. It cannot be changed afterwards, and no second answer can be sent.",
+      "answer_confirm": "Yes, send",
+      "answer_cancel": "Back",
+      "sending": "Sending…",
+      "answer_sent_title": "Answer sent",
+      "read_only": "Your role reads the book but does not answer the sheets.",
+      "errors": {
+        "already_taken": "Somebody else took the sheet a moment ago. The page was refreshed.",
+        "already_answered": "The sheet was already answered. The page was refreshed.",
+        "answer_required": "The answer needs 1 to 5000 characters.",
+        "failed": "It could not be saved. Try again."
+      },
+      "student_block_title": "Complaints Book",
+      "student_block_empty": "No sheet with this student's document.",
+      "student_block_error": "The Complaints Book could not be read."
     }
   }
 }

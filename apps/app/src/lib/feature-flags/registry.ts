@@ -103,6 +103,17 @@ export const FEATURE_FLAGS = {
     parent: 'backoffice',
     production: true,
   },
+  /**
+   * The complaints book's inbox (OOC-58): the sheets filed from the public
+   * form, taking and answering them. Off in production until the owner
+   * confirms the answer deadline and the supplier's address; it goes on with
+   * the public form (`complaints`), which needs someone reading the sheets.
+   */
+  'backoffice.complaints': {
+    surface: 'backoffice',
+    parent: 'backoffice',
+    production: false,
+  },
   /** Class groups and courses — one section, read together. */
   'backoffice.academic': {
     surface: 'backoffice',
