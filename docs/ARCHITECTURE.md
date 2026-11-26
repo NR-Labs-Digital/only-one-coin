@@ -649,12 +649,11 @@ sessão nenhuma.
 | `portal.procedures` | portal | Trámites pagos (`/portal/enrollment`) |
 | `portal.documents` | portal | Constancias e certificados |
 | `portal.continue` | portal | Continuar estudando (próximo nível, re-matrícula) |
-| `complaints` | portal (sem pai) | Libro de Reclamaciones, o formulário público (OOC-63). **`production: false`**, liga junto com `backoffice.complaints`; desligada, a página redireciona ao Google Forms antigo em vez do 404 — ver `apps/app/CLAUDE.md`. Sem pai de propósito: desligar o portal não fecha um canal legal |
 | `backoffice` | backoffice | O painel inteiro |
 | `backoffice.students` | backoffice | Diretório de alunos e ficha |
 | `backoffice.enrollments` | backoffice | Matrículas (só vaga confirmada) |
 | `backoffice.payments` | backoffice | Pagamentos, fila de revisão, parâmetros |
-| `backoffice.complaints` | backoffice | A caixa do Libro de Reclamaciones (OOC-58): as hojas, tomar e responder, o contador do menu e o bloco na ficha do aluno. **`production: false`** até o OK do dono; liga junto com `complaints` |
+| `backoffice.complaints` | backoffice | A caixa do Libro de Reclamaciones (OOC-58): as hojas, tomar e responder, o contador do menu e o bloco na ficha do aluno. Ligada em produção desde 26/11/2026. O formulário público (`/libro-de-reclamaciones`) não tem flag: é canal legal — ver `apps/app/CLAUDE.md` |
 | `backoffice.academic` | backoffice | Turmas + cursos |
 | `backoffice.teachers` | backoffice | Docentes e fichas |
 | `backoffice.email` | backoffice | Módulo de e-mail |

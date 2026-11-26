@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { LEGAL_IDENTITY } from '@ooc/domain/legal-identity'
 import { PublicFormShell } from '@/components/public-form-shell'
-import { isFeatureEnabled } from '@/lib/feature-flags/server'
-import { legacyComplaintsFormUrl } from '@/lib/org'
 import type { Locale } from '@/lib/format'
 import { env } from '@/env'
 import { ComplaintForm } from './complaint-form'
@@ -19,15 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
  * The complaints book (Libro de Reclamaciones, OOC-63): the public form the
  * landing's footer points at, on every page. Anybody files — a student or
  * not — with no session. The supplier is printed from `LEGAL_IDENTITY`, the
- * same identity the landing and the sheet itself carry.
- *
- * While the `complaints` flag is off in production (the inbox, OOC-58, is not
- * built yet), the address keeps working by sending people to the old form.
+ * same identity the landing and the sheet itself carry. No feature flag: it
+ * is a legal channel, and the team reads the sheets in the inbox (OOC-58).
  */
 export default async function ComplaintsBookPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  if (!(await isFeatureEnabled('complaints'))) redirect(legacyComplaintsFormUrl)
 
   const t = await getTranslations('complaints')
   const site = (env.NEXT_PUBLIC_LANDING_URL ?? '').replace(/\/+$/, '')
