@@ -104,6 +104,8 @@ export const EMAIL_CATALOG = {
      the regulation says the consumer receives it. Not a step of the
      student's journey: anybody files, student or not. */
   complaint_filed: { audience: "student", stage: null, conditional: false, emitted: true },
+  /* The company's answer to a sheet (OOC-58), to the same address. */
+  complaint_answered: { audience: "student", stage: null, conditional: false, emitted: true },
   email_verification_code: { audience: "student", stage: null, conditional: false, emitted: true },
   portal_password_reset: { audience: "student", stage: null, conditional: true, emitted: true },
   staff_invite: { audience: "staff", stage: null, conditional: false, emitted: true },

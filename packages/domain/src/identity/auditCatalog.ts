@@ -73,6 +73,7 @@ export const AUDITED_PLATFORM_SETTINGS = [
   "certificate_deadline_business_days",
   "contract_alert_days",
   "grade_submission_hours",
+  "complaint_response_business_days",
   "progression_requires_passing_grade",
 ] as const;
 
@@ -252,6 +253,10 @@ export const AUDIT_ACTIONS = {
   "feature_flag.override": { key: "feature_flag_changed", entity: "platform", subject: "none" },
   "document_template.published": { key: "document_template_published", entity: "platform", subject: "none" },
   "audit_log.exported": { key: "audit_log_exported", entity: "platform", subject: "none" },
+  // The complaints book (OOC-58): the target is the sheet, which has no page in
+  // the log's links; the answer itself never travels here, only that it was given.
+  "complaint.taken": { key: "complaint_taken", entity: "platform", subject: "none" },
+  "complaint.answered": { key: "complaint_answered", entity: "platform", subject: "none" },
 } as const satisfies Record<string, AuditActionEntry>;
 
 export type AuditStoredAction = keyof typeof AUDIT_ACTIONS;
@@ -347,6 +352,7 @@ export const AUDIT_FIELDS = {
   constancia_fee_cents: "constancia_fee_cents",
   contract_alert_days: "contract_alert_days",
   grade_submission_hours: "grade_submission_hours",
+  complaint_response_business_days: "complaint_response_business_days",
   progression_requires_passing_grade: "progression_requires_passing_grade",
 } as const;
 

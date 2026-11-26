@@ -226,6 +226,19 @@ export interface EmailTemplateVars {
     detail: string;
     request: string;
   };
+  /**
+   * The company's answer to a complaints book sheet (OOC-58), in the language
+   * of the form. `answer` is what the team wrote; `filedAt` is an instant.
+   */
+  complaint_answered: {
+    recipientName: string;
+    code: string;
+    filedAt: string;
+    kind: "claim" | "grievance";
+    legalName: string;
+    ruc: string;
+    answer: string;
+  };
   /** The portal account was created: the link sets the first password (never the password itself — outbox.vars is plain text). */
   portal_credentials: {
     recipientName: string;

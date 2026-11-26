@@ -33,6 +33,12 @@ export interface PlatformSettings {
    */
   gradeSubmissionHours: number;
   /**
+   * Business days the company has to answer a complaints book sheet (OOC-58),
+   * counted Monday to Friday in Lima — no holiday calendar yet. 15 is the rule
+   * of DS 101-2022-PCM, to be confirmed with the owner.
+   */
+  complaintResponseBusinessDays: number;
+  /**
    * Advancing a student to the next module asks for the pass mark (OOC-156).
    * Coordination may still advance below it, with a reason; off, any posted
    * grade lets the student advance. On by default.
@@ -67,6 +73,8 @@ export const PLATFORM_SETTING_BOUNDS = {
   contractAlertDays: { min: 1, max: 180 },
   // Up to 30 days: past that the register is not "late", it is forgotten.
   gradeSubmissionHours: { min: 1, max: 720 },
+  // Up to 60: the legal deadline is 15 business days; past 60 is a typo.
+  complaintResponseBusinessDays: { min: 1, max: 60 },
 } as const satisfies Record<PlatformNumberKey, { min: number; max: number }>;
 
 export const PLATFORM_NUMBER_KEYS = Object.keys(PLATFORM_SETTING_BOUNDS) as PlatformNumberKey[];
@@ -84,6 +92,7 @@ export const PLATFORM_SETTING_COLUMNS: Record<PlatformSettingKey, string> = {
   certificateDeadlineBusinessDays: "certificate_deadline_business_days",
   contractAlertDays: "contract_alert_days",
   gradeSubmissionHours: "grade_submission_hours",
+  complaintResponseBusinessDays: "complaint_response_business_days",
   progressionRequiresPassingGrade: "progression_requires_passing_grade",
 };
 

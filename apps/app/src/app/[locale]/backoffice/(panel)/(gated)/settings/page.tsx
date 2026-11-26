@@ -70,6 +70,7 @@ export default async function SettingsPage({
           certificateDeadlineBusinessDays: settings.certificateDeadlineBusinessDays,
           contractAlertDays: settings.contractAlertDays,
           gradeSubmissionHours: settings.gradeSubmissionHours,
+          complaintResponseBusinessDays: settings.complaintResponseBusinessDays,
           progressionRequiresPassingGrade: settings.progressionRequiresPassingGrade,
         }}
       />

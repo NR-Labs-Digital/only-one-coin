@@ -197,6 +197,19 @@ export function canReadGrades(staff: StaffAccess): boolean {
 }
 
 /**
+ * Who reads the complaints book's inbox (OOC-58): management, the analyst and
+ * support (atención al cliente). Mirrors `complaints.view` on the routes.
+ */
+export function canViewComplaints(staff: StaffAccess): boolean {
+  return has(staff, 'complaints.view')
+}
+
+/** Who takes and answers a sheet — the readers minus the analyst (`complaints.answer`). */
+export function canAnswerComplaints(staff: StaffAccess): boolean {
+  return has(staff, 'complaints.answer')
+}
+
+/**
  * Who lists and downloads the teachers' actas de notas (OOC-176): who reads
  * grades, and billing — administration pays the teacher against the acta,
  * which carries counts, never a grade.

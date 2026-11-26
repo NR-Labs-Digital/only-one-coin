@@ -13,6 +13,7 @@ export type AcademicSettings = Pick<
   | 'certificateDeadlineBusinessDays'
   | 'contractAlertDays'
   | 'gradeSubmissionHours'
+  | 'complaintResponseBusinessDays'
   | 'progressionRequiresPassingGrade'
 >
 
@@ -107,6 +108,23 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
               onChange={(event) =>
                 set('certificateDeadlineBusinessDays', Number(event.target.value))
               }
+              className={numberClass}
+            />
+          </Row>
+
+          <Row
+            helpLabel={t('common.help')}
+            label={t('settings.complaint_deadline_label')}
+            hint={t('settings.complaint_deadline_hint')}
+            value={t('settings.business_days_value', { days: draft.complaintResponseBusinessDays })}
+          >
+            <input
+              type="number"
+              min={1}
+              max={60}
+              aria-label={t('settings.complaint_deadline_label')}
+              value={draft.complaintResponseBusinessDays}
+              onChange={(event) => set('complaintResponseBusinessDays', Number(event.target.value))}
               className={numberClass}
             />
           </Row>

@@ -33,7 +33,8 @@
       "profile": "Perfil",
       "agenda": "Agenda",
       "audit": "Auditoría",
-      "grade_records": "Actas de notas"
+      "grade_records": "Actas de notas",
+      "complaints": "Libro de Reclamaciones"
     },
     "role": {
       "master": "Master",
@@ -391,7 +392,9 @@
         "grade_register_record_downloaded": "Acta de notas descargada",
         "staff_profile_created": "Cargo creado",
         "staff_profile_updated": "Permisos de cargo cambiados",
-        "staff_profile_retired": "Cargo eliminado"
+        "staff_profile_retired": "Cargo eliminado",
+        "complaint_taken": "Hoja de reclamación tomada",
+        "complaint_answered": "Hoja de reclamación respondida"
       },
       "field": {
         "first_name": "Nombre",
@@ -448,7 +451,8 @@
         "full_course": "Curso completo",
         "progression_requires_passing_grade": "Nota mínima para pasar de módulo",
         "grade_submission_hours": "Plazo del registro de notas",
-        "module_ends_on": "Fin del módulo"
+        "module_ends_on": "Fin del módulo",
+        "complaint_response_business_days": "Plazo de respuesta del Libro de Reclamaciones"
       }
     },
     "student_status": {
@@ -951,7 +955,8 @@
       "grade_updated": "Nota actualizada por el docente",
       "grade_updated_did_not_sit": "Resultado actualizado a DA",
       "grade_official": "Nota oficial",
-      "grade_official_did_not_sit": "Resultado oficial: DA"
+      "grade_official_did_not_sit": "Resultado oficial: DA",
+      "complaint_answered": "Respuesta a la hoja de reclamación"
     },
     "email_trigger": {
       "enrollment_received": "Al recibir los datos de matrícula, después de que el alumno llena el formulario.",
@@ -987,7 +992,8 @@
       "grade_updated": "El docente cambia una nota antes de que el registro sea oficial",
       "grade_updated_did_not_sit": "El docente cambia una nota a DA antes de que el registro sea oficial",
       "grade_official": "La coordinación confirma el registro de notas",
-      "grade_official_did_not_sit": "La coordinación confirma el registro con el módulo como DA"
+      "grade_official_did_not_sit": "La coordinación confirma el registro con el módulo como DA",
+      "complaint_answered": "Al responder el equipo una hoja del Libro de Reclamaciones."
     },
     "email_audience": {
       "student": "Alumno",
@@ -2189,7 +2195,9 @@
       "progression_requires_passing_toggle": "Exigir",
       "grade_submission_label": "Plazo del registro de notas",
       "grade_submission_hint": "Horas desde el fin del módulo para que el docente envíe el registro a revisión. Después aparece «Fuera de plazo».",
-      "hours_value": "{hours} horas"
+      "hours_value": "{hours} horas",
+      "complaint_deadline_label": "Plazo de respuesta del Libro de Reclamaciones",
+      "complaint_deadline_hint": "Días hábiles, de lunes a viernes, desde que se presenta la hoja para enviar la respuesta. Los feriados todavía cuentan como días hábiles."
     },
     "features": {
       "title": "Funcionalidades",
@@ -2237,7 +2245,8 @@
         "teacher_grades": "Notas y certificados",
         "teacher_notices": "Avisos al aula",
         "teacher_class_links": "Accesos del aula",
-        "backoffice_audit": "Auditoría"
+        "backoffice_audit": "Auditoría",
+        "backoffice_complaints": "Libro de Reclamaciones (bandeja)"
       },
       "details_label": "Detalles de {name}",
       "source": {
@@ -2899,7 +2908,23 @@
       "grade_record_download_what": "El PDF del acta: docente, aula, curso, módulo, período, cifras de notas y quién confirmó.",
       "grade_record_download_how": "La primera descarga guarda el acta con el docente y el texto vigentes ese día; las siguientes salen iguales, con las cifras actualizadas.",
       "grade_record_own_what": "El acta de cada registro de notas tuyo que la coordinación confirmó como oficial. Es el documento que se usa para tu pago.",
-      "grade_record_own_how": "Descárgala en PDF cuando quieras, también después de que el aula se cierre."
+      "grade_record_own_how": "Descárgala en PDF cuando quieras, también después de que el aula se cierre.",
+      "complaint_page_what": "El Libro de Reclamaciones virtual es una obligación legal. Cada hoja llega del formulario público con un número correlativo y no se edita ni se borra.",
+      "complaint_page_how": "Abre una hoja, tómala para que el equipo sepa quién la atiende y envía la respuesta. La lista abre en las que siguen abiertas.",
+      "complaint_tabs_what": "Abiertas son las hojas que todavía esperan al equipo: sin atender y en atención. Respondidas ya recibieron la respuesta por correo.",
+      "complaint_tabs_how": "El número de cada pestaña respeta la búsqueda. El menú muestra cuántas siguen sin atender.",
+      "complaint_status_what": "Sin atender: nadie tomó la hoja. En atención: alguien la tomó y todavía no respondió. Respondida: la respuesta salió por correo.",
+      "complaint_status_how": "Fuera de plazo marca la hoja sin responder después de vencido el plazo.",
+      "complaint_deadline_what": "La respuesta tiene {days} días hábiles, de lunes a viernes, contados desde el día siguiente a la presentación, en hora de Lima. Vence al final del último día.",
+      "complaint_deadline_how": "Los feriados todavía cuentan como días hábiles. El número de días se cambia en Configuración.",
+      "complaint_student_what": "La hoja se une a la ficha del alumno que tiene el mismo documento. Si nadie lo tiene, queda sola: para reclamar no hace falta ser alumno.",
+      "complaint_student_how": "La unión se lee en el momento, por el documento; nunca por el nombre ni por el correo.",
+      "complaint_kind_what": "Reclamo: disconformidad con el producto o servicio contratado. Queja: malestar con la atención, sin relación con el producto o servicio.",
+      "complaint_kind_how": "Lo elige el consumidor en el formulario; no cambia el plazo.",
+      "complaint_take_what": "Tomar la hoja dice al equipo que tú la estás atendiendo; deja de contar como sin atender en el menú.",
+      "complaint_take_how": "Se toma una sola vez y no se deshace. Puedes responder sin tomarla antes.",
+      "complaint_answer_what": "Es la respuesta de la empresa al consumidor. Sale por correo al correo de la hoja, en el idioma del formulario.",
+      "complaint_answer_how": "Se envía una sola vez: después no se cambia ni se manda otra. Queda guardada con la hoja y en la bitácora."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
@@ -3349,7 +3374,8 @@
         "reports": "Inicio, reportes y auditoría",
         "settings": "Configuración",
         "team": "Equipo",
-        "account": "Cuenta propia"
+        "account": "Cuenta propia",
+        "complaints": "Libro de Reclamaciones"
       },
       "capability": {
         "students": {
@@ -3436,6 +3462,10 @@
         },
         "account": {
           "self": "Cambiar su contraseña, su idioma y su segundo factor"
+        },
+        "complaints": {
+          "view": "Ver el Libro de Reclamaciones: las hojas, el plazo y la respuesta",
+          "answer": "Tomar y responder una hoja del Libro de Reclamaciones"
         }
       },
       "new_profile": "Nuevo cargo",
@@ -3504,6 +3534,104 @@
       "empty_body": "Un acta aparece aquí cuando la coordinación confirma un registro de notas como oficial.",
       "own_title": "Mis actas de notas",
       "own_subtitle": "Una por cada registro de notas confirmado como oficial en tus aulas."
+    },
+    "complaints": {
+      "title": "Libro de Reclamaciones",
+      "intro": "Cada hoja enviada desde el formulario público, con su número. Hay {days} días hábiles para responder; la respuesta sale por correo al consumidor.",
+      "tab_open": "Abiertas",
+      "tab_received": "Sin atender",
+      "tab_in_progress": "En atención",
+      "tab_answered": "Respondidas",
+      "tab_all": "Todas",
+      "search_label": "Buscar",
+      "search_placeholder": "Número, nombre o documento",
+      "filter_overdue": "Solo fuera de plazo",
+      "filter_apply": "Filtrar",
+      "col_code": "Hoja",
+      "col_consumer": "Consumidor",
+      "col_kind": "Tipo",
+      "col_status": "Estado",
+      "col_deadline": "Plazo",
+      "kind": {
+        "claim": "Reclamo",
+        "grievance": "Queja"
+      },
+      "good_type": {
+        "product": "Producto",
+        "service": "Servicio"
+      },
+      "status": {
+        "received": "Sin atender",
+        "in_progress": "En atención",
+        "answered": "Respondida"
+      },
+      "overdue": "Fuera de plazo",
+      "answered_late": "Respondida fuera de plazo",
+      "due_on": "Vence el {date}",
+      "days_left": "{count, plural, =0 {Vence hoy} one {Queda # día hábil} other {Quedan # días hábiles}}",
+      "answered_on": "Respondida el {date}",
+      "minor": "Menor de edad",
+      "no_student": "Sin ficha de alumno",
+      "student_link": "Ficha: {name}",
+      "student_label": "Ficha de alumno",
+      "load_error": "No se pudo leer el Libro de Reclamaciones",
+      "empty_title": "No hay hojas aquí",
+      "empty_body": "Cuando alguien envíe una hoja desde el formulario público, aparecerá en esta lista.",
+      "back": "Volver al libro",
+      "sheet_heading": "Hoja N.° {code}",
+      "filed_at": "presentada el {date}",
+      "form_locale_label": "Idioma del formulario",
+      "form_locale": {
+        "es-PE": "Español",
+        "pt-BR": "Portugués",
+        "en": "Inglés"
+      },
+      "consumer_title": "Consumidor",
+      "guardian_title": "Padre, madre o apoderado",
+      "sheet_title": "La hoja",
+      "field_name": "Nombre",
+      "field_document": "Documento",
+      "field_phone": "Celular",
+      "field_email": "Correo",
+      "field_address": "Domicilio",
+      "field_minor": "Menor de edad",
+      "field_good": "Bien contratado",
+      "field_amount": "Monto reclamado",
+      "field_purchased_on": "Fecha de compra",
+      "field_supplier": "Proveedor",
+      "field_description": "Descripción",
+      "field_detail": "Detalle",
+      "field_request": "Pedido",
+      "yes": "Sí",
+      "no": "No",
+      "not_given": "No indicado",
+      "attention_title": "Atención",
+      "step_filed": "Presentada el {date}.",
+      "step_taken": "Tomada por {name} el {date}.",
+      "step_answered": "Respondida por {name} el {date}.",
+      "someone": "alguien del equipo",
+      "take": "Tomar la hoja",
+      "taking": "Tomando…",
+      "answer_label": "Respuesta al consumidor",
+      "answer_placeholder": "Escribe la respuesta tal como la leerá el consumidor.",
+      "answer_counter": "{count} / {max}",
+      "answer_send": "Enviar respuesta",
+      "answer_confirm_title": "¿Enviar la respuesta?",
+      "answer_confirm_body": "Sale por correo a {email}, en {language}. Después no se puede cambiar ni enviar otra.",
+      "answer_confirm": "Sí, enviar",
+      "answer_cancel": "Volver",
+      "sending": "Enviando…",
+      "answer_sent_title": "Respuesta enviada",
+      "read_only": "Tu cargo lee el libro, pero no responde las hojas.",
+      "errors": {
+        "already_taken": "Otra persona tomó la hoja hace un momento. Actualizamos la página.",
+        "already_answered": "La hoja ya fue respondida. Actualizamos la página.",
+        "answer_required": "La respuesta necesita entre 1 y 5000 caracteres.",
+        "failed": "No se pudo guardar. Inténtalo de nuevo."
+      },
+      "student_block_title": "Libro de Reclamaciones",
+      "student_block_empty": "Ninguna hoja con el documento de este alumno.",
+      "student_block_error": "No se pudo leer el Libro de Reclamaciones."
     }
   }
 }

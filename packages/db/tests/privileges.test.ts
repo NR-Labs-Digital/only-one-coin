@@ -254,6 +254,15 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("complaints"))).toBe(DENIED_BY_GRANT);
   });
 
+  // What the company did with a sheet is part of the same record (OOC-58).
+  it("refuses UPDATE on complaint_events", async () => {
+    expect(await answerTo(`update complaint_events set answer = answer where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on complaint_events", async () => {
+    expect(await answerTo(deleteFrom("complaint_events"))).toBe(DENIED_BY_GRANT);
+  });
+
   it("refuses TRUNCATE on audit_log", async () => {
     expect(await answerTo("truncate audit_log")).toBe(DENIED_BY_GRANT);
   });
@@ -460,6 +469,15 @@ describe("table owner (TRIGGER layer)", () => {
 
   it("refuses DELETE on complaints", async () => {
     expect(await answerTo(deleteFrom("complaints"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // What the company did with a sheet is part of the same record (OOC-58).
+  it("refuses UPDATE on complaint_events", async () => {
+    expect(await answerTo(`update complaint_events set answer = answer where id = '${NO_SUCH_ID}'`)).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on complaint_events", async () => {
+    expect(await answerTo(deleteFrom("complaint_events"))).toBe(DENIED_BY_TRIGGER);
   });
 
   // TRUNCATE is checked on `audit_log` alone: among the tables locked here it

@@ -32,6 +32,7 @@ export const PERMISSION_AREAS = [
   "teaching",
   "teachers",
   "emails",
+  "complaints",
   "reports",
   "settings",
   "team",
@@ -142,6 +143,10 @@ export const PERMISSION_CATALOG = [
   // E-mails.
   { key: "emails.view", area: "emails", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor"] },
   { key: "emails.send", area: "emails", defaultRoles: ["master", "admin", "enrollment_supervisor"] },
+
+  // The complaints book (OOC-58): reading the sheets, and taking and answering them.
+  { key: "complaints.view", area: "complaints", defaultRoles: ["master", "admin", "analyst", "support"] },
+  { key: "complaints.answer", area: "complaints", defaultRoles: ["master", "admin", "support"] },
 
   // Dashboard, reports and the audit log.
   { key: "reports.dashboard", area: "reports", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "sales", "support"] },

@@ -245,7 +245,9 @@ export function renderEmail(email: OutgoingEmail): RenderedEmail {
 ${blocks
   .map((block) =>
     block.kind === "paragraph"
-      ? `<p style="margin:0 0 16px">${escapeHtml(block.text)}</p>`
+      ? // A line break typed by a person (the answer to a complaint, OOC-58)
+        // stays a line break; it is escaped first, so it is never markup.
+        `<p style="margin:0 0 16px">${escapeHtml(block.text).replace(/\r?\n/g, "<br>")}</p>`
       : `<ul style="margin:0 0 16px;padding-left:20px">${block.lines.map((line) => `<li style="margin:0 0 6px">${escapeHtml(line)}</li>`).join("")}</ul>`,
   )
   .join("\n")}

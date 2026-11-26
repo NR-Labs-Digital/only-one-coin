@@ -5,6 +5,8 @@ import { getStudent, getStudentActivity, getStudentPayments } from '@/lib/backof
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getAttachments } from '@/lib/attachments/server'
 import { getIssuedDocuments } from '@/lib/issued-documents/server'
+import { listStudentComplaints } from '@/lib/backoffice/complaints'
+import { isFeatureEnabled } from '@/lib/feature-flags/server'
 import {
   canBrowseStudents,
   canEditStudent,
@@ -12,15 +14,17 @@ import {
   canManageStudentAttachments,
   canRevokeIssuedDocuments,
   canOpenReceiptImage,
+  canViewComplaints,
   canViewPayments,
 } from '@/lib/backoffice/permissions'
-import { initials } from '@/lib/format'
+import { initials, type Locale } from '@/lib/format'
 import { Card, StatusBadge } from '@/components/backoffice/ui'
 import { studentTone } from '@/components/backoffice/status-tone'
 import { BoIcon } from '@/components/backoffice/icons'
 import { HelpHint } from '@/components/backoffice/help-hint'
 import { StudentFile } from './student-file'
 import { PortalAccessControl } from './portal-access-control'
+import { StudentComplaints } from './student-complaints'
 
 /**
  * One student's file. The status shown here is derived from the enrollments
@@ -39,7 +43,7 @@ export default async function StudentDetailPage({
   /* One wave of calls, not two: the file is fetched alongside the session.
      A cargo that may not browse is refused by the API too (403 → null), and
      its answer is never shown. */
-  const [staff, student, activity, attachments, issuedDocuments, payments] = await Promise.all([
+  const [staff, student, activity, attachments, issuedDocuments, payments, complaintsOn] = await Promise.all([
     getStaffSession(),
     getStudent(studentId),
     getStudentActivity(studentId),
@@ -48,11 +52,14 @@ export default async function StudentDetailPage({
     getIssuedDocuments({ kind: 'staff', studentId }),
     // Every receipt the student sent (OOC-62), for the same tab.
     getStudentPayments(studentId),
+    isFeatureEnabled('backoffice.complaints'),
   ])
   if (!canBrowseStudents(staff)) notFound()
   if (!student) notFound()
 
   const fullName = `${student.firstName} ${student.lastName}`
+  // The complaints book's sheets with this document (OOC-58), for who reads the book.
+  const complaints = complaintsOn && canViewComplaints(staff) ? await listStudentComplaints(student.id) : undefined
 
   return (
     <div className="flex flex-col gap-5">
@@ -113,6 +120,8 @@ export default async function StudentDetailPage({
         payments={payments}
         canOpenReceiptImage={canOpenReceiptImage(staff)}
       />
+
+      {complaints !== undefined && <StudentComplaints rows={complaints} locale={locale as Locale} />}
     </div>
   )
 }

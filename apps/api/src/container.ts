@@ -2,6 +2,12 @@ import type { FastifyBaseLogger } from "fastify";
 import {
   AttachmentAccess,
   FileComplaintUseCase,
+  AnswerComplaintUseCase,
+  ComplaintInboxSummaryUseCase,
+  GetComplaintUseCase,
+  ListComplaintsUseCase,
+  ListStudentComplaintsUseCase,
+  TakeComplaintUseCase,
   ConfirmAttachmentUploadUseCase,
   ExpirePendingAttachmentsUseCase,
   ListAttachmentsUseCase,
@@ -287,6 +293,7 @@ import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platfo
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleIssuedDocumentRepository } from "./infra/persistence/document/DrizzleIssuedDocumentRepository.js";
 import { DrizzleComplaintRepository } from "./infra/persistence/complaint/DrizzleComplaintRepository.js";
+import { DrizzleComplaintInboxRepository } from "./infra/persistence/complaint/DrizzleComplaintInboxRepository.js";
 import { IssuedDocumentService } from "./documents/IssuedDocumentService.js";
 import { GradeRegisterRecordService } from "./documents/GradeRegisterRecordService.js";
 import { DrizzleGradeRegisterRecordRepository } from "./infra/persistence/teaching/DrizzleGradeRegisterRecordRepository.js";
@@ -346,6 +353,13 @@ export interface AppUseCases {
   /** The complaints book's public form (OOC-63). */
   complaint: {
     file: FileComplaintUseCase;
+    /** The team's inbox (OOC-58). */
+    list: ListComplaintsUseCase;
+    summary: ComplaintInboxSummaryUseCase;
+    get: GetComplaintUseCase;
+    listForStudent: ListStudentComplaintsUseCase;
+    take: TakeComplaintUseCase;
+    answer: AnswerComplaintUseCase;
   };
   teacher: {
     register: RegisterTeacherUseCase;
@@ -1071,9 +1085,7 @@ function buildContainer(): AppContainer {
       templates: documentTemplateRepository,
     },
     useCases: {
-      complaint: {
-        file: new FileComplaintUseCase(new DrizzleComplaintRepository(db)),
-      },
+      complaint: complaintUseCases(new DrizzleComplaintRepository(db), new DrizzleComplaintInboxRepository(db), platformSettingsRepository),
       teacher: {
         register: registerTeacher,
         completeOnboarding: completeTeacherOnboarding,
@@ -1283,3 +1295,21 @@ function buildContainer(): AppContainer {
 }
 
 export const container = buildContainer();
+
+/** The complaints book: the public form (OOC-63) and the team's inbox (OOC-58). */
+function complaintUseCases(
+  sheets: DrizzleComplaintRepository,
+  inbox: DrizzleComplaintInboxRepository,
+  settings: IPlatformSettingsRepository,
+): AppUseCases["complaint"] {
+  const list = new ListComplaintsUseCase(inbox, settings);
+  return {
+    file: new FileComplaintUseCase(sheets),
+    list,
+    summary: new ComplaintInboxSummaryUseCase(list),
+    get: new GetComplaintUseCase(inbox, settings),
+    listForStudent: new ListStudentComplaintsUseCase(inbox, settings),
+    take: new TakeComplaintUseCase(inbox),
+    answer: new AnswerComplaintUseCase(inbox),
+  };
+}
