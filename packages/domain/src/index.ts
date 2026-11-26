@@ -1204,4 +1204,36 @@ export {
 } from "./complaint/Complaint.js";
 export type { IComplaintRepository } from "./complaint/ComplaintRepository.js";
 export { FileComplaintUseCase, type FileComplaintInput } from "./complaint/FileComplaintUseCase.js";
-export { complaintFiledEmails, type ComplaintEmailFacts } from "./notification/complaintEmails.js";
+export { complaintAnsweredEmails, complaintFiledEmails, type ComplaintEmailFacts } from "./notification/complaintEmails.js";
+export {
+  COMPLAINT_STATUSES,
+  MAX_COMPLAINT_ANSWER_LENGTH,
+  businessDaysUntil,
+  complaintDueOn,
+  complaintMatches,
+  complaintStatusOf,
+  endOfLimaDay,
+  viewOfComplaint,
+  type ComplaintListFilters,
+  type ComplaintRecord,
+  type ComplaintStatus,
+  type ComplaintStep,
+  type ComplaintStudentLink,
+  type ComplaintView,
+  type IComplaintInboxRepository,
+} from "./complaint/ComplaintInbox.js";
+export {
+  AnswerComplaintUseCase,
+  ComplaintInboxSummaryUseCase,
+  GetComplaintUseCase,
+  ListComplaintsUseCase,
+  ListStudentComplaintsUseCase,
+  TakeComplaintUseCase,
+  type ComplaintInboxResult,
+} from "./complaint/ComplaintInboxUseCases.js";
+export {
+  ComplaintAlreadyAnsweredError,
+  ComplaintAlreadyTakenError,
+  ComplaintAnswerRequiredError,
+  ComplaintNotFoundError,
+} from "./complaint/errors.js";

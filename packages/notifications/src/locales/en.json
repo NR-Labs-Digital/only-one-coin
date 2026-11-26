@@ -322,6 +322,21 @@
         }
       },
       "missing": "not given"
+    },
+    "complaint_answered": {
+      "subject": "Answer to your complaint sheet no. {code}",
+      "preheader": "Our answer to the {kind} you filed in our Complaints Book.",
+      "paragraphs": [
+        "This is the answer of {legalName} (RUC {ruc}) to the {kind} you filed in our Complaints Book on {filedAt}, under number {code}.",
+        "{answer}",
+        "If you disagree with this answer, you may turn to other means of dispute resolution or file a complaint with INDECOPI."
+      ],
+      "values": {
+        "kind": {
+          "claim": "claim",
+          "grievance": "grievance"
+        }
+      }
     }
   }
 }

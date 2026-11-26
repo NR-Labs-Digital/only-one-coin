@@ -1,4 +1,5 @@
 import type { ComplaintSupplier, FiledComplaint } from "../complaint/Complaint.js";
+import type { ComplaintRecord } from "../complaint/ComplaintInbox.js";
 import type { ComplaintForm } from "../student/fields.js";
 import type { EmailNotification, Locale } from "./EmailNotification.js";
 
@@ -49,6 +50,31 @@ export function complaintFiledEmails(facts: ComplaintEmailFacts, locale: Locale)
         request: form.request,
       },
       dedupeKey: `complaint_filed:${facts.id}`,
+    },
+  ];
+}
+
+/**
+ * The company's answer to a sheet (OOC-58): to the address on the sheet, in
+ * the language of the form, like the copy. One per sheet — a sheet is
+ * answered once — keyed by it.
+ */
+export function complaintAnsweredEmails(record: ComplaintRecord, answer: string): EmailNotification[] {
+  return [
+    {
+      templateKey: "complaint_answered",
+      to: record.consumer.email,
+      locale: record.locale,
+      vars: {
+        recipientName: record.consumer.firstName,
+        code: record.code,
+        filedAt: record.filedAt.toISOString(),
+        kind: record.kind,
+        legalName: record.supplier.legalName,
+        ruc: record.supplier.ruc,
+        answer,
+      },
+      dedupeKey: `complaint_answered:${record.id}`,
     },
   ];
 }

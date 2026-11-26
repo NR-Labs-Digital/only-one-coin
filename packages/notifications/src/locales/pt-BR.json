@@ -322,6 +322,21 @@
         }
       },
       "missing": "não informado"
+    },
+    "complaint_answered": {
+      "subject": "Resposta à sua folha de reclamação n.º {code}",
+      "preheader": "Respondemos a {kind} que você registrou no Livro de Reclamações.",
+      "paragraphs": [
+        "Esta é a resposta de {legalName} (RUC {ruc}) à {kind} que você registrou no Livro de Reclamações em {filedAt}, com o número {code}.",
+        "{answer}",
+        "Se não concordar com esta resposta, você pode recorrer a outras vias de solução de controvérsias ou apresentar uma denúncia ao INDECOPI."
+      ],
+      "values": {
+        "kind": {
+          "claim": "reclamação",
+          "grievance": "queixa"
+        }
+      }
     }
   }
 }
