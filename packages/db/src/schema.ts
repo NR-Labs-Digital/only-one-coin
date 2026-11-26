@@ -2087,6 +2087,10 @@ export const platformSettings = pgTable(
     // OOC-180: hours after the module's end date to send the grade register
     // to review before it reads "out of time". 48 today.
     gradeSubmissionHours: integer("grade_submission_hours").notNull().default(48),
+    // OOC-58: business days (Monday to Friday in Lima, no holidays yet) the
+    // company has to answer a complaints book sheet. 15 is DS 101-2022-PCM's
+    // rule, to be confirmed with the owner.
+    complaintResponseBusinessDays: integer("complaint_response_business_days").notNull().default(15),
     // OOC-156: advancing a student to the next module asks for the pass mark.
     // Coordination may still advance below it, with a reason; off, any posted
     // grade lets the student advance.
@@ -2126,6 +2130,10 @@ export const platformSettings = pgTable(
     check(
       "platform_settings_grade_submission_hours_check",
       sql`${table.gradeSubmissionHours} between 1 and 720`,
+    ),
+    check(
+      "platform_settings_complaint_response_business_days_check",
+      sql`${table.complaintResponseBusinessDays} between 1 and 60`,
     ),
   ],
 );
@@ -2457,5 +2465,33 @@ export const complaints = pgTable(
     ),
     // The book read newest first (OOC-58's inbox).
     index("complaints_created_at_idx").on(table.createdAt),
+  ],
+);
+
+// What the company did with a sheet (OOC-58), append-only like the sheet: a
+// person took it (`taken`) and a person answered it (`answered`, with the
+// answer the consumer got by e-mail). Each step happens once per sheet — the
+// unique index decides two people clicking at once. The sheet's status is
+// read from these rows, never stored: no row is "received". `actor_id` is
+// Better Auth's "user".id — FK written by hand in 0079.
+export const complaintEvents = pgTable(
+  "complaint_events",
+  {
+    id: uuidPk(),
+    complaintId: uuid("complaint_id")
+      .notNull()
+      .references(() => complaints.id, { onDelete: "restrict" }),
+    kind: text("kind").notNull(),
+    answer: text("answer"),
+    actorId: text("actor_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check("complaint_events_kind_check", sql`${table.kind} in ('taken', 'answered')`),
+    check(
+      "complaint_events_answer_check",
+      sql`(${table.kind} = 'answered' and length(btrim(${table.answer})) between 1 and 5000) or (${table.kind} <> 'answered' and ${table.answer} is null)`,
+    ),
+    uniqueIndex("complaint_events_complaint_kind_uidx").on(table.complaintId, table.kind),
   ],
 );
