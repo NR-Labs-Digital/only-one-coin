@@ -108,7 +108,17 @@ const socials = [
         <!-- The complaints book (OOC-63): on every page, as the consumer
              protection rules ask. The form lives in apps/app; the path is
              sent there like /enrollment (middleware.ts). -->
-        <li><a href={withLang(lang, "/libro-de-reclamaciones")}>{f.complaintsBook}</a></li>
+        <li>
+          <a class="complaints-book" href={withLang(lang, "/libro-de-reclamaciones")}>
+            <svg viewBox="0 0 48 40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+              <path d="M24 9c-5-4-12-5-20-4v28c8-1 15 0 20 4 5-4 12-5 20-4V5c-8-1-15 0-20 4z" />
+              <path d="M24 9v28" />
+              <path d="M9 13c4-.3 7.5.3 10.5 1.7M9 19c4-.3 7.5.3 10.5 1.7M9 25c4-.3 7.5.3 10.5 1.7" stroke-width="1.8" />
+              <path d="M28.5 14.7c3-1.4 6.5-2 10.5-1.7M28.5 20.7c3-1.4 6.5-2 10.5-1.7M28.5 26.7c3-1.4 6.5-2 10.5-1.7" stroke-width="1.8" />
+            </svg>
+            <span>{f.complaintsBook}</span>
+          </a>
+        </li>
         <li class="muted">{f.hoursLabel}</li>
         <li class="muted">{f.hours}</li>
       </ul>
@@ -212,6 +222,31 @@ const socials = [
   }
   .col a:hover {
     color: var(--yellow-bright);
+  }
+  /* The complaints book badge: a book next to the name, on a light card,
+     the way Peruvian sites show it so a consumer spots it at a glance. */
+  .col a.complaints-book {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(10 * var(--dp));
+    padding: calc(8 * var(--dp)) calc(14 * var(--dp)) calc(8 * var(--dp)) calc(10 * var(--dp));
+    border-radius: calc(10 * var(--dp));
+    background: #fff;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: calc(14.4 * var(--dp));
+    line-height: 1.15;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .col a.complaints-book:hover {
+    background: var(--yellow-bright);
+    color: var(--ink);
+  }
+  .complaints-book svg {
+    width: calc(30 * var(--dp));
+    height: calc(25 * var(--dp));
+    flex: none;
+    color: var(--blue);
   }
   .lang-link {
     display: inline-flex;
