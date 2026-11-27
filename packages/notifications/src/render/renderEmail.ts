@@ -1,33 +1,21 @@
-import type { EmailTemplateKey, EmailTemplateVars, Locale } from "@ooc/domain";
+import type { EmailCopy, EmailTemplateKey, EmailTemplateVars, Locale } from "@ooc/domain";
 import en from "../locales/en.json" with { type: "json" };
 import esPE from "../locales/es-PE.json" with { type: "json" };
 import ptBR from "../locales/pt-BR.json" with { type: "json" };
 import type { OutgoingEmail } from "../NotificationProvider.js";
 
-interface TemplateCopy {
-  subject: string;
-  /** The line mail clients show next to the subject, before opening. */
-  preheader: string;
-  paragraphs: string[];
-  /** Button label — only on templates listed in ACTION_URL_VAR. */
-  action?: string;
-  /** One line of a list (OOC-158, the lot e-mails): written once per entry of
-   * the `items` var, where a paragraph is exactly `{items}`. */
-  item?: string;
-  /**
-   * Words for vars that carry a code (OOC-63, the complaints book copy): the
-   * var's value is the key, the label is what the reader sees — a code never
-   * reaches the e-mail (CLAUDE.md §4). A value missing from the map is a bug.
-   */
-  values?: Record<string, Record<string, string>>;
-  /**
-   * What an optional var says when it is null (OOC-63). Without it, a null
-   * var is a template bug. A paragraph whose every placeholder is null is
-   * left out instead — that is how an optional block (the guardian of a
-   * minor) disappears.
-   */
-  missing?: string;
-}
+/**
+ * The words of one template in one language (`EmailCopy`, `@ooc/domain`):
+ * subject, preheader, paragraphs, and — on the templates that have them — the
+ * button's label (`action`, only on templates listed in ACTION_URL_VAR), the
+ * list's line (`item`, written once per entry of the `items` var where a
+ * paragraph is exactly `{items}`, OOC-158), words for vars that carry a code
+ * (`values`, OOC-63: a code never reaches the e-mail, CLAUDE.md §4 — a value
+ * missing from the map is a bug) and what an optional var says when it is
+ * null (`missing`; without it a null var is a bug, and a paragraph whose every
+ * placeholder is null is left out — that is how an optional block disappears).
+ */
+type TemplateCopy = EmailCopy;
 
 export interface LocaleCatalog {
   layout: { greeting: string; signature: string; footer: string };
@@ -50,7 +38,7 @@ export const LOCALE_CATALOGS: Record<Locale, LocaleCatalog> = {
 };
 
 /** Which var holds the URL behind a template's button. */
-const ACTION_URL_VAR: Partial<Record<EmailTemplateKey, string>> = {
+export const ACTION_URL_VAR: Partial<Record<EmailTemplateKey, string>> = {
   portal_credentials: "accessUrl",
   portal_password_reset: "resetUrl",
   staff_invite: "accessUrl",
@@ -136,7 +124,7 @@ function placeholderValues(
 }
 
 /** The paragraph that stands for the list of a template with an `item` line. */
-const ITEMS_PARAGRAPH = "{items}";
+export const ITEMS_PARAGRAPH = "{items}";
 
 /**
  * Each entry of the `items` var through the template's `item` line, its
@@ -202,7 +190,7 @@ function actionUrl(templateKey: EmailTemplateKey, values: Record<string, string>
 
 export function renderEmail(email: OutgoingEmail): RenderedEmail {
   const catalog = LOCALE_CATALOGS[email.locale];
-  const copy = catalog.templates[email.templateKey];
+  const copy = email.copy ?? catalog.templates[email.templateKey];
   const values = placeholderValues(email.vars, email.locale, copy);
   const url = actionUrl(email.templateKey, values);
 

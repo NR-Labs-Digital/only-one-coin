@@ -220,6 +220,12 @@ import { listEmailFlowsRoute } from "@/http/email/ListEmailFlowsRoute.js";
 import { getEmailFlowRoute } from "@/http/email/GetEmailFlowRoute.js";
 import { previewEmailFlowRoute } from "@/http/email/PreviewEmailFlowRoute.js";
 import { sendEmailProofRoute } from "@/http/email/SendEmailProofRoute.js";
+import {
+  getEmailTemplateRoute,
+  previewEmailTemplateRoute,
+  publishEmailTemplateRoute,
+  saveEmailTemplateDraftRoute,
+} from "@/http/email/EmailTemplateRoutes.js";
 import { listAuditActorsRoute } from "@/http/audit/ListAuditActorsRoute.js";
 import { listAuditLogRoute } from "@/http/audit/ListAuditLogRoute.js";
 import { listEmailDeliveriesRoute } from "@/http/notification/ListEmailDeliveriesRoute.js";
@@ -477,6 +483,10 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getEmailFlowRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(previewEmailFlowRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(sendEmailProofRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getEmailTemplateRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(saveEmailTemplateDraftRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(previewEmailTemplateRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(publishEmailTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listEmailDeliveriesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(resendEmailDeliveryRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createStaffInviteRoute);

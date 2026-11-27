@@ -451,6 +451,15 @@ export function canResendEmail(staff: StaffAccess): boolean {
 }
 
 /**
+ * Who rewrites an automatic e-mail's words and publishes them (OOC-60): by
+ * default management only, the same as a document's text — every student who
+ * gets the e-mail from then on reads it. The API checks the same permission.
+ */
+export function canEditEmailTemplate(staff: StaffAccess): boolean {
+  return has(staff, 'emails.templates_edit')
+}
+
+/**
  * Who sends a proof of an automatic e-mail (OOC-89): the same cargos as the
  * resend — a proof is a real e-mail leaving the platform. The API enforces the
  * same list (`EMAIL_PROOF_ROLES`).

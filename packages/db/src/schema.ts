@@ -2004,6 +2004,14 @@ export const outbox = pgTable(
     // staff address, with the subject marked. Kept out of every figure about
     // what the platform sent to students, and out of the resend list.
     isProof: boolean("is_proof").notNull().default(false),
+    // The published version of the wording the worker rendered (OOC-60) —
+    // written when the row is sent. Null: the repository's words went out.
+    templateVersionId: uuid("template_version_id").references(() => emailTemplateVersions.id, {
+      onDelete: "restrict",
+    }),
+    // A proof of a draft (OOC-60): the draft's words in the row's language,
+    // frozen when the proof was asked for. Only on proofs (CHECK).
+    templateCopy: jsonb("template_copy"),
     ...timestamps(),
   },
   (table) => [
@@ -2025,6 +2033,7 @@ export const outbox = pgTable(
     // not an error, so it is never retried.
     check("outbox_status_check", sql`${table.status} in ('pending', 'sent', 'blocked', 'failed')`),
     check("outbox_attempts_check", sql`${table.attempts} >= 0`),
+    check("outbox_template_copy_check", sql`${table.templateCopy} is null or ${table.isProof}`),
     // The relay's only query: the oldest pending rows first.
     index("outbox_pending_created_at_idx")
       .on(table.createdAt)
@@ -2213,6 +2222,48 @@ export const documentTemplateVersions = pgTable(
   (table) => [
     uniqueIndex("document_template_versions_kind_version_uidx").on(table.kind, table.version),
     check("document_template_versions_version_check", sql`${table.version} > 0`),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Editable e-mail wording (OOC-60)
+// ---------------------------------------------------------------------------
+
+// The workbench: one draft per e-mail template, rewritten on every save and
+// allowed to be wrong. `content` is the template's words per language (the
+// same blocks as packages/notifications/src/locales). `updated_by` is Better
+// Auth's "user".id — FK written by hand in 0082.
+export const emailTemplateDrafts = pgTable(
+  "email_template_drafts",
+  {
+    id: uuidPk(),
+    templateKey: text("template_key").notNull(),
+    content: jsonb("content").notNull(),
+    updatedBy: text("updated_by").notNull(),
+    ...timestamps(),
+  },
+  (table) => [uniqueIndex("email_template_drafts_template_key_uidx").on(table.templateKey)],
+);
+
+// What the send-email worker reads: append-only (0082 lock), numbered per
+// template. The one in force is the highest `version`; without one, the
+// repository's words go out. `repository_version` is the repository wording's
+// fingerprint at publish time, so the editor can say the code changed since.
+// `published_by` is Better Auth's "user".id — FK written by hand in 0082.
+export const emailTemplateVersions = pgTable(
+  "email_template_versions",
+  {
+    id: uuidPk(),
+    templateKey: text("template_key").notNull(),
+    version: integer("version").notNull(),
+    content: jsonb("content").notNull(),
+    repositoryVersion: text("repository_version").notNull(),
+    publishedBy: text("published_by").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("email_template_versions_template_key_version_uidx").on(table.templateKey, table.version),
+    check("email_template_versions_version_check", sql`${table.version} > 0`),
   ],
 );
 

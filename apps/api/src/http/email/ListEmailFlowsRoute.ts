@@ -22,9 +22,12 @@ export const listEmailFlowsRoute = RouteBuilder.get("/emails/flows")
   .can("emails.view")
   .response(200, ListEmailFlowsResponseSchema)
   .handler(async (_request, reply) => {
-    const counts = await container.queries.emailFlowCounts.run();
+    const [counts, published] = await Promise.all([
+      container.queries.emailFlowCounts.run(),
+      container.queries.emailTemplates.latestVersionNumbers(),
+    ]);
     reply.status(200).send({
       windowDays: EMAIL_FLOW_WINDOW_DAYS,
-      items: EMAIL_CATALOG_KEYS.map((key) => emailFlowPayload(key, counts[key])),
+      items: EMAIL_CATALOG_KEYS.map((key) => emailFlowPayload(key, counts[key], published[key] ?? null)),
     });
   });

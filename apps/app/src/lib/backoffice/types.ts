@@ -1281,6 +1281,10 @@ export interface EmailFlow {
    * the same words, the same value. Null when nothing sends it yet.
    */
   version: string | null
+  /** Whether its words are edited from the panel (OOC-60). */
+  editable: boolean
+  /** The number of the wording published in the panel; null while the repository's goes out. */
+  publishedVersion: number | null
   /** Over the catalog's window (`EmailFlowCatalog.windowDays`). */
   counts: EmailFlowCounts
 }
@@ -1306,6 +1310,8 @@ export interface EmailPreview {
   subject: string
   html: string
   text: string
+  /** The panel version these words are (OOC-60); null = the repository's. */
+  publishedVersion: number | null
 }
 
 /** Why one delivery did not land. */

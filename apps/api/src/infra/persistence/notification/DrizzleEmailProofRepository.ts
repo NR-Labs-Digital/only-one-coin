@@ -24,6 +24,8 @@ export class DrizzleEmailProofRepository implements IEmailProofRepository {
             vars: message.vars,
             dedupeKey: message.dedupeKey,
             isProof: true,
+            // A proof of a draft carries the draft's words (OOC-60).
+            templateCopy: message.copy ?? null,
           })),
         )
         .returning({ id: outbox.id });

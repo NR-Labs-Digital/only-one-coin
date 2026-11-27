@@ -8,7 +8,8 @@ import {
 } from "@ooc/notifications";
 import { describe, expect, it, vi } from "vitest";
 import type { IOutboxStore, OutboxEmailRow } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
-import { deliverOutboxEmail } from "@/workers/deliverOutboxEmail.js";
+import { deliverOutboxEmail, type PublishedEmailWording } from "@/workers/deliverOutboxEmail.js";
+import type { EmailCopy, EmailTemplateContent } from "@ooc/domain";
 
 /**
  * The delivery side of the outbox, with the network and the database faked:
@@ -190,8 +191,8 @@ class FakeOutboxStore implements IOutboxStore {
   async findById() {
     return this.row;
   }
-  async markSent(_id: string, providerMessageId: string) {
-    this.calls.push(`sent:${providerMessageId}`);
+  async markSent(_id: string, providerMessageId: string, templateVersionId: string | null = null) {
+    this.calls.push(templateVersionId ? `sent:${providerMessageId}:${templateVersionId}` : `sent:${providerMessageId}`);
   }
   async markBlocked() {
     this.calls.push("blocked");
@@ -211,19 +212,73 @@ function pendingRow(): OutboxEmailRow {
     status: "pending",
     attempts: 0,
     isProof: false,
+    templateCopy: null,
   };
 }
+
+/** Nothing published in the backoffice: the repository's words go out. */
+const NO_WORDING: PublishedEmailWording = { findPublished: () => Promise.resolve(null) };
+
+function publishedWording(content: EmailTemplateContent): PublishedEmailWording {
+  return { findPublished: () => Promise.resolve({ id: "version-7", version: 7, content }) };
+}
+
+const EDITED_COPY: EmailCopy = {
+  subject: "Matrícula de {studentName} recibida",
+  preheader: "Revisamos el pago.",
+  paragraphs: ["Texto editado para {courseName}."],
+};
 
 function failingWith(error: Error): NotificationProvider {
   return { sendEmail: () => Promise.reject(error) };
 }
 
 describe("deliverOutboxEmail", () => {
+  it("sends with the wording published in the backoffice and records the version (OOC-60)", async () => {
+    const store = new FakeOutboxStore(pendingRow());
+    const provider = new RecordingProvider();
+    const wording = publishedWording({ [AN_EMAIL.locale]: EDITED_COPY });
+
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording })).resolves.toBe("sent");
+    expect(provider.sent[0]).toEqual({ ...AN_EMAIL, copy: EDITED_COPY });
+    expect(store.calls).toEqual(["sent:msg-1:version-7"]);
+  });
+
+  it("falls back to the repository's words when the published version no longer renders", async () => {
+    const store = new FakeOutboxStore(pendingRow());
+    const provider = new RecordingProvider();
+    const stale: string[] = [];
+    const wording = publishedWording({ [AN_EMAIL.locale]: { ...EDITED_COPY, paragraphs: ["{removedVar}"] } });
+
+    await expect(
+      deliverOutboxEmail("id", {
+        store,
+        provider,
+        isFinalAttempt: false,
+        wording,
+        onStaleWording: ({ templateVersionId }) => stale.push(templateVersionId),
+      }),
+    ).resolves.toBe("sent");
+    expect(provider.sent[0]).toEqual(AN_EMAIL);
+    expect(store.calls).toEqual(["sent:msg-1"]);
+    expect(stale).toEqual(["version-7"]);
+  });
+
+  it("sends a proof of a draft with the draft's frozen words, whatever is published", async () => {
+    const store = new FakeOutboxStore({ ...pendingRow(), isProof: true, templateCopy: EDITED_COPY });
+    const provider = new RecordingProvider();
+    const wording = publishedWording({ [AN_EMAIL.locale]: { ...EDITED_COPY, subject: "Otra" } });
+
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording })).resolves.toBe("sent");
+    expect(provider.sent[0]).toEqual({ ...AN_EMAIL, proof: true, copy: EDITED_COPY });
+    expect(store.calls).toEqual(["sent:msg-1"]);
+  });
+
   it("sends a pending row and records the provider id", async () => {
     const store = new FakeOutboxStore(pendingRow());
     const provider = new RecordingProvider();
 
-    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("sent");
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording: NO_WORDING })).resolves.toBe("sent");
     expect(provider.sent[0]).toEqual(AN_EMAIL);
     expect(store.calls).toEqual(["sent:msg-1"]);
   });
@@ -232,7 +287,7 @@ describe("deliverOutboxEmail", () => {
     const store = new FakeOutboxStore({ ...pendingRow(), isProof: true });
     const provider = new RecordingProvider();
 
-    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("sent");
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording: NO_WORDING })).resolves.toBe("sent");
     expect(provider.sent[0]).toEqual({ ...AN_EMAIL, proof: true });
   });
 
@@ -241,7 +296,7 @@ describe("deliverOutboxEmail", () => {
       const store = new FakeOutboxStore({ ...pendingRow(), status });
       const provider = new RecordingProvider();
 
-      await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("skipped");
+      await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording: NO_WORDING })).resolves.toBe("skipped");
       expect(provider.sent).toHaveLength(0);
     }
   });
@@ -250,7 +305,7 @@ describe("deliverOutboxEmail", () => {
     const store = new FakeOutboxStore(pendingRow());
     const provider = new AllowlistGuard(new RecordingProvider(), { enforce: true, allowlist: [] });
 
-    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("blocked");
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording: NO_WORDING })).resolves.toBe("blocked");
     expect(store.calls).toEqual(["blocked"]);
   });
 
@@ -258,7 +313,7 @@ describe("deliverOutboxEmail", () => {
     const store = new FakeOutboxStore(pendingRow());
     const provider = failingWith(new EmailDeliveryError("brevo_http_400", false));
 
-    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false })).resolves.toBe("failed");
+    await expect(deliverOutboxEmail("id", { store, provider, isFinalAttempt: false, wording: NO_WORDING })).resolves.toBe("failed");
     expect(store.calls).toEqual(["attempt:brevo_http_400:final"]);
   });
 
@@ -267,13 +322,13 @@ describe("deliverOutboxEmail", () => {
 
     const retrying = new FakeOutboxStore(pendingRow());
     await expect(
-      deliverOutboxEmail("id", { store: retrying, provider: failingWith(transient), isFinalAttempt: false }),
+      deliverOutboxEmail("id", { store: retrying, provider: failingWith(transient), isFinalAttempt: false, wording: NO_WORDING }),
     ).rejects.toBe(transient);
     expect(retrying.calls).toEqual(["attempt:brevo_http_503:retry"]);
 
     const last = new FakeOutboxStore(pendingRow());
     await expect(
-      deliverOutboxEmail("id", { store: last, provider: failingWith(transient), isFinalAttempt: true }),
+      deliverOutboxEmail("id", { store: last, provider: failingWith(transient), isFinalAttempt: true, wording: NO_WORDING }),
     ).resolves.toBe("failed");
     expect(last.calls).toEqual(["attempt:brevo_http_503:final"]);
   });

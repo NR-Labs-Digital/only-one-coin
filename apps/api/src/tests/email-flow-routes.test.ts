@@ -50,6 +50,9 @@ afterEach(() => {
 function signedIn() {
   vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(SUPERVISOR);
   vi.spyOn(container.edge.rateLimiter, "hit").mockResolvedValue(null);
+  // Nothing published in the panel (OOC-60): the repository's words.
+  vi.spyOn(container.queries.emailTemplates, "latestVersionNumbers").mockResolvedValue({});
+  vi.spyOn(container.notifications.wording, "findPublished").mockResolvedValue(null);
 }
 
 const get = (url: string) => app.inject({ method: "GET", url, cookies: { [SESSION_COOKIE_NAME]: "token" } });

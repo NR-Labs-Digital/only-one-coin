@@ -3,7 +3,7 @@ import type { NotificationProvider } from "@ooc/notifications";
 import { SEND_EMAIL_ATTEMPTS, SEND_EMAIL_QUEUE, SendEmailPayloadSchema, type SendEmailPayload, QUEUE_PREFIX } from "@ooc/queue";
 import type { FastifyBaseLogger } from "fastify";
 import type { IOutboxStore } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
-import { deliverOutboxEmail } from "./deliverOutboxEmail.js";
+import { deliverOutboxEmail, type PublishedEmailWording } from "./deliverOutboxEmail.js";
 
 /**
  * Delivers one outbox row per job (the relay enqueues them). Logs carry the
@@ -12,7 +12,7 @@ import { deliverOutboxEmail } from "./deliverOutboxEmail.js";
 export function startSendEmailWorker(
   connection: ConnectionOptions,
   logger: FastifyBaseLogger,
-  deps: { store: IOutboxStore; provider: NotificationProvider },
+  deps: { store: IOutboxStore; provider: NotificationProvider; wording: PublishedEmailWording },
 ): Worker<SendEmailPayload> {
   return new Worker<SendEmailPayload>(
     SEND_EMAIL_QUEUE,
@@ -23,6 +23,8 @@ export function startSendEmailWorker(
       try {
         const outcome = await deliverOutboxEmail(outboxId, {
           ...deps,
+          onStaleWording: ({ outboxId: id, templateVersionId }) =>
+            logger.warn({ outboxId: id, templateVersionId }, "published e-mail wording no longer renders; sent the repository's"),
           isFinalAttempt: job.attemptsMade + 1 >= maxAttempts,
         });
         logger.info({ outboxId, outcome }, "send-email job done");

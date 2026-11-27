@@ -1,16 +1,20 @@
-import type { EmailNotification } from "@ooc/domain";
+import type { EmailCopy, EmailNotification } from "@ooc/domain";
 
 /** One rendered-and-sent message: an `outbox` row minus its bookkeeping. */
 export type OutgoingEmail = Omit<EmailNotification, "dedupeKey"> & {
   /** A proof from the e-mail screen (OOC-89): the subject goes out marked. */
   proof?: boolean;
+  /** The words to write it with (OOC-60): a version published in the
+   * backoffice, or a draft's for a proof. Absent, the repository's. */
+  copy?: EmailCopy;
 };
 
 /**
  * The only thing the rest of the platform knows about e-mail delivery
  * (apps/api/CLAUDE.md, "Notificações"). The system does not know Brevo; it
- * knows this. Templates are rendered from this repository by the
- * implementation — never designed only in the provider's dashboard.
+ * knows this. Templates are rendered by the implementation, from this
+ * repository's words or the ones published in our backoffice (OOC-60) —
+ * never designed in the provider's dashboard.
  */
 export interface NotificationProvider {
   sendEmail(email: OutgoingEmail): Promise<{ providerId: string }>;

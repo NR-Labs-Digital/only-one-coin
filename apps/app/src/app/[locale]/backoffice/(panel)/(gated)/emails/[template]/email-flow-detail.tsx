@@ -31,8 +31,9 @@ const ROUTE_LOCALE: Record<EmailLocale, Locale> = { 'es-PE': 'es', 'pt-BR': 'pt'
  * inside the panel's column, and the same window gives it ~1000px with the
  * sidebar open and ~1170px with it collapsed (CLAUDE.md §7).
  *
- * The preview is the versioned template from the repository, rendered by the
- * API with the worker's own `renderEmail` over invented sample data (OOC-88) —
+ * The preview is the words in force — the version published in the panel
+ * (OOC-60), or the repository's — rendered by the API with the worker's own
+ * `renderEmail` over invented sample data (OOC-88) —
  * never a real student, never a copy written for this screen. All three
  * languages come at once, so the reader compares them with a tab instead of
  * switching the panel's language; it opens on the panel's own.
@@ -42,11 +43,14 @@ export function EmailFlowDetail({
   windowDays,
   previews,
   canSendProof,
+  canEditWords,
 }: {
   flow: EmailFlow
   windowDays: number
   /** The analyst reads the page and never sends (CLAUDE.md §8). */
   canSendProof: boolean
+  /** Who saves and publishes the words (OOC-60); the others open the editor read-only. */
+  canEditWords: boolean
   /** The three renders, es-PE first; null when nothing sends it yet or the read failed. */
   previews: EmailPreview[] | null
 }) {
@@ -94,15 +98,38 @@ export function EmailFlowDetail({
         <section className="flex flex-col gap-3 @4xl/page:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <SectionTitle icon="doc">{t('emails.preview_title')}</SectionTitle>
-            {flow.version && (
-              /* Derived from the words in all three languages: the same
-                 value means the same e-mail somebody already reviewed. */
-              <StatusBadge
-                tone="neutral"
-                dot={false}
-                label={t('emails.version_label', { version: flow.version })}
-              />
-            )}
+            <span className="flex flex-wrap items-center gap-2">
+              {flow.publishedVersion !== null ? (
+                /* Words published in the panel (OOC-60) are what goes out. */
+                <span className="flex items-center gap-1.5">
+                  <StatusBadge
+                    tone="success"
+                    dot={false}
+                    label={t('emails.published_label', { version: flow.publishedVersion })}
+                  />
+                  <HelpHint what={t('help.email_editor_state_what')} how={t('help.email_editor_state_how')} />
+                </span>
+              ) : (
+                flow.version && (
+                  /* Derived from the words in all three languages: the same
+                     value means the same e-mail somebody already reviewed. */
+                  <StatusBadge
+                    tone="neutral"
+                    dot={false}
+                    label={t('emails.version_label', { version: flow.version })}
+                  />
+                )
+              )}
+              {flow.editable && (
+                <Link
+                  href={`/backoffice/emails/${flow.template}/edit`}
+                  className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-semibold text-ink transition hover:border-brand-yellow hover:bg-cream"
+                >
+                  <BoIcon name="edit" size={16} />
+                  {t(canEditWords ? 'emails.edit_open' : 'emails.edit_view')}
+                </Link>
+              )}
+            </span>
           </div>
 
           {!flow.emitted ? (
@@ -172,7 +199,7 @@ export function EmailFlowDetail({
               </Card>
               <p className="flex items-start gap-2 text-xs text-muted-foreground">
                 <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                {t('emails.preview_note')}
+                {t(flow.publishedVersion !== null ? 'emails.preview_note_published' : 'emails.preview_note')}
               </p>
             </>
           )}

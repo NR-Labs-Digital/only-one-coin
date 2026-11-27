@@ -1,4 +1,5 @@
 import {
+  isEditableEmailKey,
   EMAIL_AUDIENCES,
   EMAIL_CATALOG,
   EMAIL_CATALOG_KEYS,
@@ -24,6 +25,10 @@ export const EmailFlowSchema = z.object({
   emitted: z.boolean(),
   /** Fingerprint of the template's words (`templateVersion`); null when nothing sends it yet. */
   version: z.string().nullable(),
+  /** Whether its words are edited from the panel (OOC-60). */
+  editable: z.boolean(),
+  /** The number of the wording published in the panel; null while the repository's goes out. */
+  publishedVersion: z.number().int().nullable(),
   counts: z.object({ sent: z.number().int(), failed: z.number().int(), blocked: z.number().int() }),
 });
 
@@ -34,11 +39,17 @@ function isEmitted(key: EmailCatalogKey): key is EmailTemplateKey {
 }
 
 /** One catalog entry with what the repository and the outbox say about it. */
-export function emailFlowPayload(key: EmailCatalogKey, counts: EmailFlowCounts): EmailFlowPayload {
+export function emailFlowPayload(
+  key: EmailCatalogKey,
+  counts: EmailFlowCounts,
+  publishedVersion: number | null,
+): EmailFlowPayload {
   return {
     key,
     ...EMAIL_CATALOG[key],
     version: isEmitted(key) ? templateVersion(key) : null,
+    editable: isEditableEmailKey(key),
+    publishedVersion: isEditableEmailKey(key) ? publishedVersion : null,
     counts,
   };
 }

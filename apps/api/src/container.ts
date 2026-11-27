@@ -1,3 +1,6 @@
+import { DrizzleEmailTemplateRepository } from "@/infra/persistence/notification/DrizzleEmailTemplateRepository.js";
+import type { PublishedEmailWording } from "@/workers/deliverOutboxEmail.js";
+import { emailTemplateChecker } from "@/http/email/emailTemplateChecker.js";
 import type { FastifyBaseLogger } from "fastify";
 import {
   AttachmentAccess,
@@ -100,6 +103,10 @@ import {
   SetTeacherRosterStatusUseCase,
   SaveDocumentTemplateDraftUseCase,
   PublishDocumentTemplateUseCase,
+  GetEmailTemplateUseCase,
+  SaveEmailTemplateDraftUseCase,
+  PublishEmailTemplateUseCase,
+  GetEmailTemplateDraftCopyUseCase,
   OpenTeacherContractUseCase,
   UpdateTeacherAvailabilityUseCase,
   UpdateTeacherUseCase,
@@ -515,6 +522,10 @@ export interface AppUseCases {
   emails: {
     resendDelivery: ResendFailedEmailUseCase;
     sendProof: SendEmailProofUseCase;
+    getTemplate: GetEmailTemplateUseCase;
+    saveTemplateDraft: SaveEmailTemplateDraftUseCase;
+    publishTemplate: PublishEmailTemplateUseCase;
+    templateDraftCopy: GetEmailTemplateDraftCopyUseCase;
   };
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
@@ -583,6 +594,8 @@ export interface AppQueries {
   listStaffRoleChanges: ListStaffRoleChangesQuery;
   auditLog: AuditLogQuery;
   emailFlowCounts: EmailFlowCountsQuery;
+  /** The published e-mail wording's version numbers (OOC-60), for the catalog. */
+  emailTemplates: DrizzleEmailTemplateRepository;
   emailDeliveries: EmailDeliveryQuery;
   getPasswordChangedAt: GetPasswordChangedAtQuery;
 }
@@ -611,6 +624,8 @@ export interface AppIdentity {
  * where the provider's webhook reports back (OOC-91). */
 export interface AppNotifications {
   outbox: IOutboxStore;
+  /** The wording published in the backoffice (OOC-60), read by the send-email worker. */
+  wording: PublishedEmailWording;
   provider: NotificationProvider;
   delivery: IEmailDeliveryRecorder;
 }
@@ -727,6 +742,7 @@ function buildContainer(): AppContainer {
 
   // Notifications
   const outboxRepository = new DrizzleOutboxRepository(db);
+  const emailTemplateRepository = new DrizzleEmailTemplateRepository(db);
   const notificationProvider = createNotificationProvider(config, logger);
 
   // Storage (Tigris/S3-compatible — OOC-19)
@@ -1067,6 +1083,7 @@ function buildContainer(): AppContainer {
     },
     notifications: {
       outbox: outboxRepository,
+      wording: emailTemplateRepository,
       provider: notificationProvider,
       delivery: new DrizzleEmailDeliveryRepository(db),
     },
@@ -1289,6 +1306,10 @@ function buildContainer(): AppContainer {
       emails: {
         resendDelivery: new ResendFailedEmailUseCase(new DrizzleEmailResendRepository(db)),
         sendProof: new SendEmailProofUseCase(new DrizzleEmailProofRepository(db)),
+        getTemplate: new GetEmailTemplateUseCase(emailTemplateRepository, emailTemplateChecker),
+        saveTemplateDraft: new SaveEmailTemplateDraftUseCase(emailTemplateRepository, emailTemplateChecker),
+        publishTemplate: new PublishEmailTemplateUseCase(emailTemplateRepository, emailTemplateChecker, auditLogRepository),
+        templateDraftCopy: new GetEmailTemplateDraftCopyUseCase(emailTemplateRepository, emailTemplateChecker),
       },
       platform: {
         setFeatureFlag,
@@ -1354,6 +1375,7 @@ function buildContainer(): AppContainer {
       listStaffRoleChanges,
       auditLog: auditLogQuery,
       emailFlowCounts,
+      emailTemplates: emailTemplateRepository,
       emailDeliveries: emailDeliveryQuery,
       getPasswordChangedAt,
     },
