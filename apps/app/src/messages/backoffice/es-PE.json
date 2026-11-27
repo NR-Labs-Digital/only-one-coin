@@ -3485,7 +3485,8 @@
       "created_toast": "Cargo creado. Marca lo que puede hacer.",
       "retired_toast": "Cargo eliminado",
       "retire": "Eliminar cargo",
-      "retire_system": "Los cargos del sistema no se eliminan.",
+      "retire_system": "Master y Docente son cargos del sistema: no se eliminan.",
+      "retire_in_use_hint": "{count, plural, one {Una persona o invitación tiene este cargo} other {# personas o invitaciones tienen este cargo}}: cámbiales el cargo en Personas para eliminarlo.",
       "retire_title": "Eliminar el cargo",
       "retire_body": "{name} deja de existir y sale de las listas de cargos. El historial lo sigue nombrando.",
       "retire_in_use": "{count, plural, one {Una persona o invitación todavía tiene este cargo} other {# personas o invitaciones todavía tienen este cargo}}. Cámbiales el cargo en Personas antes de eliminarlo.",
@@ -3502,6 +3503,7 @@
       "mfa_will_require": "Con estos permisos, las personas del cargo tendrán que activar el segundo factor.",
       "roles_heading": "Cargos",
       "edit_role": "Editar cargo",
+      "view_role": "Ver cargo",
       "back_to_roles": "Volver a cargos",
       "invited_badge": "Invitación pendiente",
       "error": {

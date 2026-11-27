@@ -10,7 +10,7 @@ import {
   canViewPermissionMatrix,
 } from '@/lib/backoffice/permissions'
 import { getStaffProfiles } from '@/lib/backoffice/permission-matrix-server'
-import { customCargosOf } from '@/lib/backoffice/permission-matrix'
+import { customCargosOf, retiredBoardRolesOf } from '@/lib/backoffice/permission-matrix'
 import { redirect } from '@/i18n/navigation'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeamView } from './team-view'
@@ -78,6 +78,7 @@ export default async function TeamPage({
         currentUserId={staff.id}
         currentUserRole={staff.role}
         cargos={customCargosOf(profiles ?? [])}
+        retiredRoles={profiles ? retiredBoardRolesOf(profiles) : []}
         actions={{
           invite: canInviteStaff(staff),
           changeRole: canChangeStaffRole(staff),

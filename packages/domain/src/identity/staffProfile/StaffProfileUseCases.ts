@@ -155,8 +155,10 @@ export interface RetireStaffProfileInput {
 }
 
 /**
- * Retires a cargo created in Equipo once nobody is on it — no account and no
- * invite waiting on the person. A board cargo never retires.
+ * Retires a cargo once nobody is on it — no account and no invite waiting on
+ * the person. A board cargo retires too, but master and teacher, which are
+ * locked (pedido do Rick, 26/11/2026): nobody is put on a retired board cargo
+ * again, and the access registry reads it as holding nothing.
  */
 export class RetireStaffProfileUseCase extends BaseUseCase<RetireStaffProfileInput, void> {
   constructor(
@@ -168,8 +170,7 @@ export class RetireStaffProfileUseCase extends BaseUseCase<RetireStaffProfileInp
 
   async run(input: RetireStaffProfileInput): Promise<void> {
     const profile = await editableProfile(this.profiles, input.actor, input.profileId);
-    if (profile.role !== null) throw new StaffProfileLockedError();
-    if ((await this.profiles.countMembers(profile.id)) > 0) throw new StaffProfileInUseError();
+    if ((await this.profiles.countMembers(profile)) > 0) throw new StaffProfileInUseError();
 
     await this.profiles.retire(profile.id);
 
@@ -177,7 +178,7 @@ export class RetireStaffProfileUseCase extends BaseUseCase<RetireStaffProfileInp
       actorId: input.actor.userId,
       action: "staff_profile.retired",
       targetId: profile.id,
-      metadata: {},
+      metadata: profile.role ? { role: profile.role } : {},
       at: new Date(),
     });
   }

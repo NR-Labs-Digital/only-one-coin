@@ -56,12 +56,15 @@ const labelClass =
 export function NewStaffForm({
   teachers,
   cargos,
+  retiredRoles,
   onCancel,
   onCreate,
 }: {
   teachers: InvitableTeacher[]
   /** The cargos created in Equipo (OOC-183), offered after the board's. */
   cargos: CustomCargo[]
+  /** Board cargos administration deleted: not offered. */
+  retiredRoles: readonly StaffRole[]
   onCancel: () => void
   onCreate: (member: StaffMemberRow) => void
 }) {
@@ -72,7 +75,12 @@ export function NewStaffForm({
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  const [cargo, setCargo] = useState<CargoValue>('enrollment_supervisor')
+  const offered = ROLES.filter((item) => !retiredRoles.includes(item))
+  const [cargo, setCargo] = useState<CargoValue>(() =>
+    offered.includes('enrollment_supervisor')
+      ? 'enrollment_supervisor'
+      : (offered[0] ?? (cargos[0] ? cargoValue('custom', cargos[0].id) : 'enrollment_supervisor')),
+  )
   const { role, profileId } = parseCargoValue(cargo)
   const [teacherId, setTeacherId] = useState('')
   const [created, setCreated] = useState<{ member: StaffMemberRow; link: string } | null>(
@@ -90,7 +98,7 @@ export function NewStaffForm({
      on their domain — the server refuses the pair anyway (route schema). */
   const allowMaster = canHoldMaster(email)
   const roles: StaffRole[] =
-    allowMaster || role === 'master' ? ['master', ...ROLES] : ROLES
+    allowMaster || role === 'master' ? ['master', ...offered] : offered
 
   const ready =
     firstName.trim() !== '' &&

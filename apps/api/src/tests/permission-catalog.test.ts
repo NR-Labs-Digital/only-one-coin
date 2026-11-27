@@ -126,6 +126,16 @@ describe("StaffAccessRegistry", () => {
     expect(registry.has({ role: "master" }, "payments.settle")).toBe(true);
   });
 
+  it("gives nothing to a retired board cargo, instead of falling back to the board's defaults", async () => {
+    const registry = new StaffAccessRegistry(
+      async () => [],
+      async () => ["sales"],
+    );
+    await registry.reload();
+    expect(registry.permissionsOf({ role: "sales" }).size).toBe(0);
+    expect(registry.has({ role: "support" }, "students.view")).toBe(defaultPermissionsOf("support").includes("students.view"));
+  });
+
   it("makes a cargo holding a sensitive permission sign in with the second factor", async () => {
     const registry = new StaffAccessRegistry(async () => [{ ...custom, permissions: ["payments.view", "payments.settle"] }]);
     await registry.reload();

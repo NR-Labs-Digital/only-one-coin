@@ -45,7 +45,15 @@ export class StaffAccessRegistry {
   private byProfileId = new Map<string, Resolved>();
   private timer: NodeJS.Timeout | null = null;
 
-  constructor(private readonly load: () => Promise<StaffProfileRecord[]>) {}
+  /**
+   * `loadRetiredRoles` names the board cargos administration retired: their
+   * rows are gone from `load`, and without it they would fall back to the
+   * board's defaults — a retired cargo must hold nothing.
+   */
+  constructor(
+    private readonly load: () => Promise<StaffProfileRecord[]>,
+    private readonly loadRetiredRoles: () => Promise<BoardRole[]> = async () => [],
+  ) {}
 
   permissionsOf(subject: StaffAccessSubject): ReadonlySet<PermissionKey> {
     return this.resolved(subject).permissions;
@@ -60,11 +68,12 @@ export class StaffAccessRegistry {
   }
 
   async reload(): Promise<void> {
-    const profiles = await this.load();
+    const [profiles, retiredRoles] = await Promise.all([this.load(), this.loadRetiredRoles()]);
     const byRole = new Map<BoardRole, Resolved>(
       BOARD_ROLES.map((role) => [role, resolve({ role, permissions: defaultPermissionsOf(role) })]),
     );
     const byProfileId = new Map<string, Resolved>();
+    for (const role of retiredRoles) byRole.set(role, NOTHING);
     for (const profile of profiles) {
       if (profile.role) byRole.set(profile.role, resolve(profile));
       else byProfileId.set(profile.id, resolve(profile));

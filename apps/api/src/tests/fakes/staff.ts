@@ -143,8 +143,9 @@ export class FakeStaffProfileRepository implements IStaffProfileRepository {
     return this.rows.find((row) => row.id === id && !row.retired) ?? null;
   }
 
-  async findByRole(role: BoardRole): Promise<StaffProfileRecord | null> {
-    return this.rows.find((row) => row.role === role) ?? null;
+  async findByRole(role: BoardRole): Promise<(StaffProfileRecord & { retired: boolean }) | null> {
+    const row = this.rows.find((candidate) => candidate.role === role);
+    return row ? { ...row, retired: row.retired === true } : null;
   }
 
   async nameTaken(name: string, exceptId?: string): Promise<boolean> {
@@ -169,8 +170,8 @@ export class FakeStaffProfileRepository implements IStaffProfileRepository {
     this.rows.find((row) => row.id === id)!.retired = true;
   }
 
-  async countMembers(id: string): Promise<number> {
-    return this.members.get(id) ?? 0;
+  async countMembers(profile: Pick<StaffProfileRecord, "id" | "role">): Promise<number> {
+    return this.members.get(profile.id) ?? 0;
   }
 }
 

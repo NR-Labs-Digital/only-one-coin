@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { StaffMemberRow, StaffRole } from '@/lib/backoffice/types'
 import { cargoLabel, cargoValue, type CargoValue, type CustomCargo } from '@/lib/backoffice/cargos'
@@ -74,12 +74,15 @@ const labelClass =
 export function RoleChangeDialog({
   member,
   cargos,
+  retiredRoles,
   onClose,
   onConfirm,
 }: {
   member: StaffMemberRow | null
   /** The cargos created in Equipo (OOC-183), offered after the board's. */
   cargos: CustomCargo[]
+  /** Board cargos administration deleted: not offered. */
+  retiredRoles: readonly StaffRole[]
   onClose: () => void
   /** Anything but `'ok'` keeps the dialog open with the matching inline
    * error, same as any other form. */
@@ -88,9 +91,15 @@ export function RoleChangeDialog({
   const t = useTranslations('bo')
   const [role, setRole] = useState<CargoValue>('enrollment_supervisor')
   const options: { value: CargoValue; label: string }[] = [
-    ...ROLES.map((item) => ({ value: item as CargoValue, label: t(`role.${item}`) })),
+    ...ROLES.filter((item) => !retiredRoles.includes(item)).map((item) => ({
+      value: item as CargoValue,
+      label: t(`role.${item}`),
+    })),
     ...cargos.map((cargo) => ({ value: cargoValue('custom', cargo.id), label: cargo.name })),
   ]
+  /* Read by the reset below, which runs only when the person changes. */
+  const optionsRef = useRef(options)
+  optionsRef.current = options
   const current = member ? cargoValue(member.role, member.profileId) : null
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
@@ -101,7 +110,7 @@ export function RoleChangeDialog({
   useEffect(() => {
     if (!member) return
     const from = cargoValue(member.role, member.profileId)
-    setRole(ROLES.find((item) => item !== from) ?? 'enrollment_supervisor')
+    setRole(optionsRef.current.find((option) => option.value !== from)?.value ?? 'enrollment_supervisor')
     setPassword('')
     setError(null)
   }, [member])

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { PERMISSION_AREAS, PERMISSION_CATALOG } from '@ooc/domain/permission-catalog'
+import { BOARD_ROLES, PERMISSION_AREAS, PERMISSION_CATALOG } from '@ooc/domain/permission-catalog'
 import en from '@/messages/backoffice/en.json'
 import es from '@/messages/backoffice/es-PE.json'
 import pt from '@/messages/backoffice/pt-BR.json'
-import { customCargosOf, groupByArea, profileHolds, type StaffProfileItem } from './permission-matrix'
+import { customCargosOf, groupByArea, profileHolds, retiredBoardRolesOf, type StaffProfileItem } from './permission-matrix'
 import { cargoLabel, cargoValue, parseCargoValue } from './cargos'
 
 /**
@@ -70,6 +70,12 @@ describe('permission matrix helpers', () => {
 
   it('offers only the cargos created in Equipo to the selects', () => {
     expect(customCargosOf(profiles)).toEqual([{ id: 'c-horarios', name: 'Horarios' }])
+  })
+
+  it('reads a board cargo missing from the list as deleted', () => {
+    const live = BOARD_ROLES.filter((role) => role !== 'sales').map((role) => ({ ...profiles[0]!, id: role, role }))
+    expect(retiredBoardRolesOf(live)).toEqual(['sales'])
+    expect(retiredBoardRolesOf([...live, { ...profiles[0]!, id: 'sales', role: 'sales' as const }])).toEqual([])
   })
 })
 

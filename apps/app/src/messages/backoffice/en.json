@@ -3485,7 +3485,8 @@
       "created_toast": "Role created. Tick what it can do.",
       "retired_toast": "Role deleted",
       "retire": "Delete role",
-      "retire_system": "System roles are not deleted.",
+      "retire_system": "Master and Teacher are system roles: they are not deleted.",
+      "retire_in_use_hint": "{count, plural, one {One person or invite has this role} other {# people or invites have this role}}: change their role under People to delete it.",
       "retire_title": "Delete the role",
       "retire_body": "{name} stops existing and leaves the role lists. The history still names it.",
       "retire_in_use": "{count, plural, one {One person or invite still has this role} other {# people or invites still have this role}}. Change their role under People before deleting it.",
@@ -3502,6 +3503,7 @@
       "mfa_will_require": "With these permissions, people on the role will have to turn on the second factor.",
       "roles_heading": "Roles",
       "edit_role": "Edit role",
+      "view_role": "View role",
       "back_to_roles": "Back to roles",
       "invited_badge": "Invite pending",
       "error": {

@@ -1,4 +1,4 @@
-import type { BoardRole, PermissionArea, PermissionKey } from '@ooc/domain/permission-catalog'
+import { BOARD_ROLES, type BoardRole, type PermissionArea, type PermissionKey } from '@ooc/domain/permission-catalog'
 import type { CustomCargo } from './cargos'
 
 /**
@@ -33,6 +33,16 @@ export function groupByArea<T extends { area: PermissionArea }>(
   return areas
     .map((area) => ({ area, entries: entries.filter((entry) => entry.area === area) }))
     .filter((group) => group.entries.length > 0)
+}
+
+/**
+ * The board cargos administration deleted: the API lists only live cargos, and
+ * the boot writes every board row, so a board cargo missing from the list is a
+ * retired one. The team's selects stop offering it — the API refuses it anyway.
+ */
+export function retiredBoardRolesOf(profiles: readonly StaffProfileItem[]): BoardRole[] {
+  const live = new Set(profiles.map((profile) => profile.role))
+  return BOARD_ROLES.filter((role) => !live.has(role))
 }
 
 /** The cargos created in Equipo, as the team's selects offer them. */

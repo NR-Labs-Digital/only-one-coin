@@ -814,7 +814,10 @@ function buildContainer(): AppContainer {
     paymentEmailContextLookup,
   );
   const staffProfileRepository = new DrizzleStaffProfileRepository(db);
-  const staffAccess = new StaffAccessRegistry(() => staffProfileRepository.loadLive());
+  const staffAccess = new StaffAccessRegistry(
+    () => staffProfileRepository.loadLive(),
+    () => staffProfileRepository.retiredBoardRoles(),
+  );
   const promoteRole = new PromoteUserRoleUseCase(
     freshAuthVerifier,
     userRoleRepository,

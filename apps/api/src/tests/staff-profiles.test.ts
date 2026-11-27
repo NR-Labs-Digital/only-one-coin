@@ -3,6 +3,7 @@ import {
   PromoteUserRoleUseCase,
   RetireStaffProfileUseCase,
   UpdateStaffProfileUseCase,
+  cargoPermissions,
   defaultPermissionsOf,
   type StaffProfileActor,
 } from "@ooc/domain";
@@ -109,7 +110,7 @@ describe("UpdateStaffProfileUseCase", () => {
 });
 
 describe("RetireStaffProfileUseCase", () => {
-  it("retires an empty created cargo, and refuses one still in use or a board one", async () => {
+  it("retires an empty created cargo, and refuses one still in use", async () => {
     const created = await new CreateStaffProfileUseCase(profiles, audit).run({
       actor: admin,
       name: "Temporal",
@@ -122,14 +123,40 @@ describe("RetireStaffProfileUseCase", () => {
       reason: "staff_profile.in_use",
     });
 
-    const sales = await profiles.findByRole("sales");
-    await expect(useCase.run({ actor: admin, profileId: sales!.id })).rejects.toMatchObject({
-      reason: "staff_profile.locked",
-    });
-
     profiles.members.set(created.id, 0);
     await useCase.run({ actor: admin, profileId: created.id });
     expect(await profiles.findLiveById(created.id)).toBeNull();
+  });
+
+  it("retires an empty board cargo, but never master or teacher", async () => {
+    const useCase = new RetireStaffProfileUseCase(profiles, audit);
+
+    const sales = await profiles.findByRole("sales");
+    profiles.members.set(sales!.id, 2);
+    await expect(useCase.run({ actor: admin, profileId: sales!.id })).rejects.toMatchObject({
+      reason: "staff_profile.in_use",
+    });
+
+    profiles.members.set(sales!.id, 0);
+    await useCase.run({ actor: admin, profileId: sales!.id });
+    expect(await profiles.findLiveById(sales!.id)).toBeNull();
+    expect((await profiles.findByRole("sales"))?.retired).toBe(true);
+
+    for (const role of ["master", "teacher"] as const) {
+      const profile = await profiles.findByRole(role);
+      await expect(useCase.run({ actor: admin, profileId: profile!.id })).rejects.toMatchObject({
+        reason: "staff_profile.locked",
+      });
+    }
+  });
+
+  it("puts nobody on a retired board cargo again", async () => {
+    const sales = await profiles.findByRole("sales");
+    await new RetireStaffProfileUseCase(profiles, audit).run({ actor: admin, profileId: sales!.id });
+
+    await expect(cargoPermissions(profiles, { role: "sales" })).rejects.toMatchObject({
+      reason: "staff_profile.not_found",
+    });
   });
 });
 
