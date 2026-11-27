@@ -46,7 +46,11 @@ FROM base AS runner
 # impressão, não navegador — por isso não um Chromium. DejaVu é a fonte que a
 # moldura do documento pede primeiro (`documents/frame.ts`); sem ela o PDF sai
 # com a fonte que o fontconfig achar.
-RUN apk add --no-cache weasyprint font-dejavu
+#
+# psql 18: restoring a backup from the owners' area (OOC-153) streams the
+# pg_dump the deploy wrote into a scratch database, like
+# scripts/restore-backup.sh. Same major as the server that wrote the dump.
+RUN apk add --no-cache weasyprint font-dejavu postgresql18-client
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/api .

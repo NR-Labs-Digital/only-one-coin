@@ -63,3 +63,5 @@ export { FREEZE_REENGAGEMENT_QUEUE, FREEZE_REENGAGEMENT_EVERY_MS } from "./jobs/
 export { createFreezeReengagementQueue, scheduleFreezeReengagement } from "./producers/freeze-reengagement.producer.js";
 export { COURSE_ENDING_RENEWAL_QUEUE, COURSE_ENDING_RENEWAL_EVERY_MS } from "./jobs/course-ending-renewal.job.js";
 export { createCourseEndingRenewalQueue, scheduleCourseEndingRenewal } from "./producers/course-ending-renewal.producer.js";
+export { BACKUP_RESTORE_QUEUE, BACKUP_RESTORE_EVERY_MS } from "./jobs/backup-restore.job.js";
+export { createBackupRestoreQueue, scheduleBackupRestore } from "./producers/backup-restore.producer.js";

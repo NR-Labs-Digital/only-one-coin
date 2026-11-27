@@ -24,6 +24,9 @@ import {
   scheduleReportRefresh,
   enqueueReportRefreshNow,
   REPORT_REFRESH_STALE_AFTER_MS,
+  createBackupRestoreQueue,
+  scheduleBackupRestore,
+  BACKUP_RESTORE_QUEUE,
 } from "@ooc/queue";
 import {
   ExtractReceiptUseCase,
@@ -51,6 +54,7 @@ import { startFreezeReengagementWorker } from "./workers/freeze-reengagement.wor
 import { startCourseEndingRenewalWorker } from "./workers/course-ending-renewal.worker.js";
 import { startReportRefreshWorker } from "./workers/report-refresh.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
+import { startBackupRestoreWorker } from "./workers/backup-restore.worker.js";
 
 const {
   config,
@@ -124,6 +128,17 @@ const attachmentSweepWorker = startAttachmentSweepWorker(connection, logger, {
 const constanciaIssueQueue = createConstanciaIssueQueue(connection);
 await scheduleConstanciaIssue(constanciaIssueQueue);
 const constanciaIssueWorker = startConstanciaIssueWorker(connection, logger, { issued: documents.issued });
+// Backup restores from the owners' area (OOC-153): only where this
+// environment has somewhere to restore into.
+const backupRestoreQueue = createBackupRestoreQueue(connection);
+const { target: restoreTarget, restorer: dumpRestorer } = useCases.platform.backups.capabilities;
+const backupRestoreWorker =
+  restoreTarget && dumpRestorer
+    ? startBackupRestoreWorker(connection, logger, { runNext: useCases.platform.backups.runNext })
+    : null;
+if (backupRestoreWorker) await scheduleBackupRestore(backupRestoreQueue);
+// A scheduler left by an earlier, configured boot would tick for nobody.
+else await backupRestoreQueue.removeJobScheduler(BACKUP_RESTORE_QUEUE);
 // Frozen enrollments (OOC-84): their 1, 3 and 6 month re-engagement e-mails.
 const freezeReengagementQueue = createFreezeReengagementQueue(connection);
 await scheduleFreezeReengagement(freezeReengagementQueue);
@@ -223,7 +238,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, freeze-reengagement, course-ending-renewal, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, backup-restore (when configured), freeze-reengagement, course-ending-renewal, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -255,6 +270,7 @@ async function shutdown() {
   await seatHoldSweepWorker.close();
   await attachmentSweepWorker.close();
   await constanciaIssueWorker.close();
+  await backupRestoreWorker?.close();
   await freezeReengagementWorker.close();
   await courseEndingRenewalWorker.close();
   await reportRefreshWorker.close();
@@ -269,6 +285,7 @@ async function shutdown() {
   await seatHoldSweepQueue.close();
   await attachmentSweepQueue.close();
   await constanciaIssueQueue.close();
+  await backupRestoreQueue.close();
   await freezeReengagementQueue.close();
   await courseEndingRenewalQueue.close();
   await reportRefreshQueue.close();

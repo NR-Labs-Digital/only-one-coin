@@ -142,6 +142,11 @@ import {
   RetireStaffAccountUseCase,
   SchedulePlanPriceUseCase,
   SetFeatureFlagOverrideUseCase,
+  GetBackupsOverviewUseCase,
+  RequestBackupRestoreUseCase,
+  DiscardBackupRestoreUseCase,
+  RunNextBackupRestoreUseCase,
+  type BackupRestoreCapabilities,
   SubmitPublicEnrollmentUseCase,
   UpdatePlatformSettingsUseCase,
   ValidateReceiptUseCase,
@@ -311,6 +316,9 @@ import { DrizzleEmailResendRepository } from "./infra/persistence/notification/D
 import { DrizzleEmailProofRepository } from "./infra/persistence/notification/DrizzleEmailProofRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
+import { DrizzleBackupRestoreRepository } from "./infra/persistence/platform/DrizzleBackupRestoreRepository.js";
+import { createBackupRestoreCapabilities } from "./infra/backup/createBackupRestoreCapabilities.js";
+import { repositoryMigrationStamps } from "./infra/backup/migrationJournal.js";
 import { DrizzlePlatformSettingsRepository } from "./infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { DrizzleIssuedDocumentRepository } from "./infra/persistence/document/DrizzleIssuedDocumentRepository.js";
 import { DrizzleComplaintRepository } from "./infra/persistence/complaint/DrizzleComplaintRepository.js";
@@ -530,6 +538,14 @@ export interface AppUseCases {
   platform: {
     setFeatureFlag: SetFeatureFlagOverrideUseCase;
     updateSettings: UpdatePlatformSettingsUseCase;
+    /** The owners' backups (OOC-153). */
+    backups: {
+      capabilities: BackupRestoreCapabilities;
+      overview: GetBackupsOverviewUseCase;
+      request: RequestBackupRestoreUseCase;
+      discard: DiscardBackupRestoreUseCase;
+      runNext: RunNextBackupRestoreUseCase;
+    };
   };
   catalog: {
     retire: RetireCatalogEntryUseCase;
@@ -938,6 +954,20 @@ function buildContainer(): AppContainer {
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
   const updateSettings = new UpdatePlatformSettingsUseCase(platformSettingsRepository);
+  const backupRestoreRepository = new DrizzleBackupRestoreRepository(db);
+  const backupCapabilities = createBackupRestoreCapabilities(config);
+  const backups = {
+    capabilities: backupCapabilities,
+    overview: new GetBackupsOverviewUseCase(backupCapabilities, backupRestoreRepository),
+    request: new RequestBackupRestoreUseCase(backupCapabilities, backupRestoreRepository, auditLogRepository),
+    discard: new DiscardBackupRestoreUseCase(backupCapabilities, backupRestoreRepository, auditLogRepository),
+    runNext: new RunNextBackupRestoreUseCase(
+      backupCapabilities,
+      backupRestoreRepository,
+      auditLogRepository,
+      repositoryMigrationStamps(),
+    ),
+  };
 
   const retireCatalogEntry = new RetireCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const deleteClassGroups = new DeleteClassGroupsUseCase(new DrizzleClassGroupDeletionRepository(db));
@@ -1313,6 +1343,7 @@ function buildContainer(): AppContainer {
       },
       platform: {
         setFeatureFlag,
+        backups,
         updateSettings,
       },
       catalog: {

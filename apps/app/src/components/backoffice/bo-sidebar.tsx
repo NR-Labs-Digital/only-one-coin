@@ -17,7 +17,7 @@ import {
   MessageSquareWarning,
   ScrollText,
   Settings,
-  ToggleRight,
+  ShieldCheck,
   UserCog,
   Users,
   type LucideIcon,
@@ -62,7 +62,7 @@ const icons = {
   reports: BarChart3,
   staff: UserCog,
   audit: ScrollText,
-  features: ToggleRight,
+  platform: ShieldCheck,
   settings: Settings,
 } satisfies Record<string, LucideIcon>
 

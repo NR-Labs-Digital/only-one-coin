@@ -12,7 +12,7 @@ export class NotAPlatformOwnerError extends ForbiddenError {
   constructor(params?: { path?: string; cause?: unknown }) {
     super({
       reason: "auth.not_a_platform_owner",
-      message: "Only an account on the platform owners' e-mail domain may change a feature flag.",
+      message: "Only an account on the platform owners' e-mail domain may do this (feature flags, backups).",
       ...params,
     });
   }
