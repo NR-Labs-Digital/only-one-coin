@@ -1,4 +1,10 @@
-import { BOARD_ROLES, type BoardRole, type PermissionArea, type PermissionKey } from '@ooc/domain/permission-catalog'
+import {
+  BOARD_ROLES,
+  type BoardRole,
+  type PermissionAccess,
+  type PermissionArea,
+  type PermissionKey,
+} from '@ooc/domain/permission-catalog'
 import type { CustomCargo } from './cargos'
 
 /**
@@ -33,6 +39,50 @@ export function groupByArea<T extends { area: PermissionArea }>(
   return areas
     .map((area) => ({ area, entries: entries.filter((entry) => entry.area === area) }))
     .filter((group) => group.entries.length > 0)
+}
+
+/** How much of an area's "see" or "change" side a cargo holds. */
+export type AccessLevel = 'all' | 'some' | 'none'
+
+/**
+ * The area's permissions of one side (OOC-192), read against what the cargo
+ * holds; null when the area has none of that side (every account's own
+ * settings are only "change").
+ */
+export function accessLevel<T extends { key: string; access: PermissionAccess }>(
+  entries: readonly T[],
+  held: ReadonlySet<string>,
+  access: PermissionAccess,
+): AccessLevel | null {
+  const side = entries.filter((entry) => entry.access === access)
+  if (side.length === 0) return null
+  const count = side.filter((entry) => held.has(entry.key)).length
+  return count === 0 ? 'none' : count === side.length ? 'all' : 'some'
+}
+
+/**
+ * The area's "see" or "change" switch flipped (OOC-192). Changing needs
+ * seeing, so turning "change" on turns "see" on too, and turning "see" off
+ * turns "change" off. Only what `canFlip` allows moves — a permission the
+ * viewer's own cargo lacks, or one no cargo hands out, stays as it was.
+ */
+export function withAreaAccess<T extends { key: string; access: PermissionAccess }>(
+  held: ReadonlySet<string>,
+  entries: readonly T[],
+  access: PermissionAccess,
+  on: boolean,
+  canFlip: (entry: T) => boolean,
+): Set<string> {
+  const next = new Set(held)
+  const touched = entries.filter((entry) =>
+    on ? entry.access === 'view' || access === 'edit' : entry.access === 'edit' || access === 'view',
+  )
+  for (const entry of touched) {
+    if (!canFlip(entry)) continue
+    if (on) next.add(entry.key)
+    else next.delete(entry.key)
+  }
+  return next
 }
 
 /**

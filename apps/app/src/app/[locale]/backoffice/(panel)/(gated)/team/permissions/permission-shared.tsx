@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import {
   PERMISSION_AREAS,
   PERMISSION_CATALOG,
+  type PermissionAccess,
   type PermissionArea,
   type PermissionGrant,
   type PermissionKey,
@@ -16,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 /* What the cargo list and a cargo's own page share (OOC-57, OOC-183). */
 
-export type CatalogEntry = { key: PermissionKey; area: PermissionArea; grant?: PermissionGrant }
+export type CatalogEntry = { key: PermissionKey; area: PermissionArea; access: PermissionAccess; grant?: PermissionGrant }
 
 export const ENTRIES = PERMISSION_CATALOG as readonly CatalogEntry[]
 export const GROUPS = groupByArea(ENTRIES, PERMISSION_AREAS)
@@ -149,21 +150,34 @@ export function ActionLabel({ entry }: { entry: CatalogEntry }) {
 }
 
 /** On/off control; the `<label>` around it names it and makes the whole row clickable. */
-export function Switch({ checked, disabled, onChange }: { checked: boolean; disabled: boolean; onChange: () => void }) {
+export function Switch({
+  checked,
+  mixed = false,
+  disabled,
+  onChange,
+}: {
+  checked: boolean
+  /** Part of what the switch stands for is on: a half-filled track, knob in the middle. A switch has no third state in ARIA, so it reads as off and the label says "partly". */
+  mixed?: boolean
+  disabled: boolean
+  onChange: () => void
+}) {
   return (
     <button
       type="button"
       role="switch"
-      aria-checked={checked}
+      aria-checked={checked && !mixed}
       disabled={disabled}
       onClick={onChange}
       className={`relative mt-px inline-flex h-5 w-9 shrink-0 items-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/30 disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? 'bg-brand-blue' : 'bg-slate-200'
+        mixed ? 'bg-brand-blue/45' : checked ? 'bg-brand-blue' : 'bg-slate-200'
       }`}
     >
       <span
         aria-hidden="true"
-        className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[1.125rem]' : 'translate-x-0.5'}`}
+        className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          mixed ? 'translate-x-2.5' : checked ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
+        }`}
       />
     </button>
   )

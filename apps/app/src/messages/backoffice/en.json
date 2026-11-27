@@ -2923,7 +2923,9 @@
       "complaint_take_what": "Taking the sheet tells the team you are handling it; it stops counting as not taken in the menu.",
       "complaint_take_how": "A sheet is taken once and it cannot be undone. You may answer without taking it first.",
       "complaint_answer_what": "The company's answer to the consumer. It is e-mailed to the sheet's address, in the language of the form.",
-      "complaint_answer_how": "It is sent once: it cannot be changed afterwards and no second one goes out. It is kept with the sheet and in the audit log."
+      "complaint_answer_how": "It is sent once: it cannot be changed afterwards and no second one goes out. It is kept with the sheet and in the audit log.",
+      "permission_access_what": "View lets the role look at the area’s data — records, lists, documents — without changing anything. Edit lets it register, correct, approve, send and export.",
+      "permission_access_how": "Turning Edit on turns View on too, and turning View off turns Edit off. A half-filled switch is a role with only some actions on that side: open the details to see or adjust each one. A change applies from each person’s next action."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -3517,7 +3519,14 @@
           "permission_not_grantable": "One of the permissions cannot be granted to a role."
         },
         "failed": "Could not save. Try again."
-      }
+      },
+      "access": {
+        "view": "View",
+        "edit": "Edit"
+      },
+      "access_partly": "partly",
+      "access_detail": "{count} of {total, plural, one {# action} other {# actions}} · details",
+      "access_intro": "Each area has two switches: View and Edit."
     },
     "grade_record": {
       "title": "Grade records",
