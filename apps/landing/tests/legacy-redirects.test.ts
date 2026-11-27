@@ -152,7 +152,10 @@ describe("legacy WordPress redirects (OOC-45)", () => {
   });
 
   it("the new site's own pages are not redirected", () => {
-    for (const path of [...LANDING_PATHS, "/", "/en", "/pt", "/en/about", "/pt/courses"]) {
+    // `/ooc-ev/*` is the PostHog proxy (OOC-47, `rewrites`): a redirect
+    // there would drop the funnel events.
+    const own = [...LANDING_PATHS, "/", "/en", "/pt", "/en/about", "/pt/courses", "/ooc-ev/e/", "/ooc-ev/static/array.js"];
+    for (const path of own) {
       expect(resolve(path), path).toBeNull();
     }
   });

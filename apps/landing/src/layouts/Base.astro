@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { getImage } from "astro:assets";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import ConsentBanner from "../components/ConsentBanner.astro";
 import socialPhoto from "../assets/photos/about-teaching.jpg";
 import { htmlLang, languages, org, whatsappUrl, type Lang } from "../i18n/ui";
 import { getLangFromUrl, switchLangPath, tabTitle, useTranslations } from "../i18n/utils";
@@ -20,6 +21,12 @@ interface Props {
 }
 
 const lang = getLangFromUrl(Astro.url);
+
+// The pixel banner exists only on a build that has a pixel to ask about
+// (OOC-47). The ids are public build env, inlined by Astro.
+const hasPixels = Boolean(
+  import.meta.env.PUBLIC_META_PIXEL_ID || import.meta.env.PUBLIC_TIKTOK_PIXEL_ID,
+);
 const t = useTranslations(lang);
 
 const {
@@ -137,6 +144,7 @@ const orgJsonLd = {
       <slot />
     </main>
     <Footer />
+    {hasPixels && <ConsentBanner />}
     {
       waFloat && (
       <a
@@ -154,5 +162,10 @@ const orgJsonLd = {
       </a>
       )
     }
+    {/* Measurement (OOC-47): PostHog, and the pixels behind the banner. A
+        bundled module, never inline — the CSP is `script-src 'self'`. */}
+    <script>
+      import "../analytics/client";
+    </script>
   </body>
 </html>

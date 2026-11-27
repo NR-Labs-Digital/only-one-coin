@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { Locale } from '@/lib/format'
 import { parseFieldErrors } from '@/lib/field-errors'
@@ -10,8 +10,10 @@ import type {
   StepId,
 } from '@/lib/enrollment/types'
 import { clearCheckoutStorage, useCheckout } from '@/lib/enrollment/use-checkout'
+import { trackCheckoutStep, trackCheckoutSubmitted } from '@/lib/analytics/checkout-analytics'
 import {
   checkoutItems,
+  checkoutTotalCents,
   MAX_LOT_ITEMS,
   personKey,
   phoneNumberOf,
@@ -92,6 +94,11 @@ export function Checkout({
     cancelAnotherCourse,
     removeLotEntry,
   } = useCheckout(catalog, initialDraft)
+
+  // The funnel in PostHog (OOC-47): each step that comes on screen.
+  useEffect(() => {
+    trackCheckoutStep(step)
+  }, [step])
 
   const stepLabels: Record<StepId, string> = {
     course: t('step.course.short'),
@@ -249,6 +256,14 @@ export function Checkout({
     // over. The seat stays `reserved` — it becomes `confirmed` only when the
     // payment is approved (`CLAUDE.md` §5).
     settleHold()
+    // The conversion (OOC-47), before the draft is cleared. The idempotency
+    // key doubles as the event id, so a resend is one conversion.
+    trackCheckoutSubmitted({
+      courses: items.length,
+      totalCents: checkoutTotalCents(catalog, draft),
+      source: draft.source,
+      eventId: idempotencyKey.current,
+    })
     setReference(referenceFrom(draft))
     clearCheckoutStorage()
     window.scrollTo({ top: 0 })
