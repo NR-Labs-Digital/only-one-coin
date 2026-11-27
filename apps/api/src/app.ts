@@ -249,6 +249,11 @@ import { requestStaffPasswordResetRoute } from "@/http/identity/RequestStaffPass
 import { getFeatureFlagStateRoute } from "@/http/platform/GetFeatureFlagStateRoute.js";
 import { listFeatureFlagsRoute } from "@/http/platform/ListFeatureFlagsRoute.js";
 import { setFeatureFlagRoute } from "@/http/platform/SetFeatureFlagRoute.js";
+import {
+  discardBackupRestoreRoute,
+  getBackupsRoute,
+  requestBackupRestoreRoute,
+} from "@/http/platform/BackupRestoreRoutes.js";
 import { getPlatformSettingsRoute } from "@/http/platform/GetPlatformSettingsRoute.js";
 import { updatePlatformSettingsRoute } from "@/http/platform/UpdatePlatformSettingsRoute.js";
 import { container } from "@/container.js";
@@ -508,6 +513,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(getFeatureFlagStateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listFeatureFlagsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setFeatureFlagRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(getBackupsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(requestBackupRestoreRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(discardBackupRestoreRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPlatformSettingsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updatePlatformSettingsRoute);
         done();

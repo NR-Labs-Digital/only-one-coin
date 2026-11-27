@@ -15,7 +15,6 @@
       "reports": "Reports",
       "staff": "Team",
       "settings": "Settings",
-      "features": "Features",
       "logout": "Sign out",
       "soon": "Soon",
       "hidden_from_others": "Off for everyone else",
@@ -34,7 +33,9 @@
       "agenda": "Agenda",
       "audit": "Audit log",
       "grade_records": "Grade records",
-      "complaints": "Complaints Book"
+      "complaints": "Complaints Book",
+      "group_nrlabs": "NR Labs",
+      "platform": "Platform"
     },
     "role": {
       "master": "Master",
@@ -373,6 +374,10 @@
         "staff_trusted_browsers_forgotten": "Remembered browsers forgotten",
         "platform_setting_updated": "Setting changed",
         "feature_flag_changed": "Feature turned on or off",
+        "backup_restore_requested": "Backup restore requested",
+        "backup_restore_passed": "Backup restored and verified",
+        "backup_restore_failed": "Backup restore failed",
+        "backup_restore_discarded": "Restored database discarded",
         "document_template_published": "Document template published",
         "audit_log_exported": "Audit log exported",
         "language_created": "Language created",
@@ -2251,8 +2256,6 @@
     },
     "features": {
       "title": "Features",
-      "locked_title": "Platform owners only",
-      "locked_body": "This is where it is decided which parts of the platform exist in production. That is a call for whoever runs the platform, not for whoever administers the school, so only accounts on the owners’ domain open it.",
       "total": "{count, plural, one {# feature} other {# features}}",
       "changed_here": "{count, plural, one {# changed here} other {# changed here}}",
       "state": {
@@ -3018,7 +3021,15 @@
       "email_editor_proof_what": "Sends the saved draft, with sample data, to the addresses you type, in the language on screen. The subject is marked as a proof.",
       "email_editor_versions_what": "Each publication creates a new version, which cannot be edited or deleted. The one in force is the latest.",
       "admin_team_reset_password_what": "A one-time link, valid for 24 hours, for the person to set a new password.",
-      "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password."
+      "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password.",
+      "backups_list_what": "The backups every API deploy saves, newest first. Each is a copy of production at that moment.",
+      "backups_list_how": "Restoring does not change production: it loads the backup into a new database to prove it comes back whole. One open restore at a time.",
+      "backups_status_what": "Queued, Restoring and Checking: still running. Verified: passed everything and its database is kept. Failed: it stopped and its database was deleted.",
+      "backups_status_how": "The screen refreshes itself while the restore runs.",
+      "backups_database_what": "The new database holding the backup, with real student data.",
+      "backups_database_how": "Delete it once you are done checking: real data does not stay in a database nobody is looking at.",
+      "backups_checks_what": "What is checked before the backup is considered good. A single failure deletes the database.",
+      "backups_production_count_what": "Production's rows right now. The backup is older, so it may have fewer, never more, in the tables nothing is ever deleted from."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -3913,6 +3924,104 @@
         "passport": "Passport"
       },
       "read_only": "Read-only: editing and publishing belong to management."
+    },
+    "platform": {
+      "title": "NR Labs area",
+      "locked_title": "NR Labs team only",
+      "locked_body": "This is where what exists in production is decided and the database backups are restored. Only accounts on the platform owners' domain open it, whatever their role."
+    },
+    "backups": {
+      "title": "Backups",
+      "intro": "Every API deploy saves a backup of the production database before the migration, kept for 30 days. Restoring creates a new, empty database, loads the backup into it and checks it.",
+      "intro_production": "The production database is never touched. If any check fails, the new database is deleted on the spot. Pointing production at a restored database is a manual runbook step, not this screen.",
+      "not_configured_list": "This environment has no backups bucket configured: there is nothing to list.",
+      "not_configured_restore": "This environment lists the backups but has nowhere to restore them (the API's restore target is not configured).",
+      "load_error_title": "Could not read the backups",
+      "load_error_body": "The API did not answer. Try again in a few minutes.",
+      "list_title": "Available backups",
+      "empty_title": "No backups in the bucket",
+      "empty_body": "Backups show up here after the next API deploy.",
+      "col_taken_at": "Date",
+      "col_name": "Backup",
+      "col_size": "Size",
+      "col_requested_at": "Requested",
+      "col_status": "Status",
+      "col_by": "By",
+      "col_table": "Table",
+      "col_restored": "Restored",
+      "col_production": "Production now",
+      "restore": "Restore",
+      "restore_blocked": "A restore is open. Wait for it to finish or delete its database to restore another backup.",
+      "restore_title": "Restore backup",
+      "restore_body": "A new database is created holding a full copy of real student data. Production does not change. If any check fails, the database is deleted automatically.",
+      "restore_type_label": "To confirm, type the backup's name: {name}",
+      "restore_confirm": "Restore",
+      "cancel": "Cancel",
+      "queued_toast": "Restore queued",
+      "discarded_toast": "Restored database deleted",
+      "current_title": "Latest restore",
+      "requested_by": "Requested by {name} · {at}",
+      "removed_account": "Removed account",
+      "database": "Restored database",
+      "checks_title": "Checks",
+      "duration": "Took {seconds, plural, one {# second} other {# seconds}}.",
+      "table_missing": "Missing",
+      "discard": "Delete restored database",
+      "discard_title": "Delete the restored database",
+      "discard_body": "Database {name} is deleted with all its data. This cannot be undone. The backup stays in the bucket and can be restored again.",
+      "discard_confirm": "Delete",
+      "status": {
+        "queued": "Queued",
+        "restoring": "Restoring",
+        "validating": "Checking",
+        "passed": "Verified",
+        "failed": "Failed",
+        "discarded": "Discarded"
+      },
+      "status_body": {
+        "queued": "Waiting for the worker to pick it up. It usually starts within a minute.",
+        "restoring": "Loading the backup into the new database, in a single transaction.",
+        "validating": "Backup loaded. Checking what came back.",
+        "passed": "The backup came back whole and passed every check. The database is kept until you delete it.",
+        "failed": "The restore stopped and its database was deleted. Production is unchanged.",
+        "discarded": "The restored database was deleted."
+      },
+      "failure": {
+        "backup_not_found": "The backup is no longer in the bucket.",
+        "target_unavailable": "The new database could not be created.",
+        "dump_corrupt": "The backup file is damaged or incomplete.",
+        "restore_failed": "Loading stopped on an error and was rolled back entirely.",
+        "validation_failed": "The backup loaded, but a check failed.",
+        "interrupted": "The machine running it restarted midway.",
+        "timed_out": "It took longer than allowed.",
+        "unexpected_error": "Unexpected error."
+      },
+      "check": {
+        "tables_present": "Every main table is there",
+        "tables_not_empty": "Students, courses and the audit log have data",
+        "not_ahead_of_production": "No more students, payments or audit entries than production has now",
+        "migrations_match_repository": "Migrations of this platform ({inBackup} of {inRepository})",
+        "append_only_lock": "The audit log is still protected against edits"
+      },
+      "table": {
+        "students": "Students",
+        "guardians": "Guardians",
+        "enrollments": "Enrollments",
+        "payments": "Payments",
+        "class_groups": "Class groups",
+        "courses": "Courses",
+        "teachers": "Teachers",
+        "grades": "Grades",
+        "audit_log": "Audit log"
+      },
+      "error": {
+        "mismatch": "The typed name is not the backup's.",
+        "open": "A restore is already open.",
+        "not_found": "That backup is no longer in the bucket.",
+        "not_configured": "This environment has nowhere to restore.",
+        "failed": "Could not request it. Try again.",
+        "discard_failed": "Could not delete the database. Try again."
+      }
     }
   }
 }
