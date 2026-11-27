@@ -72,6 +72,7 @@ export default async function SettingsPage({
           gradeSubmissionHours: settings.gradeSubmissionHours,
           complaintResponseBusinessDays: settings.complaintResponseBusinessDays,
           progressionRequiresPassingGrade: settings.progressionRequiresPassingGrade,
+          classroomAccountMaxTeachers: settings.classroomAccountMaxTeachers,
         }}
       />
       <ConstanciaPriceForm amountCents={constanciaFeeCents} />

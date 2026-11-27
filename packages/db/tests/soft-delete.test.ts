@@ -33,6 +33,7 @@ const SOFT_DELETABLE = [
   "academic_periods",
   "class_group_modules",
   "class_groups",
+  "classroom_accounts",
   "courses",
   "documents",
   "enrollments",

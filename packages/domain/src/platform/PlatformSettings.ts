@@ -39,6 +39,11 @@ export interface PlatformSettings {
    */
   complaintResponseBusinessDays: number;
   /**
+   * How many teachers may share one Classroom account at a time (OOC-196).
+   * 7 is the client's number.
+   */
+  classroomAccountMaxTeachers: number;
+  /**
    * Advancing a student to the next module asks for the pass mark (OOC-156).
    * Coordination may still advance below it, with a reason; off, any posted
    * grade lets the student advance. On by default.
@@ -75,6 +80,8 @@ export const PLATFORM_SETTING_BOUNDS = {
   gradeSubmissionHours: { min: 1, max: 720 },
   // Up to 60: the legal deadline is 15 business days; past 60 is a typo.
   complaintResponseBusinessDays: { min: 1, max: 60 },
+  // A login shared by more than 50 people is no longer a shared login.
+  classroomAccountMaxTeachers: { min: 1, max: 50 },
 } as const satisfies Record<PlatformNumberKey, { min: number; max: number }>;
 
 export const PLATFORM_NUMBER_KEYS = Object.keys(PLATFORM_SETTING_BOUNDS) as PlatformNumberKey[];
@@ -93,6 +100,7 @@ export const PLATFORM_SETTING_COLUMNS: Record<PlatformSettingKey, string> = {
   contractAlertDays: "contract_alert_days",
   gradeSubmissionHours: "grade_submission_hours",
   complaintResponseBusinessDays: "complaint_response_business_days",
+  classroomAccountMaxTeachers: "classroom_account_max_teachers",
   progressionRequiresPassingGrade: "progression_requires_passing_grade",
 };
 

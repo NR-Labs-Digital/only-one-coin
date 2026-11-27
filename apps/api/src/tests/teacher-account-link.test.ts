@@ -32,7 +32,7 @@ const ANA: CreateTeacherDTO = {
   lastName: "Quispe",
   nationalIdType: "DNI",
   nationalId: "12345678",
-  email: "ana@example.com",
+  personalEmail: "ana@example.com",
   phone: "+51900000000",
   nationality: "IT",
   country: "PE",

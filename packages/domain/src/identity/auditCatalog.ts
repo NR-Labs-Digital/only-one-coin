@@ -75,6 +75,7 @@ export const AUDITED_PLATFORM_SETTINGS = [
   "grade_submission_hours",
   "complaint_response_business_days",
   "progression_requires_passing_grade",
+  "classroom_account_max_teachers",
 ] as const;
 
 /** Columns that were settings once and have entries in the trail: the fee of
@@ -218,6 +219,11 @@ export const AUDIT_ACTIONS = {
   "teacher.availability_updated": { key: "teacher_availability_updated", entity: "teacher", subject: "target" },
   "teacher.left_roster": { key: "teacher_left_roster", entity: "teacher", subject: "target" },
   "teacher.rejoined_roster": { key: "teacher_rejoined_roster", entity: "teacher", subject: "target" },
+  // The shared Classroom logins (OOC-196): no page of their own beyond the list.
+  "classroom_account.created": { key: "classroom_account_created", entity: "teacher", subject: "none" },
+  "classroom_account.updated": { key: "classroom_account_updated", entity: "teacher", subject: "none" },
+  "classroom_account.retired": { key: "classroom_account_retired", entity: "teacher", subject: "none" },
+  "classroom_account.password_viewed": { key: "classroom_account_password_viewed", entity: "teacher", subject: "none" },
   // Written until OOC-124 removed filing; old entries still list.
   "teacher.contract_filed": { key: "teacher_contract_filed", entity: "teacher", subject: "target" },
   "teacher.contract_viewed": { key: "teacher_contract_viewed", entity: "teacher", subject: "target" },
@@ -303,6 +309,8 @@ export const AUDIT_FIELDS = {
   nationalId: "id_number",
   email: "email",
   personalEmail: "personal_email",
+  classroomAccountId: "classroom_account",
+  password: "password",
   phone: "phone",
   birthDate: "birth_date",
   country: "country",
@@ -354,6 +362,7 @@ export const AUDIT_FIELDS = {
   grade_submission_hours: "grade_submission_hours",
   complaint_response_business_days: "complaint_response_business_days",
   progression_requires_passing_grade: "progression_requires_passing_grade",
+  classroom_account_max_teachers: "classroom_account_max_teachers",
 } as const;
 
 export type AuditField = (typeof AUDIT_FIELDS)[keyof typeof AUDIT_FIELDS];

@@ -870,13 +870,20 @@ export interface TeacherRow {
    */
   nationalIdType: NationalIdType | null
   nationalId: string | null
-  /** The file's e-mail: the panel invite goes here and the contract prints it. */
+  /**
+   * The panel invite's and the contract's address. Since OOC-196 the API keeps
+   * it equal to `personalEmail`; a file saved before keeps its old one until
+   * its next edit.
+   */
   email: string
   /**
-   * Optional, any provider (OOC-161): the teacher's own mail, where the monthly
-   * feedback report goes. Null when coordination has not filled it in.
+   * Any provider (OOC-161), required since OOC-196: the address the teacher
+   * signs in to the portal with, the contract prints and the monthly feedback
+   * goes to. Null only on a file saved before it was asked for.
    */
   personalEmail: string | null
+  /** The shared Classroom login the teacher uses (OOC-196) — its e-mail only. */
+  classroomAccount: { id: string; email: string } | null
   phone: string | null
   status: TeacherStatus
   /**
@@ -1357,3 +1364,24 @@ export interface EmailDeliveryIssues {
  * role is written only by the dedicated promotion usecase (CLAUDE.md §8), and
  * the rest is administration's to change.
  */
+
+/**
+ * A shared Google Classroom login (OOC-196), as `GET /classroom-accounts`
+ * answers it — never the password, which has a route of its own.
+ */
+export interface ClassroomAccountRow {
+  id: string
+  email: string
+  /** The teachers using it now. */
+  teachers: { id: string; firstName: string; lastName: string }[]
+  passwordChangedAt: string
+  releasedAt: string | null
+  /** A teacher stopped using it after the last password change: they still know it. */
+  passwordChangeDue: boolean
+}
+
+export interface ClassroomAccountList {
+  items: ClassroomAccountRow[]
+  /** `classroom_account_max_teachers` (Configuración). */
+  maxTeachers: number
+}

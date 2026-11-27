@@ -21,6 +21,7 @@ const DEFAULTS: PlatformSettings = {
   gradeSubmissionHours: 48,
   complaintResponseBusinessDays: 15,
   progressionRequiresPassingGrade: true,
+  classroomAccountMaxTeachers: 7,
 };
 
 export class DrizzlePlatformSettingsRepository implements IPlatformSettingsRepository {
@@ -40,6 +41,7 @@ export class DrizzlePlatformSettingsRepository implements IPlatformSettingsRepos
         gradeSubmissionHours: platformSettings.gradeSubmissionHours,
         complaintResponseBusinessDays: platformSettings.complaintResponseBusinessDays,
         progressionRequiresPassingGrade: platformSettings.progressionRequiresPassingGrade,
+        classroomAccountMaxTeachers: platformSettings.classroomAccountMaxTeachers,
       })
       .from(platformSettings)
       .limit(1);

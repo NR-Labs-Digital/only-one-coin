@@ -58,6 +58,14 @@ import {
 import { registerTeacherRoute } from "@/http/teacher/RegisterTeacherRoute.js";
 import { completeTeacherOnboardingRoute } from "@/http/teaching/CompleteTeacherOnboardingRoute.js";
 import { updateTeacherRoute } from "@/http/teacher/UpdateTeacherRoute.js";
+import {
+  createClassroomAccountRoute,
+  listClassroomAccountsRoute,
+  ownClassroomAccessRoute,
+  retireClassroomAccountRoute,
+  revealClassroomAccountPasswordRoute,
+  updateClassroomAccountRoute,
+} from "@/http/teacher/ClassroomAccountRoutes.js";
 import { updateTeacherAvailabilityRoute } from "@/http/teacher/UpdateTeacherAvailabilityRoute.js";
 import { setTeacherRosterStatusRoute } from "@/http/teacher/SetTeacherRosterStatusRoute.js";
 import { generateTeacherContractRoute } from "@/http/teacher/GenerateTeacherContractRoute.js";
@@ -301,6 +309,13 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateTeacherAvailabilityRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(setTeacherRosterStatusRoute);
+        // The shared Classroom logins (OOC-196).
+        instance.withTypeProvider<ZodTypeProvider>().route(listClassroomAccountsRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(createClassroomAccountRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(updateClassroomAccountRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(retireClassroomAccountRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(revealClassroomAccountPasswordRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(ownClassroomAccessRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(generateTeacherContractRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getDocumentTemplateRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(saveDocumentTemplateDraftRoute);

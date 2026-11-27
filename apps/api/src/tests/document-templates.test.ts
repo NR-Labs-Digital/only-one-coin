@@ -83,7 +83,7 @@ const ANA = Teacher.create({
   lastName: "Quispe",
   nationalIdType: "CE",
   nationalId: "001234567",
-  email: "ana@example.com",
+  personalEmail: "ana@example.com",
   phone: "+51900000000",
   nationality: "IT",
   country: "PE",

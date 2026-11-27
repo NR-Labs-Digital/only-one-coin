@@ -1,6 +1,11 @@
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
+import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSettingsRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
-import { TeacherAlreadyRegisteredError, TeacherNotFoundError } from "./errors.js";
+import {
+  ClassroomAccountTeacherInactiveError,
+  TeacherAlreadyRegisteredError,
+  TeacherNotFoundError,
+} from "./errors.js";
 import type { PendingTeacherDataDTO, Teacher, TeacherDataDTO } from "./Teacher.js";
 import type { ITeacherRepository } from "./TeacherRepository.js";
 
@@ -20,6 +25,7 @@ export class UpdateTeacherUseCase extends BaseUseCase<UpdateTeacherInput, Teache
   constructor(
     private readonly teachers: ITeacherRepository,
     private readonly auditLog: IAuditLogRepository,
+    private readonly settings: IPlatformSettingsRepository,
   ) {
     super();
   }
@@ -43,7 +49,15 @@ export class UpdateTeacherUseCase extends BaseUseCase<UpdateTeacherInput, Teache
       if (holder && holder.id !== teacher.id) throw new TeacherAlreadyRegisteredError();
     }
 
-    const saved = await this.teachers.update(teacher);
+    // Off the roster, the file holds no Classroom account (leaving clears it, OOC-196).
+    if (changed.includes("classroomAccountId") && teacher.classroomAccountId !== null && !teacher.isActive) {
+      throw new ClassroomAccountTeacherInactiveError();
+    }
+    const classroom = changed.includes("classroomAccountId")
+      ? { maxTeachers: (await this.settings.get()).classroomAccountMaxTeachers }
+      : undefined;
+
+    const saved = await this.teachers.update(teacher, classroom);
 
     await this.auditLog.append({
       actorId: input.actorId,

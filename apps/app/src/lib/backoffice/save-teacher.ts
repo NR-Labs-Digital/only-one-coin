@@ -12,6 +12,11 @@ import { parseFieldErrors } from '@/lib/field-errors'
 export type TeacherSaveFailure =
   | { kind: 'invalid'; fields: Partial<Record<string, FieldErrorCode>> }
   | { kind: 'duplicate' }
+  /** The shared Classroom account picked has no free place (OOC-196). */
+  | { kind: 'classroom_full' }
+  /** It left the list meanwhile, or the teacher is off the roster. */
+  | { kind: 'classroom_gone' }
+  | { kind: 'classroom_inactive' }
   | { kind: 'generic' }
 
 export type TeacherSaveResult<T> = { ok: true; value: T } | { ok: false; failure: TeacherSaveFailure }
@@ -49,6 +54,11 @@ export async function saveTeacher<T>(
       }
     }
     if (failure?.reason === 'teacher.already_registered') return { ok: false, failure: { kind: 'duplicate' } }
+    if (failure?.reason === 'classroom_account.full') return { ok: false, failure: { kind: 'classroom_full' } }
+    if (failure?.reason === 'classroom_account.not_found') return { ok: false, failure: { kind: 'classroom_gone' } }
+    if (failure?.reason === 'classroom_account.teacher_inactive') {
+      return { ok: false, failure: { kind: 'classroom_inactive' } }
+    }
     return { ok: false, failure: { kind: 'generic' } }
   } catch {
     return { ok: false, failure: { kind: 'generic' } }

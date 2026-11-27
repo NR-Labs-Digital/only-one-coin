@@ -28,7 +28,8 @@ function parseInto<T extends z.ZodTypeAny>(schema: T, body: unknown, ctx: z.Refi
 
 /**
  * `POST /teachers` (OOC-103): the whole file, or — with `onboarding: true` —
- * name, e-mail and languages only, for the teacher to complete after the invite.
+ * name, personal e-mail, Classroom account and languages only, for the
+ * teacher to complete after the invite.
  */
 export const RegisterTeacherBodySchema = z
   .object({ onboarding: z.boolean().optional() })
@@ -83,6 +84,8 @@ export const TeacherRowResponseSchema = z.object({
   nationalId: z.string().nullable(),
   email: z.string(),
   personalEmail: z.string().nullable(),
+  /** The shared Classroom login (OOC-196) — e-mail only; the password has its own route. */
+  classroomAccount: z.object({ id: z.string().uuid(), email: z.string() }).nullable(),
   phone: z.string().nullable(),
   status: z.enum(["active", "inactive"]),
   languages: z.array(z.string()),
@@ -117,6 +120,7 @@ export const TeacherRecordResponseSchema = z.object({
   nationalId: z.string().nullable(),
   email: z.string(),
   personalEmail: z.string().nullable(),
+  classroomAccountId: z.string().uuid().nullable(),
   phone: z.string().nullable(),
   nationality: z.string().nullable(),
   country: z.string().nullable(),
@@ -169,6 +173,7 @@ export function serializeTeacher(teacher: Teacher) {
     nationalId: teacher.nationalId,
     email: teacher.email,
     personalEmail: teacher.personalEmail,
+    classroomAccountId: teacher.classroomAccountId,
     phone: teacher.phone,
     nationality: teacher.nationality,
     country: teacher.country,

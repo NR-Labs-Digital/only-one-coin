@@ -1,5 +1,5 @@
 import { staffInvites, teachers } from "@ooc/db";
-import { and, asc, eq, isNull, notExists } from "drizzle-orm";
+import { and, asc, eq, isNull, notExists, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 export interface InvitableTeacher {
@@ -20,7 +20,14 @@ export class ListInvitableTeachersQuery {
 
   async run(): Promise<InvitableTeacher[]> {
     return this.db
-      .select({ id: teachers.id, firstName: teachers.firstName, lastName: teachers.lastName, email: teachers.email })
+      // The personal e-mail is the one the portal invite goes to (OOC-196); a
+      // file saved before it was asked for falls back to its old address.
+      .select({
+        id: teachers.id,
+        firstName: teachers.firstName,
+        lastName: teachers.lastName,
+        email: sql<string>`coalesce(${teachers.personalEmail}, ${teachers.email})`,
+      })
       .from(teachers)
       .where(
         and(

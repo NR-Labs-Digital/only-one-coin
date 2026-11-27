@@ -1,4 +1,5 @@
 import type { IAuditLogRepository } from "../identity/ports/IAuditLogRepository.js";
+import type { IPlatformSettingsRepository } from "../platform/ports/IPlatformSettingsRepository.js";
 import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { TeacherAlreadyRegisteredError } from "./errors.js";
 import { Teacher, type CreateTeacherDTO, type PendingTeacherDataDTO } from "./Teacher.js";
@@ -18,6 +19,7 @@ export class RegisterTeacherUseCase extends BaseUseCase<RegisterTeacherInput, Te
   constructor(
     private readonly teachers: ITeacherRepository,
     private readonly auditLog: IAuditLogRepository,
+    private readonly settings: IPlatformSettingsRepository,
   ) {
     super();
   }
@@ -34,13 +36,17 @@ export class RegisterTeacherUseCase extends BaseUseCase<RegisterTeacherInput, Te
       if (alreadyOnFile) throw new TeacherAlreadyRegisteredError();
     }
 
-    const created = await this.teachers.create(teacher);
+    const seat =
+      teacher.classroomAccountId !== null
+        ? { maxTeachers: (await this.settings.get()).classroomAccountMaxTeachers }
+        : undefined;
+    const created = await this.teachers.create(teacher, seat);
 
     await this.auditLog.append({
       actorId: input.actorId,
       action: "teacher.registered",
       targetId: created.id,
-      metadata: { onboarding: input.onboarding === true },
+      metadata: { onboarding: input.onboarding === true, classroomAccount: created.classroomAccountId !== null },
       at: created.createdAt,
     });
 

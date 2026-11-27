@@ -322,6 +322,7 @@ describe("DrizzlePlatformSettingsRepository", () => {
       [
         "certificateDeadlineBusinessDays",
         "checkoutHoldMinutes",
+        "classroomAccountMaxTeachers",
         "complaintResponseBusinessDays",
         "contractAlertDays",
         "gradeSubmissionHours",
@@ -335,6 +336,8 @@ describe("DrizzlePlatformSettingsRepository", () => {
     );
     // 0059 (OOC-156): advancing a module asks for the pass mark unless switched off.
     expect(settings.progressionRequiresPassingGrade).toBe(true);
+    // 0081 (OOC-196): seven teachers per shared Classroom account.
+    expect(settings.classroomAccountMaxTeachers).toBe(7);
   });
 
   it("writes only the changed columns over the one row, with their audit entries", async () => {

@@ -1,3 +1,5 @@
+import { ConflictError } from "../shared/base/errors/ConflictError.js";
+import { HttpError } from "../shared/base/errors/HttpError.js";
 import { NotFoundError } from "../shared/base/errors/NotFoundError.js";
 import { UnableToProcessEntryError } from "../shared/base/errors/UnableToProcessEntryError.js";
 
@@ -48,6 +50,64 @@ export class TeacherProfileIncompleteError extends UnableToProcessEntryError {
     super({
       reason: "teacher_contract.profile_incomplete",
       message: "The teacher has not completed their file yet.",
+      ...params,
+    });
+  }
+}
+
+/** No live shared Classroom account with that id (OOC-196). */
+export class ClassroomAccountNotFoundError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "classroom_account.not_found", message: "No live Classroom account with that id.", ...params });
+  }
+}
+
+/** A live Classroom account already has this e-mail, ignoring case (OOC-196). */
+export class ClassroomAccountExistsError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "classroom_account.exists", message: "A live Classroom account already has this e-mail.", ...params });
+  }
+}
+
+/**
+ * The account already has as many teachers as `classroom_account_max_teachers`
+ * allows at a time (OOC-196, 7 today).
+ */
+export class ClassroomAccountFullError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "classroom_account.full", message: "This Classroom account has no free place.", ...params });
+  }
+}
+
+/** Retiring an account that teachers still use: they move to another one first. */
+export class ClassroomAccountInUseError extends ConflictError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({ reason: "classroom_account.in_use", message: "Teachers still use this Classroom account.", ...params });
+  }
+}
+
+/** A teacher off the roster gets no Classroom account — leaving clears it. */
+export class ClassroomAccountTeacherInactiveError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "classroom_account.teacher_inactive",
+      message: "A teacher off the roster cannot be given a Classroom account.",
+      ...params,
+    });
+  }
+}
+
+/**
+ * A sealed Classroom password could not be opened — the key it was sealed
+ * with is gone (BETTER_AUTH_SECRET rotated) or the value is damaged. Closed,
+ * never open: nothing is shown, and coordination types the password again.
+ */
+export class ClassroomCredentialsUnavailableError extends HttpError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      status: 503,
+      reason: "classroom_account.credentials_unavailable",
+      message: "The sealed Classroom password cannot be opened.",
       ...params,
     });
   }

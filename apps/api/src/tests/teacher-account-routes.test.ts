@@ -52,7 +52,7 @@ function teacherFile(): Teacher {
       lastName: "Quispe",
       nationalIdType: "DNI",
       nationalId: "12345678",
-      email: "ana@example.com",
+      personalEmail: "ana@example.com",
       phone: "+51900000000",
       nationality: "IT",
       country: "PE",
@@ -237,7 +237,7 @@ describe("teacher onboarding over HTTP (OOC-103)", () => {
 
   function pendingFile(): Teacher {
     return new Teacher({
-      ...Teacher.createPending({ firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] }),
+      ...Teacher.createPending({ firstName: "Ana", lastName: "Quispe", personalEmail: "ana@example.com", languages: ["Italiano"] }),
       id: TEACHER_ID,
       userId: "usr_79",
     });
@@ -286,7 +286,7 @@ describe("teacher onboarding over HTTP (OOC-103)", () => {
       method: "POST",
       url: "/api/v1/teachers",
       cookies,
-      payload: { onboarding: true, firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] },
+      payload: { onboarding: true, firstName: "Ana", lastName: "Quispe", personalEmail: "ana@example.com", languages: ["Italiano"] },
     });
 
     expect(response.statusCode).toBe(201);
@@ -301,11 +301,11 @@ describe("teacher onboarding over HTTP (OOC-103)", () => {
       method: "POST",
       url: "/api/v1/teachers",
       cookies,
-      payload: { firstName: "Ana", lastName: "Quispe", email: "not-an-email", languages: ["Italiano"] },
+      payload: { firstName: "Ana", lastName: "Quispe", personalEmail: "not-an-email", languages: ["Italiano"] },
     });
 
     expect(response.statusCode).toBe(400);
     const paths = (response.json() as { fields?: { path: string }[] }).fields?.map((field) => field.path) ?? [];
-    expect(paths).toEqual(expect.arrayContaining(["email", "nationalId"]));
+    expect(paths).toEqual(expect.arrayContaining(["personalEmail", "nationalId"]));
   });
 });

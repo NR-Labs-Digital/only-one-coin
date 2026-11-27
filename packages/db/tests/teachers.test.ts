@@ -247,6 +247,7 @@ describe("foreign keys", () => {
       "teacher_contracts_uploaded_by_user_id_fk",
       "teacher_languages_language_id_languages_id_fk",
       "teacher_languages_teacher_id_teachers_id_fk",
+      "teachers_classroom_account_id_classroom_accounts_id_fk",
       "teachers_user_id_user_id_fk",
     ]);
     for (const row of rows) expect(row.delete_rule, row.constraint_name).toBe("RESTRICT");

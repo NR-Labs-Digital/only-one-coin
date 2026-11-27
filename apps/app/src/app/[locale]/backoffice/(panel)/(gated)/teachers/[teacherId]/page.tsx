@@ -3,11 +3,13 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { getTeacher, toLanguage } from '@/lib/backoffice/teachers'
+import { listClassroomAccounts } from '@/lib/backoffice/classroom-accounts'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canEditTeachers,
   canManageTeachers,
   canOpenTeacherContracts,
+  canViewClassroomAccounts,
 } from '@/lib/backoffice/permissions'
 import { BoIcon } from '@/components/backoffice/icons'
 import { TeacherFile } from '@/components/backoffice/teachers/teacher-file'
@@ -33,7 +35,12 @@ export default async function TeacherDetailPage({
   const staff = await getStaffSession()
   if (!canManageTeachers(staff)) notFound()
 
-  const [teacher, languageList] = await Promise.all([getTeacher(teacherId), listCatalogLanguages()])
+  const [teacher, languageList, classroomAccounts] = await Promise.all([
+    getTeacher(teacherId),
+    listCatalogLanguages(),
+    // The picker's list (OOC-196); null when the cargo cannot read it.
+    canViewClassroomAccounts(staff) ? listClassroomAccounts() : Promise.resolve(null),
+  ])
   if (!teacher) notFound()
 
   /* Clearing a teacher for a language means picking from the language list
@@ -59,6 +66,7 @@ export default async function TeacherDetailPage({
         catalogue={catalogue}
         canEdit={canEditTeachers(staff)}
         canOpenContracts={canOpenTeacherContracts(staff)}
+        classroomAccounts={classroomAccounts}
       />
     </div>
   )

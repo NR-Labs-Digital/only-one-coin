@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import type {
   AvailabilitySlot,
+  ClassroomAccountList,
   CourseLanguage,
   TeacherDetail,
   TeacherStatus,
@@ -22,7 +23,6 @@ import {
   EmptyState,
   Field,
   Meter,
-  OptionalMark,
   SectionTitle,
   StatusBadge,
   TableShell,
@@ -43,6 +43,8 @@ import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teac
 import { FieldMessage } from '../field-message'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { ContractSection } from './contract-section'
+import { ClassroomAccountSelect } from './classroom-account-select'
+import { classroomFailureMessage } from './classroom-failure'
 import { WeekGrid } from '@/components/backoffice/week-grid'
 
 type Tab = 'data' | 'availability' | 'class_groups'
@@ -59,6 +61,7 @@ const labelClass =
 interface SavedTeacher {
   email: string
   personalEmail: string | null
+  classroomAccountId: string | null
   phone: string | null
   nationality: string | null
   languages: string[]
@@ -82,6 +85,7 @@ export function TeacherFile({
   catalogue,
   canEdit,
   canOpenContracts,
+  classroomAccounts = null,
   classGroupBase = '/backoffice/class-groups',
 }: {
   teacher: TeacherDetail
@@ -90,6 +94,12 @@ export function TeacherFile({
   canEdit: boolean
   /** Downloads a filed contract — the roster's readers, not the teacher (OOC-81). */
   canOpenContracts: boolean
+  /**
+   * The shared Classroom accounts (OOC-196), for the picker. Null when the
+   * cargo cannot read them (and in the teacher's own portal): the edit then
+   * leaves the account as it is.
+   */
+  classroomAccounts?: ClassroomAccountList | null
   /**
    * Where a class group of the file opens. The same ficha is read by
    * coordination in the backoffice and by the teacher in their own portal,
@@ -115,8 +125,8 @@ export function TeacherFile({
   const router = useRouter()
 
   const [editingData, setEditingData] = useState(false)
-  const [email, setEmail] = useState(teacher.email)
   const [personalEmail, setPersonalEmail] = useState(teacher.personalEmail ?? '')
+  const [classroomAccountId, setClassroomAccountId] = useState(teacher.classroomAccount?.id ?? null)
   const [phone, setPhone] = useState(teacher.phone)
   const [nationality, setNationality] = useState(teacher.nationality)
   const [languageIds, setLanguageIds] = useState(
@@ -124,8 +134,8 @@ export function TeacherFile({
   )
   /* What the server last saved — the draft above is reset to these. */
   const [saved, setSaved] = useState({
-    email: teacher.email,
     personalEmail: teacher.personalEmail ?? '',
+    classroomAccountId: teacher.classroomAccount?.id ?? null,
     phone: teacher.phone,
     nationality: teacher.nationality,
     languageIds: teacher.languages.map((language) => language.id),
@@ -168,7 +178,7 @@ export function TeacherFile({
         ? t('teachers.save_error_duplicate')
         : failure.kind === 'invalid'
           ? t('new_student.invalid_error')
-          : t('teachers.save_error_generic')
+          : (classroomFailureMessage(failure, t) ?? t('teachers.save_error_generic'))
 
   /* The file as the server holds it, so a save sends the whole record — PUT,
      not PATCH — with only the fields this tab edits changed. */
@@ -189,8 +199,9 @@ export function TeacherFile({
     setFailure(null)
     const result = await saveTeacher<SavedTeacher>(`/api/v1/teachers/${teacher.id}`, 'PUT', {
       ...record,
-      email: email.trim(),
-      personalEmail: personalEmail.trim() === '' ? null : personalEmail.trim(),
+      personalEmail: personalEmail.trim(),
+      // Left out without the list: the account stays as it is (OOC-196).
+      ...(classroomAccounts ? { classroomAccountId } : {}),
       phone,
       nationality,
       languages: languageIds,
@@ -201,15 +212,17 @@ export function TeacherFile({
       return
     }
     const next = {
-      email: result.value.email,
       personalEmail: result.value.personalEmail ?? '',
+      classroomAccountId: result.value.classroomAccountId,
       phone: result.value.phone,
       nationality: result.value.nationality,
       languageIds: result.value.languages,
     }
     setSaved(next)
-    setEmail(next.email)
     setPersonalEmail(next.personalEmail)
+    setClassroomAccountId(next.classroomAccountId)
+    // The picker's seat counts are the server's; read them again.
+    router.refresh()
     setPhone(next.phone)
     setNationality(next.nationality)
     setLanguageIds(next.languageIds)
@@ -218,8 +231,8 @@ export function TeacherFile({
   }
 
   function cancelData() {
-    setEmail(saved.email)
     setPersonalEmail(saved.personalEmail)
+    setClassroomAccountId(saved.classroomAccountId)
     setPhone(saved.phone)
     setNationality(saved.nationality)
     setLanguageIds(saved.languageIds)
@@ -433,20 +446,7 @@ export function TeacherFile({
             <div className="flex flex-col gap-4">
               <AutoGrid min="15rem" gap="gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('teachers.field_email')}</span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className={fieldClass}
-                  />
-                  <FieldMessage code={fieldError('email')} />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className={labelClass}>
-                    {t('teachers.field_personal_email')}
-                    <OptionalMark label={t('common.optional')} />
-                  </span>
+                  <span className={labelClass}>{t('teachers.field_personal_email')}</span>
                   <input
                     type="email"
                     value={personalEmail}
@@ -458,6 +458,26 @@ export function TeacherFile({
                   </span>
                   <FieldMessage code={fieldError('personalEmail')} />
                 </label>
+                {classroomAccounts && (
+                  <div className="flex flex-col gap-1">
+                    <span className={`flex items-center gap-1.5 ${labelClass}`}>
+                      <label htmlFor="teacher-file-classroom">{t('teachers.field_classroom_account')}</label>
+                      <HelpHint
+                        what={t('help.teacher_classroom_account_what')}
+                        how={t('help.teacher_classroom_account_how')}
+                      />
+                    </span>
+                    <ClassroomAccountSelect
+                      id="teacher-file-classroom"
+                      accounts={classroomAccounts}
+                      value={classroomAccountId}
+                      onChange={setClassroomAccountId}
+                      teacherId={teacher.id}
+                      className={fieldClass}
+                    />
+                    <FieldMessage code={fieldError('classroomAccountId')} />
+                  </div>
+                )}
                 {/* A pending file's profile is the teacher's to fill (OOC-103):
                     only the e-mail and the languages are coordination's here. */}
                 {phone !== null && (
@@ -553,13 +573,24 @@ export function TeacherFile({
                     })
                   : t('teacher_file.onboarding_pending_value')}
               </Field>
-              <Field label={t('teachers.field_email')}>{email}</Field>
               <Field label={t('teachers.field_personal_email')}>
                 {personalEmail === '' ? (
                   <span className="text-muted-foreground">{t('teachers.personal_email_missing')}</span>
                 ) : (
                   personalEmail
                 )}
+              </Field>
+              <Field label={t('teachers.field_classroom_account')}>
+                {(() => {
+                  const account =
+                    classroomAccounts?.items.find((item) => item.id === classroomAccountId) ??
+                    (teacher.classroomAccount?.id === classroomAccountId ? teacher.classroomAccount : null)
+                  return account ? (
+                    account.email
+                  ) : (
+                    <span className="text-muted-foreground">{t('teachers.classroom_account_none')}</span>
+                  )
+                })()}
               </Field>
               <Field label={t('teachers.field_phone')}>
                 {phone ?? t('teacher_file.onboarding_pending_value')}

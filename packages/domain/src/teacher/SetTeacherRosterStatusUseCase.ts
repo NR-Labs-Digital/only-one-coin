@@ -54,7 +54,8 @@ export class SetTeacherRosterStatusUseCase extends BaseUseCase<
     if (input.status === "inactive") teacher.leaveRoster();
     else teacher.rejoinRoster();
 
-    const saved = await this.teachers.update(teacher);
+    // Leaving also takes the shared Classroom account away (OOC-196).
+    const saved = await this.teachers.update(teacher, input.status === "inactive" ? "release" : undefined);
 
     if (saved.userId) {
       if (input.status === "inactive") await this.staffAccess.ban(saved.userId, TEACHER_LEFT_ROSTER_BAN_REASON);

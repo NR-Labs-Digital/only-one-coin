@@ -42,15 +42,44 @@ export type {
   TeacherStatus,
   PendingTeacherDataDTO,
   TeacherOnboardingDTO,
+  TeacherDataField,
 } from "./teacher/Teacher.js";
 export { TeacherDataSchema, TeacherAvailabilitySchema } from "./teacher/Teacher.js";
-export type { ITeacherRepository } from "./teacher/TeacherRepository.js";
+export type { ITeacherRepository, ClassroomSeatRule, ClassroomAccountWrite } from "./teacher/TeacherRepository.js";
+export {
+  ClassroomAccount,
+  ClassroomAccountPropsSchema,
+  ClassroomAccountFieldsSchema,
+  ClassroomAccountChangesSchema,
+  ClassroomPasswordField,
+} from "./teacher/classroom/ClassroomAccount.js";
+export type {
+  ClassroomAccountProps,
+  ClassroomAccountFieldsDTO,
+  ClassroomAccountChangesDTO,
+  ClassroomAccountField,
+} from "./teacher/classroom/ClassroomAccount.js";
+export type { IClassroomAccountRepository, ICredentialCipher } from "./teacher/classroom/ports.js";
+export {
+  CreateClassroomAccountUseCase,
+  UpdateClassroomAccountUseCase,
+  RetireClassroomAccountUseCase,
+  RevealClassroomAccountPasswordUseCase,
+  GetOwnClassroomAccessUseCase,
+  type ClassroomCredentials,
+} from "./teacher/classroom/ClassroomAccountUseCases.js";
 export {
   TeacherAlreadyRegisteredError,
   TeacherNotFoundError,
   TeacherContractNotFoundError,
   TeacherOnboardingClosedError,
   TeacherProfileIncompleteError,
+  ClassroomAccountNotFoundError,
+  ClassroomAccountExistsError,
+  ClassroomAccountFullError,
+  ClassroomAccountInUseError,
+  ClassroomAccountTeacherInactiveError,
+  ClassroomCredentialsUnavailableError,
 } from "./teacher/errors.js";
 export {
   CompleteTeacherOnboardingUseCase,

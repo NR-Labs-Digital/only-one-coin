@@ -37,7 +37,7 @@ function file(): Teacher {
       lastName: "Docente",
       nationalIdType: "DNI",
       nationalId: "15634567",
-      email: "ana.progression@example.com",
+      personalEmail: "ana.progression@example.com",
       phone: "+51900000156",
       nationality: "PE",
       country: "PE",

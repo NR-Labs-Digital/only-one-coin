@@ -38,7 +38,7 @@ const ANA: CreateTeacherDTO = {
   lastName: "Vínculo",
   nationalIdType: "DNI",
   nationalId: "93234567",
-  email: "ana.vinculo@example.com",
+  personalEmail: "ana.vinculo@example.com",
   phone: "+51900000001",
   nationality: "IT",
   country: "PE",
@@ -49,9 +49,9 @@ const ANA: CreateTeacherDTO = {
   availability: [],
 };
 
-const LUIS: CreateTeacherDTO = { ...ANA, firstName: "Luis", nationalId: "93234568", email: "luis.vinculo@example.com" };
-const RITA: CreateTeacherDTO = { ...ANA, firstName: "Rita", nationalId: "93234569", email: "rita.vinculo@example.com" };
-const EVA: CreateTeacherDTO = { ...ANA, firstName: "Eva", nationalId: "93234570", email: "eva.vinculo@example.com" };
+const LUIS: CreateTeacherDTO = { ...ANA, firstName: "Luis", nationalId: "93234568", personalEmail: "luis.vinculo@example.com" };
+const RITA: CreateTeacherDTO = { ...ANA, firstName: "Rita", nationalId: "93234569", personalEmail: "rita.vinculo@example.com" };
+const EVA: CreateTeacherDTO = { ...ANA, firstName: "Eva", nationalId: "93234570", personalEmail: "eva.vinculo@example.com" };
 
 let pool: pg.Pool;
 let db: Db;

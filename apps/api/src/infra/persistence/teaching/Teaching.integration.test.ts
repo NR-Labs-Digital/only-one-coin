@@ -91,7 +91,7 @@ const ANA: CreateTeacherDTO = {
   lastName: "Docente",
   nationalIdType: "DNI",
   nationalId: "82234567",
-  email: "ana.ooc82@example.com",
+  personalEmail: "ana.ooc82@example.com",
   phone: "+51900000082",
   nationality: "PE",
   country: "PE",
@@ -101,7 +101,7 @@ const ANA: CreateTeacherDTO = {
   languages: ["Lengua de prueba"],
   availability: [],
 };
-const BETO: CreateTeacherDTO = { ...ANA, firstName: "Beto", nationalId: "82234568", email: "beto.ooc82@example.com" };
+const BETO: CreateTeacherDTO = { ...ANA, firstName: "Beto", nationalId: "82234568", personalEmail: "beto.ooc82@example.com" };
 
 let pool: pg.Pool;
 let db: Db;

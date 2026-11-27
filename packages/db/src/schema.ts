@@ -482,6 +482,32 @@ export const guardians = pgTable(
 // `national_id` is stored normalized by the domain (student/fields.ts), so the
 // unique index sits on the raw column. `user_id` is the panel account
 // (Better Auth's "user".id, text) — its FK is hand-written in 0025, as in 0022.
+// A shared Google Classroom login (OOC-196). The institution does not open one
+// Google account per teacher: one account is lent to several teachers at a
+// time (3–7 in high season), and coordination hands out its e-mail and
+// password. The password is kept encrypted (AES-256-GCM, key in the API's
+// CLASSROOM_CREDENTIALS_KEY, never in the database), because the teacher
+// portal has to show it back. `password_changed_at` and `released_at` (the
+// last time a teacher stopped using it) are what flags "change the password":
+// a teacher who left still knows the old one.
+export const classroomAccounts = pgTable(
+  "classroom_accounts",
+  {
+    id: uuidPk(),
+    email: text("email").notNull(),
+    // `v1:` + base64(iv ‖ tag ‖ ciphertext). The prefix names the key version.
+    passwordCiphertext: text("password_ciphertext").notNull(),
+    passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).notNull().defaultNow(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    ...softDeletable(),
+  },
+  (table) => [
+    uniqueIndex("classroom_accounts_email_live_uidx")
+      .on(sql`lower(${table.email})`)
+      .where(sql`${table.deletedAt} is null`),
+  ],
+);
+
 export const teachers = pgTable(
   "teachers",
   {
@@ -510,9 +536,15 @@ export const teachers = pgTable(
     addressLine: text("address_line"),
     status: text("status").notNull().default("active"),
     userId: text("user_id"),
+    // The shared Classroom login the teacher uses (OOC-196) — one at a time.
+    // Cleared when the teacher leaves the roster.
+    classroomAccountId: uuid("classroom_account_id").references(() => classroomAccounts.id, {
+      onDelete: "restrict",
+    }),
     ...softDeletable(),
   },
   (table) => [
+    index("teachers_classroom_account_id_idx").on(table.classroomAccountId),
     check("teachers_national_id_type_check", nationalIdTypeCheck('"national_id_type"')),
     check("teachers_status_check", sql`${table.status} in ('active', 'inactive')`),
     check(
@@ -2095,6 +2127,9 @@ export const platformSettings = pgTable(
     // Coordination may still advance below it, with a reason; off, any posted
     // grade lets the student advance.
     progressionRequiresPassingGrade: boolean("progression_requires_passing_grade").notNull().default(true),
+    // OOC-196: how many teachers may share one Classroom account at a time.
+    // 7 is the client's number (high season, 3–7 per account).
+    classroomAccountMaxTeachers: integer("classroom_account_max_teachers").notNull().default(7),
     updatedBy: text("updated_by"),
     ...timestamps(),
   },
@@ -2134,6 +2169,10 @@ export const platformSettings = pgTable(
     check(
       "platform_settings_complaint_response_business_days_check",
       sql`${table.complaintResponseBusinessDays} between 1 and 60`,
+    ),
+    check(
+      "platform_settings_classroom_account_max_teachers_check",
+      sql`${table.classroomAccountMaxTeachers} between 1 and 50`,
     ),
   ],
 );
