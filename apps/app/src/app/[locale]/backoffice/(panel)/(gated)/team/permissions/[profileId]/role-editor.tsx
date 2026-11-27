@@ -2,15 +2,17 @@
 
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { MFA_SENSITIVE_PERMISSIONS } from '@ooc/domain/permission-catalog'
+import { MFA_SENSITIVE_PERMISSIONS, PERMISSION_ACCESS, type PermissionAccess, type PermissionArea } from '@ooc/domain/permission-catalog'
 import { useRouter } from '@/i18n/navigation'
-import type { StaffProfileItem } from '@/lib/backoffice/permission-matrix'
+import { accessLevel, withAreaAccess, type AccessLevel, type StaffProfileItem } from '@/lib/backoffice/permission-matrix'
+import { HelpHint } from '@/components/backoffice/help-hint'
 import { Card, StatusBadge } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { BoIcon } from '@/components/backoffice/icons'
 import {
   ActionLabel,
   GROUPS,
+  type CatalogEntry,
   Mark,
   RetireDialog,
   Switch,
@@ -55,15 +57,6 @@ export function RoleEditor({
     checked.size !== profile.permissions.length ||
     profile.permissions.some((key) => !checked.has(key))
   const willRequireMfa = MFA_SENSITIVE_PERMISSIONS.some((key) => checked.has(key))
-
-  function toggle(key: string) {
-    setChecked((current) => {
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
 
   async function save() {
     setPending(true)
@@ -132,45 +125,25 @@ export function RoleEditor({
         </p>
       )}
 
-      {/* One small card per area, packed in columns that follow the page's
-          width — a cargo's 63 switches fit on about one screen. */}
+      {/* Each area answers two questions first — can the cargo see it, can
+          it change it (OOC-192) — and keeps its actions one tap away, for
+          the cargo that needs some of a side and not all of it. */}
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        {t('permissions.access_intro')}
+        <HelpHint what={t('help.permission_access_what')} how={t('help.permission_access_how')} />
+      </p>
       <div className="columns-1 gap-4 @3xl/page:columns-2 @6xl/page:columns-3">
         {GROUPS.map((group) => (
-          <Card as="section" key={group.area} className="mb-4 break-inside-avoid overflow-hidden">
-            <h2 className="border-b border-line bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-              {t(`permissions.area.${group.area}`)}
-            </h2>
-            <ul className="py-1">
-              {group.entries.map((entry) => {
-                const allowed = checked.has(entry.key)
-                const reason = editable ? lockReason(entry, viewer) : null
-                return (
-                  <li key={entry.key}>
-                    {editable ? (
-                      <label
-                        title={reason ? t(reason) : undefined}
-                        className={`flex items-start gap-2.5 px-3 py-1.5 text-sm leading-snug transition ${
-                          reason ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-slate-50'
-                        }`}
-                      >
-                        <Switch checked={allowed} disabled={reason !== null || pending} onChange={() => toggle(entry.key)} />
-                        <span className={allowed ? 'text-ink' : 'text-muted-foreground'}>
-                          <ActionLabel entry={entry} />
-                        </span>
-                      </label>
-                    ) : (
-                      <div className="flex items-start gap-2.5 px-3 py-1.5 text-sm leading-snug">
-                        <Mark allowed={allowed} />
-                        <span className={allowed ? 'text-ink' : 'text-muted-foreground'}>
-                          <ActionLabel entry={entry} />
-                        </span>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </Card>
+          <AreaCard
+            key={group.area}
+            area={group.area}
+            entries={group.entries}
+            checked={checked}
+            editable={editable}
+            pending={pending}
+            viewer={viewer}
+            onChange={setChecked}
+          />
         ))}
       </div>
 
@@ -222,5 +195,128 @@ export function RoleEditor({
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
+  )
+}
+
+/**
+ * One area of the panel: a "see" and a "change" switch (OOC-192), half-filled
+ * when the cargo holds only part of that side, and the area's actions under
+ * them — folded away unless the cargo already holds a part of a side, which is
+ * what someone opening it needs to see.
+ */
+function AreaCard({
+  area,
+  entries,
+  checked,
+  editable,
+  pending,
+  viewer,
+  onChange,
+}: {
+  area: PermissionArea
+  entries: CatalogEntry[]
+  checked: ReadonlySet<string>
+  editable: boolean
+  pending: boolean
+  viewer: ReadonlySet<string>
+  onChange: (next: Set<string>) => void
+}) {
+  const t = useTranslations('bo')
+  const canFlip = (entry: CatalogEntry) => lockReason(entry, viewer) === null
+  const levels = PERMISSION_ACCESS.map((access) => ({ access, level: accessLevel(entries, checked, access) }))
+  const [open, setOpen] = useState(() => levels.some(({ level }) => level === 'some'))
+  const held = entries.filter((entry) => checked.has(entry.key)).length
+
+  function flipSide(access: PermissionAccess, level: AccessLevel) {
+    onChange(withAreaAccess(checked, entries, access, level !== 'all', canFlip))
+  }
+
+  function flipOne(key: string) {
+    const next = new Set(checked)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    onChange(next)
+  }
+
+  return (
+    <Card as="section" className="mb-4 break-inside-avoid overflow-hidden">
+      <h2 className="border-b border-line bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+        {t(`permissions.area.${area}`)}
+      </h2>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-line px-3 py-2.5">
+        {levels.map(({ access, level }) => {
+          if (level === null) return null
+          const name = t(`permissions.access.${access}`)
+          const state = level === 'some' ? t('permissions.access_partly') : null
+          const flippable = entries.some((entry) => entry.access === access && canFlip(entry))
+          return editable ? (
+            <label
+              key={access}
+              className={`flex items-center gap-2 text-sm font-semibold ${flippable ? 'cursor-pointer text-ink' : 'cursor-not-allowed text-muted-foreground opacity-60'}`}
+            >
+              <Switch
+                checked={level !== 'none'}
+                mixed={level === 'some'}
+                disabled={!flippable || pending}
+                onChange={() => flipSide(access, level)}
+              />
+              <span>
+                {name}
+                {state && <span className="ml-1 font-normal text-muted-foreground">({state})</span>}
+              </span>
+            </label>
+          ) : (
+            <div key={access} className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Mark allowed={level !== 'none'} />
+              <span>
+                {name}
+                {state && <span className="ml-1 font-normal text-muted-foreground">({state})</span>}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex min-h-tap w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition hover:bg-slate-50 hover:text-ink"
+      >
+        <span>{t('permissions.access_detail', { count: held, total: entries.length })}</span>
+        <BoIcon name="chevron-down" size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <ul className="border-t border-line py-1">
+          {entries.map((entry) => {
+            const allowed = checked.has(entry.key)
+            const reason = editable ? lockReason(entry, viewer) : null
+            return (
+              <li key={entry.key}>
+                {editable ? (
+                  <label
+                    title={reason ? t(reason) : undefined}
+                    className={`flex items-start gap-2.5 px-3 py-1.5 text-sm leading-snug transition ${
+                      reason ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-slate-50'
+                    }`}
+                  >
+                    <Switch checked={allowed} disabled={reason !== null || pending} onChange={() => flipOne(entry.key)} />
+                    <span className={allowed ? 'text-ink' : 'text-muted-foreground'}>
+                      <ActionLabel entry={entry} />
+                    </span>
+                  </label>
+                ) : (
+                  <div className="flex items-start gap-2.5 px-3 py-1.5 text-sm leading-snug">
+                    <Mark allowed={allowed} />
+                    <span className={allowed ? 'text-ink' : 'text-muted-foreground'}>
+                      <ActionLabel entry={entry} />
+                    </span>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Card>
   )
 }

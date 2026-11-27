@@ -3,7 +3,15 @@ import { BOARD_ROLES, PERMISSION_AREAS, PERMISSION_CATALOG } from '@ooc/domain/p
 import en from '@/messages/backoffice/en.json'
 import es from '@/messages/backoffice/es-PE.json'
 import pt from '@/messages/backoffice/pt-BR.json'
-import { customCargosOf, groupByArea, profileHolds, retiredBoardRolesOf, type StaffProfileItem } from './permission-matrix'
+import {
+  accessLevel,
+  customCargosOf,
+  groupByArea,
+  profileHolds,
+  retiredBoardRolesOf,
+  withAreaAccess,
+  type StaffProfileItem,
+} from './permission-matrix'
 import { cargoLabel, cargoValue, parseCargoValue } from './cargos'
 
 /**
@@ -90,5 +98,49 @@ describe('cargo values', () => {
     expect(cargoLabel('custom', 'Horarios', label)).toBe('Horarios')
     expect(cargoLabel('custom', null, label)).toBe('role:custom')
     expect(cargoLabel('billing', null, label)).toBe('role:billing')
+  })
+})
+
+/* OOC-192: each area's "see" and "change" switches. */
+describe('area access', () => {
+  const students = PERMISSION_CATALOG.filter((entry) => entry.area === 'students')
+  const all = () => true
+
+  it('splits the students area into seeing the file and changing it', () => {
+    expect(students.filter((entry) => entry.access === 'view').map((entry) => entry.key)).toEqual(['students.view'])
+    expect(students.filter((entry) => entry.access === 'edit').map((entry) => entry.key)).toContain('students.edit')
+  })
+
+  it('counts exporting as changing, never as seeing', () => {
+    for (const key of ['students.export', 'reports.audit_log_export'] as const) {
+      expect(PERMISSION_CATALOG.find((entry) => entry.key === key)?.access).toBe('edit')
+    }
+  })
+
+  it('reads a side as all, some or none, and null when the area has none of it', () => {
+    expect(accessLevel(students, new Set(['students.view']), 'view')).toBe('all')
+    expect(accessLevel(students, new Set(['students.view']), 'edit')).toBe('none')
+    expect(accessLevel(students, new Set(['students.view', 'students.edit']), 'edit')).toBe('some')
+    const account = PERMISSION_CATALOG.filter((entry) => entry.area === 'account')
+    expect(accessLevel(account, new Set(), 'view')).toBeNull()
+  })
+
+  it('sees without changing', () => {
+    const next = withAreaAccess(new Set(), students, 'view', true, all)
+    expect([...next]).toEqual(['students.view'])
+  })
+
+  it('turns seeing on with changing, and changing off with seeing', () => {
+    const editing = withAreaAccess(new Set(), students, 'edit', true, all)
+    expect(accessLevel(students, editing, 'view')).toBe('all')
+    expect(accessLevel(students, editing, 'edit')).toBe('all')
+    expect([...withAreaAccess(editing, students, 'edit', false, all)]).toEqual(['students.view'])
+    expect(withAreaAccess(editing, students, 'view', false, all).size).toBe(0)
+  })
+
+  it('leaves alone what cannot be flipped, and other areas', () => {
+    const held = new Set(['payments.view', 'students.export'])
+    const next = withAreaAccess(held, students, 'edit', false, (entry) => entry.key !== 'students.export')
+    expect([...next].sort()).toEqual(['payments.view', 'students.export'])
   })
 })

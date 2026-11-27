@@ -478,9 +478,11 @@ export {
   EVERYONE_PERMISSIONS,
   LOCKED_ROLES,
   MFA_SENSITIVE_PERMISSIONS,
+  PERMISSION_ACCESS,
   PERMISSION_AREAS,
   PERMISSION_CATALOG,
   PERMISSION_KEYS,
+  accessOf,
   defaultPermissionsOf,
   grantOf,
   holdsMfaSensitive,
@@ -489,6 +491,7 @@ export {
 } from "./identity/permissionCatalog.js";
 export type {
   BoardRole,
+  PermissionAccess,
   PermissionArea,
   PermissionGrant,
   PermissionKey,

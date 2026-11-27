@@ -2923,7 +2923,9 @@
       "complaint_take_what": "Tomar la hoja dice al equipo que tú la estás atendiendo; deja de contar como sin atender en el menú.",
       "complaint_take_how": "Se toma una sola vez y no se deshace. Puedes responder sin tomarla antes.",
       "complaint_answer_what": "Es la respuesta de la empresa al consumidor. Sale por correo al correo de la hoja, en el idioma del formulario.",
-      "complaint_answer_how": "Se envía una sola vez: después no se cambia ni se manda otra. Queda guardada con la hoja y en la bitácora."
+      "complaint_answer_how": "Se envía una sola vez: después no se cambia ni se manda otra. Queda guardada con la hoja y en la bitácora.",
+      "permission_access_what": "Ver deja consultar los datos del área — fichas, listas, documentos — sin cambiar nada. Editar deja registrar, corregir, aprobar, enviar y exportar.",
+      "permission_access_how": "Editar enciende también Ver, y apagar Ver apaga Editar. Un interruptor a medias es un cargo con solo algunas acciones de ese lado: abre el detalle para ver o ajustar cada una. El cambio vale desde la siguiente acción de cada persona del cargo."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
@@ -3517,7 +3519,14 @@
           "permission_not_grantable": "Uno de los permisos no se puede dar a un cargo."
         },
         "failed": "No se pudo guardar. Inténtalo de nuevo."
-      }
+      },
+      "access": {
+        "view": "Ver",
+        "edit": "Editar"
+      },
+      "access_partly": "en parte",
+      "access_detail": "{count} de {total} acciones · detalle",
+      "access_intro": "Cada área tiene dos interruptores: Ver y Editar."
     },
     "grade_record": {
       "title": "Actas de notas",

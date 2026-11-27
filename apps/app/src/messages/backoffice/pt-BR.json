@@ -2923,7 +2923,9 @@
       "complaint_take_what": "Assumir a folha avisa a equipe que você está atendendo; ela deixa de contar como sem atendimento no menu.",
       "complaint_take_how": "Assume-se uma vez só e não se desfaz. Dá para responder sem assumir antes.",
       "complaint_answer_what": "É a resposta da empresa ao consumidor. Vai por e-mail para o e-mail da folha, no idioma do formulário.",
-      "complaint_answer_how": "É enviada uma vez só: depois não muda nem se manda outra. Fica guardada com a folha e na bitácora."
+      "complaint_answer_how": "É enviada uma vez só: depois não muda nem se manda outra. Fica guardada com a folha e na bitácora.",
+      "permission_access_what": "Ver deixa consultar os dados da área — fichas, listas, documentos — sem mudar nada. Editar deixa cadastrar, corrigir, aprovar, enviar e exportar.",
+      "permission_access_how": "Editar liga também Ver, e desligar Ver desliga Editar. Uma chave pela metade é um cargo com só algumas ações daquele lado: abra o detalhe para ver ou ajustar cada uma. A mudança vale a partir da próxima ação de cada pessoa do cargo."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
@@ -3517,7 +3519,14 @@
           "permission_not_grantable": "Uma das permissões não pode ser dada a um cargo."
         },
         "failed": "Não foi possível salvar. Tente de novo."
-      }
+      },
+      "access": {
+        "view": "Ver",
+        "edit": "Editar"
+      },
+      "access_partly": "em parte",
+      "access_detail": "{count} de {total} ações · detalhe",
+      "access_intro": "Cada área tem duas chaves: Ver e Editar."
     },
     "grade_record": {
       "title": "Atas de notas",
