@@ -9,6 +9,7 @@ import {
 } from '@/lib/backoffice/module-materials'
 import { Toggle } from '@/components/backoffice/controls'
 import { HelpField, HelpHint } from '@/components/backoffice/help-hint'
+import { OptionalMark } from '@/components/backoffice/ui'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
 
 const CERTIFICATE_RULES: CertificateRule[] = ['automatic', 'exam_required']
@@ -146,15 +147,22 @@ export function CourseOptionFields({
         <fieldset className="flex flex-col gap-2">
           <legend className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
             {t('course_options.module_materials')}
+            <OptionalMark label={t('common.optional')} />
             <HelpHint what={t('course_options.module_materials_hint')} how={t('help.materials_how')} />
           </legend>
+          {/* OOC-197: whoever files the material is not whoever opens the
+              course, so the screen says outright that blank is fine. */}
+          <p className="-mt-1 text-xs text-muted-foreground">{t('course_options.module_materials_optional')}</p>
           <AutoGrid min="16rem" gap="gap-3">
             {materials.map((link, index) => {
               // Blank is fine (OOC-197); only a link typed and wrong says so.
               const shown = issues[index]
               return (
                 <label key={index} className="flex flex-col gap-1">
-                  <span className={labelClass}>{t('course_options.module_material', { n: index + 1 })}</span>
+                  <span className={labelClass}>
+                    {t('course_options.module_material', { n: index + 1 })}
+                    <OptionalMark label={t('common.optional')} />
+                  </span>
                   <input
                     type="url"
                     inputMode="url"

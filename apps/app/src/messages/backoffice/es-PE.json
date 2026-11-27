@@ -1755,6 +1755,7 @@
       "module_materials": "Material de los módulos",
       "module_material": "Material del módulo {n}",
       "module_materials_hint": "Un enlace de Google Drive o Docs por módulo. El docente lo verá en su aula. Es opcional: quien carga el material puede completarlo después.",
+      "module_materials_optional": "Puedes dejarlos vacíos y completarlos después: el curso queda marcado «Sin material» hasta que cada módulo tenga su enlace.",
       "module_material_invalid": "Tiene que ser un enlace de Google Drive o Docs (https).",
       "total_hours": "Horas totales",
       "certificate_rule": "Certificado",

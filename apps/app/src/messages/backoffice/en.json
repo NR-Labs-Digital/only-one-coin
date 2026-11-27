@@ -1755,6 +1755,7 @@
       "module_materials": "Module materials",
       "module_material": "Module {n} material",
       "module_materials_hint": "One Google Drive or Docs link per module. The teacher will see it in their class. Optional: whoever files the material can add it later.",
+      "module_materials_optional": "You can leave them blank and fill them in later: the course stays marked “No material” until every module has its link.",
       "module_material_invalid": "Must be a Google Drive or Docs link (https).",
       "total_hours": "Total hours",
       "certificate_rule": "Certificate",
