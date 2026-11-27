@@ -144,6 +144,10 @@ jobs:
       # próprio, para não precisar de mais um check obrigatório na proteção
       # da main.
       - run: pnpm --filter @ooc/app test
+      # The old WordPress URLs (OOC-45): vercel.json compiled with Vercel's
+      # own matcher, every indexed URL checked against its 301 — pure, no
+      # network.
+      - run: pnpm --filter @ooc/landing test
 
   # Portão de CI item 6 — migration precisa rodar limpo num banco vazio.
   migrations:

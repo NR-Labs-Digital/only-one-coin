@@ -123,4 +123,17 @@ A regra (a landing manda a chave da página, o backoffice diz qual curso respond
 
 ---
 
+## URLs antigas do WordPress (OOC-45, 27/11/2026)
+
+O domínio já aponta para a Vercel, então toda URL que o WordPress tinha indexada responde aqui. Cada uma tem um **301** para a página equivalente, em `redirects` do `vercel.json` (na borda, sem função):
+
+- **O inventário** saiu do Wayback Machine em 27/11/2026: os sitemaps do Yoast (`sitemap_index.xml` e os cinco que ele lista), o índice CDX do domínio e os links das páginas arquivadas; os `?p=<id>` foram resolvidos pelo `wp-json` arquivado. **Não havia post de blog indexado** — o `post-sitemap` nunca existiu (o blog é a OOC-46).
+- **A Vercel casa `source` com maiúscula e barra final valendo** (`strict` e `sensitive` do `path-to-regexp`): `/Nosotros` e `/nosotros/` são duas URLs, e `/:path*` sozinho não casa `/cursos/`. Toda regra termina em `{/}?` e lista as grafias que o menu antigo usava.
+- **`tests/legacy-redirects.test.ts`** compila o `vercel.json` com `@vercel/routing-utils` (o mesmo matcher da Vercel) e confere cada URL do inventário, que todo destino existe (página da landing, âncora da página de curso ou porta do app) e que nenhuma página nova é redirecionada. Roda no CI (`pnpm --filter @ooc/landing test`). URL antiga nova = linha nova no teste.
+- **Destino para o app** (`/login`, `/enrollment`) é relativo: o 301 leva à landing e o `middleware.ts` faz o 302 de sempre para o domínio do app.
+- **Fica de fora, de propósito:** `/wp-content/*` (imagens e fontes — sem equivalente), `/wp-admin`, `/wp-json` e `/?p=233` (é a home, que já responde 200; com a query repassada a regra viraria loop). O `astro dev` não lê o `vercel.json`, então os redirects só existem no deploy.
+- **Escolhas sem decisão registrada:** o cadastro de instrutor antigo vai para Contacto (o docente hoje entra por convite, OOC-79); carrinho, checkout e cadastro de aluno vão para a matrícula; as contas antigas (`/mi-cuenta`, `/escritorio`) vão para o login do portal.
+
+---
+
 Regras de negócio, trilíngue e o resto da arquitetura estão no `CLAUDE.md` da raiz — não duplicadas aqui.

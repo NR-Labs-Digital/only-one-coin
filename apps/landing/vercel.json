@@ -1,5 +1,246 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/courses",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "262"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/about",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "271"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/contact",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "456"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/privacy-policy",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "973"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/terms-and-conditions",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "984"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/login",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1411"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/enrollment",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1412"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/contact",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1413"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/login",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1456"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/courses/english#kids",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1460"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/courses/english#teens-and-adults",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "p",
+          "value": "1531"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "destination": "/courses",
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "query",
+          "key": "post_type",
+          "value": "courses"
+        }
+      ]
+    },
+    {
+      "source": "/:page(inicio|Inicio){/}?",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(nosotros|Nosotros){/}?",
+      "destination": "/about",
+      "statusCode": 301
+    },
+    {
+      "source": "/author/onlyonecoin/:path*{/}?",
+      "destination": "/about",
+      "statusCode": 301
+    },
+    {
+      "source": "/profile/onlyonecoin/:path*{/}?",
+      "destination": "/about",
+      "statusCode": 301
+    },
+    {
+      "source": "/cursosone/ninos-6-12-anos/:path*{/}?",
+      "destination": "/courses/english#kids",
+      "statusCode": 301
+    },
+    {
+      "source": "/producto/ninos-6-12-anos/:path*{/}?",
+      "destination": "/courses/english#kids",
+      "statusCode": 301
+    },
+    {
+      "source": "/cursosone/jovenes-y-adultos-13-anos-en-adelante/:path*{/}?",
+      "destination": "/courses/english#teens-and-adults",
+      "statusCode": 301
+    },
+    {
+      "source": "/producto/jovenes-y-adultos-13-anos-en-adelante/:path*{/}?",
+      "destination": "/courses/english#teens-and-adults",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(cursos|Cursos|cursosone|tienda|lesson)/:path*{/}?",
+      "destination": "/courses",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(categoria-producto|course-category|course-tag|producto)/:path*{/}?",
+      "destination": "/courses",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(contacto|Contacto|contactanos|Contactanos){/}?",
+      "destination": "/contact",
+      "statusCode": 301
+    },
+    {
+      "source": "/pagina-de-registro-para-instructores{/}?",
+      "destination": "/contact",
+      "statusCode": 301
+    },
+    {
+      "source": "/terminos-y-condiciones{/}?",
+      "destination": "/terms-and-conditions",
+      "statusCode": 301
+    },
+    {
+      "source": "/politicas-de-privacidad{/}?",
+      "destination": "/privacy-policy",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(mi-cuenta|escritorio)/:path*{/}?",
+      "destination": "/login",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(registro-de-estudiante|cart|carrito|checkout|finalizar-compra){/}?",
+      "destination": "/enrollment",
+      "statusCode": 301
+    },
+    {
+      "source": "/elementor-hf/:path*{/}?",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:page(feed|comments)/:path*{/}?",
+      "destination": "/blog",
+      "statusCode": 301
+    },
+    {
+      "source": "/:map(sitemap_index|page-sitemap|product-sitemap|lesson-sitemap|product_cat-sitemap|elementor-hf-sitemap).xml",
+      "destination": "/sitemap.xml",
+      "statusCode": 301
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -12,19 +253,36 @@
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
         },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=(), browsing-topics=()"
         },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
       ]
     },
     {
       "source": "/_astro/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
