@@ -255,6 +255,14 @@
       "submitted_summary": "Tus {count} matrículas",
       "what_happens": "Al enviar, tus vacantes quedan reservadas y tu comprobante entra a revisión. Tienes hasta {days} días para que se apruebe el pago; te avisamos por correo en cuanto esté listo.",
       "timeline_received_body": "Tus vacantes quedaron reservadas."
+    },
+    "consent": {
+      "label": "Cookies de publicidad",
+      "text": "Usamos cookies de Meta y TikTok para medir nuestros anuncios, solo si las aceptas. Nunca enviamos tu nombre, documento ni correo.",
+      "policy": "Política de privacidad",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "manage": "Cookies de publicidad"
     }
   }
 }

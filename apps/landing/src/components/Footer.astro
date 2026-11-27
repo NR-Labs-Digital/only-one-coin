@@ -105,6 +105,11 @@ const socials = [
         <li><a href={whatsappUrl} target="_blank" rel="noopener">{f.helpWhatsapp}</a></li>
         <li><a href={withLang(lang, "/terms-and-conditions")}>{f.terms}</a></li>
         <li><a href={withLang(lang, "/privacy-policy")}>{f.privacy}</a></li>
+        <!-- Reopens the pixel banner (OOC-47), so a yes can be taken back.
+             Hidden until src/analytics/client.ts finds a pixel configured. -->
+        <li hidden data-consent-open>
+          <button type="button" class="consent-open">{t.consent.manage}</button>
+        </li>
         <!-- The complaints book (OOC-63): on every page, as the consumer
              protection rules ask. The form lives in apps/app; the path is
              sent there like /enrollment (middleware.ts). -->
@@ -221,6 +226,19 @@ const socials = [
     transition: color 0.15s ease;
   }
   .col a:hover {
+    color: var(--yellow-bright);
+  }
+  /* A button that reads as the links around it. */
+  .consent-open {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .consent-open:hover {
     color: var(--yellow-bright);
   }
   /* The complaints book badge: a book next to the name, on a light card,

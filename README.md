@@ -53,6 +53,7 @@ Idempotentes. Build de produção recusa rodar. `seed:enrollments` e `seed:load`
 - [`docs/REGRAS-NEGOCIO.md`](docs/REGRAS-NEGOCIO.md) — regras extraídas da operação, a partir do export do bot de vendas.
 - [`docs/REQUISITOS.md`](docs/REQUISITOS.md) — requisitos levantados com o cliente.
 - [`docs/MATRICULA-CHECKOUT.md`](docs/MATRICULA-CHECKOUT.md) — o funil público de matrícula.
+- [`docs/MEDICAO.md`](docs/MEDICAO.md) — PostHog e píxeis de mídia paga: o funil, o banner de cookies, o que nunca sai e como ligar em produção.
 - [`docs/OCR-AVALIACAO.md`](docs/OCR-AVALIACAO.md) — como medir a OCR em comprovantes reais.
 - [`docs/DOCUMENTOS-E-CERTIFICADOS.md`](docs/DOCUMENTOS-E-CERTIFICADOS.md) — constancia e certificado.
 - [`docs/INFRAESTRUTURA.md`](docs/INFRAESTRUTURA.md) — pesquisa de mercado que baseou a hospedagem.

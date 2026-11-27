@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { PublicFormShell } from '@/components/public-form-shell'
+import { CheckoutAnalytics } from '@/components/enrollment/checkout-analytics'
 
 /**
  * Shell for the public checkout.
@@ -32,6 +33,9 @@ export default async function EnrollmentLayout({
       support={t('footer.support')}
     >
       {children}
+      {/* PostHog and the pixel banner (OOC-47) — this layout is the only
+          place in apps/app that measures anything. */}
+      <CheckoutAnalytics />
     </PublicFormShell>
   )
 }
