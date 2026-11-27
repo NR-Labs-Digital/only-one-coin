@@ -140,6 +140,8 @@
     "mfa_error_failed": "Não conseguimos verificar o código. Confira sua conexão e tente de novo.",
     "mfa_error_recovery_invalid": "Esse código de recuperação não é válido ou já foi usado.",
     "mfa_use_recovery": "Usar um código de recuperação",
+    "mfa_trust_browser": "Lembrar este navegador por {days} dias",
+    "mfa_trust_browser_note": "Não vamos pedir o código de novo ao entrar por aqui. Não marque num computador compartilhado.",
     "mfa_use_email": "Voltar ao código por e-mail",
     "mfa_recovery_title": "Código de recuperação",
     "mfa_recovery_subtitle": "Digite um dos códigos de recuperação que você guardou. Cada um vale uma única vez.",

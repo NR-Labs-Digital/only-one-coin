@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { TRUSTED_BROWSER_DAYS } from '@ooc/domain/trusted-browser'
 import { useRouter } from '@/i18n/navigation'
 import { RecoveryCodes } from '@/components/backoffice/recovery-codes'
 import { fetchPreferredLocale } from '@/lib/preferred-locale'
@@ -112,6 +113,9 @@ export function StaffLoginForm({
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
   const [recoverError, setRecoverError] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  /** apps/api said the account may be remembered (OOC-154) — a cargo whose factor is optional. */
+  const [trustOffered, setTrustOffered] = useState(false)
+  const [trustBrowser, setTrustBrowser] = useState(false)
   const passwordId = useId()
   const opened = useRef(false)
 
@@ -195,9 +199,14 @@ export function StaffLoginForm({
       return
     }
 
-    const body = (await response.json().catch(() => null)) as { twoFactorRedirect?: boolean } | null
+    const body = (await response.json().catch(() => null)) as {
+      twoFactorRedirect?: boolean
+      trustBrowser?: boolean
+    } | null
     if (body?.twoFactorRedirect) {
       resetCodeState()
+      setTrustOffered(body.trustBrowser === true)
+      setTrustBrowser(false)
       setStep('mfa')
       setPending(false)
       await sendCode('mfa')
@@ -220,7 +229,7 @@ export function StaffLoginForm({
 
   async function submitCode(
     event: React.FormEvent<HTMLFormElement>,
-    verify: (code: string) => Promise<MfaResult<unknown>>,
+    verify: (code: string, trustBrowser: boolean) => Promise<MfaResult<unknown>>,
     onOk: (value: unknown) => void,
   ) {
     event.preventDefault()
@@ -230,7 +239,7 @@ export function StaffLoginForm({
 
     setPending(true)
     setCodeError(null)
-    const result = await verify(code)
+    const result = await verify(code, trustOffered && trustBrowser)
     setPending(false)
 
     if (!result.ok) {
@@ -349,6 +358,23 @@ export function StaffLoginForm({
     >
       {cooldown > 0 ? t('mfa_resend_wait', { seconds: cooldown }) : t('mfa_resend')}
     </button>
+  )
+
+  // "Remember this browser" (OOC-154): only when apps/api offered it, and
+  // apps/api drops it anyway for a cargo that must type the code every time.
+  const trustBrowserField = trustOffered && (
+    <label className="mt-4 flex items-start gap-2.5 text-sm text-ink">
+      <input
+        type="checkbox"
+        checked={trustBrowser}
+        onChange={(event) => setTrustBrowser(event.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-blue"
+      />
+      <span className="flex flex-col gap-0.5">
+        <span className="font-semibold">{t('mfa_trust_browser', { days: TRUSTED_BROWSER_DAYS })}</span>
+        <span className="text-xs text-muted-foreground">{t('mfa_trust_browser_note')}</span>
+      </span>
+    </label>
   )
 
   if (step === 'recover_sent') {
@@ -503,6 +529,8 @@ export function StaffLoginForm({
           />
         </label>
 
+        {trustBrowserField}
+
         <button type="submit" disabled={pending} className={`${primaryButtonClass} mt-5`}>
           {pending ? t('verifying') : t('verify')}
         </button>
@@ -549,6 +577,8 @@ export function StaffLoginForm({
           </button>
           {resendButton('mfa')}
         </div>
+
+        {trustBrowserField}
 
         <button type="submit" disabled={pending} className={`${primaryButtonClass} mt-4`}>
           {pending ? t('verifying') : t('verify')}

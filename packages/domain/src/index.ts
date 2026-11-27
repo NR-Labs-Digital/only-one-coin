@@ -610,6 +610,7 @@ export type {
 export type { IStaffPasswordResetLinkBuilder } from "./identity/ports/IStaffPasswordResetLinkBuilder.js";
 export type { IStaffPasswordSetter } from "./identity/ports/IStaffPasswordSetter.js";
 export type { IStaffSessionRevoker } from "./identity/ports/IStaffSessionRevoker.js";
+export type { IStaffTrustedBrowsers } from "./identity/ports/IStaffTrustedBrowsers.js";
 export type {
   IStaffSecondFactor,
   StaffMfaState,
@@ -696,6 +697,11 @@ export {
 } from "./identity/RegenerateOwnRecoveryCodesUseCase.js";
 export { DisableOwnMfaUseCase, type DisableOwnMfaInput } from "./identity/DisableOwnMfaUseCase.js";
 export { STAFF_MFA_CODE_TTL_MINUTES, staffMfaCodeEmail } from "./identity/staffMfaEmail.js";
+export { TRUSTED_BROWSER_DAYS } from "./identity/trustedBrowser.js";
+export {
+  ForgetOwnTrustedBrowsersUseCase,
+  type ForgetOwnTrustedBrowsersInput,
+} from "./identity/ForgetOwnTrustedBrowsersUseCase.js";
 
 export {
   PROCEDURE_KINDS,

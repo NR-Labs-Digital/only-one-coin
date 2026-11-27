@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { TRUSTED_BROWSER_DAYS } from '@ooc/domain/trusted-browser'
 import { SectionTitle, StatusBadge } from '@/components/backoffice/ui'
 import { Toast } from '@/components/backoffice/controls'
 import { HelpHint } from '@/components/backoffice/help-hint'
@@ -10,6 +11,7 @@ import { RecoveryCodes } from '@/components/backoffice/recovery-codes'
 import {
   confirmEnrollment,
   disableMfa,
+  forgetTrustedBrowsers,
   regenerateRecoveryCodes,
   startEnrollment,
   type MfaCodeError,
@@ -49,7 +51,7 @@ export function AccountMfa({ initial, email }: { initial: OwnMfa | null; email: 
   const [mode, setMode] = useState<Mode>('idle')
   const [pending, setPending] = useState(false)
   const [codeError, setCodeError] = useState<MfaCodeError | null>(null)
-  const [error, setError] = useState<'password_incorrect' | 'failed' | null>(null)
+  const [error, setError] = useState<'password_incorrect' | 'failed' | 'forget_failed' | null>(null)
   const [codes, setCodes] = useState<string[]>([])
   const [toast, setToast] = useState<string | null>(null)
 
@@ -89,6 +91,20 @@ export function AccountMfa({ initial, email }: { initial: OwnMfa | null; email: 
     setMode('codes')
   }
 
+  /** "Forget browsers" (OOC-154): no password asked — it only takes access away. */
+  async function onForgetBrowsers() {
+    setPending(true)
+    setError(null)
+    const ok = await forgetTrustedBrowsers()
+    setPending(false)
+    if (!ok) {
+      setError('forget_failed')
+      return
+    }
+    setMfa((prev) => (prev ? { ...prev, trustedBrowsers: 0 } : prev))
+    setToast(t('account.mfa_browsers_forgotten_toast'))
+  }
+
   async function onPassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending) return
@@ -115,7 +131,7 @@ export function AccountMfa({ initial, email }: { initial: OwnMfa | null; email: 
       setError(result.error)
       return
     }
-    setMfa((prev) => (prev ? { ...prev, enabled: false, recoveryCodesLeft: 0 } : prev))
+    setMfa((prev) => (prev ? { ...prev, enabled: false, recoveryCodesLeft: 0, trustedBrowsers: 0 } : prev))
     reset()
     setToast(t('account.mfa_disabled_toast'))
   }
@@ -156,6 +172,29 @@ export function AccountMfa({ initial, email }: { initial: OwnMfa | null; email: 
         >
           <span>{t('account.mfa_codes_left', { count: mfa.recoveryCodesLeft })}</span>
           <HelpHint what={t('help.admin_account_recovery_what')} how={t('help.admin_account_recovery_how')} />
+        </p>
+      )}
+
+      {mfa.enabled && mode === 'idle' && (mfa.trustBrowserAvailable || mfa.trustedBrowsers > 0) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            {t('account.mfa_trusted_count', { count: mfa.trustedBrowsers })}
+            <HelpHint
+              what={t('help.admin_account_trusted_browsers_what', { days: TRUSTED_BROWSER_DAYS })}
+              how={t('help.admin_account_trusted_browsers_how')}
+            />
+          </span>
+          {mfa.trustedBrowsers > 0 && (
+            <button type="button" onClick={() => void onForgetBrowsers()} disabled={pending} className={cancelClass}>
+              {pending ? t('account.mfa_forgetting_browsers') : t('account.mfa_forget_browsers')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'idle' && error === 'forget_failed' && (
+        <p role="alert" className="mt-3 text-xs font-semibold text-red-600">
+          {t('account.mfa_forget_browsers_failed')}
         </p>
       )}
 

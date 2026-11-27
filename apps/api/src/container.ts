@@ -23,7 +23,9 @@ import {
   ConfirmOwnMfaEnrollmentUseCase,
   RegenerateOwnRecoveryCodesUseCase,
   DisableOwnMfaUseCase,
+  ForgetOwnTrustedBrowsersUseCase,
   type IStaffSecondFactor,
+  type IStaffTrustedBrowsers,
   CompletePortalAccessUseCase,
   CompleteStaffInviteUseCase,
   CompleteStaffPasswordResetUseCase,
@@ -193,6 +195,7 @@ import { BetterAuthStaffAccountProvisioner } from "./infra/identity/BetterAuthSt
 import { BetterAuthPortalPasswordSetter } from "./infra/identity/BetterAuthPortalPasswordSetter.js";
 import { BetterAuthStaffPasswordSetter } from "./infra/identity/BetterAuthStaffPasswordSetter.js";
 import { BetterAuthStaffSessionRevoker } from "./infra/identity/BetterAuthStaffSessionRevoker.js";
+import { DrizzleStaffTrustedBrowsers, TrustedBrowserGate } from "./infra/auth/trustedBrowsers.js";
 import { DrizzleAuditLogRepository } from "./infra/identity/DrizzleAuditLogRepository.js";
 import { DrizzleStaffAccessRepository } from "./infra/identity/DrizzleStaffAccessRepository.js";
 import { DrizzleStaffInviteRepository } from "./infra/identity/DrizzleStaffInviteRepository.js";
@@ -497,6 +500,7 @@ export interface AppUseCases {
     confirmOwnMfaEnrollment: ConfirmOwnMfaEnrollmentUseCase;
     regenerateOwnRecoveryCodes: RegenerateOwnRecoveryCodesUseCase;
     disableOwnMfa: DisableOwnMfaUseCase;
+    forgetOwnTrustedBrowsers: ForgetOwnTrustedBrowsersUseCase;
   };
   portal: {
     resolveSignInEmail: ResolvePortalSignInEmailUseCase;
@@ -594,6 +598,9 @@ export interface AppIdentity {
   staffUserLookup: IStaffUserLookup;
   staffPasswordSetter: IStaffPasswordSetter;
   staffSecondFactor: IStaffSecondFactor;
+  /** "Remember this browser" (OOC-154): how many, and the cargo check the auth catch-all asks. */
+  staffTrustedBrowsers: IStaffTrustedBrowsers;
+  trustedBrowserGate: TrustedBrowserGate;
 }
 
 /** What the e-mail workers need — the outbox and the (guarded) provider — and
@@ -906,6 +913,8 @@ function buildContainer(): AppContainer {
     auditLogRepository,
   );
   const disableOwnMfa = new DisableOwnMfaUseCase(freshAuthVerifier, staffSecondFactor, auditLogRepository);
+  const staffTrustedBrowsers = new DrizzleStaffTrustedBrowsers(db);
+  const forgetOwnTrustedBrowsers = new ForgetOwnTrustedBrowsersUseCase(staffTrustedBrowsers, auditLogRepository);
 
   const setFeatureFlag = new SetFeatureFlagOverrideUseCase(featureFlagOverrideRepository, auditLogRepository);
   const updateSettings = new UpdatePlatformSettingsUseCase(platformSettingsRepository);
@@ -1049,6 +1058,8 @@ function buildContainer(): AppContainer {
       staffUserLookup,
       staffPasswordSetter,
       staffSecondFactor,
+      staffTrustedBrowsers,
+      trustedBrowserGate: new TrustedBrowserGate(db, staffAccess),
     },
     notifications: {
       outbox: outboxRepository,
@@ -1267,6 +1278,7 @@ function buildContainer(): AppContainer {
         confirmOwnMfaEnrollment,
         regenerateOwnRecoveryCodes,
         disableOwnMfa,
+        forgetOwnTrustedBrowsers,
       },
       portal,
       emails: {

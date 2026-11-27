@@ -29,6 +29,10 @@ export interface OwnMfa {
   /** The cargo cannot turn it off — and cannot use the panel until it is on. */
   required: boolean
   recoveryCodesLeft: number
+  /** The cargo may tick "remember this browser" at the sign-in code (OOC-154) — when the factor is optional. */
+  trustBrowserAvailable: boolean
+  /** Browsers that skip the code today. */
+  trustedBrowsers: number
 }
 
 export type MfaCodeError =
@@ -88,14 +92,18 @@ export async function sendSignInCode(locale: string): Promise<MfaResult> {
   return toResult(await post('/api/auth/two-factor/send-otp', {}, locale), nothing)
 }
 
-/** Trades the e-mailed code for the session. */
-export async function verifySignInCode(code: string): Promise<MfaResult> {
-  return toResult(await post('/api/auth/two-factor/verify-otp', { code }), nothing)
+/**
+ * Trades the e-mailed code for the session. `trustBrowser` is the "remember
+ * this browser" box (OOC-154); apps/api drops it for a cargo that must type
+ * the code every time, whatever this sends.
+ */
+export async function verifySignInCode(code: string, trustBrowser = false): Promise<MfaResult> {
+  return toResult(await post('/api/auth/two-factor/verify-otp', { code, trustDevice: trustBrowser }), nothing)
 }
 
-/** Trades a recovery code for the session — and spends it. */
-export async function verifyRecoveryCode(code: string): Promise<MfaResult> {
-  return toResult(await post('/api/auth/two-factor/verify-backup-code', { code }), nothing)
+/** Trades a recovery code for the session — and spends it. Same box as the e-mailed code. */
+export async function verifyRecoveryCode(code: string, trustBrowser = false): Promise<MfaResult> {
+  return toResult(await post('/api/auth/two-factor/verify-backup-code', { code, trustDevice: trustBrowser }), nothing)
 }
 
 // --- The account's own factor (apps/api) ---------------------------------
@@ -142,6 +150,12 @@ export async function regenerateRecoveryCodes(password: string): Promise<Passwor
     const body = (await response.json()) as { recoveryCodes: string[] }
     return body.recoveryCodes
   })
+}
+
+/** Forgets every remembered browser: the next sign-in from each asks for the code again. */
+export async function forgetTrustedBrowsers(): Promise<boolean> {
+  const response = await post('/api/v1/me/mfa/trusted-browsers/forget', {})
+  return response?.ok ?? false
 }
 
 export async function disableMfa(password: string): Promise<PasswordGatedResult> {

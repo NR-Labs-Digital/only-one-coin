@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import { LOCALE_HEADER, SESSION_COOKIE_NAME, type Auth } from "@/infra/auth/betterAuth.js";
 import { generateRecoveryCodes, type RecoveryCodeCipher } from "@/infra/auth/recoveryCodes.js";
 import type { Db } from "@/infra/db/client.js";
+import { forgetTrustedBrowsersSql } from "@/infra/auth/trustedBrowsers.js";
 
 /** Better Auth's error codes for a code that did not work, and what each one means to the panel. */
 const CODE_FAILURES: Record<string, MfaCodeFailure> = {
@@ -88,6 +89,8 @@ export class BetterAuthStaffSecondFactor implements IStaffSecondFactor {
     await this.db.transaction(async (tx) => {
       await tx.execute(sql`update "user" set "twoFactorEnabled" = false, "updatedAt" = now() where "id" = ${userId}`);
       await tx.execute(sql`delete from "twoFactor" where "userId" = ${userId}`);
+      // Turning it back on later starts with no remembered browser (OOC-154).
+      await tx.execute(forgetTrustedBrowsersSql(userId));
     });
   }
 

@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { admin, openAPI, twoFactor } from "better-auth/plugins";
-import { LocaleSchema, STAFF_MFA_CODE_TTL_MINUTES, type Locale } from "@ooc/domain";
+import { LocaleSchema, STAFF_MFA_CODE_TTL_MINUTES, TRUSTED_BROWSER_DAYS, type Locale } from "@ooc/domain";
 import type { Config } from "@/config.js";
 import { recoveryCodeCipher } from "@/infra/auth/recoveryCodes.js";
 
@@ -93,11 +93,11 @@ export function createAuth(config: Config, deps: { codeSender?: TwoFactorCodeSen
           }),
         },
         backupCodeOptions: { storeBackupCodes: recoveryCodeCipher(config.BETTER_AUTH_SECRET) },
-        // A "trust this browser for 30 days" cookie would let a password
-        // alone open the panel again from that browser. The catch-all also
-        // strips `trustDevice` from every request; this keeps any cookie
-        // minted anyway from outliving one sign-in window.
-        trustDeviceMaxAge: 1,
+        // "Remember this browser" (OOC-154): only a cargo whose factor is
+        // optional may tick it, and only at the code — the auth catch-all
+        // checks the cargo before both the code and the next password
+        // (trustedBrowsers.ts), and keeps the window from rolling forward.
+        trustDeviceMaxAge: TRUSTED_BROWSER_DAYS * 24 * 60 * 60,
       }),
     ],
     user: {

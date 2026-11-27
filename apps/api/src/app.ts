@@ -206,6 +206,7 @@ import { startOwnMfaEnrollmentRoute } from "@/http/identity/StartOwnMfaEnrollmen
 import { confirmOwnMfaEnrollmentRoute } from "@/http/identity/ConfirmOwnMfaEnrollmentRoute.js";
 import { regenerateOwnRecoveryCodesRoute } from "@/http/identity/RegenerateOwnRecoveryCodesRoute.js";
 import { disableOwnMfaRoute } from "@/http/identity/DisableOwnMfaRoute.js";
+import { forgetOwnTrustedBrowsersRoute } from "@/http/identity/ForgetOwnTrustedBrowsersRoute.js";
 import { listStaffRoute } from "@/http/identity/ListStaffRoute.js";
 import { listStaffRoleChangesRoute } from "@/http/identity/ListStaffRoleChangesRoute.js";
 import {
@@ -279,7 +280,10 @@ export async function buildApp(): Promise<FastifyInstance> {
     provider.route(healthCheckRoute);
 
     // auth routes
-    registerAuthRoutes(app, container.auth);
+    registerAuthRoutes(app, container.auth, {
+      trustedBrowsers: container.identity.trustedBrowserGate,
+      auditLog: container.identity.auditLogRepository,
+    });
 
     // api routes, prefixed with /api/v1
     provider.register(
@@ -459,6 +463,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(confirmOwnMfaEnrollmentRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(regenerateOwnRecoveryCodesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(disableOwnMfaRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(forgetOwnTrustedBrowsersRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffRoleChangesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(listStaffProfilesRoute);
