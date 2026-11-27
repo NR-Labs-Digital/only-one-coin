@@ -4,16 +4,24 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { routing } from '@/i18n/routing'
+import { savePreferredLocale } from '@/lib/preferred-locale'
 
 /**
  * Language switcher shaped like the one on the landing: a pill with a globe and
  * the locale code, opening a small menu. `variant` adapts it to a light surface
- * (login card) or a dark one (panel sidebar).
+ * (panel header) or a dark one (login banner).
+ *
+ * `saveToAccount` is for the signed-in shells (OOC-191): the switch also saves
+ * the choice on the account, like the one on the account page (OOC-150), so the
+ * next sign-in on any device opens in it. The login screens leave it off —
+ * before signing in there is no account to save on.
  */
 export function LanguageGlobe({
   variant = 'light',
+  saveToAccount = false,
 }: {
   variant?: 'light' | 'dark'
+  saveToAccount?: boolean
 }) {
   const t = useTranslations('language')
   const locale = useLocale()
@@ -45,6 +53,7 @@ export function LanguageGlobe({
   function select(next: string) {
     setOpen(false)
     if (next === locale) return
+    if (saveToAccount) void savePreferredLocale(next)
     startTransition(() => {
       router.replace(pathname, { locale: next })
     })
@@ -59,7 +68,7 @@ export function LanguageGlobe({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t('label')}
-        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition disabled:opacity-60 ${
+        className={`inline-flex ${saveToAccount ? 'min-h-tap' : ''} items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition disabled:opacity-60 ${
           dark
             ? 'border-white/15 bg-white/5 text-white hover:border-white/35'
             : 'border-line bg-white text-ink hover:border-brand-blue hover:text-brand-blue'
