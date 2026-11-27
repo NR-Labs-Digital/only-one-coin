@@ -105,10 +105,10 @@ function placeholderValues(
       values.purchasedOn = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeZone: "UTC" }).format(date);
     } else if (name === "amountCents" && typeof value === "number") {
       values.amount = new Intl.NumberFormat(intlLocale, { style: "currency", currency: "PEN" }).format(value / 100);
-    } else if (name === "startsOn" && typeof value === "string") {
+    } else if ((name === "startsOn" || name === "endsOn") && typeof value === "string") {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) throw new TemplateRenderError(`Var "${name}" is not a date`);
-      values.startsOn = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeZone: TIME_ZONE }).format(date);
+      values[name] = new Intl.DateTimeFormat(intlLocale, { dateStyle: "long", timeZone: TIME_ZONE }).format(date);
     } else if ((name === "grade" || name === "passingGrade") && typeof value === "number") {
       // A grade as typed, up to two decimals, in the reader's convention (13.5 / 13,5).
       values[name] = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 2 }).format(value);

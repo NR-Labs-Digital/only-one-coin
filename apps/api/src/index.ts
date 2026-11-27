@@ -13,6 +13,8 @@ import {
   createConstanciaIssueQueue,
   createFreezeReengagementQueue,
   scheduleFreezeReengagement,
+  createCourseEndingRenewalQueue,
+  scheduleCourseEndingRenewal,
   scheduleConstanciaIssue,
   createSendEmailQueue,
   scheduleOutboxRelay,
@@ -46,6 +48,7 @@ import { startSeatHoldSweepWorker } from "./workers/seat-hold-sweep.worker.js";
 import { startAttachmentSweepWorker } from "./workers/attachment-sweep.worker.js";
 import { startConstanciaIssueWorker } from "./workers/constancia-issue.worker.js";
 import { startFreezeReengagementWorker } from "./workers/freeze-reengagement.worker.js";
+import { startCourseEndingRenewalWorker } from "./workers/course-ending-renewal.worker.js";
 import { startReportRefreshWorker } from "./workers/report-refresh.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
 
@@ -126,6 +129,12 @@ const freezeReengagementQueue = createFreezeReengagementQueue(connection);
 await scheduleFreezeReengagement(freezeReengagementQueue);
 const freezeReengagementWorker = startFreezeReengagementWorker(connection, logger, {
   send: container.useCases.enrollment.sendFreezeReengagement,
+});
+// The renewal e-mail (OOC-53): seven days before the class group ends.
+const courseEndingRenewalQueue = createCourseEndingRenewalQueue(connection);
+await scheduleCourseEndingRenewal(courseEndingRenewalQueue);
+const courseEndingRenewalWorker = startCourseEndingRenewalWorker(connection, logger, {
+  send: container.useCases.enrollment.sendCourseEndingRenewal,
 });
 // Reports (OOC-40): the aggregation the screen reads is rebuilt every night,
 // and right away when the last build is stale (a missed night, or the first
@@ -214,7 +223,7 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, freeze-reengagement, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, freeze-reengagement, course-ending-renewal, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
@@ -247,6 +256,7 @@ async function shutdown() {
   await attachmentSweepWorker.close();
   await constanciaIssueWorker.close();
   await freezeReengagementWorker.close();
+  await courseEndingRenewalWorker.close();
   await reportRefreshWorker.close();
   await receiptUploadRelayWorker.close();
   await receiptNormalizeWorker.close();
@@ -260,6 +270,7 @@ async function shutdown() {
   await attachmentSweepQueue.close();
   await constanciaIssueQueue.close();
   await freezeReengagementQueue.close();
+  await courseEndingRenewalQueue.close();
   await reportRefreshQueue.close();
   await receiptUploadRelayQueue.close();
   await receiptNormalizeQueue.close();
