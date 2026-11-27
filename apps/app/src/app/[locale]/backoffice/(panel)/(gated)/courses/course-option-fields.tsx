@@ -159,10 +159,7 @@ export function CourseOptionFields({
               const shown = issues[index]
               return (
                 <label key={index} className="flex flex-col gap-1">
-                  <span className={labelClass}>
-                    {t('course_options.module_material', { n: index + 1 })}
-                    <OptionalMark label={t('common.optional')} />
-                  </span>
+                  <span className={labelClass}>{t('course_options.module_material', { n: index + 1 })}</span>
                   <input
                     type="url"
                     inputMode="url"
