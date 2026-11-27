@@ -313,7 +313,7 @@ describe("docente portal scope (OOC-82)", () => {
     });
   });
 
-  it("reads every module's material on a full-course class group, and the database keeps it module-less (OOC-130)", async () => {
+  it("reads every module's material on every class group, and the database keeps a full-course one module-less (OOC-130, OOC-194)", async () => {
     await seeded(async (tx) => {
       const { get } = portal(tx);
 
@@ -328,10 +328,12 @@ describe("docente portal scope (OOC-82)", () => {
         moduleMaterialUrl: null,
         courseMaterialUrls: ["https://drive.google.com/ooc100-m1", "https://drive.google.com/ooc100-m2"],
       });
-      // Any other class group gets its one module's door, not the whole list.
+      // A one-module run reads every module's material too, to prepare the next ones (OOC-194).
       await expect(get.run({ userId: A_ACCOUNT, classGroupId: A_RUNNING })).resolves.toMatchObject({
         fullCourse: false,
-        courseMaterialUrls: [],
+        module: 2,
+        moduleMaterialUrl: "https://drive.google.com/ooc100-m2",
+        courseMaterialUrls: ["https://drive.google.com/ooc100-m1", "https://drive.google.com/ooc100-m2"],
       });
 
       await expect(
