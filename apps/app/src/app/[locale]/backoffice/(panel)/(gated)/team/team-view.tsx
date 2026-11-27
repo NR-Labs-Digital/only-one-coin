@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { NewStaffForm } from './new-staff-form'
+import { EditMemberDialog, type EditMemberOptions } from './edit-member-dialog'
 import { RetireAccountDialog, retireOutcome, type RetireOutcome } from './retire-account-dialog'
 import { RoleChangeDialog, roleChangeOutcome, type RoleChangeOutcome } from './role-change-dialog'
 import {
@@ -77,6 +78,11 @@ const ROLES: StaffRole[] = [
   'support',
   'billing',
 ]
+
+/** A row offers *Editar* only when the dialog has something to do. */
+function hasEditOption(options: EditMemberOptions): boolean {
+  return options.changeRole || options.resetPassword || options.retire
+}
 
 const selectClass =
   'rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
@@ -132,6 +138,7 @@ export function TeamView({
   const [removing, setRemoving] = useState<StaffMemberRow | null>(null)
   const [cancelling, setCancelling] = useState<StaffMemberRow | null>(null)
   const [retiring, setRetiring] = useState<StaffMemberRow | null>(null)
+  const [editing, setEditing] = useState<StaffMemberRow | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [resetLink, setResetLink] = useState<{ name: string; link: string } | null>(null)
@@ -179,6 +186,27 @@ export function TeamView({
     currentPage * PAGE_SIZE,
     currentPage * PAGE_SIZE + PAGE_SIZE,
   )
+
+  /** What the edit dialog offers on this row — the same gates the row buttons had. */
+  function editOptionsOf(row: StaffMemberRow): EditMemberOptions {
+    const active = row.status === 'active'
+    /* The docente cargo travels with the roster file: an account is opened
+       over a teacher record, so moving somebody into or out of it here would
+       leave the link pointing nowhere. */
+    const lockedByRoster = row.role === 'teacher'
+    return {
+      changeRole: actions.changeRole && active && !lockedByRoster,
+      roleLocked: actions.changeRole && active && lockedByRoster,
+      // A forgotten password has nothing to do with the roster.
+      resetPassword: actions.access && active,
+      // A linked docente leaves through the roster (OOC-79), and only a
+      // master deletes a master.
+      retire:
+        actions.retire &&
+        !row.teacherId &&
+        (row.role !== 'master' || currentUserRole === 'master'),
+    }
+  }
 
   function openTab(next: Tab) {
     setTab(next)
@@ -551,10 +579,6 @@ export function TeamView({
               <tbody>
                 {pageRows.map((row) => {
                   const self = row.id === currentUserId
-                  /* The docente cargo travels with the roster file: an account
-                     is opened over a teacher record, so moving somebody into or
-                     out of it here would leave the link pointing nowhere. */
-                  const lockedByRoster = row.role === 'teacher'
                   return (
                     <tr key={row.id}>
                       <td className={`${tdClass} whitespace-nowrap`}>
@@ -690,34 +714,16 @@ export function TeamView({
                           </span>
                         ) : (
                           <span className="inline-flex flex-wrap items-center justify-end gap-2">
-                            {actions.changeRole && !lockedByRoster && row.status === 'active' && (
+                            {/* Editar and Bloquear only (OOC-198): cargo,
+                                password and deleting live in the edit dialog. */}
+                            {hasEditOption(editOptionsOf(row)) && (
                               <button
                                 type="button"
-                                onClick={() => setChanging(row)}
+                                onClick={() => setEditing(row)}
                                 className={rowActionClass}
                               >
                                 <BoIcon name="edit" size={14} />
-                                {t('team.change_role')}
-                              </button>
-                            )}
-
-                            {/* Teacher accounts are locked out of a role
-                                change (that cargo travels with the roster
-                                file) but not out of this — a forgotten
-                                password has nothing to do with the roster. */}
-                            {actions.access && row.status === 'active' && (
-                              <button
-                                type="button"
-                                onClick={() => void createPasswordReset(row)}
-                                disabled={busyId === row.id}
-                                className={`${rowActionClass} disabled:cursor-not-allowed disabled:opacity-60`}
-                              >
-                                <BoIcon
-                                  name={busyId === row.id ? 'spinner' : 'key'}
-                                  size={14}
-                                  className={busyId === row.id ? 'animate-spin' : undefined}
-                                />
-                                {t('team.reset_password')}
+                                {t('team.edit')}
                               </button>
                             )}
 
@@ -740,21 +746,6 @@ export function TeamView({
                                 {t('team.restore_access')}
                               </button>
                             )}
-
-                            {/* A linked docente leaves through the roster
-                                (OOC-79), and only a master deletes a master. */}
-                            {actions.retire &&
-                              !row.teacherId &&
-                              (row.role !== 'master' || currentUserRole === 'master') && (
-                                <button
-                                  type="button"
-                                  onClick={() => setRetiring(row)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-sm font-semibold text-red-600 transition hover:border-red-400 hover:bg-red-50"
-                                >
-                                  <BoIcon name="close" size={14} />
-                                  {t('team.retire_action')}
-                                </button>
-                              )}
                           </span>
                         )}
                       </td>
@@ -763,15 +754,6 @@ export function TeamView({
                 })}
               </tbody>
             </TableShell>
-
-            {/* Why the docente rows have no cargo button. Once under the
-                table, not once per row: it is one rule, not eight findings. */}
-            {pageRows.some((row) => row.role === 'teacher') && (
-              <p className="flex items-start gap-2 border-t border-line px-4 py-3 text-xs text-muted-foreground">
-                <BoIcon name="alert" size={14} className="mt-0.5 shrink-0" />
-                {t('team.teacher_locked')}
-              </p>
-            )}
 
             {pageCount > 1 && (
               <Pager
@@ -790,6 +772,30 @@ export function TeamView({
           </>
         )}
       </Card>
+
+      <EditMemberDialog
+        member={editing}
+        cargoLabel={editing ? labelOf(editing) : ''}
+        options={
+          editing
+            ? editOptionsOf(editing)
+            : { changeRole: false, roleLocked: false, resetPassword: false, retire: false }
+        }
+        busy={editing !== null && busyId === editing.id}
+        onClose={() => setEditing(null)}
+        onChangeRole={(member) => {
+          setEditing(null)
+          setChanging(member)
+        }}
+        onResetPassword={(member) => {
+          setEditing(null)
+          void createPasswordReset(member)
+        }}
+        onRetire={(member) => {
+          setEditing(null)
+          setRetiring(member)
+        }}
+      />
 
       <RoleChangeDialog
         member={changing}

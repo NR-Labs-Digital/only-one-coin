@@ -2089,7 +2089,12 @@
       "restored_toast": "Acesso desbloqueado",
       "restore_teacher_inactive": "Esta conta é de um docente fora do quadro: o acesso volta quando ele é reincorporado em Docentes.",
       "tab_people": "Pessoas",
-      "change_error_beyond": "Você não pode dar nem tirar um cargo com permissões que o seu cargo não tem."
+      "change_error_beyond": "Você não pode dar nem tirar um cargo com permissões que o seu cargo não tem.",
+      "edit": "Editar",
+      "edit_title": "Editar usuário",
+      "edit_password_heading": "Senha",
+      "edit_password_body": "Gera um link para a pessoa definir uma senha nova.",
+      "edit_retire_body": "A conta sai da equipe e não dá para desfazer. Para cortar o acesso por um tempo, use Bloquear."
     },
     "deliveries": {
       "title": "E-mails que não chegaram",
@@ -3007,7 +3012,9 @@
       "email_editor_data_what": "Os dados de cada envio, como o nome do aluno ou o curso. São preenchidos sozinhos com o de cada pessoa.",
       "email_editor_data_how": "Toque um dado para inseri-lo onde está o cursor. Datas e valores saem no formato de cada idioma.",
       "email_editor_proof_what": "Manda o rascunho salvo, com dados de exemplo, para os endereços que você escrever, no idioma que está vendo. O assunto sai marcado como teste.",
-      "email_editor_versions_what": "Cada publicação cria uma versão nova, que não se edita nem se apaga. A vigente é a última."
+      "email_editor_versions_what": "Cada publicação cria uma versão nova, que não se edita nem se apaga. A vigente é a última.",
+      "admin_team_reset_password_what": "Um link de uso único, válido por 24 horas, para a pessoa definir uma senha nova.",
+      "admin_team_reset_password_how": "A plataforma não envia nada: você copia o link e manda para a pessoa. Só ela conhece a senha."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
