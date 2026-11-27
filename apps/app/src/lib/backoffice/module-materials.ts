@@ -16,16 +16,15 @@ export function sameModuleMaterials(a: readonly string[], b: readonly string[]):
   return a.length === b.length && a.every((item, index) => item === b[index])
 }
 
-export type ModuleMaterialIssue = 'missing' | 'invalid'
+export type ModuleMaterialIssue = 'invalid'
 
-/** What is wrong with each field, by position — null when the link is good. */
+/**
+ * What is wrong with each field, by position — null when the link is good or
+ * blank: a module may wait for its material (OOC-197), filed later by someone
+ * other than whoever opens the course.
+ */
 export function moduleMaterialIssues(list: readonly string[]): (ModuleMaterialIssue | null)[] {
-  return list.map((raw) => {
-    const parsed = parseClassLink(raw, 'drive')
-    if (parsed === '') return 'missing'
-    if (parsed === null) return 'invalid'
-    return null
-  })
+  return list.map((raw) => (parseClassLink(raw, 'drive') === null ? 'invalid' : null))
 }
 
 interface ModuleShape {
@@ -60,7 +59,7 @@ export function moduleMaterialsChanged(draft: ModuleShape, course: ModuleShape):
   )
 }
 
-/** A whole, positive module count with a valid link in each module. */
+/** A whole, positive module count, and no module link that is filled in and wrong. */
 export function moduleMaterialsReady({ modules, moduleMaterials }: ModuleShape): boolean {
   return (
     Number.isInteger(modules) &&
@@ -69,7 +68,7 @@ export function moduleMaterialsReady({ modules, moduleMaterials }: ModuleShape):
   )
 }
 
-/** The list the API gets: one normalized link per module the count keeps. */
+/** The list the API gets: one slot per module the count keeps — a normalized link, or blank. */
 export function moduleMaterialsPayload({ modules, moduleMaterials }: ModuleShape): string[] {
   return resizeModuleMaterials(moduleMaterials, modules).map((link) => parseClassLink(link, 'drive') ?? link)
 }

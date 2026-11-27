@@ -28,9 +28,13 @@ export const LandingCourseKeySchema = z.enum(LANDING_COURSE_KEYS);
 export const MODULE_MATERIAL_HOSTS = ["drive.google.com", "docs.google.com"] as const;
 
 function normalizeModuleMaterial(raw: string): string {
+  const trimmed = raw.trim();
+  // A module may wait for its link (OOC-197): whoever files the material is
+  // not whoever opens the course, so a blank slot is kept, not refused.
+  if (trimmed === "") return "";
   let url: URL;
   try {
-    url = new URL(raw.trim());
+    url = new URL(trimmed);
   } catch (cause) {
     throw new ModuleMaterialInvalidError({ cause });
   }
@@ -40,7 +44,10 @@ function normalizeModuleMaterial(raw: string): string {
   return url.toString();
 }
 
-/** One valid link per module, normalized, in module order — or a refusal. */
+/**
+ * One slot per module, in module order: a valid link, normalized, or blank
+ * for a module whose material nobody filed yet (OOC-197) — or a refusal.
+ */
 export function normalizeModuleMaterials(modules: number, materials: readonly string[]): string[] {
   if (materials.length !== modules) throw new ModuleMaterialsIncompleteError();
   return materials.map(normalizeModuleMaterial);
@@ -50,11 +57,21 @@ export function normalizeModuleMaterials(modules: number, materials: readonly st
  * The material link of one module (OOC-100): what the teacher of a class
  * group teaching that module opens. Null when there is none to open — no
  * module set on the class group, a course from before OOC-94 with no
- * materials, or a module past a course since cut to fewer.
+ * materials, a module whose link was left blank (OOC-197), or a module past
+ * a course since cut to fewer.
  */
 export function materialOfModule(moduleMaterials: readonly string[], module: number | null): string | null {
   if (module === null || module < 1) return null;
-  return moduleMaterials[module - 1] ?? null;
+  return moduleMaterials[module - 1] || null;
+}
+
+/**
+ * Whether some module still has no material to open — a course from before
+ * OOC-94, a module count since raised, or a slot left blank (OOC-197). The
+ * screens mark it *Sin material*; it warns, never blocks.
+ */
+export function missingModuleMaterials(modules: number, moduleMaterials: readonly string[]): boolean {
+  return moduleMaterials.length !== modules || moduleMaterials.some((link) => link === "");
 }
 
 function sameList(a: readonly string[], b: readonly string[]): boolean {
@@ -132,7 +149,7 @@ export class Course extends SoftDeletableModel {
   public summary: string;
   public minAge: number;
   public modules: number;
-  /** One link per module, in order (OOC-94). Empty on a course that predates it. */
+  /** One slot per module, in order (OOC-94); blank where no link was filed yet (OOC-197). Empty on a course that predates it. */
   public moduleMaterials: string[];
   public totalHours: number;
   public certificateRule: CertificateRule;
@@ -171,7 +188,8 @@ export class Course extends SoftDeletableModel {
    * write.
    *
    * Module links are checked only when the module count or the links actually
-   * change (OOC-94): a course that predates them keeps taking other edits, and
+   * change (OOC-94) — and a blank one is a module still waiting for its
+   * material, never a refusal (OOC-197): a course that predates them keeps taking other edits, and
    * a patch that resends the same count asks for nothing. Checked before any
    * field is touched, so a refusal leaves the course as it was.
    */

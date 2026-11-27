@@ -250,7 +250,7 @@ export function CourseOptionsForm({
       {/* No "in the catalog" switch here: taking a course off the catalog is
           its own card on this tab (CourseRetire), with its own confirmation —
           a switch at the bottom of a long form, applied by Save, went unseen. */}
-      <CourseOptionFields value={draft} onChange={setDraft} showMaterialIssues={modulesTouched} hideActive />
+      <CourseOptionFields value={draft} onChange={setDraft} hideActive />
 
       {canEditIdentity && (
         <LandingKeyField
