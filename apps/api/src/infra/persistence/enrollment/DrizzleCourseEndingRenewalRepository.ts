@@ -3,6 +3,7 @@ import { classGroups, enrollments, outbox } from "@ooc/db";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./DrizzleEnrollmentEmailContextLookup.js";
+import { pushStatusFor } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 
 /**
  * What the renewal tick reads and writes (OOC-53). The end is the class
@@ -54,6 +55,7 @@ export class DrizzleCourseEndingRenewalRepository implements ICourseEndingRenewa
           locale: email.locale,
           vars: email.vars,
           dedupeKey: email.dedupeKey,
+          pushStatus: pushStatusFor(email.templateKey),
         })),
       )
       .onConflictDoNothing({ target: outbox.dedupeKey })

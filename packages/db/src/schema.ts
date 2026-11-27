@@ -2012,10 +2012,25 @@ export const outbox = pgTable(
     // A proof of a draft (OOC-60): the draft's words in the row's language,
     // frozen when the proof was asked for. Only on proofs (CHECK).
     templateCopy: jsonb("template_copy"),
+    // The same message sent a second way, as a push to the devices the
+    // recipient's portal account turned it on for (OOC-51). Null: this row is
+    // never pushed (not a journey e-mail, a proof, a resend). Set to `pending`
+    // by the writer with the row itself; the push worker claims it
+    // (`sending`) before sending, so a job that runs twice never pushes twice.
+    // Independent of `status`: the e-mail and the push each go their own way.
+    pushStatus: text("push_status"),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex("outbox_dedupe_key_uidx").on(table.dedupeKey),
+    check(
+      "outbox_push_status_check",
+      sql`${table.pushStatus} is null or ${table.pushStatus} in ('pending', 'sending', 'sent', 'no_device', 'blocked', 'failed')`,
+    ),
+    // The push relay's only query: the recent rows still waiting for a push.
+    index("outbox_push_pending_created_at_idx")
+      .on(table.createdAt)
+      .where(sql`${table.pushStatus} = 'pending'`),
     check(
       "outbox_delivery_status_check",
       sql`${table.deliveryStatus} is null or ${table.deliveryStatus} in ('delivered', 'soft_bounced', 'hard_bounced', 'blocked', 'unsubscribed')`,
@@ -2038,6 +2053,31 @@ export const outbox = pgTable(
     index("outbox_pending_created_at_idx")
       .on(table.createdAt)
       .where(sql`${table.status} = 'pending'`),
+  ],
+);
+
+// The devices a portal account turned push notifications on for (OOC-51) —
+// one row per browser subscription. `endpoint` is the push service's URL for
+// that browser (unique: a device that changes hands follows the account that
+// subscribed last); `p256dh` and `auth` are the browser's keys the payload is
+// encrypted to. Not history: turning push off, or the push service saying the
+// subscription is gone (404/410), deletes the row.
+//
+// `user_id` is Better Auth's "user".id (text); its FK is hand-written in the
+// migration, as in 0022.
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuidPk(),
+    userId: text("user_id").notNull(),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("push_subscriptions_endpoint_uidx").on(table.endpoint),
+    index("push_subscriptions_user_id_idx").on(table.userId),
   ],
 );
 

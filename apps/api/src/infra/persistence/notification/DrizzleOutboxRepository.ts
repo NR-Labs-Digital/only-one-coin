@@ -1,4 +1,4 @@
-import type { EmailCopy, EmailNotification, EmailTemplateKey, Locale } from "@ooc/domain";
+import { isPushEmailKey, type EmailCopy, type EmailNotification, type EmailTemplateKey, type Locale } from "@ooc/domain";
 import { outbox } from "@ooc/db";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -58,9 +58,20 @@ export async function insertOutboxEmails(tx: OutboxWriter, notifications: EmailN
         locale: notification.locale,
         vars: notification.vars,
         dedupeKey: notification.dedupeKey,
+        pushStatus: pushStatusFor(notification.templateKey),
       })),
     )
     .onConflictDoNothing({ target: outbox.dedupeKey });
+}
+
+/**
+ * Whether a new outbox row also goes out as a push (OOC-51): `pending` for the
+ * steps of the student's journey, null for everything else. Every writer of a
+ * business e-mail sets it with the row; a proof and a resend never do — the
+ * person already got the push of the original.
+ */
+export function pushStatusFor(templateKey: string): "pending" | null {
+  return isPushEmailKey(templateKey) ? "pending" : null;
 }
 
 /**

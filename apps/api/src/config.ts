@@ -141,8 +141,29 @@ export const ConfigSchema = z
           .map((entry) => entry.trim())
           .filter(Boolean),
       ),
+
+    // Web Push (OOC-51): the VAPID key pair that signs every push, and the
+    // contact the push services can reach (`mailto:` or an https URL).
+    // Optional like the Brevo key — without them the portal does not offer
+    // push and nothing is sent; set all three or none. Generate the pair once
+    // per environment (`pnpm --filter @ooc/api exec web-push generate-vapid-keys`)
+    // and never rotate it lightly: every subscription is bound to the public key.
+    VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+    VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+    VAPID_SUBJECT: z
+      .string()
+      .regex(/^(mailto:|https:\/\/)/, "must start with mailto: or https://")
+      .optional(),
   })
   .superRefine((config, ctx) => {
+    const vapid = [config.VAPID_PUBLIC_KEY, config.VAPID_PRIVATE_KEY, config.VAPID_SUBJECT];
+    if (vapid.some(Boolean) && !vapid.every(Boolean)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["VAPID_PUBLIC_KEY"],
+        message: "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT go together: set all three or none",
+      });
+    }
     if (config.BREVO_API_KEY && !config.EMAIL_SENDER_ADDRESS) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
