@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ooc/domain": "workspace:*",
@@ -18,9 +19,11 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@vercel/routing-utils": "6.6.1",
     "astro-eslint-parser": "^3.2.0",
     "eslint": "^9.39.5",
     "eslint-plugin-i18next": "^6.1.5",
-    "typescript-eslint": "^8.70.1"
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^4.1.11"
   }
 }
