@@ -76,6 +76,9 @@ export const EMAIL_CATALOG = {
   /* A frozen enrollment (OOC-84): 1, 3 and 6 months after the freeze, then
      silence — never removal. */
   enrollment_freeze_reengagement: { audience: "student", stage: "access", conditional: true, emitted: true },
+  /* Seven days before the class group ends (OOC-53): an invitation to keep
+     studying. Generic — the catalog names no next course of a course. */
+  course_ending_renewal: { audience: "student", stage: "access", conditional: false, emitted: true },
   /* The first approval opens the portal account. */
   portal_credentials: { audience: "student", stage: "access", conditional: false, emitted: true },
   /* The Classroom invitation, three days before the class group starts

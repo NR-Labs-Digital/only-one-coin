@@ -1238,6 +1238,16 @@ export {
   type FrozenForReengagement,
   type IFreezeReengagementRepository,
 } from "./freeze/reengagement.js";
+export {
+  courseEndingRenewalEmails,
+  limaDayAndHour,
+  RENEWAL_DAYS_BEFORE_END,
+  RENEWAL_SEND_FROM_HOUR,
+  renewalEndDayDueAt,
+  SendCourseEndingRenewalUseCase,
+  type EndingEnrollment,
+  type ICourseEndingRenewalRepository,
+} from "./renewal/courseEndingRenewal.js";
 
 export {
   COMPLAINT_PRIVACY_NOTICE_VERSION,
