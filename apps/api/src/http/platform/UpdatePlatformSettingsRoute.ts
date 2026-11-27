@@ -19,6 +19,7 @@ const BodySchema = z
     gradeSubmissionHours: z.number().int(),
     complaintResponseBusinessDays: z.number().int(),
     progressionRequiresPassingGrade: z.boolean(),
+    classroomAccountMaxTeachers: z.number().int(),
   })
   .partial()
   .strict();

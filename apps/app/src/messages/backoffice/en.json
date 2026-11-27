@@ -395,7 +395,11 @@
         "staff_profile_updated": "Role permissions changed",
         "staff_profile_retired": "Role deleted",
         "complaint_taken": "Complaint sheet taken",
-        "complaint_answered": "Complaint sheet answered"
+        "complaint_answered": "Complaint sheet answered",
+        "classroom_account_created": "Classroom account registered",
+        "classroom_account_updated": "Classroom account edited",
+        "classroom_account_retired": "Classroom account taken off the list",
+        "classroom_account_password_viewed": "Classroom password seen"
       },
       "field": {
         "first_name": "First name",
@@ -453,7 +457,10 @@
         "progression_requires_passing_grade": "Pass mark to move on to the next module",
         "grade_submission_hours": "Grade register deadline",
         "module_ends_on": "Module end date",
-        "complaint_response_business_days": "Complaints Book answer deadline"
+        "complaint_response_business_days": "Complaints Book answer deadline",
+        "classroom_account": "Classroom account",
+        "password": "Password",
+        "classroom_account_max_teachers": "Teachers per Classroom account"
       }
     },
     "student_status": {
@@ -1804,7 +1811,7 @@
       "field_id_number": "Document number",
       "field_email": "E-mail",
       "field_personal_email": "Personal e-mail",
-      "personal_email_hint": "Optional. Not the e-mail above, which gets the panel access and goes on the contract: the teacher's monthly reports are sent here.",
+      "personal_email_hint": "Required. It is the address the teacher signs in to their portal with: the invite goes here, the contract prints it and the monthly reports are sent to it.",
       "personal_email_missing": "No personal e-mail",
       "field_phone": "Phone",
       "field_nationality": "Origin",
@@ -1880,7 +1887,14 @@
       "fill_mode_teacher": "The teacher fills them in",
       "fill_mode_teacher_hint": "You register name, e-mail and languages. Once they accept the invite, the teacher fills in the rest on their portal, once.",
       "onboarding_pending_badge": "File to complete",
-      "contract_needs_profile": "The contract can be generated once the teacher completes their file: the document and address are missing."
+      "contract_needs_profile": "The contract can be generated once the teacher completes their file: the document and address are missing.",
+      "field_classroom_account": "Classroom account",
+      "classroom_account_none": "No Classroom account",
+      "classroom_account_option": "{email} · {count} of {max}",
+      "classroom_account_option_full": "{email} · full ({count} of {max})",
+      "save_error_classroom_full": "That Classroom account is already full. Pick another one or free a place.",
+      "save_error_classroom_gone": "That Classroom account is no longer on the list. Reload the page and pick another one.",
+      "save_error_classroom_inactive": "A teacher off the roster gets no Classroom account."
     },
     "teacher_status": {
       "active": "Active",
@@ -2211,7 +2225,10 @@
       "grade_submission_hint": "Hours after the module ends for the teacher to send the register to review. After that it reads «Out of time».",
       "hours_value": "{hours} hours",
       "complaint_deadline_label": "Complaints Book answer deadline",
-      "complaint_deadline_hint": "Business days, Monday to Friday, from the day the sheet is filed to send the answer. Holidays still count as business days."
+      "complaint_deadline_hint": "Business days, Monday to Friday, from the day the sheet is filed to send the answer. Holidays still count as business days.",
+      "classroom_max_label": "Teachers per Classroom account",
+      "classroom_max_hint": "How many teachers may use the same Classroom account at a time. Lowering it removes nobody: it only stops more from being assigned.",
+      "teachers_value": "{count, plural, one {# teacher} other {# teachers}}"
     },
     "features": {
       "title": "Features",
@@ -2941,6 +2958,14 @@
       "complaint_answer_how": "It is sent once: it cannot be changed afterwards and no second one goes out. It is kept with the sheet and in the audit log.",
       "permission_access_what": "View lets the role look at the area’s data — records, lists, documents — without changing anything. Edit lets it register, correct, approve, send and export.",
       "permission_access_how": "Turning Edit on turns View on too, and turning View off turns Edit off. A half-filled switch is a role with only some actions on that side: open the details to see or adjust each one. A change applies from each person’s next action.",
+      "teacher_classroom_account_what": "The Google account the teacher signs in to Classroom with. It is not personal: several teachers use the same account at a time, up to the limit in Settings.",
+      "teacher_classroom_account_how": "Pick one from the Classroom accounts list; a full account cannot be picked. The teacher sees the e-mail and password in their portal. Leaving the roster frees the account.",
+      "classroom_seats_what": "How many teachers use the account now, out of at most {max} at a time.",
+      "classroom_seats_how": "The account is assigned on the teacher file. The maximum is changed in Settings; a teacher leaving the roster frees their place.",
+      "classroom_change_due_what": "“Change the password” shows when a teacher stopped using the account after its last change: they still know the password.",
+      "classroom_change_due_how": "Change the password at Google and type the new one with Edit: the notice goes away and the teachers still on the account see the new one in their portal.",
+      "own_classroom_access_what": "The e-mail and password of the Google account you sign in to Classroom with, assigned by the coordination.",
+      "own_classroom_access_how": "The account is shared: do not change its password. When the coordination changes it, you see the new one here.",
       "course_duplicate_what": "Opens the form for a new course, already filled in from this one: language, level, modules and their material, minimum age, options, and the plans at their current price.",
       "course_duplicate_how": "Change what you need and create it. Class groups, enrollments and grades stay with this course, and this course does not change. Cancelling creates nothing.",
       "course_duplicate_landing_what": "Each website page links to a single live course, so the copy starts with no page.",
@@ -3446,7 +3471,8 @@
           "own_class_groups": "See their own class groups and students",
           "own_grades": "Post and submit the grades of their own class groups",
           "own_progression": "Move students on to the next module in their own class groups",
-          "onboarding": "Complete their own file on first sign-in"
+          "onboarding": "Complete their own file on first sign-in",
+          "own_classroom_access": "See their own Classroom login"
         },
         "teachers": {
           "view": "See the teacher roster",
@@ -3454,7 +3480,9 @@
           "register": "Register teachers",
           "edit": "Correct a teacher’s file, availability and roster status",
           "contract_generate": "Generate the contract",
-          "contract_download": "Download contracts"
+          "contract_download": "Download contracts",
+          "classroom_accounts_view": "See the Classroom accounts and who uses each",
+          "classroom_accounts": "Register and edit the Classroom accounts and see their passwords"
         },
         "emails": {
           "view": "See e-mails, their preview and deliveries",
@@ -3668,6 +3696,57 @@
       "student_block_title": "Complaints Book",
       "student_block_empty": "No sheet with this student's document.",
       "student_block_error": "The Complaints Book could not be read."
+    },
+    "classroom_accounts": {
+      "title": "Classroom accounts",
+      "back": "Back to Teachers",
+      "intro": "The Google accounts teachers sign in to Classroom with. Each account is shared by up to {max} teachers at a time, and every teacher sees their own account's e-mail and password in their portal.",
+      "new": "New account",
+      "create": "Register account",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "field_email": "E-mail",
+      "field_password": "Password",
+      "field_new_password": "New password",
+      "new_password_hint": "Leave it empty to keep the current one.",
+      "col_account": "Account",
+      "col_teachers": "Teachers",
+      "col_password": "Password",
+      "col_actions": "Actions",
+      "seats": "{count} of {max}",
+      "full": "Full",
+      "no_teachers": "Nobody uses it",
+      "password_changed": "Password changed on {date}",
+      "change_due": "Change the password",
+      "show_password": "Show password",
+      "reveal_title": "Classroom login",
+      "audit_note": "Every time somebody sees a password it is recorded in the audit log.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "retire": "Take off the list",
+      "retire_title": "Take the account off the list",
+      "retire_body": "{email} stops showing on the list and on the teacher file. It cannot be undone: to use it again, register it again.",
+      "created": "Account registered",
+      "saved": "Account updated",
+      "retired": "Account taken off the list",
+      "error_exists": "There is already an account with that e-mail.",
+      "error_in_use": "Teachers still use this account. Move them to another one before taking it off.",
+      "error_unavailable": "The stored password could not be opened. Type it again with Edit.",
+      "error_generic": "That did not go through. Try again.",
+      "empty_title": "No Classroom accounts",
+      "empty_body": "Register the Google accounts teachers share to sign in to Classroom.",
+      "load_error_title": "The accounts could not be loaded",
+      "load_error_body": "Reload the page in a moment.",
+      "locked_title": "No access to the Classroom accounts",
+      "locked_body": "The accounts are managed by the teachers' coordination."
+    },
+    "classroom_access": {
+      "open": "See my Classroom login",
+      "title": "My Classroom login",
+      "shared_note": "Several teachers share this account: do not change its password. If it stops working, tell the coordination.",
+      "none": "You have no Classroom account assigned yet. Write to the coordination.",
+      "error": "Your login could not be loaded. Try again or write to the coordination."
     }
   }
 }

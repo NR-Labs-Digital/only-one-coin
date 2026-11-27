@@ -26,6 +26,7 @@ import { HelpHint } from '@/components/backoffice/help-hint'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { OwnGradeRegisters } from './own-grade-registers'
 import { OwnGradeRecords } from './own-grade-records'
+import { OwnClassroomAccess } from './own-classroom-access'
 import { listOwnGradeRecords } from '@/lib/grade-records/server'
 
 /**
@@ -54,11 +55,14 @@ export async function TeacherHome({
     listOwnGradeRecords(),
   ])
 
+  /* The teacher's own Classroom login (OOC-196) sits by the greeting: it is
+     what they come to the portal for on a class day, active class group or not. */
   const greeting = (
-    <header>
+    <header className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
         {t('dashboard.greeting', { name: staff.firstName })}
       </h1>
+      <OwnClassroomAccess />
     </header>
   )
 

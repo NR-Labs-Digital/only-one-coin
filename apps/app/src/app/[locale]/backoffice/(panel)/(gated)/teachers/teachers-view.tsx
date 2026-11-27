@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition, type MouseEvent } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/navigation'
-import type { CourseLanguage } from '@/lib/backoffice/types'
+import type { ClassroomAccountList, CourseLanguage } from '@/lib/backoffice/types'
 import type { TeacherDirectoryPage } from '@/lib/backoffice/teachers'
 import {
   MIN_SEARCH_LENGTH,
@@ -60,11 +60,14 @@ export function TeachersView({
   query,
   languages,
   canCreate,
+  classroomAccounts,
 }: {
   directory: TeacherDirectoryPage
   query: TeacherDirectoryQuery
   languages: CourseLanguage[]
   canCreate: boolean
+  /** The shared Classroom accounts for the new file's picker (OOC-196); null without access. */
+  classroomAccounts: ClassroomAccountList | null
 }) {
   const t = useTranslations('bo')
   const locale = useLocale()
@@ -254,6 +257,7 @@ export function TeachersView({
       {creating && (
         <NewTeacherForm
           languages={languages}
+          classroomAccounts={classroomAccounts}
           onCancel={() => setCreating(false)}
           onCreate={(teacherId) => {
             setCreating(false)

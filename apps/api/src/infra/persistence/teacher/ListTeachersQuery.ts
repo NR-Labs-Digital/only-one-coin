@@ -58,8 +58,10 @@ export interface TeacherListRow {
   nationalIdType: string | null;
   nationalId: string | null;
   email: string;
-  /** Optional (OOC-161); null when coordination has not filled it in. */
+  /** Required since OOC-196; null only on a file saved before it was asked for. */
   personalEmail: string | null;
+  /** The shared Classroom login the teacher uses (OOC-196), or null. */
+  classroomAccount: { id: string; email: string } | null;
   phone: string | null;
   status: TeacherStatus;
   /** Catalog text, the same as `courses.language`. */
@@ -175,6 +177,10 @@ export class ListTeachersQuery {
             and seat.seat_status not in ('released', 'frozen')
             and seat.deleted_at is null
         )`.mapWith(Number),
+        classroomAccountEmail: sql<string | null>`(
+          select ca.email from "classroom_accounts" ca
+          where ca.id = "teachers"."classroom_account_id" and ca.deleted_at is null
+        )`,
         contractId: contract.id,
         contractRecordedAt: contract.recordedAt,
         contractStartsOn: contract.startsOn,
@@ -323,6 +329,10 @@ function toListRow(row: SelectedRow): TeacherListRow {
     nationalId: teacher.nationalId,
     email: teacher.email,
     personalEmail: teacher.personalEmail,
+    classroomAccount:
+      teacher.classroomAccountId !== null && row.classroomAccountEmail !== null
+        ? { id: teacher.classroomAccountId, email: row.classroomAccountEmail }
+        : null,
     phone: teacher.phone,
     status: teacher.status as TeacherStatus,
     languages: row.languages,

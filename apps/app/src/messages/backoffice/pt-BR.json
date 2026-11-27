@@ -395,7 +395,11 @@
         "staff_profile_updated": "Permissões de cargo alteradas",
         "staff_profile_retired": "Cargo eliminado",
         "complaint_taken": "Folha de reclamação assumida",
-        "complaint_answered": "Folha de reclamação respondida"
+        "complaint_answered": "Folha de reclamação respondida",
+        "classroom_account_created": "Conta do Classroom cadastrada",
+        "classroom_account_updated": "Conta do Classroom editada",
+        "classroom_account_retired": "Conta do Classroom tirada da lista",
+        "classroom_account_password_viewed": "Senha do Classroom vista"
       },
       "field": {
         "first_name": "Nome",
@@ -453,7 +457,10 @@
         "progression_requires_passing_grade": "Nota mínima para avançar de módulo",
         "grade_submission_hours": "Prazo do registro de notas",
         "module_ends_on": "Fim do módulo",
-        "complaint_response_business_days": "Prazo de resposta do Livro de Reclamações"
+        "complaint_response_business_days": "Prazo de resposta do Livro de Reclamações",
+        "classroom_account": "Conta do Classroom",
+        "password": "Senha",
+        "classroom_account_max_teachers": "Docentes por conta do Classroom"
       }
     },
     "student_status": {
@@ -1804,7 +1811,7 @@
       "field_id_number": "Número do documento",
       "field_email": "E-mail",
       "field_personal_email": "E-mail pessoal",
-      "personal_email_hint": "Opcional. Diferente do e-mail acima, que recebe o acesso ao painel e sai no contrato: aqui chegam os relatórios mensais do docente.",
+      "personal_email_hint": "Obrigatório. É o e-mail com que o docente entra no portal: o convite chega aqui, ele sai no contrato e recebe os relatórios mensais.",
       "personal_email_missing": "Sem e-mail pessoal",
       "field_phone": "Telefone",
       "field_nationality": "Origem",
@@ -1880,7 +1887,14 @@
       "fill_mode_teacher": "O docente preenche",
       "fill_mode_teacher_hint": "Você registra nome, e-mail e idiomas. Ao aceitar o convite, o docente preenche o resto no portal dele, uma única vez.",
       "onboarding_pending_badge": "Ficha a completar",
-      "contract_needs_profile": "O contrato é gerado quando o docente completar a ficha: faltam o documento e o endereço."
+      "contract_needs_profile": "O contrato é gerado quando o docente completar a ficha: faltam o documento e o endereço.",
+      "field_classroom_account": "Conta do Classroom",
+      "classroom_account_none": "Sem conta do Classroom",
+      "classroom_account_option": "{email} · {count} de {max}",
+      "classroom_account_option_full": "{email} · completa ({count} de {max})",
+      "save_error_classroom_full": "Essa conta do Classroom já está completa. Escolha outra ou libere um lugar.",
+      "save_error_classroom_gone": "Essa conta do Classroom não está mais na lista. Recarregue a página e escolha outra.",
+      "save_error_classroom_inactive": "Um docente fora do quadro não recebe conta do Classroom."
     },
     "teacher_status": {
       "active": "Ativo",
@@ -2211,7 +2225,10 @@
       "grade_submission_hint": "Horas desde o fim do módulo para o docente enviar o registro para revisão. Depois aparece «Fora do prazo».",
       "hours_value": "{hours} horas",
       "complaint_deadline_label": "Prazo de resposta do Livro de Reclamações",
-      "complaint_deadline_hint": "Dias úteis, de segunda a sexta, desde que a folha é apresentada, para enviar a resposta. Os feriados ainda contam como dias úteis."
+      "complaint_deadline_hint": "Dias úteis, de segunda a sexta, desde que a folha é apresentada, para enviar a resposta. Os feriados ainda contam como dias úteis.",
+      "classroom_max_label": "Docentes por conta do Classroom",
+      "classroom_max_hint": "Quantos docentes podem usar a mesma conta do Classroom ao mesmo tempo. Baixar o número não tira ninguém: só impede de atribuir mais.",
+      "teachers_value": "{count, plural, one {# docente} other {# docentes}}"
     },
     "features": {
       "title": "Funcionalidades",
@@ -2941,6 +2958,14 @@
       "complaint_answer_how": "É enviada uma vez só: depois não muda nem se manda outra. Fica guardada com a folha e na bitácora.",
       "permission_access_what": "Ver deixa consultar os dados da área — fichas, listas, documentos — sem mudar nada. Editar deixa cadastrar, corrigir, aprovar, enviar e exportar.",
       "permission_access_how": "Editar liga também Ver, e desligar Ver desliga Editar. Uma chave pela metade é um cargo com só algumas ações daquele lado: abra o detalhe para ver ou ajustar cada uma. A mudança vale a partir da próxima ação de cada pessoa do cargo.",
+      "teacher_classroom_account_what": "A conta do Google com que o docente entra no Classroom. Não é pessoal: a mesma conta é usada por vários docentes ao mesmo tempo, até o limite da Configuração.",
+      "teacher_classroom_account_how": "Escolha uma da lista de Contas do Classroom; uma conta completa não pode ser escolhida. O docente vê o e-mail e a senha no portal. Se ele sair do quadro, a conta é liberada.",
+      "classroom_seats_what": "Quantos docentes usam a conta agora, de um máximo de {max} ao mesmo tempo.",
+      "classroom_seats_how": "A conta é atribuída na ficha do docente. O máximo muda na Configuração; um docente que sai do quadro libera o lugar.",
+      "classroom_change_due_what": "“Trocar a senha” aparece quando um docente deixou de usar a conta depois da última troca: ele ainda conhece a senha.",
+      "classroom_change_due_how": "Troque a senha no Google e escreva a nova em Editar: o aviso some e os docentes que continuam na conta veem a nova no portal.",
+      "own_classroom_access_what": "O e-mail e a senha da conta do Google com que você entra no Classroom, atribuída pela coordenação.",
+      "own_classroom_access_how": "A conta é compartilhada: não troque a senha. Quando a coordenação a troca, aqui você vê a nova.",
       "course_duplicate_what": "Abre o formulário de um curso novo já preenchido com este: idioma, nível, módulos e o material deles, idade mínima, opções e os planos com o preço vigente.",
       "course_duplicate_how": "Você muda o necessário e cria. Turmas, matrículas e notas ficam neste curso, e este curso não muda. Cancelar não cria nada.",
       "course_duplicate_landing_what": "Cada página do site aponta para um só curso vivo, então a cópia nasce sem página.",
@@ -3446,7 +3471,8 @@
           "own_class_groups": "Ver as próprias turmas e alunos",
           "own_grades": "Lançar e enviar as notas das próprias turmas",
           "own_progression": "Passar alunos para o módulo seguinte nas próprias turmas",
-          "onboarding": "Completar a própria ficha ao entrar"
+          "onboarding": "Completar a própria ficha ao entrar",
+          "own_classroom_access": "Ver o próprio acesso ao Classroom"
         },
         "teachers": {
           "view": "Ver o quadro docente",
@@ -3454,7 +3480,9 @@
           "register": "Cadastrar docentes",
           "edit": "Corrigir a ficha, a disponibilidade e a saída do quadro",
           "contract_generate": "Gerar o contrato",
-          "contract_download": "Baixar contratos"
+          "contract_download": "Baixar contratos",
+          "classroom_accounts_view": "Ver as contas do Classroom e quem usa cada uma",
+          "classroom_accounts": "Cadastrar e editar as contas do Classroom e ver as senhas"
         },
         "emails": {
           "view": "Ver os e-mails, a prévia e os envios",
@@ -3668,6 +3696,57 @@
       "student_block_title": "Livro de Reclamações",
       "student_block_empty": "Nenhuma folha com o documento deste aluno.",
       "student_block_error": "Não foi possível ler o Livro de Reclamações."
+    },
+    "classroom_accounts": {
+      "title": "Contas do Classroom",
+      "back": "Voltar para Docentes",
+      "intro": "As contas do Google com que os docentes entram no Classroom. Cada conta é compartilhada por até {max} docentes ao mesmo tempo, e cada docente vê o e-mail e a senha da sua no portal.",
+      "new": "Nova conta",
+      "create": "Cadastrar conta",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "field_email": "E-mail",
+      "field_password": "Senha",
+      "field_new_password": "Nova senha",
+      "new_password_hint": "Deixe vazia para manter a atual.",
+      "col_account": "Conta",
+      "col_teachers": "Docentes",
+      "col_password": "Senha",
+      "col_actions": "Ações",
+      "seats": "{count} de {max}",
+      "full": "Completa",
+      "no_teachers": "Ninguém usa",
+      "password_changed": "Senha alterada em {date}",
+      "change_due": "Trocar a senha",
+      "show_password": "Ver senha",
+      "reveal_title": "Acesso ao Classroom",
+      "audit_note": "Cada vez que alguém vê uma senha, isso fica registrado na bitácora.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "retire": "Tirar da lista",
+      "retire_title": "Tirar conta da lista",
+      "retire_body": "{email} deixa de aparecer na lista e na ficha do docente. Não dá para desfazer: para voltar a usá-la, cadastre-a de novo.",
+      "created": "Conta cadastrada",
+      "saved": "Conta atualizada",
+      "retired": "Conta tirada da lista",
+      "error_exists": "Já existe uma conta com esse e-mail.",
+      "error_in_use": "Há docentes usando esta conta. Passe-os para outra antes de tirá-la.",
+      "error_unavailable": "Não foi possível abrir a senha guardada. Escreva-a de novo em Editar.",
+      "error_generic": "Não foi possível concluir. Tente de novo.",
+      "empty_title": "Sem contas do Classroom",
+      "empty_body": "Cadastre as contas do Google que os docentes compartilham para entrar no Classroom.",
+      "load_error_title": "Não foi possível carregar as contas",
+      "load_error_body": "Recarregue a página em um instante.",
+      "locked_title": "Sem acesso às contas do Classroom",
+      "locked_body": "As contas são administradas pela coordenação de docentes."
+    },
+    "classroom_access": {
+      "open": "Ver meus acessos do Classroom",
+      "title": "Meus acessos do Classroom",
+      "shared_note": "Esta conta é compartilhada por vários docentes: não troque a senha. Se parar de funcionar, avise a coordenação.",
+      "none": "Você ainda não tem uma conta do Classroom atribuída. Fale com a coordenação.",
+      "error": "Não foi possível carregar seu acesso. Tente de novo ou fale com a coordenação."
     }
   }
 }

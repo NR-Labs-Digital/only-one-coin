@@ -31,6 +31,8 @@ export interface PlatformSettings {
    * Coordination may still advance below it, with a reason.
    */
   progressionRequiresPassingGrade: boolean
+  /** How many teachers may share one Classroom account at a time (OOC-196). */
+  classroomAccountMaxTeachers: number
 }
 
 /**

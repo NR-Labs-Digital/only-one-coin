@@ -7,9 +7,30 @@ import type { Teacher } from "./Teacher.js";
  * Languages and availability travel inside the aggregate — the repository
  * writes them with the row.
  */
+/**
+ * How a write that gives the teacher a shared Classroom account (OOC-196)
+ * holds the cap: the repository locks the account, counts who else uses it
+ * and refuses with `ClassroomAccountFullError` at `maxTeachers`, or
+ * `ClassroomAccountNotFoundError` when it is gone — in the write's own
+ * transaction, so two teachers given the last place at once get one.
+ */
+export interface ClassroomSeatRule {
+  maxTeachers: number;
+}
+
+/**
+ * Whether a write touches the file's Classroom account. Left out, the column
+ * stays as stored — a write that only meant the week cannot undo an account
+ * handed out meanwhile. `release` only takes it away (leaving the roster).
+ */
+export type ClassroomAccountWrite = ClassroomSeatRule | "release";
+
 export interface ITeacherRepository {
-  /** Throws `TeacherAlreadyRegisteredError` when the unique index refuses the document. */
-  create(teacher: Teacher): Promise<Teacher>;
+  /**
+   * Throws `TeacherAlreadyRegisteredError` when the unique index refuses the
+   * document. A Classroom account on the file is held to `seat` (required then).
+   */
+  create(teacher: Teacher, seat?: ClassroomSeatRule): Promise<Teacher>;
 
   /** A live record by id — a retired one does not answer. */
   findById(id: string): Promise<Teacher | null>;
@@ -35,8 +56,13 @@ export interface ITeacherRepository {
    */
   completeOnboarding(teacher: Teacher): Promise<Teacher>;
 
-  /** Writes the entity's current fields, languages and availability over its rows. */
-  update(teacher: Teacher): Promise<Teacher>;
+  /**
+   * Writes the entity's current fields, languages and availability over its
+   * rows — and its Classroom account only when `classroom` says so: a new
+   * account is held to the seat rule, and the one taken away is marked
+   * released, so it asks for a new password.
+   */
+  update(teacher: Teacher, classroom?: ClassroomAccountWrite): Promise<Teacher>;
 
   /**
    * Class groups still enrolling or running with this teacher on them — what

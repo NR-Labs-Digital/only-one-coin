@@ -142,6 +142,7 @@ export const PERMISSION_CATALOG = [
   { key: "teaching.own_grades", area: "teaching", access: "edit", defaultRoles: ["teacher"], grant: "teacher" },
   { key: "teaching.own_progression", area: "teaching", access: "edit", defaultRoles: ["teacher"], grant: "teacher" },
   { key: "teaching.onboarding", area: "teaching", access: "edit", defaultRoles: ["teacher"], grant: "teacher" },
+  { key: "teaching.own_classroom_access", area: "teaching", access: "view", defaultRoles: ["teacher"], grant: "teacher" },
 
   // Teachers — the roster and the contract.
   { key: "teachers.view", area: "teachers", access: "view", defaultRoles: ["master", "admin", "analyst", "academic_supervisor", "academic_assistant"] },
@@ -150,6 +151,11 @@ export const PERMISSION_CATALOG = [
   { key: "teachers.edit", area: "teachers", access: "edit", defaultRoles: ["master", "admin", "academic_supervisor", "academic_assistant"] },
   { key: "teachers.contract_generate", area: "teachers", access: "edit", defaultRoles: ["master", "admin", "academic_supervisor", "academic_assistant"] },
   { key: "teachers.contract_download", area: "teachers", access: "view", defaultRoles: ["master", "admin", "analyst", "academic_supervisor", "academic_assistant"] },
+  // The shared Classroom logins (OOC-196). The list (e-mail, who uses each) is
+  // what the teacher file's picker reads; managing them includes seeing the
+  // password, every time on the audit log.
+  { key: "teachers.classroom_accounts_view", area: "teachers", access: "view", defaultRoles: ["master", "admin", "analyst", "academic_supervisor", "academic_assistant"] },
+  { key: "teachers.classroom_accounts", area: "teachers", access: "edit", defaultRoles: ["master", "admin", "academic_supervisor", "academic_assistant"] },
 
   // E-mails.
   { key: "emails.view", area: "emails", access: "view", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor"] },

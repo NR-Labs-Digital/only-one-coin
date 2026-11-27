@@ -15,6 +15,7 @@ export type AcademicSettings = Pick<
   | 'gradeSubmissionHours'
   | 'complaintResponseBusinessDays'
   | 'progressionRequiresPassingGrade'
+  | 'classroomAccountMaxTeachers'
 >
 
 /**
@@ -142,6 +143,23 @@ export function AcademicSettingsForm({ settings }: { settings: AcademicSettings 
               aria-label={t('settings.contract_alert_label')}
               value={draft.contractAlertDays}
               onChange={(event) => set('contractAlertDays', Number(event.target.value))}
+              className={numberClass}
+            />
+          </Row>
+
+          <Row
+            helpLabel={t('common.help')}
+            label={t('settings.classroom_max_label')}
+            hint={t('settings.classroom_max_hint')}
+            value={t('settings.teachers_value', { count: draft.classroomAccountMaxTeachers })}
+          >
+            <input
+              type="number"
+              min={1}
+              max={50}
+              aria-label={t('settings.classroom_max_label')}
+              value={draft.classroomAccountMaxTeachers}
+              onChange={(event) => set('classroomAccountMaxTeachers', Number(event.target.value))}
               className={numberClass}
             />
           </Row>

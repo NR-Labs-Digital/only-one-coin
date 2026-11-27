@@ -30,6 +30,19 @@ const CASES: [string, string, Role[]][] = [
   ["POST", `/api/v1/teachers/${ID}/contract-document`, [...NEVER, "analyst"]],
   ["GET", `/api/v1/teachers/${ID}/contracts/${ID}/file`, NEVER],
   ["GET", `/api/v1/teachers/${ID}/contracts/${ID}/document`, NEVER],
+  // Shared Classroom accounts (OOC-196): the list is read with the roster,
+  // managing them (the password included) is for who corrects the file.
+  ["GET", "/api/v1/classroom-accounts", NEVER],
+  ["POST", "/api/v1/classroom-accounts", [...NEVER, "analyst"]],
+  ["PATCH", `/api/v1/classroom-accounts/${ID}`, [...NEVER, "analyst"]],
+  ["POST", `/api/v1/classroom-accounts/${ID}/retire`, [...NEVER, "analyst"]],
+  ["POST", `/api/v1/classroom-accounts/${ID}/password`, [...NEVER, "analyst"]],
+  // The teacher's own login — the teacher cargo only.
+  [
+    "POST",
+    "/api/v1/teaching/classroom-access",
+    ["master", "admin", "analyst", "academic_supervisor", "academic_assistant", "support", "sales", "billing", "enrollment_supervisor"],
+  ],
 ];
 
 const FLAT = CASES.flatMap(([method, url, refused]) => refused.map((role) => [method, url, role] as const));

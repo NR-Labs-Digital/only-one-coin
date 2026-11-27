@@ -54,8 +54,17 @@ export const TeacherPropsSchema = SoftDeletableModelPropsSchema.extend({
   lastName: z.string().min(1),
   nationalIdType: NationalIdTypeSchema.nullable(),
   nationalId: z.string().min(1).nullable(),
+  /**
+   * The panel invite's and the contract's address. Since OOC-196 it mirrors
+   * `personalEmail` on every write; files saved before keep what they had
+   * until their next edit.
+   */
   email: z.string().email(),
-  /** Optional, any provider (OOC-161) — where the teacher's own mail goes. */
+  /**
+   * Any provider — the teacher's own mail (OOC-161), required since OOC-196:
+   * where the portal invite and the monthly feedback go. Null only on a file
+   * saved before it was asked for.
+   */
   personalEmail: z.string().email().nullable(),
   phone: z.string().min(1).nullable(),
   nationality: z.string().length(2).nullable(),
@@ -70,6 +79,8 @@ export const TeacherPropsSchema = SoftDeletableModelPropsSchema.extend({
   languages: z.array(z.string().min(1)),
   /** Weekly windows in America/Lima — the shape a class group's slots use. */
   availability: z.array(WeeklySlotSchema),
+  /** The shared Classroom login the teacher uses (OOC-196); null = none. */
+  classroomAccountId: z.string().uuid().nullable(),
 });
 
 export type TeacherProps = z.infer<typeof TeacherPropsSchema>;
@@ -84,13 +95,18 @@ export const TeacherFieldsSchema = z.object({
   lastName: PersonNameField,
   nationalIdType: NationalIdTypeSchema,
   nationalId: NationalIdField,
-  email: EmailField,
   /**
-   * Optional (OOC-161), separate from `email` — which stays the panel invite's
-   * and the contract's. The monthly feedback report goes here. Left out of a
-   * write, it keeps what the file has (an older client does not wipe it).
+   * Required since OOC-196 — the address the teacher signs in to the portal
+   * with, the contract prints and the monthly feedback goes to. The file's old
+   * "Correo" field became the shared Classroom account below; `email` is
+   * written from this one.
    */
-  personalEmail: EmailField.nullable().optional(),
+  personalEmail: EmailField,
+  /**
+   * The shared Classroom login (OOC-196), picked from the accounts list.
+   * Left out of a write, it keeps what the file has; null takes it away.
+   */
+  classroomAccountId: z.string().uuid().nullable().optional(),
   phone: PhoneField,
   nationality: CountryCodeField,
   country: CountryCodeField,
@@ -159,9 +175,9 @@ export type CreateTeacherDTO = z.input<typeof CreateTeacherSchema>;
 export const PendingTeacherDataSchema = TeacherFieldsSchema.pick({
   firstName: true,
   lastName: true,
-  email: true,
-  // Coordination's on either kind of file (OOC-161), not the onboarding's.
+  // Coordination's on either kind of file (OOC-161, OOC-196), not the onboarding's.
   personalEmail: true,
+  classroomAccountId: true,
   languages: true,
 }).superRefine(refineLanguages);
 
@@ -204,6 +220,9 @@ export const TeacherDataSchema = TeacherFieldsSchema.omit({ availability: true }
 
 export type TeacherDataDTO = z.input<typeof TeacherDataSchema>;
 
+/** A field a staff correction can change — what its audit line names. */
+export type TeacherDataField = keyof TeacherDataDTO | "email";
+
 export const TeacherAvailabilitySchema = z
   .object({ availability: z.array(WeeklySlotSchema) })
   .superRefine(refineAvailability);
@@ -243,6 +262,7 @@ export class Teacher extends SoftDeletableModel {
   public userId: string | null;
   public languages: string[];
   public availability: WeeklySlot[];
+  public classroomAccountId: string | null;
 
   constructor(props: TeacherProps) {
     super(props);
@@ -262,6 +282,7 @@ export class Teacher extends SoftDeletableModel {
     this.userId = props.userId;
     this.languages = props.languages;
     this.availability = props.availability;
+    this.classroomAccountId = props.classroomAccountId;
   }
 
   get isActive(): boolean {
@@ -310,6 +331,9 @@ export class Teacher extends SoftDeletableModel {
   leaveRoster(at: Date = new Date()): void {
     if (this.status === "inactive") return;
     this.status = "inactive";
+    // Whoever leaves stops using the shared Classroom account (OOC-196): the
+    // place frees up, and the account asks for a new password.
+    this.classroomAccountId = null;
     this.touch(at);
   }
 
@@ -324,7 +348,7 @@ export class Teacher extends SoftDeletableModel {
    * to. Returns the names of the fields that changed — what the audit line
    * records, never the values (CLAUDE.md §8, OOC-74).
    */
-  rewrite(dto: TeacherDataDTO | PendingTeacherDataDTO): (keyof TeacherDataDTO)[] {
+  rewrite(dto: TeacherDataDTO | PendingTeacherDataDTO): TeacherDataField[] {
     // A file still waiting for onboarding can be corrected without the profile
     // (OOC-103) — or completed by coordination, with all of it. A complete file
     // never goes back to pending: the full schema refuses the missing fields.
@@ -336,7 +360,7 @@ export class Teacher extends SoftDeletableModel {
     }
 
     const next = result.data as Partial<Record<keyof TeacherDataDTO, unknown>> & { languages?: string[] };
-    const changed: (keyof TeacherDataDTO)[] = [];
+    const changed: TeacherDataField[] = [];
     for (const key of Object.keys(next) as (keyof TeacherDataDTO)[]) {
       if (next[key] === undefined) continue;
       const same =
@@ -344,6 +368,13 @@ export class Teacher extends SoftDeletableModel {
       if (same) continue;
       (this as Record<string, unknown>)[key] = next[key];
       changed.push(key);
+    }
+
+    // The invite's and the contract's address follows the personal one
+    // (OOC-196) — on a file saved before, from its first edit on.
+    if (this.personalEmail !== null && this.email !== this.personalEmail) {
+      this.email = this.personalEmail;
+      if (!changed.includes("personalEmail")) changed.push("email");
     }
 
     if (changed.length > 0) this.touch();
@@ -374,7 +405,8 @@ export class Teacher extends SoftDeletableModel {
     return new Teacher({
       id: uuid(),
       ...result.data,
-      personalEmail: result.data.personalEmail ?? null,
+      email: result.data.personalEmail,
+      classroomAccountId: result.data.classroomAccountId ?? null,
       status: "active",
       userId: null,
     });
@@ -391,7 +423,8 @@ export class Teacher extends SoftDeletableModel {
     return new Teacher({
       id: uuid(),
       ...result.data,
-      personalEmail: result.data.personalEmail ?? null,
+      email: result.data.personalEmail,
+      classroomAccountId: result.data.classroomAccountId ?? null,
       nationalIdType: null,
       nationalId: null,
       phone: null,

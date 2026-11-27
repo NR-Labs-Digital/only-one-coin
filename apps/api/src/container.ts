@@ -88,6 +88,11 @@ import {
   RetireStaffProfileUseCase,
   RegisterStudentUseCase,
   RegisterTeacherUseCase,
+  CreateClassroomAccountUseCase,
+  UpdateClassroomAccountUseCase,
+  RetireClassroomAccountUseCase,
+  RevealClassroomAccountPasswordUseCase,
+  GetOwnClassroomAccessUseCase,
   CompleteTeacherOnboardingUseCase,
   SetTeacherRosterStatusUseCase,
   SaveDocumentTemplateDraftUseCase,
@@ -242,6 +247,9 @@ import { DrizzleTeacherContractRepository } from "./infra/persistence/teacher/Dr
 import { ListTeachersQuery } from "./infra/persistence/teacher/ListTeachersQuery.js";
 import { GetTeacherQuery } from "./infra/persistence/teacher/GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./infra/persistence/teacher/ListTeacherOptionsQuery.js";
+import { DrizzleClassroomAccountRepository } from "./infra/persistence/teacher/DrizzleClassroomAccountRepository.js";
+import { ListClassroomAccountsQuery } from "./infra/persistence/teacher/ListClassroomAccountsQuery.js";
+import { AesGcmCredentialCipher } from "./infra/crypto/AesGcmCredentialCipher.js";
 import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInvitableTeachersQuery.js";
 import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
 import { DrizzleEnrollmentFreezeRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentFreezeRepository.js";
@@ -369,6 +377,14 @@ export interface AppUseCases {
     updateAvailability: UpdateTeacherAvailabilityUseCase;
     setRosterStatus: SetTeacherRosterStatusUseCase;
     openContract: OpenTeacherContractUseCase;
+  };
+  /** The shared Classroom logins (OOC-196). */
+  classroomAccount: {
+    create: CreateClassroomAccountUseCase;
+    update: UpdateClassroomAccountUseCase;
+    retire: RetireClassroomAccountUseCase;
+    revealPassword: RevealClassroomAccountPasswordUseCase;
+    getOwnAccess: GetOwnClassroomAccessUseCase;
   };
   /** The docente portal: every read scoped by the session's account (OOC-82). */
   teaching: {
@@ -541,6 +557,8 @@ export interface AppQueries {
   listTeachers: ListTeachersQuery;
   getTeacher: GetTeacherQuery;
   listTeacherOptions: ListTeacherOptionsQuery;
+  /** The shared Classroom logins and who uses each (OOC-196) — never a password. */
+  listClassroomAccounts: ListClassroomAccountsQuery;
   listInvitableTeachers: ListInvitableTeachersQuery;
   listOpenClassGroups: ListOpenClassGroupsQuery;
   listMoveTargets: ListMoveTargetsQuery;
@@ -726,8 +744,10 @@ function buildContainer(): AppContainer {
   const saveGuardian = new SaveGuardianUseCase(studentRepository, guardianRepository, auditLogRepository);
   const acceptGuardianConsent = new AcceptGuardianConsentUseCase(new DrizzleGuardianConsentRepository(db), auditLogRepository);
   const updateOwnPhone = new UpdateOwnPhoneUseCase(new DrizzlePortalProfileFileRepository(db), studentRepository, auditLogRepository);
-  const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository);
-  const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository);
+  const registerTeacher = new RegisterTeacherUseCase(teacherRepository, auditLogRepository, platformSettingsRepository);
+  const updateTeacher = new UpdateTeacherUseCase(teacherRepository, auditLogRepository, platformSettingsRepository);
+  const classroomAccountRepository = new DrizzleClassroomAccountRepository(db);
+  const credentialCipher = new AesGcmCredentialCipher(config.BETTER_AUTH_SECRET);
   const completeTeacherOnboarding = new CompleteTeacherOnboardingUseCase(teacherRepository, auditLogRepository);
   const updateTeacherAvailability = new UpdateTeacherAvailabilityUseCase(teacherRepository, auditLogRepository);
   const freezeRepository = new DrizzleEnrollmentFreezeRepository(db);
@@ -1109,6 +1129,22 @@ function buildContainer(): AppContainer {
           auditLogRepository,
         ),
       },
+      classroomAccount: {
+        create: new CreateClassroomAccountUseCase(classroomAccountRepository, credentialCipher, auditLogRepository),
+        update: new UpdateClassroomAccountUseCase(classroomAccountRepository, credentialCipher, auditLogRepository),
+        retire: new RetireClassroomAccountUseCase(classroomAccountRepository, auditLogRepository),
+        revealPassword: new RevealClassroomAccountPasswordUseCase(
+          classroomAccountRepository,
+          credentialCipher,
+          auditLogRepository,
+        ),
+        getOwnAccess: new GetOwnClassroomAccessUseCase(
+          teacherRepository,
+          classroomAccountRepository,
+          credentialCipher,
+          auditLogRepository,
+        ),
+      },
       teaching: {
         listOwnClassGroups,
         getOwnClassGroup,
@@ -1278,6 +1314,7 @@ function buildContainer(): AppContainer {
       listTeachers,
       getTeacher,
       listTeacherOptions,
+      listClassroomAccounts: new ListClassroomAccountsQuery(db, platformSettingsRepository),
       listInvitableTeachers,
       listEnrollments,
       listPayments,

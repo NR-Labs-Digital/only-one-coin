@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { AvailabilitySlot, CourseLanguage, NationalIdType } from '@/lib/backoffice/types'
+import type { AvailabilitySlot, ClassroomAccountList, CourseLanguage, NationalIdType } from '@/lib/backoffice/types'
 import {
   COUNTRIES,
   countryName,
@@ -16,6 +16,8 @@ import { hasPhoneNumber, PhoneField } from '@/components/backoffice/phone-field'
 import { BoIcon } from '@/components/backoffice/icons'
 import { HelpHint } from '@/components/backoffice/help-hint'
 import { AvailabilityFields, slotsAreValid } from '@/components/backoffice/teachers/availability-fields'
+import { ClassroomAccountSelect } from '@/components/backoffice/teachers/classroom-account-select'
+import { classroomFailureMessage } from '@/components/backoffice/teachers/classroom-failure'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { FieldMessage } from '@/components/backoffice/field-message'
 import { saveTeacher, type TeacherSaveFailure } from '@/lib/backoffice/save-teacher'
@@ -50,16 +52,24 @@ const ID_TYPES: NationalIdType[] = ['DNI', 'CE', 'passport']
  * the same field rules and refuses a document already on the roster. Creating
  * the *login* for this teacher is a staff invite, not this form (CLAUDE.md §8).
  *
- * Or, with "the teacher completes it" (OOC-103), only name, e-mail, personal
- * e-mail and languages: the document, phone, origin, address and week arrive
- * through the teacher's own onboarding, once, after they accept the invite.
+ * Or, with "the teacher completes it" (OOC-103), only name, personal e-mail,
+ * Classroom account and languages: the document, phone, origin, address and
+ * week arrive through the teacher's own onboarding, once, after they accept
+ * the invite.
+ *
+ * The personal e-mail is required (OOC-196): it is the one the portal invite
+ * goes to and the contract prints. The file's old free "Correo" became the
+ * shared Classroom account, picked from the list — `classroomAccounts` is null
+ * when the cargo cannot read it, and then the picker is not drawn.
  */
 export function NewTeacherForm({
   languages,
+  classroomAccounts,
   onCancel,
   onCreate,
 }: {
   languages: CourseLanguage[]
+  classroomAccounts: ClassroomAccountList | null
   onCancel: () => void
   /** Called with the new file's id once the server saved it. */
   onCreate: (teacherId: string) => void
@@ -71,8 +81,8 @@ export function NewTeacherForm({
   const [lastName, setLastName] = useState('')
   const [nationalIdType, setNationalIdType] = useState<NationalIdType>('DNI')
   const [nationalId, setNationalId] = useState('')
-  const [email, setEmail] = useState('')
   const [personalEmail, setPersonalEmail] = useState('')
+  const [classroomAccountId, setClassroomAccountId] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
   const [nationality, setNationality] = useState(DEFAULT_COUNTRY)
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
@@ -91,7 +101,7 @@ export function NewTeacherForm({
   const ready =
     firstName.trim() !== '' &&
     lastName.trim() !== '' &&
-    email.trim() !== '' &&
+    personalEmail.trim() !== '' &&
     languageIds.length > 0 &&
     (byTeacher ||
       (nationalId.trim() !== '' &&
@@ -121,7 +131,8 @@ export function NewTeacherForm({
     setPending(true)
     setFailure(null)
 
-    const personal = personalEmail.trim() === '' ? null : personalEmail.trim()
+    const personal = personalEmail.trim()
+    const classroom = classroomAccounts ? { classroomAccountId } : {}
     const result = await saveTeacher<{ id: string }>(
       '/api/v1/teachers',
       'POST',
@@ -130,8 +141,8 @@ export function NewTeacherForm({
             onboarding: true,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
-            email: email.trim(),
             personalEmail: personal,
+            ...classroom,
             languages: languageIds,
           }
         : {
@@ -139,8 +150,8 @@ export function NewTeacherForm({
             lastName: lastName.trim(),
             nationalIdType,
             nationalId: nationalId.trim(),
-            email: email.trim(),
             personalEmail: personal,
+            ...classroom,
             phone,
             nationality,
             country,
@@ -167,7 +178,7 @@ export function NewTeacherForm({
         ? t('teachers.save_error_duplicate')
         : failure.kind === 'invalid'
           ? t('new_student.invalid_error')
-          : t('teachers.save_error_generic')
+          : (classroomFailureMessage(failure, t) ?? t('teachers.save_error_generic'))
 
   return (
     <Card className="p-5">
@@ -277,20 +288,10 @@ export function NewTeacherForm({
       {/* Contact */}
       <Block title={t('teachers.section_contact')}>
         <AutoGrid min="15rem" gap="gap-3">
-          <Labelled label={t('teachers.field_email')} required>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className={fieldClass}
-            />
-            <FieldMessage code={fieldError('email')} />
-          </Labelled>
-
-          {/* Optional and separate from the e-mail above (OOC-161): that one
-              gets the panel invite and goes on the contract; this one is the
-              teacher's own, where the monthly feedback report is sent. */}
-          <Labelled label={t('teachers.field_personal_email')} optional>
+          {/* Required (OOC-196): the teacher's own address — the portal invite
+              goes here, the contract prints it and the monthly feedback is
+              sent to it. */}
+          <Labelled label={t('teachers.field_personal_email')} required>
             <input
               type="email"
               value={personalEmail}
@@ -302,6 +303,24 @@ export function NewTeacherForm({
             </span>
             <FieldMessage code={fieldError('personalEmail')} />
           </Labelled>
+
+          {classroomAccounts && (
+            <div className="flex flex-col gap-1">
+              <span className={`flex items-center gap-1.5 ${labelClass}`}>
+                <label htmlFor="new-teacher-classroom">{t('teachers.field_classroom_account')}</label>
+                <OptionalMark label={t('common.optional')} />
+                <HelpHint what={t('help.teacher_classroom_account_what')} how={t('help.teacher_classroom_account_how')} />
+              </span>
+              <ClassroomAccountSelect
+                id="new-teacher-classroom"
+                accounts={classroomAccounts}
+                value={classroomAccountId}
+                onChange={setClassroomAccountId}
+                className={fieldClass}
+              />
+              <FieldMessage code={fieldError('classroomAccountId')} />
+            </div>
+          )}
 
           {!byTeacher && (
             <Labelled label={t('teachers.field_phone')} required>

@@ -17,6 +17,8 @@ export const PlatformSettingsResponseSchema = z.object({
   complaintResponseBusinessDays: z.number().int(),
   /** OOC-156: advancing to the next module asks for the pass mark. */
   progressionRequiresPassingGrade: z.boolean(),
+  /** OOC-196: teachers per shared Classroom account at a time. */
+  classroomAccountMaxTeachers: z.number().int(),
 });
 
 /**

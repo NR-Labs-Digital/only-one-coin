@@ -262,6 +262,23 @@ export function canOpenTeacherContracts(staff: StaffAccess): boolean {
 }
 
 /**
+ * Who reads the shared Classroom accounts and who uses each (OOC-196) — the
+ * teacher file's picker reads the same list. Never the password.
+ */
+export function canViewClassroomAccounts(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.classroom_accounts_view')
+}
+
+/**
+ * Who registers, edits and retires the shared Classroom accounts, and sees
+ * their passwords (each reveal on the audit log). By default whoever corrects
+ * the teacher file (OOC-196).
+ */
+export function canManageClassroomAccounts(staff: StaffAccess): boolean {
+  return has(staff, 'teachers.classroom_accounts')
+}
+
+/**
  * Who registers a new teacher. Management only: a teacher record is an account
  * that will read student grades, and creating one is one step away from
  * creating staff — which `CLAUDE.md` §8 puts behind a dedicated usecase.

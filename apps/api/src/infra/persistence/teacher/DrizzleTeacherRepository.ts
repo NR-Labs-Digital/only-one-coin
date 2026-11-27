@@ -1,5 +1,17 @@
-import { classGroupModules, classGroups, languages, teacherAvailability, teacherLanguages, teachers } from "@ooc/db";
 import {
+  classGroupModules,
+  classGroups,
+  classroomAccounts,
+  languages,
+  teacherAvailability,
+  teacherLanguages,
+  teachers,
+} from "@ooc/db";
+import {
+  ClassroomAccountFullError,
+  ClassroomAccountNotFoundError,
+  type ClassroomAccountWrite,
+  type ClassroomSeatRule,
   LanguageNotFoundError,
   Teacher,
   TeacherAlreadyRegisteredError,
@@ -10,7 +22,7 @@ import {
   type WeeklySlot,
   languageKey,
 } from "@ooc/domain";
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 
@@ -41,6 +53,7 @@ function toTeacher(row: TeacherRow, languages: string[], availability: WeeklySlo
     userId: row.userId,
     languages,
     availability,
+    classroomAccountId: row.classroomAccountId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -84,9 +97,12 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
     return row ? this.hydrate(this.db, row) : null;
   }
 
-  async create(teacher: Teacher): Promise<Teacher> {
+  async create(teacher: Teacher, seat?: ClassroomSeatRule): Promise<Teacher> {
     try {
       return await this.db.transaction(async (tx) => {
+        if (teacher.classroomAccountId !== null) {
+          await this.holdClassroomSeat(tx, teacher.classroomAccountId, teacher.id, seat);
+        }
         const [row] = await tx
           .insert(teachers)
           .values({
@@ -129,15 +145,38 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
     return rows.length > 0;
   }
 
-  async update(teacher: Teacher): Promise<Teacher> {
+  async update(teacher: Teacher, classroom?: ClassroomAccountWrite): Promise<Teacher> {
     try {
       return await this.db.transaction(async (tx) => {
+        // The account the file points at now, read under the row's lock: what
+        // this write gives and takes away is measured against it, not against
+        // the copy the usecase read a moment ago.
+        const [current] = await tx
+          .select({ classroomAccountId: teachers.classroomAccountId })
+          .from(teachers)
+          .where(and(eq(teachers.id, teacher.id), isNull(teachers.deletedAt)))
+          .for("update");
+        const previous = current?.classroomAccountId ?? null;
+        const next = classroom === undefined ? previous : classroom === "release" ? null : teacher.classroomAccountId;
+        if (next !== previous) {
+          if (next !== null) {
+            await this.holdClassroomSeat(tx, next, teacher.id, classroom === "release" ? undefined : classroom);
+          }
+          // Somebody stopped using the account: they still know its password.
+          if (previous !== null) {
+            await tx
+              .update(classroomAccounts)
+              .set({ releasedAt: sql`now()`, updatedAt: sql`now()` })
+              .where(eq(classroomAccounts.id, previous));
+          }
+        }
+
         // `user_id` stays out: only linkAccount writes it, so a file read
         // before an invite was accepted cannot unlink the account on save.
         const { userId: _account, ...fields } = this.columns(teacher);
         const [row] = await tx
           .update(teachers)
-          .set({ ...fields, updatedAt: sql`now()` })
+          .set({ ...fields, classroomAccountId: next, updatedAt: sql`now()` })
           .where(and(eq(teachers.id, teacher.id), isNull(teachers.deletedAt)))
           .returning();
 
@@ -204,6 +243,34 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
     return row?.total ?? 0;
   }
 
+  /**
+   * A place on a shared Classroom account (OOC-196): the account's row is
+   * locked, so two writes handing out its last place run one after the other,
+   * and the second one counts the first.
+   */
+  private async holdClassroomSeat(
+    tx: Tx,
+    accountId: string,
+    teacherId: string,
+    seat: ClassroomSeatRule | undefined,
+  ): Promise<void> {
+    if (!seat) throw new Error("A Classroom account was given without the seat rule");
+    const [account] = await tx
+      .select({ id: classroomAccounts.id })
+      .from(classroomAccounts)
+      .where(and(eq(classroomAccounts.id, accountId), isNull(classroomAccounts.deletedAt)))
+      .for("update");
+    if (!account) throw new ClassroomAccountNotFoundError();
+
+    const [row] = await tx
+      .select({ total: count() })
+      .from(teachers)
+      .where(
+        and(eq(teachers.classroomAccountId, accountId), ne(teachers.id, teacherId), isNull(teachers.deletedAt)),
+      );
+    if ((row?.total ?? 0) >= seat.maxTeachers) throw new ClassroomAccountFullError();
+  }
+
   private columns(teacher: Teacher) {
     return {
       firstName: teacher.firstName,
@@ -220,6 +287,7 @@ export class DrizzleTeacherRepository implements ITeacherRepository {
       addressLine: teacher.addressLine,
       status: teacher.status,
       userId: teacher.userId,
+      classroomAccountId: teacher.classroomAccountId,
     };
   }
 

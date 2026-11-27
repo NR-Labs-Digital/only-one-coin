@@ -25,6 +25,7 @@ import { GetTeacherQuery } from "./GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./ListTeacherOptionsQuery.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { ListTeachersQuery } from "./ListTeachersQuery.js";
+import { ListClassroomAccountsQuery } from "./ListClassroomAccountsQuery.js";
 
 /**
  * The teacher file against a real, migrated Postgres (OOC-78): the aggregate
@@ -55,7 +56,7 @@ const ANA: CreateTeacherDTO = {
   lastName: "Docente",
   nationalIdType: "DNI",
   nationalId: "91234567",
-  email: "ana.docente@example.com",
+  personalEmail: "ana.docente@example.com",
   phone: "+51900000001",
   nationality: "IT",
   country: "PE",
@@ -74,7 +75,7 @@ const LUIS: CreateTeacherDTO = {
   firstName: "Luis",
   lastName: "Docente",
   nationalId: "91234568",
-  email: "luis.docente@example.com",
+  personalEmail: "luis.docente@example.com",
   languages: ["Inglés (prueba)"],
   availability: [],
 };
@@ -571,8 +572,8 @@ describe("ListTeacherOptionsQuery", () => {
 });
 
 describe("onboarding (OOC-103)", () => {
-  const PENDING = { firstName: "Ana", lastName: "Docente", email: "ana.docente@example.com", languages: ["Italiano (prueba)"] };
-  const { firstName: _f, lastName: _l, email: _e, languages: _langs, ...PROFILE } = ANA;
+  const PENDING = { firstName: "Ana", lastName: "Docente", personalEmail: "ana.docente@example.com", languages: ["Italiano (prueba)"] };
+  const { firstName: _f, lastName: _l, personalEmail: _e, languages: _langs, ...PROFILE } = ANA;
 
   it("stores a pending file with no profile, and the teacher completes it once", async () => {
     await rolledBack(async (tx) => {
@@ -601,7 +602,7 @@ describe("onboarding (OOC-103)", () => {
     await rolledBack(async (tx) => {
       const teachers = new DrizzleTeacherRepository(tx);
       await teachers.create(Teacher.create(ANA));
-      const pending = await teachers.create(Teacher.createPending({ ...PENDING, email: "otra@example.com" }));
+      const pending = await teachers.create(Teacher.createPending({ ...PENDING, personalEmail: "otra@example.com" }));
 
       pending.completeOnboarding(PROFILE);
       await expect(teachers.completeOnboarding(pending)).rejects.toBeInstanceOf(TeacherAlreadyRegisteredError);
@@ -618,6 +619,105 @@ describe("onboarding (OOC-103)", () => {
           await inner.update(schema.teachers).set({ phone: "+51900000009" }).where(eq(schema.teachers.id, created.id));
         }),
       ).rejects.toThrow();
+    });
+  });
+});
+
+describe("shared Classroom accounts on the teacher file (OOC-196)", () => {
+  const SEAT = { maxTeachers: 2 };
+
+  async function account(tx: Db, email: string): Promise<string> {
+    const [row] = await tx
+      .insert(schema.classroomAccounts)
+      .values({ email, passwordCiphertext: "v1:test" })
+      .returning({ id: schema.classroomAccounts.id });
+    return row!.id;
+  }
+
+  function file(n: number, classroomAccountId: string | null = null): Teacher {
+    return Teacher.create({
+      ...ANA,
+      nationalId: `9200000${n}`,
+      personalEmail: `docente${n}@example.com`,
+      classroomAccountId,
+    });
+  }
+
+  it("holds the cap, and the place frees up when a teacher leaves the roster", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const shared = await account(tx, "aulas.compartida@gmail.com");
+
+      await teachers.create(file(1, shared), SEAT);
+      const second = await teachers.create(file(2, shared), SEAT);
+      await expect(teachers.create(file(3, shared), SEAT)).rejects.toMatchObject({ reason: "classroom_account.full" });
+
+      second.leaveRoster();
+      const left = await teachers.update(second, "release");
+      expect(left.classroomAccountId).toBeNull();
+
+      const [released] = await tx
+        .select({ releasedAt: schema.classroomAccounts.releasedAt })
+        .from(schema.classroomAccounts)
+        .where(eq(schema.classroomAccounts.id, shared));
+      expect(released?.releasedAt).not.toBeNull();
+
+      await expect(teachers.create(file(4, shared), SEAT)).resolves.toMatchObject({ classroomAccountId: shared });
+    });
+  });
+
+  it("leaves the account alone on a write that did not say so", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const shared = await account(tx, "aulas.compartida@gmail.com");
+      const created = await teachers.create(file(1));
+
+      // Handed out meanwhile, by another write…
+      const fresh = await teachers.findById(created.id);
+      fresh!.classroomAccountId = shared;
+      await teachers.update(fresh!, SEAT);
+
+      // …and a stale copy saving only the week does not undo it.
+      created.replaceAvailability([{ weekday: "mon", startTime: "09:00", endTime: "10:00" }]);
+      const saved = await teachers.update(created);
+      expect(saved.classroomAccountId).toBe(shared);
+    });
+  });
+
+  it("refuses an account that is not on the list", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      await expect(teachers.create(file(1, "018f2b5c-9000-7000-8000-0000000000ff"), SEAT)).rejects.toMatchObject({
+        reason: "classroom_account.not_found",
+      });
+    });
+  });
+
+  it("reads the account's e-mail on the roster row", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const shared = await account(tx, "aulas.compartida@gmail.com");
+      const created = await teachers.create(file(1, shared), SEAT);
+
+      const row = await new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx)).byId(created.id);
+      expect(row?.classroomAccount).toEqual({ id: shared, email: "aulas.compartida@gmail.com" });
+    });
+  });
+
+  it("lists each account with the teachers using it", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const shared = await account(tx, "aulas.compartida@gmail.com");
+      const empty = await account(tx, "aulas.vacia01@gmail.com");
+      const created = await teachers.create(file(1, shared), SEAT);
+
+      const list = await new ListClassroomAccountsQuery(tx, new DrizzlePlatformSettingsRepository(tx)).run();
+
+      expect(list.maxTeachers).toBe(7);
+      expect(list.items.find((item) => item.id === shared)?.teachers).toEqual([
+        { id: created.id, firstName: "Ana", lastName: "Docente" },
+      ]);
+      expect(list.items.find((item) => item.id === empty)?.teachers).toEqual([]);
     });
   });
 });

@@ -12,7 +12,7 @@ const VALID: CreateTeacherDTO = {
   lastName: "Quispe",
   nationalIdType: "DNI",
   nationalId: "12.345.678",
-  email: "Ana.Quispe@Example.com",
+  personalEmail: "Ana.Quispe@Example.com",
   phone: "+51 900 000 000",
   nationality: "it",
   country: "pe",
@@ -60,7 +60,7 @@ describe("Teacher.create", () => {
   });
 
   it("does not ask a teacher's e-mail to be Gmail", () => {
-    expect(codesOf({ ...VALID, email: "ana@institucion.edu.pe" })).toEqual([]);
+    expect(codesOf({ ...VALID, personalEmail: "ana@institucion.edu.pe" })).toEqual([]);
   });
 
   it("refuses a window that does not run forwards", () => {
@@ -152,13 +152,13 @@ describe("Teacher roster", () => {
   });
 });
 
-describe("Teacher personal e-mail (OOC-161)", () => {
+describe("Teacher personal e-mail (OOC-161, required since OOC-196)", () => {
   const { availability: _week, ...DATA } = VALID;
 
-  it("is optional, and stored normalized when given", () => {
-    expect(Teacher.create(VALID).personalEmail).toBeNull();
-    expect(Teacher.create({ ...VALID, personalEmail: null }).personalEmail).toBeNull();
+  it("is required, and stored normalized", () => {
     expect(Teacher.create({ ...VALID, personalEmail: " Ana@Hotmail.com " }).personalEmail).toBe("ana@hotmail.com");
+    const { personalEmail: _missing, ...WITHOUT } = VALID;
+    expect(codesOf(WITHOUT as typeof VALID)).toEqual(["teacher.personalEmail:required"]);
   });
 
   it("is any provider's, held to the e-mail format", () => {
@@ -166,23 +166,41 @@ describe("Teacher personal e-mail (OOC-161)", () => {
     expect(codesOf({ ...VALID, personalEmail: "ana" })).toEqual(["teacher.personalEmail:email_format"]);
   });
 
-  it("is a field of its own: setting it leaves the file's e-mail alone", () => {
+  it("is the invite's and the contract's address: `email` follows it", () => {
     const teacher = Teacher.create(VALID);
+    expect(teacher.email).toBe(teacher.personalEmail);
 
     const changed = teacher.rewrite({ ...DATA, personalEmail: "ana@hotmail.com" });
 
     expect(changed).toEqual(["personalEmail"]);
-    expect(teacher.personalEmail).toBe("ana@hotmail.com");
-    expect(teacher.email).toBe("ana.quispe@example.com");
+    expect(teacher.email).toBe("ana@hotmail.com");
   });
 
-  it("is cleared by null, and kept when a write leaves it out", () => {
-    const teacher = Teacher.create({ ...VALID, personalEmail: "ana@hotmail.com" });
+  it("brings a file saved before up to date on its first edit", () => {
+    const teacher = Teacher.create(VALID);
+    teacher.email = "old.panel@example.com";
+
+    expect(teacher.rewrite(DATA)).toEqual(["email"]);
+    expect(teacher.email).toBe(teacher.personalEmail);
+  });
+});
+
+describe("Teacher Classroom account (OOC-196)", () => {
+  const ACCOUNT = "0196a000-0000-7000-8000-000000000001";
+  const { availability: _week, ...DATA } = VALID;
+
+  it("is optional, kept when a write leaves it out and cleared by null", () => {
+    const teacher = Teacher.create({ ...VALID, classroomAccountId: ACCOUNT });
+    expect(teacher.classroomAccountId).toBe(ACCOUNT);
 
     expect(teacher.rewrite(DATA)).toEqual([]);
-    expect(teacher.personalEmail).toBe("ana@hotmail.com");
+    expect(teacher.rewrite({ ...DATA, classroomAccountId: null })).toEqual(["classroomAccountId"]);
+    expect(teacher.classroomAccountId).toBeNull();
+  });
 
-    expect(teacher.rewrite({ ...DATA, personalEmail: null })).toEqual(["personalEmail"]);
-    expect(teacher.personalEmail).toBeNull();
+  it("is let go of when the teacher leaves the roster", () => {
+    const teacher = Teacher.create({ ...VALID, classroomAccountId: ACCOUNT });
+    teacher.leaveRoster();
+    expect(teacher.classroomAccountId).toBeNull();
   });
 });

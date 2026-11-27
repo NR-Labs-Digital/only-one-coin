@@ -15,6 +15,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { FakeAuditLogRepository } from "./fakes/catalog.js";
 import { FakeStaffAccessRepository, FakeTeacherRepository } from "./fakes/teacher.js";
+import { FakePlatformSettings } from "./fakes/platformSettings.js";
 
 /**
  * OOC-78: the teacher file's writes. Registration refuses a document already on
@@ -27,7 +28,7 @@ const ANA: CreateTeacherDTO = {
   lastName: "Quispe",
   nationalIdType: "DNI",
   nationalId: "12345678",
-  email: "ana@example.com",
+  personalEmail: "ana@example.com",
   phone: "+51900000000",
   nationality: "IT",
   country: "PE",
@@ -48,8 +49,8 @@ function setup(...onFile: Teacher[]) {
     teachers,
     audit,
     access,
-    register: new RegisterTeacherUseCase(teachers, audit),
-    update: new UpdateTeacherUseCase(teachers, audit),
+    register: new RegisterTeacherUseCase(teachers, audit, new FakePlatformSettings()),
+    update: new UpdateTeacherUseCase(teachers, audit, new FakePlatformSettings()),
     updateAvailability: new UpdateTeacherAvailabilityUseCase(teachers, audit),
     setStatus: new SetTeacherRosterStatusUseCase(teachers, access, audit),
   };
@@ -215,8 +216,8 @@ describe("SetTeacherRosterStatusUseCase", () => {
 });
 
 describe("teacher onboarding (OOC-103)", () => {
-  const PENDING = { firstName: "Ana", lastName: "Quispe", email: "ana@example.com", languages: ["Italiano"] };
-  const { firstName: _f, lastName: _l, email: _e, languages: _langs, ...PROFILE } = ANA;
+  const PENDING = { firstName: "Ana", lastName: "Quispe", personalEmail: "ana@example.com", languages: ["Italiano"] };
+  const { firstName: _f, lastName: _l, personalEmail: _e, languages: _langs, ...PROFILE } = ANA;
 
   function pendingLinked(): Teacher {
     return new Teacher({ ...Teacher.createPending(PENDING), userId: "usr_103" });
@@ -231,7 +232,7 @@ describe("teacher onboarding (OOC-103)", () => {
     expect(teacher.nationalId).toBeNull();
     expect(teacher.availability).toEqual([]);
     expect(audit.appended).toEqual([
-      expect.objectContaining({ action: "teacher.registered", metadata: { onboarding: true } }),
+      expect.objectContaining({ action: "teacher.registered", metadata: { onboarding: true, classroomAccount: false } }),
     ]);
   });
 

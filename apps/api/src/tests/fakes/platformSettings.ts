@@ -13,6 +13,7 @@ export const TEST_SETTINGS: PlatformSettings = {
   gradeSubmissionHours: 48,
   complaintResponseBusinessDays: 15,
   progressionRequiresPassingGrade: true,
+  classroomAccountMaxTeachers: 7,
 };
 
 /** In-memory `platform_settings`: reads what the last update wrote. */

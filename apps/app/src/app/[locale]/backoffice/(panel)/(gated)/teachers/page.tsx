@@ -1,12 +1,16 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { listCatalogLanguages } from '@/lib/backoffice/catalog'
 import { listTeachers, parseTeacherDirectoryQuery, toLanguage } from '@/lib/backoffice/teachers'
+import { listClassroomAccounts } from '@/lib/backoffice/classroom-accounts'
 import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canCreateTeacher,
   canManageTeachers,
+  canViewClassroomAccounts,
 } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
+import { BoIcon } from '@/components/backoffice/icons'
+import { Link } from '@/i18n/navigation'
 import { TeachersView } from './teachers-view'
 
 /**
@@ -47,7 +51,11 @@ export default async function TeachersPage({
   }
 
   const query = parseTeacherDirectoryQuery(await searchParams)
-  const [directory, languageList] = await Promise.all([listTeachers(query), listCatalogLanguages()])
+  const [directory, languageList, classroomAccounts] = await Promise.all([
+    listTeachers(query),
+    listCatalogLanguages(),
+    canViewClassroomAccounts(staff) ? listClassroomAccounts() : Promise.resolve(null),
+  ])
 
   /* API down or erroring. An honest failure screen, never an empty roster —
      "no teachers" and "could not load" are different facts. */
@@ -71,12 +79,26 @@ export default async function TeachersPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={t('teachers.title')} />
+      <PageHeader
+        title={t('teachers.title')}
+        actions={
+          canViewClassroomAccounts(staff) ? (
+            <Link
+              href="/backoffice/teachers/classroom-accounts"
+              className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-cream"
+            >
+              <BoIcon name="key" size={16} />
+              {t('classroom_accounts.title')}
+            </Link>
+          ) : undefined
+        }
+      />
       <TeachersView
         directory={directory}
         query={query}
         languages={languages}
         canCreate={canCreateTeacher(staff)}
+        classroomAccounts={classroomAccounts}
       />
     </div>
   )
