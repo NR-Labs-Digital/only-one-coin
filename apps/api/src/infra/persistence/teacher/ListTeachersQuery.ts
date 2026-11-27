@@ -179,7 +179,7 @@ export class ListTeachersQuery {
         )`.mapWith(Number),
         classroomAccountEmail: sql<string | null>`(
           select ca.email from "classroom_accounts" ca
-          where ca.id = ${teachers.classroomAccountId} and ca.deleted_at is null
+          where ca.id = "teachers"."classroom_account_id" and ca.deleted_at is null
         )`,
         contractId: contract.id,
         contractRecordedAt: contract.recordedAt,

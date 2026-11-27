@@ -25,6 +25,7 @@ import { GetTeacherQuery } from "./GetTeacherQuery.js";
 import { ListTeacherOptionsQuery } from "./ListTeacherOptionsQuery.js";
 import { DrizzlePlatformSettingsRepository } from "@/infra/persistence/platform/DrizzlePlatformSettingsRepository.js";
 import { ListTeachersQuery } from "./ListTeachersQuery.js";
+import { ListClassroomAccountsQuery } from "./ListClassroomAccountsQuery.js";
 
 /**
  * The teacher file against a real, migrated Postgres (OOC-78): the aggregate
@@ -700,6 +701,23 @@ describe("shared Classroom accounts on the teacher file (OOC-196)", () => {
 
       const row = await new ListTeachersQuery(tx, new DrizzlePlatformSettingsRepository(tx)).byId(created.id);
       expect(row?.classroomAccount).toEqual({ id: shared, email: "aulas.compartida@gmail.com" });
+    });
+  });
+
+  it("lists each account with the teachers using it", async () => {
+    await rolledBack(async (tx) => {
+      const teachers = new DrizzleTeacherRepository(tx);
+      const shared = await account(tx, "aulas.compartida@gmail.com");
+      const empty = await account(tx, "aulas.vacia01@gmail.com");
+      const created = await teachers.create(file(1, shared), SEAT);
+
+      const list = await new ListClassroomAccountsQuery(tx, new DrizzlePlatformSettingsRepository(tx)).run();
+
+      expect(list.maxTeachers).toBe(7);
+      expect(list.items.find((item) => item.id === shared)?.teachers).toEqual([
+        { id: created.id, firstName: "Ana", lastName: "Docente" },
+      ]);
+      expect(list.items.find((item) => item.id === empty)?.teachers).toEqual([]);
     });
   });
 });

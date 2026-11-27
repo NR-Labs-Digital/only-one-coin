@@ -1,6 +1,6 @@
 import { classroomAccounts, teachers } from "@ooc/db";
 import type { IPlatformSettingsRepository } from "@ooc/domain";
-import { and, asc, isNull, sql } from "drizzle-orm";
+import { asc, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 export interface ClassroomAccountRow {
@@ -39,15 +39,17 @@ export class ListClassroomAccountsQuery {
           email: classroomAccounts.email,
           passwordChangedAt: classroomAccounts.passwordChangedAt,
           releasedAt: classroomAccounts.releasedAt,
+          // The outer column by its full name: a column interpolated inside a
+          // subquery renders bare ("id"), and Postgres binds it to t.id.
           teachers: sql<{ id: string; firstName: string; lastName: string }[]>`coalesce((
             select json_agg(json_build_object('id', t.id, 'firstName', t.first_name, 'lastName', t.last_name)
               order by t.first_name, t.last_name)
             from ${teachers} t
-            where t.classroom_account_id = ${classroomAccounts.id} and t.deleted_at is null
+            where t.classroom_account_id = "classroom_accounts"."id" and t.deleted_at is null
           ), '[]'::json)`,
         })
         .from(classroomAccounts)
-        .where(and(isNull(classroomAccounts.deletedAt)))
+        .where(isNull(classroomAccounts.deletedAt))
         .orderBy(asc(sql`lower(${classroomAccounts.email})`)),
       this.settings.get(),
     ]);
