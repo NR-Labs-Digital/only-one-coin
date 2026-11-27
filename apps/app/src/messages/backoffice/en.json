@@ -329,6 +329,7 @@
         "waitlist_joined": "Student added to the waitlist",
         "waitlist_left": "Student left the waitlist",
         "course_created": "Course created",
+        "course_duplicated": "Course duplicated",
         "course_updated": "Course edited",
         "plan_created": "Plan created",
         "plan_renamed": "Plan renamed",
@@ -1672,7 +1673,20 @@
       "confirm_retire": "Take this course off the catalog? It stops showing on enrollment. You can undo this later.",
       "confirm_restore": "Put this course back on the catalog?",
       "field_language_pick": "Pick a language",
-      "field_language_hint_list": "Not on the list? Create it on the Languages tab."
+      "field_language_hint_list": "Not on the list? Create it on the Languages tab.",
+      "duplicate": "Duplicate course",
+      "duplicate_title": "Duplicate “{name}”",
+      "duplicate_intro": "This is a new course, filled in from the original. Change what you need: nothing is saved until you create it, and the original stays as it is.",
+      "duplicate_name_unchanged": "Give it a name other than the original course’s.",
+      "duplicate_no_landing": "None — the new course starts with no page",
+      "duplicate_plans_title": "Plans of the new course",
+      "duplicate_no_plans": "The original course has no plans on sale. Add them after creating the course.",
+      "duplicate_plan_include": "Copy this plan",
+      "duplicate_amount_module": "Price of one module (S/)",
+      "duplicate_amount_missing": "Type the plan’s price.",
+      "duplicate_create": "Create course",
+      "duplicate_back": "Back to {name}",
+      "duplicated": "Course created from the original."
     },
     "plans": {
       "title": "Plans and prices",
@@ -2321,7 +2335,8 @@
       "class_group_module_has_students": "Students are still in this group. Move them before retiring it.",
       "class_group_module_ambiguous": "The class group has several module groups: edit the teacher, schedule and Classroom on each group.",
       "class_group_full_course_split": "A full course opens one group per module; each group teaches one module.",
-      "meet_url_invalid": "The link is not from Google Meet."
+      "meet_url_invalid": "The link is not from Google Meet.",
+      "copy_name_unchanged": "The new course needs a name other than the original’s."
     },
     "audit_action": {
       "student_registered": "Student registered",
@@ -2925,7 +2940,13 @@
       "complaint_answer_what": "The company's answer to the consumer. It is e-mailed to the sheet's address, in the language of the form.",
       "complaint_answer_how": "It is sent once: it cannot be changed afterwards and no second one goes out. It is kept with the sheet and in the audit log.",
       "permission_access_what": "View lets the role look at the area’s data — records, lists, documents — without changing anything. Edit lets it register, correct, approve, send and export.",
-      "permission_access_how": "Turning Edit on turns View on too, and turning View off turns Edit off. A half-filled switch is a role with only some actions on that side: open the details to see or adjust each one. A change applies from each person’s next action."
+      "permission_access_how": "Turning Edit on turns View on too, and turning View off turns Edit off. A half-filled switch is a role with only some actions on that side: open the details to see or adjust each one. A change applies from each person’s next action.",
+      "course_duplicate_what": "Opens the form for a new course, already filled in from this one: language, level, modules and their material, minimum age, options, and the plans at their current price.",
+      "course_duplicate_how": "Change what you need and create it. Class groups, enrollments and grades stay with this course, and this course does not change. Cancelling creates nothing.",
+      "course_duplicate_landing_what": "Each website page links to a single live course, so the copy starts with no page.",
+      "course_duplicate_landing_how": "If the new course should replace the original on the website, link it later in its settings.",
+      "course_duplicate_plans_what": "Each copied plan is a new plan of the new course, with the same billing (package or monthly), which cannot change later.",
+      "course_duplicate_plans_how": "The price starts from the original’s current price and you can change it: what you save is the new plan’s first price, in force from today. The original’s plans do not change. Untick a plan to leave it out."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"

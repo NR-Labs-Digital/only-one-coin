@@ -43,6 +43,7 @@ import {
   SetProcedurePriceUseCase,
   SubmitProcedurePaymentUseCase,
   CreateCourseUseCase,
+  DuplicateCourseUseCase,
   CreateAcademicPeriodUseCase,
   UpdateAcademicPeriodUseCase,
   DuplicateClassGroupsUseCase,
@@ -501,6 +502,7 @@ export interface AppUseCases {
     restore: RestoreCatalogEntryUseCase;
     getState: GetCatalogEntryStateUseCase;
     createCourse: CreateCourseUseCase;
+    duplicateCourse: DuplicateCourseUseCase;
     createLanguage: CreateLanguageUseCase;
     renameLanguage: RenameLanguageUseCase;
     retireLanguage: RetireLanguageUseCase;
@@ -893,6 +895,12 @@ function buildContainer(): AppContainer {
   const restoreCatalogEntry = new RestoreCatalogEntryUseCase(catalogEntryRepository, auditLogRepository);
   const getCatalogEntryState = new GetCatalogEntryStateUseCase(catalogEntryRepository);
   const createCourse = new CreateCourseUseCase(courseRepository, languageRepository, auditLogRepository);
+  const duplicateCourse = new DuplicateCourseUseCase(
+    courseRepository,
+    planRepository,
+    languageRepository,
+    auditLogRepository,
+  );
   const updateCourse = new UpdateCourseUseCase(courseRepository, languageRepository, auditLogRepository);
   const createLanguage = new CreateLanguageUseCase(languageRepository, auditLogRepository);
   const renameLanguage = new RenameLanguageUseCase(languageRepository, auditLogRepository);
@@ -1239,6 +1247,7 @@ function buildContainer(): AppContainer {
         restore: restoreCatalogEntry,
         getState: getCatalogEntryState,
         createCourse,
+        duplicateCourse,
         createLanguage,
         renameLanguage,
         retireLanguage,

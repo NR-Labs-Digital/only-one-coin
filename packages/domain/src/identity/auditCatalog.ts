@@ -193,6 +193,7 @@ export const AUDIT_ACTIONS = {
   "teaching.progression_applied": { key: "progression_applied", entity: "class_group", subject: "target" },
 
   "catalog.course.created": { key: "course_created", entity: "course", subject: "target" },
+  "catalog.course.duplicated": { key: "course_duplicated", entity: "course", subject: "target" },
   "catalog.course.updated": { key: "course_updated", entity: "course", subject: "target" },
   "catalog.plan.created": { key: "plan_created", entity: "course", subject: "plan" },
   "catalog.plan.renamed": { key: "plan_renamed", entity: "course", subject: "plan" },

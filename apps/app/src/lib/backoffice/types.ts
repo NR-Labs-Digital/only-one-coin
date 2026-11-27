@@ -737,6 +737,7 @@ export type CatalogErrorKey =
   | 'class_group_course_locked'
   | 'period_already_duplicated'
   | 'duplicate_same_period'
+  | 'copy_name_unchanged'
   | 'class_group_not_full'
   | 'waitlist_already_joined'
   | 'waitlist_already_enrolled'

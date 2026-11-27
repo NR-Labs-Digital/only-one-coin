@@ -151,6 +151,7 @@ import { getCatalogEntryStateRoute } from "@/http/catalog/GetCatalogEntryStateRo
 import { listCoursesRoute } from "@/http/catalog/ListCoursesRoute.js";
 import { getCourseRoute } from "@/http/catalog/GetCourseRoute.js";
 import { createCourseRoute } from "@/http/catalog/CreateCourseRoute.js";
+import { duplicateCourseRoute } from "@/http/catalog/DuplicateCourseRoute.js";
 import { updateCourseRoute } from "@/http/catalog/UpdateCourseRoute.js";
 import { updateCourseOptionsRoute } from "@/http/catalog/UpdateCourseOptionsRoute.js";
 import { createPlanRoute } from "@/http/catalog/CreatePlanRoute.js";
@@ -402,6 +403,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(listCoursesRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getCourseRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createCourseRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(duplicateCourseRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateCourseRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updateCourseOptionsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(createPlanRoute);

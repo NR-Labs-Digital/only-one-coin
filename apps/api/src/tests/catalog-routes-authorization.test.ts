@@ -19,6 +19,9 @@ const CASES: [string, string, Role][] = [
   ["GET", "/api/v1/catalog/courses", "teacher"],
   ["GET", `/api/v1/catalog/courses/${ID}`, "billing"],
   ["POST", "/api/v1/catalog/courses", "enrollment_supervisor"],
+  // Duplicating opens a course (OOC-182): the enrollment supervisor edits a course's options, never opens one.
+  ["POST", `/api/v1/catalog/courses/${ID}/duplicate`, "enrollment_supervisor"],
+  ["POST", `/api/v1/catalog/courses/${ID}/duplicate`, "analyst"],
   ["PATCH", `/api/v1/catalog/courses/${ID}`, "enrollment_supervisor"],
   ["PATCH", `/api/v1/catalog/courses/${ID}/options`, "analyst"],
   ["POST", `/api/v1/catalog/courses/${ID}/plans`, "enrollment_supervisor"],

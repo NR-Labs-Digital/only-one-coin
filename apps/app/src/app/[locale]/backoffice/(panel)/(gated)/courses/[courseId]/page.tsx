@@ -6,6 +6,7 @@ import { getStaffSession } from '@/lib/backoffice/session'
 import {
   canBrowseCatalog,
   canConfigureCourse,
+  canCreateCourse,
   canEditCourseIdentity,
   canManagePrices,
   canRetireCatalogEntry,
@@ -41,10 +42,10 @@ export default async function CourseDetailPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; courseId: string }>
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; created?: string }>
 }) {
   const { locale, courseId } = await params
-  const requested = (await searchParams).tab
+  const { tab: requested, created } = await searchParams
   const tab: CourseTab = TABS.includes(requested as CourseTab) ? (requested as CourseTab) : 'plans'
   setRequestLocale(locale)
   const t = await getTranslations('bo')
@@ -102,9 +103,27 @@ export default async function CourseDetailPage({
         {(!course.active || !course.hasPriceInForce || course.missingModuleMaterials) && (
           <HelpHint what={t('help.acad_course_status_what')} how={t('help.acad_course_status_how')} />
         )}
+        {canCreateCourse(staff) && (
+          // Opens the new-course form filled in from this one (OOC-182); nothing is written until it is saved.
+          <span className="inline-flex items-center gap-1 sm:ml-auto">
+            <Link
+              href={`/backoffice/courses/${course.id}/duplicate`}
+              className="inline-flex min-h-tap items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink"
+            >
+              <BoIcon name="copy" size={16} />
+              {t('courses.duplicate')}
+            </Link>
+            <HelpHint what={t('help.course_duplicate_what')} how={t('help.course_duplicate_how')} />
+          </span>
+        )}
         <p className="basis-full text-sm text-muted-foreground">
           {[course.language.name, course.level].filter(Boolean).join(' · ')}
         </p>
+        {created === 'duplicate' && (
+          <p role="status" className="basis-full text-sm text-emerald-700">
+            {t('courses.duplicated')}
+          </p>
+        )}
       </header>
 
       <nav className={tabStripClass}>

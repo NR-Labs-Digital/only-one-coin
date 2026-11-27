@@ -782,6 +782,7 @@ export {
   WaitlistEntryClosedError,
   WaitlistEntryNotFoundError,
   LandingKeyTakenError,
+  CourseCopyNameUnchangedError,
   ModuleMaterialsIncompleteError,
   ModuleMaterialInvalidError,
   ClassroomUrlInvalidError,
@@ -929,6 +930,11 @@ export {
 } from "./catalog/landingCourseKeys.js";
 export type { ICourseRepository } from "./catalog/ports/ICourseRepository.js";
 export { CreateCourseUseCase, type CreateCourseInput } from "./catalog/CreateCourseUseCase.js";
+export {
+  DuplicateCourseUseCase,
+  type DuplicateCourseInput,
+  type DuplicatedPlanInput,
+} from "./catalog/DuplicateCourseUseCase.js";
 export { UpdateCourseUseCase, type UpdateCourseInput } from "./catalog/UpdateCourseUseCase.js";
 export {
   RetireCatalogEntryUseCase,
