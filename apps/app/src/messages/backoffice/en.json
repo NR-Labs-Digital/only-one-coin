@@ -2089,7 +2089,12 @@
       "restored_toast": "Access unblocked",
       "restore_teacher_inactive": "This account belongs to a teacher off the roster: access comes back when they rejoin it in Teachers.",
       "tab_people": "People",
-      "change_error_beyond": "You cannot grant or take away a role holding permissions your role does not have."
+      "change_error_beyond": "You cannot grant or take away a role holding permissions your role does not have.",
+      "edit": "Edit",
+      "edit_title": "Edit user",
+      "edit_password_heading": "Password",
+      "edit_password_body": "Creates a link for the person to set a new password.",
+      "edit_retire_body": "The account leaves the team and this cannot be undone. To cut access for a while, use Block."
     },
     "deliveries": {
       "title": "E-mails that did not land",
@@ -3007,7 +3012,9 @@
       "email_editor_data_what": "Each send's details, such as the student's name or the course. They fill in with each person's own.",
       "email_editor_data_how": "Tap a detail to insert it at the cursor. Dates and amounts come out in each language's format.",
       "email_editor_proof_what": "Sends the saved draft, with sample data, to the addresses you type, in the language on screen. The subject is marked as a proof.",
-      "email_editor_versions_what": "Each publication creates a new version, which cannot be edited or deleted. The one in force is the latest."
+      "email_editor_versions_what": "Each publication creates a new version, which cannot be edited or deleted. The one in force is the latest.",
+      "admin_team_reset_password_what": "A one-time link, valid for 24 hours, for the person to set a new password.",
+      "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
