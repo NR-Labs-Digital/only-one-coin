@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getEmailFlow, getEmailPreviews, isEmailTemplate } from '@/lib/backoffice/emails'
 import { getStaffSession } from '@/lib/backoffice/session'
-import { canManageEmail, canSendEmailProof } from '@/lib/backoffice/permissions'
+import { canEditEmailTemplate, canManageEmail, canSendEmailProof } from '@/lib/backoffice/permissions'
 import { EmptyState } from '@/components/backoffice/ui'
 import { BoIcon } from '@/components/backoffice/icons'
 import { EmailFlowDetail } from './email-flow-detail'
@@ -71,6 +71,7 @@ export default async function EmailFlowPage({
           windowDays={detail.windowDays}
           previews={previews}
           canSendProof={canSendEmailProof(staff)}
+          canEditWords={canEditEmailTemplate(staff)}
         />
       ) : (
         <EmptyState

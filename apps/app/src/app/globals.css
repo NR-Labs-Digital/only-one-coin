@@ -493,6 +493,11 @@
     border: 0;
     border-top: 1px solid var(--color-line);
   }
+  /* One block of an e-mail's words (OOC-60): a line of text and chips. */
+  .email-line .ProseMirror {
+    outline: none;
+    min-height: 1.5rem;
+  }
   .doc-chip {
     display: inline-block;
     margin: 0 1px;
