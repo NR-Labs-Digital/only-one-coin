@@ -290,3 +290,19 @@ export class ClassGroupFullCourseSplitError extends UnableToProcessEntryError {
     });
   }
 }
+
+/**
+ * A copied course must be renamed before it is saved (OOC-182): two courses
+ * under the source's own name would read as the same course on every list.
+ * Only the source's name is refused — a name matching some other live course
+ * is not a rule anyone decided (the ticket leaves it as a proposal).
+ */
+export class CourseCopyNameUnchangedError extends UnableToProcessEntryError {
+  constructor(params?: { path?: string; cause?: unknown }) {
+    super({
+      reason: "catalog.copy_name_unchanged",
+      message: "A copied course needs a name other than the source's.",
+      ...params,
+    });
+  }
+}

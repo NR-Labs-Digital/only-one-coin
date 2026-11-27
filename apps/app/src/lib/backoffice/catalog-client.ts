@@ -42,6 +42,8 @@ const KNOWN: ReadonlySet<CatalogErrorKey> = new Set<CatalogErrorKey>([
   'language_not_found',
   'language_exists',
   'language_in_use',
+  // Duplicating a course (OOC-182).
+  'copy_name_unchanged',
 ])
 
 /** `catalog.price_in_past` → `price_in_past`; anything unknown → `generic`. */

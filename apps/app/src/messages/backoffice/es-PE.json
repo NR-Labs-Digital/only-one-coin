@@ -329,6 +329,7 @@
         "waitlist_joined": "Alumno en lista de espera",
         "waitlist_left": "Alumno salió de la lista de espera",
         "course_created": "Curso creado",
+        "course_duplicated": "Curso duplicado",
         "course_updated": "Curso editado",
         "plan_created": "Plan creado",
         "plan_renamed": "Plan renombrado",
@@ -1679,7 +1680,20 @@
       "confirm_retire": "¿Sacar este curso del catálogo? Deja de aparecer en la matrícula. Puedes deshacerlo después.",
       "confirm_restore": "¿Volver a poner este curso en el catálogo?",
       "field_language_pick": "Elige un idioma",
-      "field_language_hint_list": "¿No está en la lista? Créalo en la pestaña Idiomas."
+      "field_language_hint_list": "¿No está en la lista? Créalo en la pestaña Idiomas.",
+      "duplicate": "Duplicar curso",
+      "duplicate_title": "Duplicar «{name}»",
+      "duplicate_intro": "Es un curso nuevo, lleno con los datos del original. Cambia lo que haga falta: nada se guarda hasta que lo crees, y el original no cambia.",
+      "duplicate_name_unchanged": "Ponle un nombre distinto al del curso original.",
+      "duplicate_no_landing": "Ninguna — el curso nuevo nace sin página",
+      "duplicate_plans_title": "Planes del curso nuevo",
+      "duplicate_no_plans": "El curso original no tiene planes en venta. Agrégalos después de crear el curso.",
+      "duplicate_plan_include": "Copiar este plan",
+      "duplicate_amount_module": "Precio de un módulo (S/)",
+      "duplicate_amount_missing": "Escribe el precio del plan.",
+      "duplicate_create": "Crear curso",
+      "duplicate_back": "Volver a {name}",
+      "duplicated": "Curso creado a partir del original."
     },
     "plans": {
       "title": "Planes y precios",
@@ -2338,7 +2352,8 @@
       "class_group_module_has_students": "Todavía hay alumnos en este grupo. Muévelos antes de retirarlo.",
       "class_group_module_ambiguous": "El aula tiene varios grupos de módulo: edita el docente, el horario y el Classroom en cada grupo.",
       "class_group_full_course_split": "Un curso completo abre un grupo por módulo; cada grupo da un módulo.",
-      "meet_url_invalid": "El enlace no es de Google Meet."
+      "meet_url_invalid": "El enlace no es de Google Meet.",
+      "copy_name_unchanged": "El curso nuevo necesita un nombre distinto al del original."
     },
     "audit_action": {
       "student_registered": "Alumno registrado",
@@ -2950,7 +2965,13 @@
       "classroom_change_due_what": "“Cambiar contraseña” aparece cuando un docente dejó de usar la cuenta después del último cambio: todavía conoce la contraseña.",
       "classroom_change_due_how": "Cambia la contraseña en Google y escribe la nueva con Editar: el aviso desaparece y los docentes que siguen en la cuenta ven la nueva en su portal.",
       "own_classroom_access_what": "El correo y la contraseña de la cuenta de Google con la que entras a Classroom, que te asignó la coordinación.",
-      "own_classroom_access_how": "La cuenta es compartida: no cambies la contraseña. Cuando la coordinación la cambia, aquí ves la nueva."
+      "own_classroom_access_how": "La cuenta es compartida: no cambies la contraseña. Cuando la coordinación la cambia, aquí ves la nueva.",
+      "course_duplicate_what": "Abre el formulario de un curso nuevo ya lleno con este: idioma, nivel, módulos y su material, edad mínima, opciones y los planes con su precio vigente.",
+      "course_duplicate_how": "Cambias lo necesario y lo creas. Las aulas, matrículas y notas se quedan en este curso, y este curso no cambia. Cancelar no crea nada.",
+      "course_duplicate_landing_what": "Cada página de la web enlaza a un solo curso vivo, así que la copia nace sin página.",
+      "course_duplicate_landing_how": "Si el curso nuevo debe reemplazar al original en la web, enlázalo después en su configuración.",
+      "course_duplicate_plans_what": "Cada plan copiado es un plan nuevo del curso nuevo, con la misma modalidad (paquete o mensual), que no se cambia después.",
+      "course_duplicate_plans_how": "El precio parte del vigente en el original y lo puedes cambiar: el que guardes es el primer precio del plan nuevo, vigente desde hoy. Los planes del original no cambian. Desmarca un plan para no copiarlo."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"

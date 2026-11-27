@@ -303,3 +303,42 @@ describe("course landing key storage", () => {
     });
   });
 });
+
+describe("course duplication storage (OOC-182)", () => {
+  it("writes the course, its plans and their first prices together, read back by the plan list", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const course = aCourse();
+      const monthly = Plan.create({ courseId: course.id, name: "Mensual", billing: "monthly" });
+      const pack = Plan.create({ courseId: course.id, name: "Paquete" });
+      const created = await new DrizzleCourseRepository(tx).createWithPlans(course, [
+        { plan: monthly, price: PlanPrice.schedule({ planId: monthly.id, amountCents: 6500 }) },
+        { plan: pack, price: PlanPrice.schedule({ planId: pack.id, amountCents: 30000 }) },
+      ]);
+
+      expect(created.id).toBe(course.id);
+      const listed = await new DrizzlePlanRepository(tx).listByCourse(course.id);
+      expect(listed.map((plan) => [plan.name, plan.billing]).sort()).toEqual([
+        ["Mensual", "monthly"],
+        ["Paquete", "package"],
+      ]);
+      const detail = await new GetCourseQuery(tx).run(course.id);
+      expect(detail?.plans.map((plan) => plan.prices.map((price) => price.amountCents)).sort()).toEqual([[30000], [6500]]);
+    });
+  });
+
+  it("writes nothing when a plan cannot be written", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const course = aCourse();
+      const plan = Plan.create({ courseId: course.id, name: "Paquete" });
+      // Same plan id twice: the second insert violates the primary key, and the course must not stay behind.
+      const price = PlanPrice.schedule({ planId: plan.id, amountCents: 1000 });
+      await expect(
+        new DrizzleCourseRepository(tx).createWithPlans(course, [
+          { plan, price },
+          { plan, price: PlanPrice.schedule({ planId: plan.id, amountCents: 1000 }) },
+        ]),
+      ).rejects.toThrow();
+      expect(await new DrizzleCourseRepository(tx).findById(course.id)).toBeNull();
+    });
+  });
+});

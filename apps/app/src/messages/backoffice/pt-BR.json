@@ -329,6 +329,7 @@
         "waitlist_joined": "Aluno na lista de espera",
         "waitlist_left": "Aluno saiu da lista de espera",
         "course_created": "Curso criado",
+        "course_duplicated": "Curso duplicado",
         "course_updated": "Curso editado",
         "plan_created": "Plano criado",
         "plan_renamed": "Plano renomeado",
@@ -1679,7 +1680,20 @@
       "confirm_retire": "Tirar este curso do catálogo? Ele deixa de aparecer na matrícula. Dá para desfazer depois.",
       "confirm_restore": "Colocar este curso de volta no catálogo?",
       "field_language_pick": "Escolha um idioma",
-      "field_language_hint_list": "Não está na lista? Crie na aba Idiomas."
+      "field_language_hint_list": "Não está na lista? Crie na aba Idiomas.",
+      "duplicate": "Duplicar curso",
+      "duplicate_title": "Duplicar «{name}»",
+      "duplicate_intro": "É um curso novo, preenchido com os dados do original. Mude o que for preciso: nada é gravado até você criar, e o original não muda.",
+      "duplicate_name_unchanged": "Dê um nome diferente do curso original.",
+      "duplicate_no_landing": "Nenhuma — o curso novo nasce sem página",
+      "duplicate_plans_title": "Planos do curso novo",
+      "duplicate_no_plans": "O curso original não tem planos à venda. Adicione-os depois de criar o curso.",
+      "duplicate_plan_include": "Copiar este plano",
+      "duplicate_amount_module": "Preço de um módulo (S/)",
+      "duplicate_amount_missing": "Digite o preço do plano.",
+      "duplicate_create": "Criar curso",
+      "duplicate_back": "Voltar para {name}",
+      "duplicated": "Curso criado a partir do original."
     },
     "plans": {
       "title": "Planos e preços",
@@ -2338,7 +2352,8 @@
       "class_group_module_has_students": "Ainda há alunos nesta sub-turma. Mova-os antes de retirá-la.",
       "class_group_module_ambiguous": "A turma tem várias sub-turmas: edite docente, horário e Classroom em cada sub-turma.",
       "class_group_full_course_split": "Um curso completo abre uma sub-turma por módulo; cada sub-turma dá um módulo.",
-      "meet_url_invalid": "O link não é do Google Meet."
+      "meet_url_invalid": "O link não é do Google Meet.",
+      "copy_name_unchanged": "O curso novo precisa de um nome diferente do original."
     },
     "audit_action": {
       "student_registered": "Aluno cadastrado",
@@ -2950,7 +2965,13 @@
       "classroom_change_due_what": "“Trocar a senha” aparece quando um docente deixou de usar a conta depois da última troca: ele ainda conhece a senha.",
       "classroom_change_due_how": "Troque a senha no Google e escreva a nova em Editar: o aviso some e os docentes que continuam na conta veem a nova no portal.",
       "own_classroom_access_what": "O e-mail e a senha da conta do Google com que você entra no Classroom, atribuída pela coordenação.",
-      "own_classroom_access_how": "A conta é compartilhada: não troque a senha. Quando a coordenação a troca, aqui você vê a nova."
+      "own_classroom_access_how": "A conta é compartilhada: não troque a senha. Quando a coordenação a troca, aqui você vê a nova.",
+      "course_duplicate_what": "Abre o formulário de um curso novo já preenchido com este: idioma, nível, módulos e o material deles, idade mínima, opções e os planos com o preço vigente.",
+      "course_duplicate_how": "Você muda o necessário e cria. Turmas, matrículas e notas ficam neste curso, e este curso não muda. Cancelar não cria nada.",
+      "course_duplicate_landing_what": "Cada página do site aponta para um só curso vivo, então a cópia nasce sem página.",
+      "course_duplicate_landing_how": "Se o curso novo for substituir o original no site, ligue-o depois na configuração dele.",
+      "course_duplicate_plans_what": "Cada plano copiado é um plano novo do curso novo, com a mesma modalidade (pacote ou mensal), que não muda depois.",
+      "course_duplicate_plans_how": "O preço parte do vigente no original e pode ser mudado: o que você gravar é o primeiro preço do plano novo, vigente a partir de hoje. Os planos do original não mudam. Desmarque um plano para não copiá-lo."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
