@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { getStaffSession } from '@/lib/backoffice/session'
 import { getStaffProfiles } from '@/lib/backoffice/permission-matrix-server'
+import { listStaff } from '@/lib/backoffice/staff'
 import { canManageProfiles, canManageStaff, canViewPermissionMatrix } from '@/lib/backoffice/permissions'
 import { EmptyState, PageHeader } from '@/components/backoffice/ui'
 import { TeamTabs } from '../team-tabs'
@@ -34,7 +35,12 @@ export default async function TeamPermissionsPage({
     )
   }
 
-  const profiles = await profilesRequest
+  /* The people on each cargo come from the team directory, which only who
+     manages the team reads; the analyst sees the cargos without names. */
+  const [profiles, people] = await Promise.all([
+    profilesRequest,
+    canManageStaff(staff) ? listStaff() : Promise.resolve(null),
+  ])
 
   return (
     <div className="flex flex-col gap-5">
@@ -43,6 +49,7 @@ export default async function TeamPermissionsPage({
       {profiles ? (
         <PermissionMatrixView
           profiles={profiles}
+          people={people}
           viewerPermissions={staff.permissions}
           canManage={canManageProfiles(staff)}
         />

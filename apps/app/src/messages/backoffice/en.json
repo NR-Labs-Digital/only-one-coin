@@ -3485,6 +3485,7 @@
       "created_toast": "Role created. Tick what it can do.",
       "retired_toast": "Role deleted",
       "retire": "Delete role",
+      "retire_system": "System roles are not deleted.",
       "retire_title": "Delete the role",
       "retire_body": "{name} stops existing and leaves the role lists. The history still names it.",
       "retire_in_use": "{count, plural, one {One person or invite still has this role} other {# people or invites still have this role}}. Change their role under People before deleting it.",
@@ -3499,6 +3500,10 @@
       "grant_everyone": "Every panel account has it.",
       "not_held": "Your role does not hold it, so you cannot grant it.",
       "mfa_will_require": "With these permissions, people on the role will have to turn on the second factor.",
+      "roles_heading": "Roles",
+      "edit_role": "Edit role",
+      "back_to_roles": "Back to roles",
+      "invited_badge": "Invite pending",
       "error": {
         "staff_profile": {
           "name_taken": "A role with that name already exists.",

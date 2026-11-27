@@ -3485,6 +3485,7 @@
       "created_toast": "Cargo creado. Marca lo que puede hacer.",
       "retired_toast": "Cargo eliminado",
       "retire": "Eliminar cargo",
+      "retire_system": "Los cargos del sistema no se eliminan.",
       "retire_title": "Eliminar el cargo",
       "retire_body": "{name} deja de existir y sale de las listas de cargos. El historial lo sigue nombrando.",
       "retire_in_use": "{count, plural, one {Una persona o invitación todavía tiene este cargo} other {# personas o invitaciones todavía tienen este cargo}}. Cámbiales el cargo en Personas antes de eliminarlo.",
@@ -3499,6 +3500,10 @@
       "grant_everyone": "Toda cuenta del panel lo tiene.",
       "not_held": "Tu cargo no lo tiene, así que no puedes darlo.",
       "mfa_will_require": "Con estos permisos, las personas del cargo tendrán que activar el segundo factor.",
+      "roles_heading": "Cargos",
+      "edit_role": "Editar cargo",
+      "back_to_roles": "Volver a cargos",
+      "invited_badge": "Invitación pendiente",
       "error": {
         "staff_profile": {
           "name_taken": "Ya existe un cargo con ese nombre.",
