@@ -3018,7 +3018,9 @@
       "email_editor_proof_what": "Sends the saved draft, with sample data, to the addresses you type, in the language on screen. The subject is marked as a proof.",
       "email_editor_versions_what": "Each publication creates a new version, which cannot be edited or deleted. The one in force is the latest.",
       "admin_team_reset_password_what": "A one-time link, valid for 24 hours, for the person to set a new password.",
-      "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password."
+      "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password.",
+      "portal_device_what": "The portal installs as an app on your home screen and can notify you on this device of what we e-mail you: payments, grades, documents and reminders about your courses.",
+      "portal_device_how": "Notifications are turned on per device and do not replace the e-mail, which keeps arriving. You can turn them off at any time. On iPhone, install the portal first and open it from the Home Screen."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"

@@ -3018,7 +3018,9 @@
       "email_editor_proof_what": "Manda el borrador guardado, con datos de ejemplo, a las direcciones que escribas, en el idioma que estás viendo. El asunto sale marcado como prueba.",
       "email_editor_versions_what": "Cada publicación crea una versión nueva, que no se edita ni se borra. La vigente es la última.",
       "admin_team_reset_password_what": "Un enlace de un solo uso, válido por 24 horas, para que la persona defina una contraseña nueva.",
-      "admin_team_reset_password_how": "La plataforma no envía nada: copias el enlace y se lo mandas tú. Nadie más que la persona conoce la contraseña."
+      "admin_team_reset_password_how": "La plataforma no envía nada: copias el enlace y se lo mandas tú. Nadie más que la persona conoce la contraseña.",
+      "portal_device_what": "El portal se instala como una app en la pantalla de inicio y puede avisarte en este dispositivo lo mismo que te enviamos por correo: pagos, notas, documentos y recordatorios de tus cursos.",
+      "portal_device_how": "Las notificaciones se activan en cada dispositivo y no reemplazan el correo, que sigue llegando igual. Puedes desactivarlas cuando quieras. En iPhone, primero instala el portal y ábrelo desde la pantalla de inicio."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
