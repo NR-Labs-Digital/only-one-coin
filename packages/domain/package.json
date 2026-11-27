@@ -18,7 +18,8 @@
     "./permission-catalog": "./src/identity/permissionCatalog.ts",
     "./email-catalog": "./src/notification/emailCatalog.ts",
     "./class-group-offer": "./src/catalog/classGroupOffer.ts",
-    "./issued-document": "./src/issuedDocument/IssuedDocument.ts"
+    "./issued-document": "./src/issuedDocument/IssuedDocument.ts",
+    "./analytics": "./src/analytics/adConsent.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

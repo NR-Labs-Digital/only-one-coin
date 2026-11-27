@@ -877,6 +877,16 @@ export const content = {
       waAria: "Escríbenos por WhatsApp",
       langLabel: "Idioma",
     },
+    // Banner of the paid-media pixels (OOC-47). PostHog needs no answer;
+    // Meta and TikTok load only after "Aceptar".
+    consent: {
+      label: "Cookies de publicidad",
+      text: "Usamos cookies de Meta y TikTok para medir nuestros anuncios, solo si las aceptas. Nunca enviamos tu nombre, documento ni correo.",
+      policy: "Política de privacidad",
+      accept: "Aceptar",
+      reject: "Rechazar",
+      manage: "Cookies",
+    },
   },
 
   en: {
@@ -1436,6 +1446,14 @@ export const content = {
       waAria: "Message us on WhatsApp",
       langLabel: "Language",
     },
+    consent: {
+      label: "Advertising cookies",
+      text: "We use Meta and TikTok cookies to measure our ads, only if you accept them. We never send your name, ID document or e-mail.",
+      policy: "Privacy policy",
+      accept: "Accept",
+      reject: "Reject",
+      manage: "Cookies",
+    },
   },
 
   pt: {
@@ -1994,6 +2012,14 @@ export const content = {
     common: {
       waAria: "Fale conosco no WhatsApp",
       langLabel: "Idioma",
+    },
+    consent: {
+      label: "Cookies de publicidade",
+      text: "Usamos cookies da Meta e do TikTok para medir nossos anúncios, só se você aceitar. Nunca enviamos seu nome, documento nem e-mail.",
+      policy: "Política de privacidade",
+      accept: "Aceitar",
+      reject: "Recusar",
+      manage: "Cookies",
     },
   },
 } as const;

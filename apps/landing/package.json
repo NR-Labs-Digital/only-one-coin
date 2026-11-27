@@ -14,6 +14,7 @@
     "@ooc/domain": "workspace:*",
     "@vercel/functions": "^3.9.5",
     "astro": "^5.13.0",
+    "posthog-js": "^1.455.4",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

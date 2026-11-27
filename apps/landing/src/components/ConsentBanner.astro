@@ -1,0 +1,84 @@
+---
+// The pixel banner (OOC-47). Rendered hidden; `src/analytics/client.ts`
+// shows it while the visitor has not answered, and again from the footer's
+// "Cookies" button. Only on a build that has a pixel id — with none, there
+// is nothing to consent to and the banner is not on the page at all.
+import { getLangFromUrl, useTranslations, withLang } from "../i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const c = useTranslations(lang).consent;
+---
+
+<section class="consent" data-consent-banner hidden aria-label={c.label}>
+  <p class="consent-text">
+    {c.text}
+    <a href={withLang(lang, "/privacy-policy")}>{c.policy}</a>
+  </p>
+  <div class="consent-actions">
+    <button type="button" class="btn btn-outline consent-btn" data-consent-reject>{c.reject}</button>
+    <button type="button" class="btn btn-primary consent-btn" data-consent-accept>{c.accept}</button>
+  </div>
+</section>
+
+<style>
+  .consent {
+    position: fixed;
+    left: calc(22 * var(--dp));
+    bottom: calc(22 * var(--dp));
+    /* Clear of the WhatsApp bubble on the right (58 + its 22 margin). */
+    width: min(calc(560 * var(--dp)), calc(100vw - 124 * var(--dp)));
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: calc(14 * var(--dp));
+    padding: calc(20 * var(--dp)) calc(22 * var(--dp));
+    background: var(--paper);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+  .consent[hidden] {
+    display: none;
+  }
+  .consent-text {
+    margin: 0;
+    font-size: calc(14 * var(--dp));
+    line-height: 1.5;
+  }
+  .consent-text a {
+    color: var(--blue);
+    font-weight: 600;
+    margin-left: calc(4 * var(--dp));
+  }
+  .consent-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: calc(10 * var(--dp));
+  }
+  .consent-btn {
+    font-size: calc(14 * var(--dp));
+    padding: calc(10 * var(--dp)) calc(20 * var(--dp));
+  }
+
+  /* Phone (390 drawing): a full-width sheet at the bottom. The two answers
+     are the same size side by side — "Rechazar" must be as easy as
+     "Aceptar". The bubble sits above the sheet while it is open. */
+  @media (max-width: 900px) {
+    .consent {
+      left: calc(12 * var(--dp));
+      right: calc(12 * var(--dp));
+      bottom: calc(12 * var(--dp));
+      width: auto;
+      padding: calc(16 * var(--dp));
+    }
+    .consent-text,
+    .consent-btn {
+      font-size: calc(14 * var(--dp));
+    }
+    .consent-actions > * {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+</style>

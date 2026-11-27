@@ -255,6 +255,14 @@
       "submitted_summary": "Your {count} enrollments",
       "what_happens": "When you send, your seats are held and your receipt goes to review. You have up to {days} days for the payment to be approved; we will email you as soon as it is.",
       "timeline_received_body": "Your seats are held."
+    },
+    "consent": {
+      "label": "Advertising cookies",
+      "text": "We use Meta and TikTok cookies to measure our ads, only if you accept them. We never send your name, ID document or e-mail.",
+      "policy": "Privacy policy",
+      "accept": "Accept",
+      "reject": "Reject",
+      "manage": "Advertising cookies"
     }
   }
 }

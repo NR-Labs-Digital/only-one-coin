@@ -8,6 +8,8 @@ packages:
 allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
+  # core-js (via posthog-js, OOC-47): o postinstall só imprime um banner de doação
+  core-js: false
   esbuild: true
   # dependência opcional do ioredis (packages/queue) — tem fallback puro em JS
   msgpackr-extract: false
