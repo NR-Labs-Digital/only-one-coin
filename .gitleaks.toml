@@ -9,4 +9,7 @@ regexes = [
   '''ci-placeholder-secret-at-least-32-chars''',
   '''test-secret-at-least-32-characters-long''',
   '''integration-secret-at-least-32-characters''',
+  # Web Push test vector (fake browser subscription `keys.auth`) in
+  # apps/api/src/tests/portal-push.test.ts — a public sample value, not a credential.
+  '''tBHItJI5svbpez7KI4CCXg''',
 ]
