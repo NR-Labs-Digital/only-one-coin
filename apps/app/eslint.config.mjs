@@ -9,7 +9,7 @@ export default tseslint.config(
   ...baseTypeScriptConfig(
     tseslint,
     import.meta.dirname,
-    [".next/**", "next-env.d.ts", "postcss.config.mjs"],
+    [".next/**", "next-env.d.ts", "postcss.config.mjs", "public/sw.js"],
   ),
   {
     // Registra os plugins e liga só as regras clássicas que o código já
