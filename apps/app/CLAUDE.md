@@ -67,13 +67,18 @@ tela que apenas não estoura na horizontal ainda não é uma tela de celular.
   saída. **Pagamentos fica na folha**: mensalidade e comprovante são visita com
   hora marcada, e uma coluna permanente para o dinheiro faz o portal parecer uma
   cobrança.
-- **Idioma mora no perfil**, nunca no chrome. No portal é
-  `/portal/profile` (cartão "Preferências"); no painel, `/backoffice/account`.
-  Escolha que se faz uma vez não ocupa espaço permanente em toda tela. A
-  escolha grava na conta e o login abre nela (`lib/preferred-locale.ts`,
-  regra na raiz §4). As telas
-  de login são a exceção: antes de entrar não há perfil para abrir, e quem não
-  lê espanhol precisa trocar ali.
+- **Idioma: globo no topo dos painéis e escolha no perfil (OOC-191, 27/11/2026
+  — pedido do cliente, revoga o "idioma nunca no chrome").** O cabeçalho do
+  backoffice e do portal do docente tem, no canto direito, o globo com o
+  código do idioma (`components/language-globe.tsx`, `saveToAccount`), que
+  troca a rota e grava na conta como a Cuenta. O portal do aluno continua só
+  com o cartão "Preferências" de `/portal/profile`; `/backoffice/account` e
+  `/docente/account` mantêm a lista. A escolha grava na conta e o login abre
+  nela (`lib/preferred-locale.ts`, regra na raiz §4). As telas de login têm o
+  globo na banda de marca. **O cookie `NEXT_LOCALE` dura um ano**
+  (`localeCookie.maxAge`, `i18n/routing.ts`): o next-intl 4 o grava como
+  cookie de sessão, e ao reabrir o navegador o painel caía no idioma do
+  navegador (inglês) em vez do escolhido.
 - **Toda borda fixa soma a safe area** — `pb-safe-b`, `pt-safe-t`. O layout raiz
   declara `viewportFit: 'cover'`, então a página pinta sob o notch e sob a barra
   de gestos. **Nunca bloquear zoom** (`maximumScale`/`userScalable`).

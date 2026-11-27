@@ -26,6 +26,7 @@ import { getBackofficeSession } from '@/lib/backoffice/session'
 import { getFeatureView } from '@/lib/feature-flags/server'
 import { isHiddenFromEverybody, surfaceHasHiddenFlags } from '@/lib/feature-flags/resolve'
 import type { FeatureFlagKey } from '@/lib/feature-flags/registry'
+import { LanguageGlobe } from '@/components/language-globe'
 import { InternalPreviewBadge } from '@/components/internal-preview-badge'
 import { initials } from '@/lib/format'
 import { BoSidebar, type BoNavGroup } from '@/components/backoffice/bo-sidebar'
@@ -368,18 +369,16 @@ export default async function BackofficePanelLayout({
                 label={t('nav.sidebar_toggle')}
               />
               <Separator orientation="vertical" className="mr-1 !h-5" />
-              {/*
-                No language switch here. It used to sit on the right of every
-                screen in the panel, which made a once-a-year choice into
-                permanent chrome — and a control that reloads the page under
-                someone mid-task. It lives in `/backoffice/account` now, with
-                the rest of what a person sets about themselves. The login
-                screens keep theirs: before signing in there is no account to
-                open, and someone who cannot read Spanish has to switch there.
-              */}
               <span className="text-sm font-semibold text-foreground">
                 {t('brand.panel_label')}
               </span>
+              {/* The quick language switch, top right (OOC-191, the client's
+                  request — it reverses the 'language lives only on the
+                  account page' rule of apps/app/CLAUDE.md). It also saves the
+                  choice on the account, like /backoffice/account does. */}
+              <div className="ml-auto">
+                <LanguageGlobe saveToAccount />
+              </div>
             </header>
 
             {/*

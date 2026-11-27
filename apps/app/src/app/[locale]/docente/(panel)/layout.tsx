@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
+import { LanguageGlobe } from '@/components/language-globe'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logoutTeacher } from '../actions'
 import { getTeacherSession } from '@/lib/backoffice/session'
@@ -159,6 +160,10 @@ export default async function TeacherPanelLayout({
             <span className="text-sm font-semibold text-foreground">
               {t('teacher_portal.panel_label')}
             </span>
+            {/* Same quick language switch as the backoffice header (OOC-191). */}
+            <div className="ml-auto">
+              <LanguageGlobe saveToAccount />
+            </div>
           </header>
 
           {/* Same column rules as the backoffice: `@container/page` so the
