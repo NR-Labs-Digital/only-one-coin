@@ -2442,6 +2442,8 @@
     "class_resources": {
       "materials": "Materiales",
       "materials_module": "Material del módulo {number}",
+      "other_modules_title": "Material de los otros módulos",
+      "all_modules_title": "Material de los módulos",
       "title": "Accesos del aula"
     },
     "class_notices": {
@@ -2799,6 +2801,8 @@
       "teach_progression_how": "El sistema propone según la nota; tú revisas y confirmas. Solo cuenta la nota oficial: con una nota en revisión, ese alumno no pasa ni repite. Hacer pasar a alguien debajo de la nota mínima es de la coordinación.",
       "teach_resources_what": "Los enlaces de tu clase: el Meet del grupo, el Classroom de cada módulo y el material del módulo, que la coordinación guarda en el curso.",
       "teach_resources_how": "No los cambias tú: si falta alguno, pídeselo a la coordinación. El alumno ve el Meet y el Classroom solo con su vacante confirmada.",
+      "teach_course_materials_what": "El material de cada módulo del curso, también los que esta clase todavía no da, para que prepares las clases que vienen.",
+      "teach_course_materials_how": "Solo lectura: la coordinación lo guarda en el curso. Si falta el de algún módulo, pídeselo.",
       "teach_class_status_what": "En qué punto está el aula: matriculando, en curso o finalizada. Pasa a finalizada cuando registras la última nota que faltaba, o cuando la coordinación la avanza.",
       "teach_class_status_how": "Una finalizada ya no cuenta como activa, pero sigue en Mis aulas por si falta alguna nota. Cuando la coordinación la cierra, sale de tu portal.",
       "portal_billing_mode_what": "Paquete completo: pagaste el curso de una sola vez. Mensual: compras un módulo a la vez, antes de cursarlo.",

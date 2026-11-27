@@ -46,7 +46,11 @@ export interface TeachingClassGroup {
   moduleMaterialUrl: string | null;
   /** Teaches every module of the course (OOC-130); `module` is null then. */
   fullCourse: boolean;
-  /** Every module's link, in order, on a full-course class group; empty on any other. */
+  /**
+   * Every module's material link of the course, in module order — on every
+   * run, not only a full-course one, so the teacher can prepare the modules
+   * ahead (OOC-194). Empty = the course has no material.
+   */
   courseMaterialUrls: string[];
   /** The class group, or the run, retired from the catalog (`deleted_at`). */
   retired: boolean;

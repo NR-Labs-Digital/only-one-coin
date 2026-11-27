@@ -39,7 +39,7 @@ export interface TeachingClassGroup {
   moduleMaterialUrl: string | null
   /** Teaches every module of the course (OOC-130); `module` is null then. */
   fullCourse: boolean
-  /** Every module's material, in order, on a full-course class group; empty on any other. */
+  /** Every module's material of the course, in order, on every class group (OOC-194); empty = no material. */
   courseMaterialUrls: string[]
 }
 

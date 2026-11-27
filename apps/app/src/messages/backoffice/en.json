@@ -2442,6 +2442,8 @@
     "class_resources": {
       "materials": "Materials",
       "materials_module": "Module {number} material",
+      "other_modules_title": "Other modules' material",
+      "all_modules_title": "Modules' material",
       "title": "Class access"
     },
     "class_notices": {
@@ -2799,6 +2801,8 @@
       "teach_progression_how": "The system suggests based on the grade; you review and confirm. Only official grades count: with a grade in review, that student neither moves on nor repeats. Moving someone on below the passing grade is up to coordination.",
       "teach_resources_what": "Your class links: the group's Meet, each module's Classroom, and the module's material, which coordination keeps in the course.",
       "teach_resources_how": "You don't change them: if one is missing, ask coordination. Students see the Meet and Classroom only with a confirmed seat.",
+      "teach_course_materials_what": "The material of every module of the course, including the ones this class does not teach yet, so you can prepare the classes ahead.",
+      "teach_course_materials_how": "Read-only: coordination keeps it in the course. If a module's is missing, ask them.",
       "teach_class_status_what": "Where the class stands: enrolling, in progress or finished. It becomes finished when you post the last missing grade, or when coordination moves it forward.",
       "teach_class_status_how": "A finished class no longer counts as active, but it stays in My class groups in case a grade is missing. When coordination closes it, it leaves your portal.",
       "portal_billing_mode_what": "Full package: you paid for the course in one go. Monthly: you buy one module at a time, before taking it.",

@@ -29,7 +29,7 @@ export const TeachingClassGroupSchema = z.object({
   moduleMaterialUrl: z.string().nullable(),
   /** Teaches every module of the course (OOC-130); `module` is null then. */
   fullCourse: z.boolean(),
-  /** Every module's material, in order, on a full-course class group; empty on any other. */
+  /** Every module's material of the course, in order, on every run (OOC-194); empty = no material. */
   courseMaterialUrls: z.array(z.string()),
 });
 

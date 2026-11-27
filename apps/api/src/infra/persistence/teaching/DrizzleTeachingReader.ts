@@ -131,7 +131,7 @@ export class DrizzleTeachingReader implements ITeachingReader {
       module: run.module,
       moduleMaterialUrl: materialOfModule(moduleMaterials, run.module),
       fullCourse: run.fullCourse,
-      courseMaterialUrls: run.fullCourse ? moduleMaterials : [],
+      courseMaterialUrls: moduleMaterials,
       retired: group.deletedAt !== null || run.deletedAt !== null,
     }));
   }
