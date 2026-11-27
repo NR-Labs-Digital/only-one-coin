@@ -3525,7 +3525,7 @@
         "edit": "Editar"
       },
       "access_partly": "em parte",
-      "access_detail": "{count} de {total} ações · detalhe",
+      "access_detail": "{count} de {total, plural, one {# ação} other {# ações}} · detalhe",
       "access_intro": "Cada área tem duas chaves: Ver e Editar."
     },
     "grade_record": {

@@ -3525,7 +3525,7 @@
         "edit": "Editar"
       },
       "access_partly": "en parte",
-      "access_detail": "{count} de {total} acciones · detalle",
+      "access_detail": "{count} de {total, plural, one {# acción} other {# acciones}} · detalle",
       "access_intro": "Cada área tiene dos interruptores: Ver y Editar."
     },
     "grade_record": {

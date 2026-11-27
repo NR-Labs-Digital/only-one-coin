@@ -3525,7 +3525,7 @@
         "edit": "Edit"
       },
       "access_partly": "partly",
-      "access_detail": "{count} of {total} actions · details",
+      "access_detail": "{count} of {total, plural, one {# action} other {# actions}} · details",
       "access_intro": "Each area has two switches: View and Edit."
     },
     "grade_record": {
