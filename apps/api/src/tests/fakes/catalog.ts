@@ -39,9 +39,17 @@ export class FakeAuditLogRepository implements IAuditLogRepository {
 
 export class FakeCourseRepository implements ICourseRepository {
   public readonly rows = new Map<string, Course>();
+  /** Where `createWithPlans` puts the plans — a test wires the plan fake in. */
+  public planSink: FakePlanRepository | null = null;
 
   async create(course: Course): Promise<Course> {
     this.rows.set(course.id, course);
+    return course;
+  }
+
+  async createWithPlans(course: Course, copies: readonly { plan: Plan; price: PlanPrice }[]): Promise<Course> {
+    this.rows.set(course.id, course);
+    for (const { plan, price } of copies) await this.planSink?.createWithPrice(plan, price);
     return course;
   }
 
@@ -102,6 +110,10 @@ export class FakePlanRepository implements IPlanRepository {
 
   async findById(id: string): Promise<Plan | null> {
     return this.plans.get(id) ?? null;
+  }
+
+  async listByCourse(courseId: string): Promise<Plan[]> {
+    return [...this.plans.values()].filter((plan) => plan.courseId === courseId);
   }
 
   async rename(plan: Plan): Promise<void> {

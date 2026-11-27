@@ -8,6 +8,8 @@ import type { Plan, PlanPrice } from "../Plan.js";
 export interface IPlanRepository {
   createWithPrice(plan: Plan, price: PlanPrice): Promise<void>;
   findById(id: string): Promise<Plan | null>;
+  /** Every plan of a course, retired ones too — the caller filters. */
+  listByCourse(courseId: string): Promise<Plan[]>;
   rename(plan: Plan): Promise<void>;
   addPrice(price: PlanPrice): Promise<void>;
 }

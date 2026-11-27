@@ -1,5 +1,13 @@
-import { Course, LandingKeyTakenError, type CertificateRule, type ICourseRepository, type LandingCourseKey } from "@ooc/domain";
-import { courses } from "@ooc/db";
+import {
+  Course,
+  LandingKeyTakenError,
+  type CertificateRule,
+  type ICourseRepository,
+  type LandingCourseKey,
+  type Plan,
+  type PlanPrice,
+} from "@ooc/domain";
+import { courses, planPrices, plans } from "@ooc/db";
 import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
@@ -37,33 +45,54 @@ export function courseFromRow(row: CourseRow): Course {
   });
 }
 
+function courseValues(course: Course): typeof courses.$inferInsert {
+  return {
+    id: course.id,
+    name: course.name,
+    language: course.language,
+    languageId: course.languageId,
+    level: course.level,
+    summary: course.summary,
+    minAge: course.minAge,
+    modules: course.modules,
+    moduleMaterials: course.moduleMaterials,
+    totalHours: course.totalHours,
+    certificateRule: course.certificateRule,
+    allowsFreeze: course.allowsFreeze,
+    allowsTransfer: course.allowsTransfer,
+    allowsEnrollmentTransfer: course.allowsEnrollmentTransfer,
+    landingKey: course.landingKey,
+  };
+}
+
 export class DrizzleCourseRepository implements ICourseRepository {
   constructor(private readonly db: Db) {}
 
   async create(course: Course): Promise<Course> {
-    const [row] = await this.db
-      .insert(courses)
-      .values({
-        id: course.id,
-        name: course.name,
-        language: course.language,
-        languageId: course.languageId,
-        level: course.level,
-        summary: course.summary,
-        minAge: course.minAge,
-        modules: course.modules,
-        moduleMaterials: course.moduleMaterials,
-        totalHours: course.totalHours,
-        certificateRule: course.certificateRule,
-        allowsFreeze: course.allowsFreeze,
-        allowsTransfer: course.allowsTransfer,
-        allowsEnrollmentTransfer: course.allowsEnrollmentTransfer,
-        landingKey: course.landingKey,
-      })
-      .returning()
-      .catch(landingKeyRace);
+    const [row] = await this.db.insert(courses).values(courseValues(course)).returning().catch(landingKeyRace);
     if (!row) throw new Error("Insert into courses returned no row");
     return courseFromRow(row);
+  }
+
+  async createWithPlans(course: Course, copies: readonly { plan: Plan; price: PlanPrice }[]): Promise<Course> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx.insert(courses).values(courseValues(course)).returning().catch(landingKeyRace);
+      if (!row) throw new Error("Insert into courses returned no row");
+      if (copies.length > 0) {
+        await tx
+          .insert(plans)
+          .values(copies.map(({ plan }) => ({ id: plan.id, courseId: plan.courseId, name: plan.name, billing: plan.billing })));
+        await tx.insert(planPrices).values(
+          copies.map(({ price }) => ({
+            id: price.id,
+            planId: price.planId,
+            amountCents: price.amountCents,
+            validFrom: price.validFrom,
+          })),
+        );
+      }
+      return courseFromRow(row);
+    });
   }
 
   async findById(id: string): Promise<Course | null> {
