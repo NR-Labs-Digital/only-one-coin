@@ -11,7 +11,7 @@ import {
   type StaffProfileListing,
   type StaffProfileRecord,
 } from "@ooc/domain";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 
 type Row = { id: string; roleKey: string | null; name: string | null };
@@ -78,12 +78,26 @@ export class DrizzleStaffProfileRepository implements IStaffProfileRepository {
     return row ? this.record(row, await this.permissionsOf(row.id)) : null;
   }
 
-  async findByRole(role: BoardRole): Promise<StaffProfileRecord | null> {
+  async findByRole(role: BoardRole): Promise<(StaffProfileRecord & { retired: boolean }) | null> {
     const [row] = await this.db
-      .select({ id: staffProfiles.id, roleKey: staffProfiles.roleKey, name: staffProfiles.name })
+      .select({
+        id: staffProfiles.id,
+        roleKey: staffProfiles.roleKey,
+        name: staffProfiles.name,
+        deletedAt: staffProfiles.deletedAt,
+      })
       .from(staffProfiles)
       .where(eq(staffProfiles.roleKey, role));
-    return row ? this.record(row, await this.permissionsOf(row.id)) : null;
+    return row ? { ...this.record(row, await this.permissionsOf(row.id)), retired: row.deletedAt !== null } : null;
+  }
+
+  /** The board cargos administration retired — the access registry reads them as holding nothing. */
+  async retiredBoardRoles(): Promise<BoardRole[]> {
+    const rows = await this.db
+      .select({ roleKey: staffProfiles.roleKey })
+      .from(staffProfiles)
+      .where(and(isNotNull(staffProfiles.roleKey), isNotNull(staffProfiles.deletedAt)));
+    return rows.map((row) => row.roleKey as BoardRole);
   }
 
   async nameTaken(name: string, exceptId?: string): Promise<boolean> {
@@ -133,11 +147,12 @@ export class DrizzleStaffProfileRepository implements IStaffProfileRepository {
       .where(and(eq(staffProfiles.id, id), isNull(staffProfiles.deletedAt)));
   }
 
-  async countMembers(id: string): Promise<number> {
+  async countMembers(profile: Pick<StaffProfileRecord, "id" | "role">): Promise<number> {
+    const holds = profile.role ? sql`"role" = ${profile.role}` : sql`"profile_id" = ${profile.id}`;
     const rows = await this.db.execute<{ members: number }>(sql`
       select (
-        (select count(*) from "user" where "profile_id" = ${id} and "deletedAt" is null)
-        + (select count(*) from "staff_invites" where "profile_id" = ${id} and "status" = 'pending')
+        (select count(*) from "user" where ${holds} and "deletedAt" is null)
+        + (select count(*) from "staff_invites" where ${holds} and "status" = 'pending')
       )::int as "members"
     `);
     return rows.rows[0]?.members ?? 0;

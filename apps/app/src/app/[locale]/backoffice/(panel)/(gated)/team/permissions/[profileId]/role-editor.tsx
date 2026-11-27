@@ -26,8 +26,8 @@ import {
 
 /**
  * A cargo's page: its name (only a cargo created in Equipo has one to edit),
- * a switch per permission grouped by area, and — for a cargo created in
- * Equipo — deleting it. The save bar shows up only once something changed.
+ * a switch per permission grouped by area, and — for every cargo but master
+ * and teacher — deleting it. The save bar shows up only once something changed.
  */
 export function RoleEditor({
   profile,
@@ -97,8 +97,16 @@ export function RoleEditor({
           </div>
           <p className="text-sm text-muted-foreground">{t('permissions.members', { count: profile.members })}</p>
         </div>
-        {editable && profile.role === null && (
-          <button type="button" onClick={() => setRetiring(true)} className={dangerButtonClass}>
+        {/* Every cargo but master and teacher (never editable) can go once
+            nobody is on it; with people on it the button says why. */}
+        {editable && (
+          <button
+            type="button"
+            onClick={() => setRetiring(true)}
+            disabled={profile.members > 0}
+            title={profile.members > 0 ? t('permissions.retire_in_use_hint', { count: profile.members }) : undefined}
+            className={dangerButtonClass}
+          >
             <BoIcon name="trash" size={16} />
             {t('permissions.retire')}
           </button>

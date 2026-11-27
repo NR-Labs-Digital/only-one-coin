@@ -27,8 +27,8 @@ const iconButtonClass =
 
 /**
  * The cargos as a plain list (OOC-57, OOC-183): each one with who holds it,
- * a button to its permissions and — for a cargo created in Equipo — one to
- * delete it. Editing a cargo — its name and what it can do — is its own page.
+ * a button to its permissions and — for every cargo but master and teacher —
+ * one to delete it. Editing a cargo — its name and what it can do — is its own page.
  */
 export function PermissionMatrixView({
   profiles,
@@ -61,6 +61,16 @@ export function PermissionMatrixView({
         person.status !== 'inactive' &&
         (profile.role ? person.role === profile.role : person.role === 'custom' && person.profileId === profile.id),
     )
+
+  /** Why a cargo cannot be deleted now, or null when it can. */
+  const retireBlock = (profile: StaffProfileItem): string | null =>
+    profile.locked
+      ? t('permissions.retire_system')
+      : !profile.editable
+        ? t('permissions.not_editable_note')
+        : profile.members > 0
+          ? t('permissions.retire_in_use_hint', { count: profile.members })
+          : null
 
   const retiring = profiles.find((profile) => profile.id === retiringId) ?? null
 
@@ -120,32 +130,26 @@ export function PermissionMatrixView({
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Hint label={t('permissions.edit_role')}>
+                  {/* Who cannot change the cargo only reads it: the page opens
+                      read-only, so the button says so instead of "edit". */}
+                  <Hint label={profile.editable ? t('permissions.edit_role') : t('permissions.view_role')}>
                     <Link
                       href={`/backoffice/team/permissions/${profile.id}`}
-                      aria-label={t('permissions.edit_role')}
+                      aria-label={profile.editable ? t('permissions.edit_role') : t('permissions.view_role')}
                       className={`${iconButtonClass} border-line text-brand-blue hover:border-brand-blue/40 hover:bg-sky`}
                     >
-                      <BoIcon name="edit" size={18} />
+                      <BoIcon name={profile.editable ? 'edit' : 'eye'} size={18} />
                     </Link>
                   </Hint>
                   {canManage && (
                     /* Shown on every cargo so the action is always where people
-                       look for it; the board's cargos and the ones this account
-                       cannot edit say why instead of disappearing. */
-                    <Hint
-                      label={
-                        profile.role !== null
-                            ? t('permissions.retire_system')
-                            : !profile.editable
-                              ? t('permissions.not_editable_note')
-                              : t('permissions.retire')
-                      }
-                    >
+                       look for it; the ones that cannot go now say why instead
+                       of disappearing. */
+                    <Hint label={retireBlock(profile) ?? t('permissions.retire')}>
                       <button
                         type="button"
                         onClick={() => setRetiringId(profile.id)}
-                        disabled={profile.role !== null || !profile.editable}
+                        disabled={retireBlock(profile) !== null}
                         aria-label={t('permissions.retire')}
                         className={`${iconButtonClass} border-red-200 text-red-600 hover:border-red-400 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-300 disabled:hover:bg-white`}
                       >

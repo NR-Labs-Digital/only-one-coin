@@ -6,7 +6,8 @@ import { StaffProfileNotFoundError } from "./errors.js";
 /**
  * What an account on this cargo can do, read the way the authorization hook
  * reads it. A board cargo missing its row (a database the API has not booted
- * against yet) falls back to the board's defaults.
+ * against yet) falls back to the board's defaults; a retired one is refused,
+ * like a retired created cargo — nobody is put on it again.
  */
 export async function cargoPermissions(
   profiles: IStaffProfileRepository,
@@ -19,6 +20,7 @@ export async function cargoPermissions(
   }
   if (!isBoardRole(assignment.role)) return new Set();
   const profile = await profiles.findByRole(assignment.role);
+  if (profile?.retired) throw new StaffProfileNotFoundError();
   return profilePermissions(profile ?? { role: assignment.role, permissions: defaultPermissionsOf(assignment.role) });
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE "staff_profiles" DROP CONSTRAINT "staff_profiles_board_live_check";

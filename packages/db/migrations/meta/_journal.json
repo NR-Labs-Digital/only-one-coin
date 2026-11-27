@@ -561,6 +561,13 @@
       "when": 1795713228305,
       "tag": "0079_complaint_events",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1795745120363,
+      "tag": "0080_retire_board_roles",
+      "breakpoints": true
     }
   ]
 }

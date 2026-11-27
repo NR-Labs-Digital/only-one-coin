@@ -99,6 +99,7 @@ export function TeamView({
   currentUserId,
   currentUserRole,
   cargos,
+  retiredRoles,
   actions,
   // Recebido pelo caller mas ainda não consumido por este componente.
   currentUserName: _currentUserName,
@@ -112,6 +113,8 @@ export function TeamView({
   currentUserRole: StaffRole
   /** The cargos created in Equipo (OOC-183), offered beside the board's. */
   cargos: CustomCargo[]
+  /** Board cargos administration deleted: no select offers them any more. */
+  retiredRoles: readonly StaffRole[]
   actions: TeamActions
   currentUserName: string
 }) {
@@ -449,7 +452,7 @@ export function TeamView({
                 className={selectClass}
               >
                 <option value={ALL}>{t('team.filter_role')}</option>
-                {ROLES.map((item) => (
+                {ROLES.filter((item) => !retiredRoles.includes(item)).map((item) => (
                   <option key={item} value={item}>
                     {t(`role.${item}`)}
                   </option>
@@ -481,6 +484,7 @@ export function TeamView({
         <NewStaffForm
           teachers={invitableTeachers}
           cargos={cargos}
+          retiredRoles={retiredRoles}
           onCancel={() => setCreating(false)}
           onCreate={(member) => {
             setMembers((current) => [member, ...current])
@@ -790,6 +794,7 @@ export function TeamView({
       <RoleChangeDialog
         member={changing}
         cargos={cargos}
+        retiredRoles={retiredRoles}
         onClose={() => setChanging(null)}
         onConfirm={applyRoleChange}
       />

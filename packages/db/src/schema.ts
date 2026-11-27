@@ -1518,8 +1518,9 @@ export const staffInvites = pgTable(
 // one per cargo administration creates in Equipo — `name`, as typed; its
 // accounts carry the `custom` role and point here by `"user".profile_id`. What
 // each holds is `staff_profile_permissions`. A created cargo retires
-// (`deleted_at`) once no account or open invite uses it; a board cargo never
-// does. The board rows are written by the API on boot, not by a migration:
+// (`deleted_at`) once no account or open invite uses it, and so does a board
+// cargo but master and teacher (0080) — its row stays retired, so the boot
+// never writes it again. The board rows are written by the API on boot, not by a migration:
 // the permission catalog is code (`packages/domain`, permissionCatalog.ts).
 export const staffProfiles = pgTable(
   "staff_profiles",
@@ -1537,7 +1538,6 @@ export const staffProfiles = pgTable(
       .on(sql`lower(${table.name})`)
       .where(sql`${table.deletedAt} is null and ${table.name} is not null`),
     check("staff_profiles_kind_check", sql`num_nonnulls(${table.roleKey}, ${table.name}) = 1`),
-    check("staff_profiles_board_live_check", sql`${table.roleKey} is null or ${table.deletedAt} is null`),
     check(
       "staff_profiles_role_key_check",
       sql`${table.roleKey} is null or ${table.roleKey} in ('master', 'admin', 'analyst', 'enrollment_supervisor', 'academic_supervisor', 'academic_assistant', 'teacher', 'sales', 'support', 'billing')`,

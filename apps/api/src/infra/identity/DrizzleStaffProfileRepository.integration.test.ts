@@ -87,13 +87,36 @@ describe("DrizzleStaffProfileRepository", () => {
     const roles = new DrizzleUserRoleRepository(db);
     await roles.updateAssignment(id, { role: "custom", profileId: created.id });
     expect(await roles.findAssignmentByUserId(id)).toEqual({ role: "custom", profileId: created.id });
-    expect(await repository.countMembers(created.id)).toBe(1);
+    expect(await repository.countMembers(created)).toBe(1);
     expect((await repository.listLive()).find((profile) => profile.id === created.id)?.members).toBe(1);
 
     await expect(
       db.execute(sql`update "user" set "role" = 'custom', "profile_id" = null where "id" = ${id}`),
     ).rejects.toThrow();
     await roles.updateAssignment(id, { role: "sales", profileId: null });
-    expect(await repository.countMembers(created.id)).toBe(0);
+    expect(await repository.countMembers(created)).toBe(0);
+
+    const sales = await repository.findByRole("sales");
+    expect(await repository.countMembers(sales!)).toBeGreaterThanOrEqual(1);
+  });
+
+  it("retires a board cargo: the row stays, the boot leaves it retired, and the registry gives it nothing", async () => {
+    const support = await repository.findByRole("support");
+    try {
+      await repository.retire(support!.id);
+      await repository.syncBoard();
+      expect(await repository.findByRole("support")).toMatchObject({ id: support!.id, retired: true });
+      expect(await repository.retiredBoardRoles()).toContain("support");
+      expect((await repository.listLive()).some((profile) => profile.role === "support")).toBe(false);
+
+      const registry = new StaffAccessRegistry(
+        () => repository.loadLive(),
+        () => repository.retiredBoardRoles(),
+      );
+      await registry.reload();
+      expect(registry.permissionsOf({ role: "support" }).size).toBe(0);
+    } finally {
+      await db.execute(sql`update "staff_profiles" set "deleted_at" = null where "id" = ${support!.id}`);
+    }
   });
 });
