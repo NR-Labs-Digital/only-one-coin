@@ -279,9 +279,11 @@ export function NewCourseForm({
                         checked={plan.included}
                         onChange={(event) => editPlan(plan.sourcePlanId, { included: event.target.checked })}
                       />
-                      {t('courses.duplicate_plan_include')}
-                      <span className="font-normal text-muted-foreground">
-                        · {t(plan.billing === 'monthly' ? 'plans.billing_monthly' : 'plans.billing_package')}
+                      <span>
+                        {t('courses.duplicate_plan_include')}{' '}
+                        <span className="font-normal text-muted-foreground">
+                          · {t(plan.billing === 'monthly' ? 'plans.billing_monthly' : 'plans.billing_package')}
+                        </span>
                       </span>
                     </label>
                     {plan.included && (
