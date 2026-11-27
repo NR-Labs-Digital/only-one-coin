@@ -33,7 +33,9 @@ async function main() {
     await insertCredentialUser(container.db, { email, name: `Preview ${role}`, role: role, password: PASSWORD });
   }
   // Always back to the cargo asked for, whatever a test run changed.
-  await container.db.execute(sql`update "user" set role = ${role} where email = ${email}`);
+  // A test run may have moved it to a cargo made in Equipo (role `custom` +
+  // profile_id); a board cargo carries no profile_id (user_profile_check).
+  await container.db.execute(sql`update "user" set role = ${role}, profile_id = null where email = ${email}`);
 
   console.log(JSON.stringify({ email, password: PASSWORD, role: role }));
   process.exit(0);
