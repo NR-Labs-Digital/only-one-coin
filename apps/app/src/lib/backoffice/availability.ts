@@ -88,8 +88,12 @@ export function weekColumns(
   })
 }
 
-/** Half-hour marks from 06:00 to 22:00 — what the pickers offer. */
-export const TIME_OPTIONS: string[] = Array.from({ length: 33 }, (_, i) => {
+/**
+ * Half-hour marks from 06:00 to 23:30 — what the pickers offer. The evening
+ * runs to 23:30 because teachers give the late classes (OOC-195); the API and
+ * the database cap nothing, so this list is the only ceiling.
+ */
+export const TIME_OPTIONS: string[] = Array.from({ length: 36 }, (_, i) => {
   const minutes = 6 * 60 + i * 30
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 })
