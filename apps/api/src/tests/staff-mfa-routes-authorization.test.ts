@@ -27,6 +27,7 @@ describe("second-factor routes refuse a request without a session", () => {
     ["POST", "/api/v1/me/mfa/enrollment/confirm", { code: "123456" }],
     ["POST", "/api/v1/me/mfa/recovery-codes", { password: "x" }],
     ["POST", "/api/v1/me/mfa/disable", { password: "x" }],
+    ["POST", "/api/v1/me/mfa/trusted-browsers/forget", undefined],
   ])("%s %s → 401", async (method, url, payload) => {
     const response = await app.inject({ method: method as "GET", url, payload });
     expect(response.statusCode).toBe(401);

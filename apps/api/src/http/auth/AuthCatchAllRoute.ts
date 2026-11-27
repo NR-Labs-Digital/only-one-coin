@@ -1,9 +1,16 @@
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { IAuditLogRepository } from "@ooc/domain";
 import type { Auth } from "@/infra/auth/betterAuth.js";
+import { withoutTrustCookie, type TrustedBrowserGate } from "@/infra/auth/trustedBrowsers.js";
 import { AUTH_SIGN_IN_BY_EMAIL, RATE_LIMITS } from "@/shared/http/rateLimit.js";
 
-export function registerAuthRoutes(app: FastifyInstance, auth: Auth) {
+export interface AuthRouteDeps {
+  trustedBrowsers: TrustedBrowserGate;
+  auditLog: IAuditLogRepository;
+}
+
+export function registerAuthRoutes(app: FastifyInstance, auth: Auth, deps: AuthRouteDeps) {
   app.route({
     method: ["GET", "POST"],
     url: "/api/auth/*",
@@ -24,22 +31,64 @@ export function registerAuthRoutes(app: FastifyInstance, auth: Auth) {
         return reply.status(404).send({ status: 404, reason: "auth.endpoint_closed", path: request.url });
       }
 
+      // "Remember this browser" (OOC-154) only for a cargo whose factor is
+      // optional — checked by trustedBrowsers.ts at both ends: before the
+      // password, whether this browser's cookie may skip the code; before the
+      // code, whether the box may be honoured. Anywhere else the field is dropped.
+      const path = url.pathname.replace(/\/+$/, "");
+      const body = request.body as Record<string, unknown> | undefined;
+      const cookieHeader = headers.get("cookie") ?? undefined;
+      const isSignIn = path === SIGN_IN_PATH && request.method === "POST";
+      const isCodeCheck = TRUST_DEVICE_PATHS.has(path) && request.method === "POST";
+
+      const signInTrust = isSignIn ? await deps.trustedBrowsers.atSignIn(body?.email, cookieHeader) : null;
+      if (signInTrust && !signInTrust.honour) {
+        const kept = withoutTrustCookie(cookieHeader);
+        if (kept) headers.set("cookie", kept);
+        else headers.delete("cookie");
+      }
+      const trusting = isCodeCheck && body?.trustDevice === true && (await deps.trustedBrowsers.mayTrust(cookieHeader));
+
       const req = new Request(url.toString(), {
         method: request.method,
         headers,
-        ...(request.body ? { body: JSON.stringify(withoutTrustDevice(request.body)) } : {}),
+        ...(request.body ? { body: JSON.stringify(trusting ? request.body : withoutTrustDevice(request.body)) } : {}),
       });
 
       const response = await auth.handler(req);
-      const bodyText = response.body ? await response.text() : null;
+      let bodyText = response.body ? await response.text() : null;
 
       // better-auth answers its own errors as {message, code}
       if (response.status >= 400) {
         return sendAsDomainError(reply, request, response.status, bodyText);
       }
 
+      if (signInTrust?.honour && signInTrust.expiresAt) {
+        await deps.trustedBrowsers.keepExpiry(response.headers.getSetCookie(), signInTrust.expiresAt);
+      }
+      if (signInTrust && bodyText) {
+        // The code step offers the box only to an account that may tick it.
+        // The password was right by now (no challenge otherwise), so saying
+        // so tells nothing to someone who does not hold it.
+        bodyText = withTrustOffer(bodyText, signInTrust.eligible);
+      }
+      if (trusting) {
+        const userId = userIdOf(bodyText);
+        if (userId) {
+          await deps.auditLog.append({
+            actorId: userId,
+            action: "staff.browser_trusted",
+            targetId: userId,
+            metadata: {},
+            at: new Date(),
+          });
+        }
+      }
+
       reply.status(response.status);
       response.headers.forEach((value, key) => {
+        // The body may have been rewritten above; Fastify sets the length.
+        if (key === "content-length") return;
         reply.header(key, value);
       });
       return reply.send(bodyText);
@@ -68,10 +117,34 @@ const CLOSED_TWO_FACTOR_PATHS = new Set(
   ].map((path) => `/api/auth${path}`),
 );
 
+const SIGN_IN_PATH = "/api/auth/sign-in/email";
+
+/** Where ticking "remember this browser" is honoured — the code and the recovery code. */
+const TRUST_DEVICE_PATHS = new Set(["/two-factor/verify-otp", "/two-factor/verify-backup-code"].map((p) => `/api/auth${p}`));
+
+/** `twoFactorRedirect` answers gain `trustBrowser`: whether the code step shows the box. */
+function withTrustOffer(bodyText: string, eligible: boolean): string {
+  try {
+    const parsed = JSON.parse(bodyText) as unknown;
+    if (typeof parsed !== "object" || parsed === null || !("twoFactorRedirect" in parsed)) return bodyText;
+    return JSON.stringify({ ...parsed, trustBrowser: eligible });
+  } catch {
+    return bodyText;
+  }
+}
+
+function userIdOf(bodyText: string | null): string | null {
+  try {
+    const parsed = bodyText ? (JSON.parse(bodyText) as { user?: { id?: unknown } }) : null;
+    return typeof parsed?.user?.id === "string" ? parsed.user.id : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * "Trust this browser" would let a password alone open the panel again from
- * that browser for 30 days — the second factor asked once a month, not on
- * every sign-in. Dropped from every body, whatever endpoint it was sent to.
+ * "Remember this browser" outside the two code checks, or for an account
+ * whose cargo must type the code every time (OOC-154). Dropped from the body.
  */
 function withoutTrustDevice(body: unknown): unknown {
   if (typeof body !== "object" || body === null || Array.isArray(body) || !("trustDevice" in body)) {

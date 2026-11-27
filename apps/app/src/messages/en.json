@@ -140,6 +140,8 @@
     "mfa_error_failed": "We could not check the code. Check your connection and try again.",
     "mfa_error_recovery_invalid": "That recovery code is not valid or was already used.",
     "mfa_use_recovery": "Use a recovery code",
+    "mfa_trust_browser": "Remember this browser for {days} days",
+    "mfa_trust_browser_note": "We won't ask for the code again when you sign in from here. Don't tick it on a shared computer.",
     "mfa_use_email": "Back to the e-mail code",
     "mfa_recovery_title": "Recovery code",
     "mfa_recovery_subtitle": "Type one of the recovery codes you saved. Each one works only once.",

@@ -2,6 +2,7 @@ import {
   ConfirmOwnMfaEnrollmentUseCase,
   CurrentPasswordIncorrectError,
   DisableOwnMfaUseCase,
+  ForgetOwnTrustedBrowsersUseCase,
   MfaAlreadyEnabledError,
   MfaCodeRejectedError,
   MfaNotEnabledError,
@@ -188,5 +189,27 @@ describe("DisableOwnMfaUseCase", () => {
       CurrentPasswordIncorrectError,
     );
     expect(secondFactor.disabled).toBe(0);
+  });
+});
+
+describe("ForgetOwnTrustedBrowsersUseCase (OOC-154)", () => {
+  it("forgets every remembered browser and logs how many", async () => {
+    let forgottenFor: string | null = null;
+    const usecase = new ForgetOwnTrustedBrowsersUseCase(
+      {
+        count: async () => 2,
+        forgetAll: async (userId) => {
+          forgottenFor = userId;
+          return 2;
+        },
+      },
+      auditLog,
+    );
+
+    await expect(usecase.run({ userId: USER })).resolves.toEqual({ forgotten: 2 });
+    expect(forgottenFor).toBe(USER);
+    expect(auditLog.entries).toEqual([
+      expect.objectContaining({ action: "staff.trusted_browsers_forgotten", targetId: USER, metadata: { forgotten: 2 } }),
+    ]);
   });
 });

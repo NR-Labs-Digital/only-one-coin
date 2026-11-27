@@ -244,6 +244,10 @@ export const AUDIT_ACTIONS = {
     entity: "staff",
     subject: "target",
   },
+  // "Remember this browser" (OOC-154): ticked at the sign-in code, and the
+  // account forgetting every remembered browser. Neither keeps the browser.
+  "staff.browser_trusted": { key: "staff_browser_trusted", entity: "staff", subject: "target" },
+  "staff.trusted_browsers_forgotten": { key: "staff_trusted_browsers_forgotten", entity: "staff", subject: "target" },
   // The cargos as data (OOC-183): `target_id` is the cargo, which has no page
   // of its own; the entry keeps the permission keys added and removed.
   "staff_profile.created": { key: "staff_profile_created", entity: "staff", subject: "none" },

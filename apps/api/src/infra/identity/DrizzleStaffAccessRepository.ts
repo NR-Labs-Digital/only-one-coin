@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { IStaffAccessRepository, RetirableStaffAccount } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
+import { forgetTrustedBrowsersSql } from "@/infra/auth/trustedBrowsers.js";
 
 /**
  * Raw SQL against Better Auth's "banned"/"banReason"/"banExpires" columns
@@ -19,11 +20,16 @@ export class DrizzleStaffAccessRepository implements IStaffAccessRepository {
   constructor(private readonly db: Db) {}
 
   async ban(userId: string, reason: string): Promise<boolean> {
-    const result = await this.db.execute(
-      sql`update "user" set "banned" = true, "banReason" = ${reason}, "updatedAt" = now()
-          where "id" = ${userId} and "deletedAt" is null`,
-    );
-    return (result.rowCount ?? 0) > 0;
+    return this.db.transaction(async (tx) => {
+      const result = await tx.execute(
+        sql`update "user" set "banned" = true, "banReason" = ${reason}, "updatedAt" = now()
+            where "id" = ${userId} and "deletedAt" is null`,
+      );
+      if ((result.rowCount ?? 0) === 0) return false;
+      // Restoring access later must not bring a remembered browser back (OOC-154).
+      await tx.execute(forgetTrustedBrowsersSql(userId));
+      return true;
+    });
   }
 
   async unban(userId: string): Promise<boolean> {
@@ -61,6 +67,7 @@ export class DrizzleStaffAccessRepository implements IStaffAccessRepository {
       // No cookie cache or secondary storage: the row is the session
       // (BetterAuthStaffSessionRevoker).
       await tx.execute(sql`delete from "session" where "userId" = ${userId}`);
+      await tx.execute(forgetTrustedBrowsersSql(userId));
       return true;
     });
   }

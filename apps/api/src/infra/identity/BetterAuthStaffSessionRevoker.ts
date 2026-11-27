@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { IStaffSessionRevoker } from "@ooc/domain";
 import { SESSION_COOKIE_NAME, type Auth } from "@/infra/auth/betterAuth.js";
 import type { Db } from "@/infra/db/client.js";
+import { forgetTrustedBrowsersSql } from "@/infra/auth/trustedBrowsers.js";
 
 /**
  * Deletes rows straight from Better Auth's "session" table — no cookie cache
@@ -32,11 +33,15 @@ export class BetterAuthStaffSessionRevoker implements IStaffSessionRevoker {
     const result = await this.db.execute(
       sql`delete from "session" where "userId" = ${userId} and "id" <> ${keepId}`,
     );
+    // A remembered browser is a way back in without the code: whoever ends
+    // the sessions (a new password) ends those too (OOC-154).
+    await this.db.execute(forgetTrustedBrowsersSql(userId));
     return result.rowCount ?? 0;
   }
 
   async revokeAll(userId: string): Promise<number> {
     const result = await this.db.execute(sql`delete from "session" where "userId" = ${userId}`);
+    await this.db.execute(forgetTrustedBrowsersSql(userId));
     return result.rowCount ?? 0;
   }
 }
