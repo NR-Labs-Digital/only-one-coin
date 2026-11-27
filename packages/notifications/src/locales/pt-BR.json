@@ -287,6 +287,14 @@
         "Para voltar, fale com a gente pelos canais de atendimento da Only One Coin e ajudamos a escolher o horário."
       ]
     },
+    "course_ending_renewal": {
+      "subject": "{courseName} termina em breve: continue aprendendo",
+      "preheader": "As aulas terminam em {endsOn}.",
+      "paragraphs": [
+        "As aulas de {studentName} em {courseName} terminam em {endsOn}.",
+        "Se quiser continuar aprendendo, com o próximo nível ou com um novo pacote, fale com a gente pelos canais de atendimento da Only One Coin e ajudamos a escolher o curso e o horário."
+      ]
+    },
     "complaint_filed": {
       "subject": "Folha de reclamação n.º {code}",
       "preheader": "Cópia da sua {kind} no Livro de Reclamações.",

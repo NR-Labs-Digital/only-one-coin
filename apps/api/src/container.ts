@@ -38,6 +38,7 @@ import {
   ListReturnRunsUseCase,
   ReturnFromFreezeUseCase,
   SendFreezeReengagementUseCase,
+  SendCourseEndingRenewalUseCase,
   RequestMonthlyReceiptUploadUseCase,
   ConfirmMonthlyReceiptUploadUseCase,
   SubmitMonthlyPaymentUseCase,
@@ -257,6 +258,7 @@ import { ListInvitableTeachersQuery } from "./infra/persistence/identity/ListInv
 import { DrizzleProcedureRepository } from "./infra/persistence/procedure/DrizzleProcedureRepository.js";
 import { DrizzleEnrollmentFreezeRepository } from "./infra/persistence/enrollment/DrizzleEnrollmentFreezeRepository.js";
 import { DrizzleFreezeReengagementRepository } from "./infra/persistence/enrollment/DrizzleFreezeReengagementRepository.js";
+import { DrizzleCourseEndingRenewalRepository } from "./infra/persistence/enrollment/DrizzleCourseEndingRenewalRepository.js";
 import { DrizzleMonthlyPaymentRepository } from "./infra/persistence/payment/DrizzleMonthlyPaymentRepository.js";
 import { DrizzlePaymentSettlementRepository } from "./infra/persistence/payment/DrizzlePaymentSettlementRepository.js";
 import {
@@ -432,6 +434,8 @@ export interface AppUseCases {
     returnFromFreeze: ReturnFromFreezeUseCase;
     /** Run by the `freeze-reengagement` worker, never a route. */
     sendFreezeReengagement: SendFreezeReengagementUseCase;
+    /** Run by the `course-ending-renewal` worker, never a route. */
+    sendCourseEndingRenewal: SendCourseEndingRenewalUseCase;
     submitPublic: SubmitPublicEnrollmentUseCase;
     claimSeatHold: ClaimSeatHoldUseCase;
     releaseSeatHold: ReleaseSeatHoldUseCase;
@@ -1232,6 +1236,7 @@ function buildContainer(): AppContainer {
         listReturnRuns: new ListReturnRunsUseCase(freezeRepository),
         returnFromFreeze: new ReturnFromFreezeUseCase(freezeRepository),
         sendFreezeReengagement: new SendFreezeReengagementUseCase(new DrizzleFreezeReengagementRepository(db)),
+        sendCourseEndingRenewal: new SendCourseEndingRenewalUseCase(new DrizzleCourseEndingRenewalRepository(db)),
         submitPublic: submitPublicEnrollment,
         claimSeatHold,
         releaseSeatHold,

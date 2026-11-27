@@ -90,6 +90,12 @@ export const EMAIL_PREVIEW_SAMPLES: EmailTemplateVars = {
     courseName: "Inglés Básico",
     months: 3,
   },
+  course_ending_renewal: {
+    recipientName: "María Fernanda",
+    studentName: "María Fernanda Quispe Rojas",
+    courseName: "Inglés Básico",
+    endsOn: "2026-12-15T05:00:00.000Z",
+  },
   grade_posted: {
     recipientName: "María Fernanda",
     studentName: "María Fernanda Quispe Rojas",

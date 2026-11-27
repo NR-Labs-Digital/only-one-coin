@@ -48,7 +48,7 @@ entra aqui ou vira sessão nova.
 | 3 — Backoffice | 5 | 3 | 2 | Operacional fechado na semana de 19–23/10: alunos, turmas, Pagos, equipe, docentes, contrato e auditoria reais. Home do painel real; Relatórios com dado real desde a OOC-40 (em PR), da agregação noturna. Notas do docente reais desde a OOC-38; supervisão lança e corrige pela turma desde a OOC-102 (em revisão); falta frequência, a confirmar; conciliação fica para depois |
 | 4 — Portal do aluno | 1 | 3 | 1 | Login e telas reais (OOC-32), o enlace da aula (Classroom da turma, OOC-98), o pedido pago da constancia (OOC-83) e a seção Arquivos (OOC-143); faltam módulos/mensalidade, os demais trâmites e os documentos emitidos |
 | 5 — E-mail | 0 | 3 | 1 | Envio real via Brevo pela outbox; fluxos automáticos reais (catálogo, preview, não entregues, prova — OOC-89, em revisão); webhook no código, não confirmado em produção; campanhas ainda mock |
-| 6 — Instalável | 0 | 0 | 4 | — |
+| 6 — Instalável | 0 | 1 | 3 | E-mail de renovação D-7 em PR (OOC-53) |
 | 7 — Lançamento | 0 | 3 | 3 | Importador legado pronto (falta o dry-run revisado com o cliente); backup a cada deploy já roda; restauração nunca testada; headers prontos; Sentry/PostHog não instalados |
 
 ### Sprint da semana (09–14/11/2026): o que estourou e o feedback de 07/11
@@ -187,7 +187,7 @@ Sem isso, tudo depois fica mais caro. Não pule nem comprima.
 | 50 | **PWA** | Manifest, service worker, instalação no celular, offline básico | Instala em Android e iOS | ⬜ OOC-51 |
 | 51 | **Push** | Notificações push com opt-in, integradas ao outbox | Aviso de turma chega como push e como e-mail, sem duplicar | ⬜ OOC-51 |
 | 52 | **Tablero de impacto** | Painel exportável para doadores e aliados | Exportação em PDF e CSV | ⬜ OOC-52 |
-| 53 | **E-mail de renovação** | Fluxo D-7 de fim de curso com oferta do próximo paquete | Cron dispara na data correta em `America/Lima` | ⬜ OOC-53 |
+| 53 | **E-mail de renovação** | Fluxo D-7 de fim de curso com oferta do próximo paquete | Cron dispara na data correta em `America/Lima` | 🟡 OOC-53 — em PR (27/11/2026): `course_ending_renewal` sai 7 dias antes do fim da turma, a partir das 9h de Lima, para toda vaga confirmada (worker horário, dedupe por matrícula e dia). Convite genérico: o catálogo não tem "próximo curso" — nomeá-lo é campo novo, a decidir. Falta o OK do dono |
 
 ---
 

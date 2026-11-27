@@ -43,6 +43,7 @@ const SAMPLE_VARS: EmailTemplateVars = {
   monthly_payment_rejected: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", modules: "2, 3" },
   monthly_module_due: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", module: 2 },
   enrollment_freeze_reengagement: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", months: 3 },
+  course_ending_renewal: { recipientName: "Rosa", studentName: "Rosa Quispe", courseName: "Inglés Básico", endsOn: "2026-12-15T05:00:00.000Z" },
   grade_posted: {
     recipientName: "Rosa",
     studentName: "Rosa Quispe",

@@ -120,6 +120,14 @@ export interface EmailTemplateVars {
     courseName: string;
     months: number;
   };
+  /** Seven days before the class group ends (OOC-53). `endsOn` is the class
+   * group's end, an ISO instant rendered as a Lima calendar day. */
+  course_ending_renewal: {
+    recipientName: string;
+    studentName: string;
+    courseName: string;
+    endsOn: string;
+  };
   /** The final grade was posted (OOC-38) — in review until coordination
    * confirms the register (OOC-180). `grade` is the 0–20 grade as typed (up to
    * two decimals); `passingGrade` is the pass mark from `platform_settings` at

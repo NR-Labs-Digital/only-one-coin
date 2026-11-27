@@ -287,6 +287,14 @@
         "To come back, write to us through Only One Coin’s support channels and we will help you choose the schedule."
       ]
     },
+    "course_ending_renewal": {
+      "subject": "{courseName} ends soon: keep learning",
+      "preheader": "Classes end on {endsOn}.",
+      "paragraphs": [
+        "The classes of {studentName} in {courseName} end on {endsOn}.",
+        "If you want to keep learning, with the next level or a new package, write to us through Only One Coin’s support channels and we will help you choose the course and the schedule."
+      ]
+    },
     "complaint_filed": {
       "subject": "Complaint sheet no. {code}",
       "preheader": "Your copy of the {kind} filed in our Complaints Book.",
