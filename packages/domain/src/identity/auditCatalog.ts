@@ -135,6 +135,9 @@ export const AUDIT_ACTIONS = {
   // A proof of an automatic e-mail (OOC-89): sample data, no student. The
   // target is the proof's own id; the outbox rows travel in metadata.
   "email.proof_sent": { key: "email_proof_sent", entity: "platform", subject: "none" },
+  // A new version of an automatic e-mail's wording (OOC-60). The target is the
+  // version; the template and its number travel in metadata.
+  "email_template.published": { key: "email_template_published", entity: "platform", subject: "none" },
 
   "procedure_request.opened": { key: "procedure_request_opened", entity: "student", subject: "metadata_student" },
   "procedure_request.payment_submitted": { key: "procedure_payment_submitted", entity: "payment", subject: "target" },

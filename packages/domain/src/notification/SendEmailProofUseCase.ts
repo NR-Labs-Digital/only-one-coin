@@ -5,6 +5,7 @@ import { BaseUseCase } from "../shared/base/BaseUseCase.js";
 import { UnableToProcessEntryError } from "../shared/base/errors/UnableToProcessEntryError.js";
 import { normalizeEmail } from "../student/fields.js";
 import type { EmailTemplateKey, Locale } from "./EmailNotification.js";
+import type { EmailCopy } from "./emailTemplate.js";
 
 /** How many addresses one proof goes to — the same ceiling the screen keeps. */
 export const MAX_EMAIL_PROOF_RECIPIENTS = 5;
@@ -16,6 +17,9 @@ export interface EmailProofMessage {
   locale: Locale;
   vars: Record<string, unknown>;
   dedupeKey: string;
+  /** The draft's words (OOC-60), when the proof is of a draft; absent, the
+   * worker sends what is in force, like any e-mail. */
+  copy?: EmailCopy;
 }
 
 export interface IEmailProofRepository {
@@ -32,6 +36,8 @@ export interface SendEmailProofInput {
   recipients: string[];
   /** The template's sample data — invented, never a real student's (OOC-88). */
   vars: Record<string, unknown>;
+  /** The draft's words in that language (OOC-60); absent = the words in force. */
+  copy?: EmailCopy;
 }
 
 // Deliberately loose: an address the provider cannot take fails in the outbox
@@ -85,6 +91,7 @@ export class SendEmailProofUseCase extends BaseUseCase<SendEmailProofInput, { ou
       locale: input.locale,
       vars: input.vars,
       dedupeKey: `proof:${input.templateKey}:${proofId}:${index}`,
+      ...(input.copy ? { copy: input.copy } : {}),
     }));
 
     return this.proofs.send({
@@ -93,7 +100,13 @@ export class SendEmailProofUseCase extends BaseUseCase<SendEmailProofInput, { ou
         actorId: input.actorId,
         action: "email.proof_sent",
         targetId: proofId,
-        metadata: { template: input.templateKey, locale: input.locale, recipients: recipients.length, outboxIds },
+        metadata: {
+          template: input.templateKey,
+          locale: input.locale,
+          recipients: recipients.length,
+          outboxIds,
+          ...(input.copy ? { draft: true } : {}),
+        },
         at: new Date(),
       }),
     });

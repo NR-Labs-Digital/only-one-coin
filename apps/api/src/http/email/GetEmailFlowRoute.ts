@@ -14,9 +14,12 @@ export const getEmailFlowRoute = RouteBuilder.get("/emails/flows/:key")
   .response(200, z.object({ windowDays: z.number().int(), flow: EmailFlowSchema }))
   .response(400, ErrorResponseSchema)
   .handler(async (request, reply) => {
-    const counts = await container.queries.emailFlowCounts.run();
+    const [counts, published] = await Promise.all([
+      container.queries.emailFlowCounts.run(),
+      container.queries.emailTemplates.latestVersionNumbers(),
+    ]);
     reply.status(200).send({
       windowDays: EMAIL_FLOW_WINDOW_DAYS,
-      flow: emailFlowPayload(request.params.key, counts[request.params.key]),
+      flow: emailFlowPayload(request.params.key, counts[request.params.key], published[request.params.key] ?? null),
     });
   });

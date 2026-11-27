@@ -1,5 +1,6 @@
-import { DEFAULT_LOCALE, EMAIL_CATALOG, LocaleSchema } from "@ooc/domain";
-import { renderEmail, templateVersion, type OutgoingEmail } from "@ooc/notifications";
+import { DEFAULT_LOCALE, EMAIL_CATALOG, LocaleSchema, isEditableEmailKey } from "@ooc/domain";
+import { container } from "@/container.js";
+import { TemplateRenderError, renderEmail, templateVersion, type OutgoingEmail } from "@ooc/notifications";
 import { z } from "zod";
 import { RouteBuilder } from "@/shared/http/RouteBuilder.js";
 import { ErrorResponseSchema } from "@/shared/http/ErrorResponseSchema.js";
@@ -13,12 +14,17 @@ const PreviewEmailFlowResponseSchema = z.object({
   subject: z.string(),
   html: z.string(),
   text: z.string(),
+  /** The version published in the panel these words are (OOC-60); null = the repository's. */
+  publishedVersion: z.number().int().nullable(),
 });
 
 // The template as the student receives it (OOC-88, ROADMAP 47): the same
 // `renderEmail` the send-email worker runs, over invented sample data — never
 // a copy written for the screen, never a real student. A template nothing
-// sends yet has no words in the repository, so only emitted keys pass.
+// sends yet has no words in the repository, so only emitted keys pass. The
+// words are the ones in force: the version published in the panel (OOC-60),
+// or the repository's — with the worker's same fallback when that version no
+// longer renders.
 export const previewEmailFlowRoute = RouteBuilder.get("/emails/flows/:key/preview")
   .docs({
     tags: ["Emails"],
@@ -34,7 +40,22 @@ export const previewEmailFlowRoute = RouteBuilder.get("/emails/flows/:key/previe
     const { locale } = request.query;
     const to = EMAIL_PREVIEW_RECIPIENTS[EMAIL_CATALOG[key].audience];
     const email = { to, templateKey: key, locale, vars: EMAIL_PREVIEW_SAMPLES[key] } as OutgoingEmail;
-    const rendered = renderEmail(email);
+    const published = isEditableEmailKey(key) ? await container.notifications.wording.findPublished(key) : null;
+    const copy = published?.content[locale];
+    let rendered: ReturnType<typeof renderEmail> | null = null;
+    if (copy) {
+      try {
+        rendered = renderEmail({ ...email, copy });
+      } catch (error) {
+        if (!(error instanceof TemplateRenderError)) throw error;
+      }
+    }
 
-    reply.status(200).send({ locale, version: templateVersion(key), to, ...rendered });
+    reply.status(200).send({
+      locale,
+      version: templateVersion(key),
+      to,
+      ...(rendered ?? renderEmail(email)),
+      publishedVersion: rendered && published ? published.version : null,
+    });
   });

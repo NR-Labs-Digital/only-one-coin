@@ -96,6 +96,7 @@ await scheduleOutboxRelay(outboxRelayQueue);
 const sendEmailWorker = startSendEmailWorker(connection, logger, {
   store: notifications.outbox,
   provider: notifications.provider,
+  wording: notifications.wording,
 });
 const outboxRelayWorker = startOutboxRelayWorker(connection, logger, {
   store: notifications.outbox,

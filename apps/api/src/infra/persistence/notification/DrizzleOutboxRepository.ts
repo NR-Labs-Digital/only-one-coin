@@ -1,4 +1,4 @@
-import type { EmailNotification, EmailTemplateKey, Locale } from "@ooc/domain";
+import type { EmailCopy, EmailNotification, EmailTemplateKey, Locale } from "@ooc/domain";
 import { outbox } from "@ooc/db";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
@@ -19,6 +19,8 @@ export interface OutboxEmailRow {
   attempts: number;
   /** A proof from the e-mail screen (OOC-89): the subject goes out marked. */
   isProof: boolean;
+  /** A proof of a draft (OOC-60): the words to send it with. Null otherwise. */
+  templateCopy: EmailCopy | null;
 }
 
 /**
@@ -30,7 +32,8 @@ export interface OutboxEmailRow {
 export interface IOutboxStore {
   listPendingIds(limit: number): Promise<string[]>;
   findById(id: string): Promise<OutboxEmailRow | null>;
-  markSent(id: string, providerMessageId: string): Promise<void>;
+  /** `templateVersionId`: the published wording it went out with (OOC-60); null = the repository's. */
+  markSent(id: string, providerMessageId: string, templateVersionId?: string | null): Promise<void>;
   markBlocked(id: string): Promise<void>;
   /** Counts the attempt and keeps the error code; `final` gives up on it. */
   recordFailedAttempt(id: string, errorCode: string, final: boolean): Promise<void>;
@@ -95,6 +98,7 @@ export class DrizzleOutboxRepository implements IOutboxStore {
         status: outbox.status,
         attempts: outbox.attempts,
         isProof: outbox.isProof,
+        templateCopy: outbox.templateCopy,
       })
       .from(outbox)
       .where(eq(outbox.id, id));
@@ -107,16 +111,18 @@ export class DrizzleOutboxRepository implements IOutboxStore {
       locale: row.locale as Locale,
       vars: row.vars as Record<string, unknown>,
       status: row.status as OutboxStatus,
+      templateCopy: (row.templateCopy as EmailCopy | null) ?? null,
     };
   }
 
-  async markSent(id: string, providerMessageId: string): Promise<void> {
+  async markSent(id: string, providerMessageId: string, templateVersionId: string | null = null): Promise<void> {
     await this.db
       .update(outbox)
       .set({
         status: "sent",
         vars: stripOneTimeSecrets,
         providerMessageId,
+        templateVersionId,
         attempts: sql`${outbox.attempts} + 1`,
         lastError: null,
         sentAt: new Date(),

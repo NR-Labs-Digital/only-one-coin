@@ -15,6 +15,7 @@ export { BrevoNotificationProvider, type BrevoConfig } from "./providers/BrevoNo
 export { AllowlistGuard, type AllowlistGuardConfig } from "./providers/AllowlistGuard.js";
 export { LogNotificationProvider, type NotificationLogger } from "./providers/LogNotificationProvider.js";
 export { templateVersion } from "./render/templateVersion.js";
+export { checkEmailContent, emailPlaceholders, repositoryEmailContent } from "./render/checkEmailContent.js";
 export {
   classifyBounceReason,
   normalizeProviderMessageId,

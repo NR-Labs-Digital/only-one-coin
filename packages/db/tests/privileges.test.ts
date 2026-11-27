@@ -313,6 +313,17 @@ describe("application role (GRANT layer)", () => {
     expect(await answerTo(deleteFrom("document_template_versions"))).toBe(DENIED_BY_GRANT);
   });
 
+  // A published e-mail wording is what an outbox row says it sent (OOC-60).
+  it("refuses UPDATE on email_template_versions", async () => {
+    expect(
+      await answerTo(`update email_template_versions set version = 99 where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_GRANT);
+  });
+
+  it("refuses DELETE on email_template_versions", async () => {
+    expect(await answerTo(deleteFrom("email_template_versions"))).toBe(DENIED_BY_GRANT);
+  });
+
   // The provider's account of a message (OOC-91) is a history, not a status.
   it("refuses UPDATE on outbox_delivery_events", async () => {
     expect(
@@ -519,6 +530,21 @@ describe("table owner (TRIGGER layer)", () => {
   // still refuses, which is the layer this suite is proving.
   it("blocks TRUNCATE on document_template_versions, even with CASCADE", async () => {
     expect(await answerTo("truncate document_template_versions cascade")).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses UPDATE on email_template_versions", async () => {
+    expect(
+      await answerTo(`update email_template_versions set version = 99 where id = '${NO_SUCH_ID}'`),
+    ).toBe(DENIED_BY_TRIGGER);
+  });
+
+  it("refuses DELETE on email_template_versions", async () => {
+    expect(await answerTo(deleteFrom("email_template_versions"))).toBe(DENIED_BY_TRIGGER);
+  });
+
+  // `outbox` points here, so CASCADE gets past the FK rule and the trigger refuses.
+  it("blocks TRUNCATE on email_template_versions, even with CASCADE", async () => {
+    expect(await answerTo("truncate email_template_versions cascade")).toBe(DENIED_BY_TRIGGER);
   });
 
   it("refuses UPDATE on outbox_delivery_events", async () => {

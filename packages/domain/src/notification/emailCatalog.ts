@@ -121,3 +121,30 @@ export const EMAIL_CATALOG_KEYS = Object.keys(EMAIL_CATALOG) as EmailCatalogKey[
 export type EmittedEmailKey = {
   [K in EmailCatalogKey]: (typeof EMAIL_CATALOG)[K]["emitted"] extends true ? K : never;
 }[EmailCatalogKey];
+
+/*
+ * The e-mails whose words the backoffice can edit (OOC-60): the student's
+ * automatic e-mails sent today. Left out on purpose: what staff receives (the
+ * second-factor code, the invitation, the password reset), and the student's
+ * security messages — the checkout's verification code and the portal's
+ * password reset. A security e-mail people rewrite from a screen is one a
+ * phishing message can imitate word for word, and its wording is not what
+ * anybody asked to change.
+ */
+const NOT_EDITABLE = ["email_verification_code", "portal_password_reset"] as const;
+
+export type EditableEmailKey = Exclude<
+  { [K in EmittedEmailKey]: (typeof EMAIL_CATALOG)[K]["audience"] extends "student" ? K : never }[EmittedEmailKey],
+  (typeof NOT_EDITABLE)[number]
+>;
+
+export const EDITABLE_EMAIL_KEYS = EMAIL_CATALOG_KEYS.filter(
+  (key): key is EditableEmailKey => {
+    const entry: EmailCatalogEntry = EMAIL_CATALOG[key];
+    return entry.emitted && entry.audience === "student" && !(NOT_EDITABLE as readonly string[]).includes(key);
+  },
+);
+
+export function isEditableEmailKey(key: string): key is EditableEmailKey {
+  return (EDITABLE_EMAIL_KEYS as string[]).includes(key);
+}

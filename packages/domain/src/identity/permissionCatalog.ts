@@ -160,6 +160,9 @@ export const PERMISSION_CATALOG = [
   // E-mails.
   { key: "emails.view", area: "emails", access: "view", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor"] },
   { key: "emails.send", area: "emails", access: "edit", defaultRoles: ["master", "admin", "enrollment_supervisor"] },
+  // Rewriting what an automatic e-mail says (OOC-60): every student who gets
+  // it from then on reads it — so the same two that edit a document's text.
+  { key: "emails.templates_edit", area: "emails", access: "edit", defaultRoles: ["master", "admin"] },
 
   // The complaints book (OOC-58): reading the sheets, and taking and answering them.
   { key: "complaints.view", area: "complaints", access: "view", defaultRoles: ["master", "admin", "analyst", "support"] },
