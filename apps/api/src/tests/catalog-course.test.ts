@@ -12,6 +12,8 @@ import {
   LandingKeyTakenError,
   ModuleMaterialInvalidError,
   ModuleMaterialsIncompleteError,
+  materialOfModule,
+  missingModuleMaterials,
   UpdateCourseUseCase,
   type CreateCourseDTO,
 } from "@ooc/domain";
@@ -216,9 +218,10 @@ describe("language list", () => {
 });
 
 /**
- * One material link per module (OOC-94): required when a course opens and
- * whenever its modules change. A course written before OOC-94 has none and
- * stays editable — it warns, it does not lock.
+ * One material slot per module (OOC-94), checked when a course opens and
+ * whenever its modules change. A slot may be left blank (OOC-197): whoever
+ * files the material is not whoever opens the course. A course written
+ * before OOC-94 has none and stays editable — it warns, it does not lock.
  */
 describe("module materials", () => {
   it("refuses a course with fewer links than modules", () => {
@@ -232,11 +235,15 @@ describe("module materials", () => {
     "https://drive.google.com.evil.com/x",
     "https://evil.com/?u=drive.google.com",
     "javascript:alert(1)",
-    "",
   ])("refuses %s as a module material", (bad) => {
     expect(() => Course.create({ ...A_COURSE, moduleMaterials: [bad, ...LINKS.slice(1)] })).toThrow(
       ModuleMaterialInvalidError,
     );
+  });
+
+  it("opens a course with module links left blank (OOC-197)", () => {
+    const course = Course.create({ ...A_COURSE, moduleMaterials: ["", "  ", ...LINKS.slice(2)] });
+    expect(course.moduleMaterials).toEqual(["", "", ...LINKS.slice(2)]);
   });
 
   it("normalizes the links it keeps", () => {
@@ -294,6 +301,15 @@ describe("module materials", () => {
     await expect(update(course.id, { moduleMaterials: ["https://evil.com/x", ...LINKS.slice(1)] })).rejects.toBeInstanceOf(
       ModuleMaterialInvalidError,
     );
+  });
+
+  it("fills a link left blank at creation later (OOC-197)", async () => {
+    const course = await courses.create(Course.create({ ...A_COURSE, moduleMaterials: ["", ...LINKS.slice(1)] }));
+    expect(missingModuleMaterials(course.modules, course.moduleMaterials)).toBe(true);
+    expect(materialOfModule(course.moduleMaterials, 1)).toBeNull();
+    const updated = await update(course.id, { moduleMaterials: LINKS });
+    expect(updated.moduleMaterials).toEqual(LINKS);
+    expect(missingModuleMaterials(updated.modules, updated.moduleMaterials)).toBe(false);
   });
 
   it("does not count the same links as a change", async () => {

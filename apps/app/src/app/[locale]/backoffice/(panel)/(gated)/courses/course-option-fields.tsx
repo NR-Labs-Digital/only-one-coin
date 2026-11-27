@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { CertificateRule, CourseOptions } from '@/lib/backoffice/types'
 import {
@@ -10,6 +9,7 @@ import {
 } from '@/lib/backoffice/module-materials'
 import { Toggle } from '@/components/backoffice/controls'
 import { HelpField, HelpHint } from '@/components/backoffice/help-hint'
+import { OptionalMark } from '@/components/backoffice/ui'
 import { AutoGrid, fullRowClass } from '@/components/layout/auto-grid'
 
 const CERTIFICATE_RULES: CertificateRule[] = ['automatic', 'exam_required']
@@ -31,7 +31,6 @@ export function CourseOptionFields({
   onChange,
   wide = false,
   hideActive = false,
-  showMaterialIssues = false,
 }: {
   value: CourseOptions
   onChange: (options: CourseOptions) => void
@@ -39,14 +38,8 @@ export function CourseOptionFields({
   wide?: boolean
   /** A new course is born in the catalog — there is nothing to switch off yet. */
   hideActive?: boolean
-  /**
-   * Say "missing" beside every blank module link, not only the ones already
-   * left — set once the links are what stands between the reader and Save.
-   */
-  showMaterialIssues?: boolean
 }) {
   const t = useTranslations('bo')
-  const [leftFields, setLeftFields] = useState<ReadonlySet<number>>(new Set())
 
   function set<K extends keyof CourseOptions>(key: K, next: CourseOptions[K]) {
     onChange({ ...value, [key]: next })
@@ -154,17 +147,16 @@ export function CourseOptionFields({
         <fieldset className="flex flex-col gap-2">
           <legend className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
             {t('course_options.module_materials')}
+            <OptionalMark label={t('common.optional')} />
             <HelpHint what={t('course_options.module_materials_hint')} how={t('help.materials_how')} />
           </legend>
+          {/* OOC-197: whoever files the material is not whoever opens the
+              course, so the screen says outright that blank is fine. */}
+          <p className="-mt-1 text-xs text-muted-foreground">{t('course_options.module_materials_optional')}</p>
           <AutoGrid min="16rem" gap="gap-3">
             {materials.map((link, index) => {
-              const issue = issues[index]
-              // A wrong link says so at once; a blank one only once it was
-              // left, or once the links are all that keeps Save off.
-              const shown =
-                issue === 'invalid' || (issue === 'missing' && (showMaterialIssues || leftFields.has(index)))
-                  ? issue
-                  : null
+              // Blank is fine (OOC-197); only a link typed and wrong says so.
+              const shown = issues[index]
               return (
                 <label key={index} className="flex flex-col gap-1">
                   <span className={labelClass}>{t('course_options.module_material', { n: index + 1 })}</span>
@@ -173,7 +165,6 @@ export function CourseOptionFields({
                     inputMode="url"
                     value={link}
                     onChange={(event) => setMaterial(index, event.target.value)}
-                    onBlur={() => setLeftFields((left) => new Set(left).add(index))}
                     aria-invalid={shown !== null}
                     className={fieldClass}
                   />

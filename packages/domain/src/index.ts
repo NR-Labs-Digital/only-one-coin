@@ -974,6 +974,7 @@ export {
   MODULE_MATERIAL_HOSTS,
   UpdateCourseSchema,
   materialOfModule,
+  missingModuleMaterials,
   normalizeModuleMaterials,
   type CertificateRule,
   type CourseProps,

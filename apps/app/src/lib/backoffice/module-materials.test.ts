@@ -29,9 +29,10 @@ describe('moduleMaterialsChanged', () => {
 })
 
 describe('moduleMaterialsReady', () => {
-  it('needs a valid link in every module', () => {
+  it('takes blank links but not wrong ones (OOC-197)', () => {
     expect(moduleMaterialsReady({ modules: 2, moduleMaterials: [LINK, LINK] })).toBe(true)
-    expect(moduleMaterialsReady({ modules: 2, moduleMaterials: [LINK, ''] })).toBe(false)
+    expect(moduleMaterialsReady({ modules: 2, moduleMaterials: [LINK, ''] })).toBe(true)
+    expect(moduleMaterialsReady({ modules: 2, moduleMaterials: [LINK, 'not a link'] })).toBe(false)
   })
 
   it('reads only the links of the modules the count keeps', () => {
@@ -79,9 +80,9 @@ describe('sameModuleMaterials', () => {
 })
 
 describe('moduleMaterialIssues', () => {
-  it('names what is wrong with each field', () => {
+  it('names what is wrong with each field — a blank one is not wrong', () => {
     expect(
       moduleMaterialIssues(['', 'https://evil.com/x', 'https://drive.google.com/x']),
-    ).toEqual(['missing', 'invalid', null])
+    ).toEqual([null, 'invalid', null])
   })
 })

@@ -147,12 +147,12 @@ export class LandingKeyTakenError extends ConflictError {
   }
 }
 
-/** A course carries one material link per module (OOC-94) — not one fewer, not one more. */
+/** A course carries one material slot per module (OOC-94) — not one fewer, not one more; a slot may be blank (OOC-197). */
 export class ModuleMaterialsIncompleteError extends UnableToProcessEntryError {
   constructor(params?: { path?: string; cause?: unknown }) {
     super({
       reason: "catalog.module_materials_incomplete",
-      message: "Every module needs exactly one material link.",
+      message: "Every module needs exactly one material slot.",
       ...params,
     });
   }

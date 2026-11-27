@@ -253,7 +253,6 @@ export function NewCourseForm({
           onChange={setDraftOptions}
           wide
           hideActive
-          showMaterialIssues={identityReady}
         />
       </div>
 

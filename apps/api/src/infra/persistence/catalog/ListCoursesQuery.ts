@@ -1,6 +1,6 @@
 import { classGroups, courses, planPrices, plans } from "@ooc/db";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
-import type { LandingCourseKey } from "@ooc/domain";
+import { missingModuleMaterials, type LandingCourseKey } from "@ooc/domain";
 import type { Db } from "@/infra/db/client.js";
 
 export interface CourseListItem {
@@ -12,7 +12,7 @@ export interface CourseListItem {
   summary: string;
   minAge: number;
   modules: number;
-  /** One material link per module, in order (OOC-94). Empty on a course that predates it. */
+  /** One material slot per module, in order (OOC-94), blank where no link was filed yet (OOC-197). Empty on a course that predates it. */
   moduleMaterials: string[];
   /** The course lacks a link for some module — the backoffice flags it, it still sells. */
   missingModuleMaterials: boolean;
@@ -80,7 +80,7 @@ export function toCourseListItem(row: typeof courses.$inferSelect, counts: Cours
     minAge: row.minAge,
     modules: row.modules,
     moduleMaterials: row.moduleMaterials,
-    missingModuleMaterials: row.moduleMaterials.length !== row.modules,
+    missingModuleMaterials: missingModuleMaterials(row.modules, row.moduleMaterials),
     totalHours: row.totalHours,
     certificateRule: row.certificateRule as CourseListItem["certificateRule"],
     allowsFreeze: row.allowsFreeze,
