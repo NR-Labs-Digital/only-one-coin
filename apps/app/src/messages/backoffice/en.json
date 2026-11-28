@@ -3022,6 +3022,8 @@
       "email_editor_versions_what": "Each publication creates a new version, which cannot be edited or deleted. The one in force is the latest.",
       "admin_team_reset_password_what": "A one-time link, valid for 24 hours, for the person to set a new password.",
       "admin_team_reset_password_how": "The platform sends nothing: you copy the link and send it yourself. Nobody but the person knows the password.",
+      "portal_device_what": "The portal installs as an app on your home screen and can notify you on this device of what we e-mail you: payments, grades, documents and reminders about your courses.",
+      "portal_device_how": "Notifications are turned on per device and do not replace the e-mail, which keeps arriving. You can turn them off at any time. On iPhone, install the portal first and open it from the Home Screen.",
       "backups_list_what": "The backups every API deploy saves, newest first. Each is a copy of production at that moment.",
       "backups_list_how": "Restoring does not change production: it loads the backup into a new database to prove it comes back whole. One open restore at a time.",
       "backups_status_what": "Queued, Restoring and Checking: still running. Verified: passed everything and its database is kept. Failed: it stopped and its database was deleted.",

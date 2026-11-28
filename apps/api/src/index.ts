@@ -17,6 +17,7 @@ import {
   scheduleCourseEndingRenewal,
   scheduleConstanciaIssue,
   createSendEmailQueue,
+  createSendPushQueue,
   scheduleOutboxRelay,
   scheduleReceiptUploadRelay,
   scheduleSeatHoldSweep,
@@ -54,6 +55,7 @@ import { startFreezeReengagementWorker } from "./workers/freeze-reengagement.wor
 import { startCourseEndingRenewalWorker } from "./workers/course-ending-renewal.worker.js";
 import { startReportRefreshWorker } from "./workers/report-refresh.worker.js";
 import { startSendEmailWorker } from "./workers/send-email.worker.js";
+import { startSendPushWorker } from "./workers/send-push.worker.js";
 import { startBackupRestoreWorker } from "./workers/backup-restore.worker.js";
 
 const {
@@ -105,9 +107,24 @@ const sendEmailWorker = startSendEmailWorker(connection, logger, {
   provider: notifications.provider,
   wording: notifications.wording,
 });
+// Push (OOC-51): the same outbox rows, a second way, only with the VAPID
+// secrets set. Without them the relay never offers a push.
+const pushSender = notifications.push.sender;
+const sendPushQueue = pushSender ? createSendPushQueue(connection) : null;
+const sendPushWorker = pushSender
+  ? startSendPushWorker(connection, logger, {
+      store: notifications.push.repository,
+      subscriptions: notifications.push.repository,
+      sender: pushSender,
+      wording: notifications.wording,
+      allows: notifications.push.allows,
+      portalOrigin: config.PORTAL_PUBLIC_URL,
+    })
+  : null;
 const outboxRelayWorker = startOutboxRelayWorker(connection, logger, {
   store: notifications.outbox,
   sendEmailQueue,
+  push: sendPushQueue ? { store: notifications.push.repository, queue: sendPushQueue } : null,
 });
 // Checkout holds (apps/api/CLAUDE.md, "Dois relógios"): expired holds give
 // their seat back to the class group, on the database clock.
@@ -229,6 +246,7 @@ const receiptRereadWorker = receiptExtractor
 logger.info(
   {
     emailProvider: BREVO_API_KEY ? "brevo" : "log",
+    push: pushSender ? "web-push" : "off",
     allowlistEnforced: NODE_ENV !== "production",
     receiptExtraction: receiptExtractor
       ? {
@@ -238,8 +256,11 @@ logger.info(
         }
       : "off",
   },
-  "Workers started: outbox-relay, send-email, seat-hold-sweep, attachment-sweep, constancia-issue, backup-restore (when configured), freeze-reengagement, course-ending-renewal, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
+  "Workers started: outbox-relay, send-email, send-push (with push on), seat-hold-sweep, attachment-sweep, constancia-issue, backup-restore (when configured), freeze-reengagement, course-ending-renewal, report-refresh, receipt-upload-relay, receipt-normalize, receipt-screen, receipt-validate, receipt-extract, receipt-reread",
 );
+if (NODE_ENV === "production" && !pushSender) {
+  logger.warn("VAPID keys are not set: the portal does not offer push notifications");
+}
 if (NODE_ENV === "production" && !BREVO_API_KEY) {
   logger.warn("BREVO_API_KEY is not set: transactional e-mails are logged, not sent");
 }
@@ -267,6 +288,7 @@ async function shutdown() {
   await app.close();
   await outboxRelayWorker.close();
   await sendEmailWorker.close();
+  await sendPushWorker?.close();
   await seatHoldSweepWorker.close();
   await attachmentSweepWorker.close();
   await constanciaIssueWorker.close();
@@ -282,6 +304,7 @@ async function shutdown() {
   await receiptRereadWorker?.close();
   await outboxRelayQueue.close();
   await sendEmailQueue.close();
+  await sendPushQueue?.close();
   await seatHoldSweepQueue.close();
   await attachmentSweepQueue.close();
   await constanciaIssueQueue.close();

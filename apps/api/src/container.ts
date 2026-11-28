@@ -334,7 +334,9 @@ import {
 } from "./infra/persistence/notification/DrizzleEmailDeliveryRepository.js";
 import { DrizzleOutboxRepository, type IOutboxStore } from "./infra/persistence/notification/DrizzleOutboxRepository.js";
 import { createNotificationProvider } from "./infra/notification/createNotificationProvider.js";
-import type { NotificationProvider } from "@ooc/notifications";
+import { AllowlistGuard, type NotificationProvider } from "@ooc/notifications";
+import { DrizzlePushRepository } from "./infra/persistence/notification/DrizzlePushRepository.js";
+import { createPushSender, type PushSender } from "./infra/push/WebPushSender.js";
 
 export interface AppRepositories {
   /** The institution's issued documents (OOC-33). */
@@ -644,6 +646,18 @@ export interface AppNotifications {
   wording: PublishedEmailWording;
   provider: NotificationProvider;
   delivery: IEmailDeliveryRecorder;
+  /**
+   * Push on the portal (OOC-51). `repository` is always there (the portal
+   * routes forget a device even with push off); `sender` and `publicKey` are
+   * null without the VAPID secrets, and then nothing is offered nor sent.
+   */
+  push: {
+    repository: DrizzlePushRepository;
+    sender: PushSender | null;
+    publicKey: string | null;
+    /** The e-mail allowlist, applied to pushes too (CLAUDE.md §6). */
+    allows: (recipient: string) => boolean;
+  };
 }
 
 /** What the receipt normalize worker needs — the raw bucket GET/PUT/DELETE
@@ -760,6 +774,14 @@ function buildContainer(): AppContainer {
   const outboxRepository = new DrizzleOutboxRepository(db);
   const emailTemplateRepository = new DrizzleEmailTemplateRepository(db);
   const notificationProvider = createNotificationProvider(config, logger);
+  const pushSender = createPushSender(config);
+  // The guard's own matching, on a provider that is never called: the push
+  // goes to a device, but who may receive it outside production is the same
+  // list the e-mails obey.
+  const pushRecipients = new AllowlistGuard(
+    { sendEmail: () => Promise.reject(new Error("never sends")) },
+    { enforce: config.NODE_ENV !== "production", allowlist: config.EMAIL_ALLOWLIST },
+  );
 
   // Storage (Tigris/S3-compatible — OOC-19)
   const s3Client = createS3Client(config);
@@ -1116,6 +1138,12 @@ function buildContainer(): AppContainer {
       wording: emailTemplateRepository,
       provider: notificationProvider,
       delivery: new DrizzleEmailDeliveryRepository(db),
+      push: {
+        repository: new DrizzlePushRepository(db),
+        sender: pushSender?.sender ?? null,
+        publicKey: pushSender?.publicKey ?? null,
+        allows: (recipient) => pushRecipients.allows(recipient),
+      },
     },
     storage: {
       objectStore: receiptObjectStore,

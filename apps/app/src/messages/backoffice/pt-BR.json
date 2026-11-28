@@ -3022,6 +3022,8 @@
       "email_editor_versions_what": "Cada publicação cria uma versão nova, que não se edita nem se apaga. A vigente é a última.",
       "admin_team_reset_password_what": "Um link de uso único, válido por 24 horas, para a pessoa definir uma senha nova.",
       "admin_team_reset_password_how": "A plataforma não envia nada: você copia o link e manda para a pessoa. Só ela conhece a senha.",
+      "portal_device_what": "O portal se instala como um app na tela inicial e pode avisar neste dispositivo o mesmo que enviamos por e-mail: pagamentos, notas, documentos e lembretes dos seus cursos.",
+      "portal_device_how": "As notificações são ativadas em cada dispositivo e não substituem o e-mail, que continua chegando. Você pode desativá-las quando quiser. No iPhone, primeiro instale o portal e abra pela Tela de Início.",
       "backups_list_what": "Os backups que cada deploy da API guarda, o mais recente primeiro. Cada um é uma cópia da produção naquele momento.",
       "backups_list_how": "Restaurar não muda a produção: carrega o backup num banco novo para provar que ele volta inteiro. Uma restauração aberta por vez.",
       "backups_status_what": "Na fila, Restaurando e Verificando: o trabalho ainda está rodando. Verificado: passou em tudo e o banco está guardado. Falhou: parou e o banco foi apagado.",
