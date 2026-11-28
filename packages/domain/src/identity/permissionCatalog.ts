@@ -178,7 +178,6 @@ export const PERMISSION_CATALOG = [
   { key: "settings.read", area: "settings", access: "view", defaultRoles: ["master", "admin", "analyst", "enrollment_supervisor", "academic_supervisor", "academic_assistant", "teacher", "sales", "support", "billing"] },
   { key: "settings.edit", area: "settings", access: "edit", defaultRoles: ["master", "admin"] },
   { key: "settings.procedure_prices", area: "settings", access: "edit", defaultRoles: ["master", "admin"] },
-  { key: "settings.document_templates", area: "settings", access: "edit", defaultRoles: ["master", "admin"] },
   { key: "settings.feature_flags", area: "settings", access: "edit", defaultRoles: [], grant: "owners" },
 
   // Team.

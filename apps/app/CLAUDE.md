@@ -193,8 +193,8 @@ aquilo não está ativo para mais ninguém.
   flag raiz de uma superfície pede confirmação antes de gravar (o resto dos
   flags continua sem essa fricção — só esse switch derruba um card inteiro).
   **Desde a OOC-153 (27/11/2026)** a tela mora em `(panel)/platform/features`,
-  e o grupo `(panel)/platform` — a área NR Labs, com Funcionalidades e Backups
-  — continua fora de `(gated)` pelo mesmo motivo; o `layout.tsx` dele desenha
+  e o grupo `(panel)/platform` — a área NR Labs, com Funcionalidades, Backups e (desde
+  28/11/2026) Documentos — continua fora de `(gated)` pelo mesmo motivo; o `layout.tsx` dele desenha
   as abas e o estado trancado por `canManageFeatureFlags`.
 - **Fora de produção toda flag está ligada**, sempre. E `APP_ENV` falha fechada:
   processo sem rótulo rodando build de produção conta como produção.

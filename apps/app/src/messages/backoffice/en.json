@@ -2959,7 +2959,7 @@
       "payment_metric_in_review_what": "Payments waiting for a person in Payments, from every period, like the Open tab.",
       "payment_metric_decided_what": "Counts only the current period: what was approved, collected or rejected in it.",
       "grade_record_page_what": "Each row is a grade register coordination confirmed as official: a module group in one round. The record is the document the teacher is paid against.",
-      "grade_record_page_how": "Downloads as a PDF, built on the spot from the text in Settings → Documents. Every download is logged. Closed class groups show up too.",
+      "grade_record_page_how": "Downloads as a PDF, built on the spot from the record's published text. Every download is logged. Closed class groups show up too.",
       "grade_record_counts_what": "Students graded in this register: passed have the passing grade set in Settings or more; failed, less; DA did not sit the final exam.",
       "grade_record_counts_how": "Counted from today's grades: if supervision corrects a grade after official, the number changes and the next download shows it.",
       "grade_record_confirmed_what": "When and by whom the register was confirmed as official. “Corrected on” shows if a grade was corrected afterwards.",
@@ -3252,7 +3252,7 @@
       "subtitle": "Module {module}, the course's last: this is where the certificate of whoever completed it is issued.",
       "subtitle_single": "The course's last module: this is where the certificate of whoever completed it is issued.",
       "load_error": "We could not load the certificates. Reload the page to try again.",
-      "template_missing": "There is no published certificate text yet. Publish it in Settings → Documents to issue.",
+      "template_missing": "There is no published certificate text yet. Ask NR Labs to publish it to issue.",
       "exam_hint": "This course requires the certification exam. Mark who passed it: without the mark, the certificate does not go out.",
       "empty": "No student has a confirmed seat in this group yet.",
       "col_student": "Student",
@@ -3280,7 +3280,7 @@
       "issued_toast": "{count, plural, one {# certificate issued} other {# certificates issued}}.",
       "error_nothing_to_issue": "Nobody on the list can get the certificate now. Reload the page to see the updated list.",
       "error_not_published": "There is no published certificate text yet.",
-      "error_missing_value": "The certificate text prints a field some student does not have. Check it in Settings → Documents.",
+      "error_missing_value": "The certificate text prints a field some student does not have. Ask NR Labs to check the text.",
       "error_failed": "Could not issue. Try again."
     },
     "academic_status": {
@@ -3557,7 +3557,6 @@
           "read": "Read the platform’s rules and fees",
           "edit": "Change the platform’s rules",
           "procedure_prices": "Set procedure fees",
-          "document_templates": "Edit and publish document texts",
           "feature_flags": "Turn sections on and off (Features)"
         },
         "team": {
@@ -3648,7 +3647,7 @@
       "corrected_on": "Corrected on {date}",
       "download": "Download record",
       "downloading": "Preparing…",
-      "failure_not_published": "The record has no published text yet. Publish it in Settings → Documents.",
+      "failure_not_published": "The record has no published text yet. Ask NR Labs to publish it.",
       "failure_no_teacher": "The module group has no teacher assigned. Assign one before downloading the record.",
       "failure_unavailable": "The PDF is not available right now. Try again in a few minutes.",
       "failure_generic": "The record could not be downloaded.",
@@ -3928,7 +3927,7 @@
     "platform": {
       "title": "NR Labs area",
       "locked_title": "NR Labs team only",
-      "locked_body": "This is where what exists in production is decided and the database backups are restored. Only accounts on the platform owners' domain open it, whatever their role."
+      "locked_body": "This is where what exists in production is decided, the database backups are restored and the document texts are edited. Only accounts on the platform owners' domain open it, whatever their role."
     },
     "backups": {
       "title": "Backups",

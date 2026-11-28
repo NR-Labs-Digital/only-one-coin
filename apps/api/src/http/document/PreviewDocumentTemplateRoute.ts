@@ -17,7 +17,7 @@ export const previewDocumentTemplateRoute = RouteBuilder.post("/document-templat
     description:
       "Renders the given text (or the draft, the published version, the starter) with the sample data or a real teacher. Base64 PDF.",
   })
-  .can("settings.document_templates")
+  .owners()
   .params(DocumentKindParamsSchema)
   .body(z.object({ body: DocumentBodySchema.optional(), teacherId: z.string().uuid().optional() }))
   .response(200, z.object({ pdf: z.string() }))

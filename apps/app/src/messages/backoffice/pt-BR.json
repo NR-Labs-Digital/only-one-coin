@@ -2959,7 +2959,7 @@
       "payment_metric_in_review_what": "Pagamentos esperando uma pessoa em Pagos, de todos os períodos, como a aba Abertos.",
       "payment_metric_decided_what": "Conta só o período atual: o aprovado, o arrecadado ou o rejeitado nele.",
       "grade_record_page_what": "Cada linha é um registro de notas que a coordenação confirmou como oficial: um grupo de módulo numa rodada. A ata é o documento com que se paga o docente.",
-      "grade_record_page_how": "Baixa em PDF, montado na hora com o texto de Configuração → Documentos. Cada download fica na bitácora. Aparecem também as turmas já fechadas.",
+      "grade_record_page_how": "Baixa em PDF, montado na hora com o texto publicado da ata. Cada download fica na bitácora. Aparecem também as turmas já fechadas.",
       "grade_record_counts_what": "Alunos com nota neste registro: aprovados têm a nota mínima da Configuração ou mais; reprovados, menos; DA não fizeram a prova final.",
       "grade_record_counts_how": "Contados com as notas de hoje: se a supervisão corrige uma nota depois de oficial, o número muda e o próximo download mostra.",
       "grade_record_confirmed_what": "Quando e quem confirmou o registro como oficial. «Corrigida em» aparece se uma nota foi corrigida depois.",
@@ -3252,7 +3252,7 @@
       "subtitle": "Módulo {module}, o último do curso: aqui se emite o certificado de quem o concluiu.",
       "subtitle_single": "Último módulo do curso: aqui se emite o certificado de quem o concluiu.",
       "load_error": "Não conseguimos carregar os certificados. Recarregue a página para tentar de novo.",
-      "template_missing": "Ainda não há um texto de certificado publicado. Publique em Configuração → Documentos para poder emitir.",
+      "template_missing": "Ainda não há um texto de certificado publicado. Peça à NR Labs que publique para poder emitir.",
       "exam_hint": "Este curso exige o exame de certificação. Marque quem foi aprovado: sem a marca, o certificado não sai.",
       "empty": "Ainda não há alunos com vaga confirmada neste grupo.",
       "col_student": "Aluno",
@@ -3280,7 +3280,7 @@
       "issued_toast": "{count, plural, one {# certificado emitido} other {# certificados emitidos}}.",
       "error_nothing_to_issue": "Ninguém da lista pode receber o certificado agora. Recarregue a página para ver a lista atualizada.",
       "error_not_published": "Ainda não há um texto de certificado publicado.",
-      "error_missing_value": "O texto do certificado imprime um dado que algum aluno não tem. Revise em Configuração → Documentos.",
+      "error_missing_value": "O texto do certificado imprime um dado que algum aluno não tem. Peça à NR Labs que revise o texto.",
       "error_failed": "Não foi possível emitir. Tente de novo."
     },
     "academic_status": {
@@ -3557,7 +3557,6 @@
           "read": "Consultar as regras e as tarifas da plataforma",
           "edit": "Alterar as regras da plataforma",
           "procedure_prices": "Definir a tarifa dos trâmites",
-          "document_templates": "Editar e publicar os textos dos documentos",
           "feature_flags": "Ligar e desligar seções (Funcionalidades)"
         },
         "team": {
@@ -3648,7 +3647,7 @@
       "corrected_on": "Corrigida em {date}",
       "download": "Baixar ata",
       "downloading": "Preparando…",
-      "failure_not_published": "A ata ainda não tem texto publicado. Publique em Configuração → Documentos.",
+      "failure_not_published": "A ata ainda não tem texto publicado. Peça à NR Labs que publique.",
       "failure_no_teacher": "O grupo de módulo não tem docente atribuído. Atribua antes de baixar a ata.",
       "failure_unavailable": "O PDF não está disponível agora. Tente em alguns minutos.",
       "failure_generic": "Não foi possível baixar a ata.",
@@ -3928,7 +3927,7 @@
     "platform": {
       "title": "Área NR Labs",
       "locked_title": "Só a equipe da NR Labs",
-      "locked_body": "Aqui se decide quais partes da plataforma existem em produção e se restauram os backups do banco de dados. Só abrem as contas do domínio dos donos da plataforma, seja qual for o cargo."
+      "locked_body": "Aqui se decide quais partes da plataforma existem em produção, se restauram os backups do banco de dados e se editam os textos dos documentos. Só abrem as contas do domínio dos donos da plataforma, seja qual for o cargo."
     },
     "backups": {
       "title": "Backups",
