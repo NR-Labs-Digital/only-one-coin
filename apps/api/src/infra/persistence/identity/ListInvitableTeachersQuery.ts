@@ -34,6 +34,7 @@ export class ListInvitableTeachersQuery {
           eq(teachers.status, "active"),
           isNull(teachers.userId),
           isNull(teachers.deletedAt),
+          eq(teachers.isDemo, false),
           notExists(
             this.db
               .select({ id: staffInvites.id })

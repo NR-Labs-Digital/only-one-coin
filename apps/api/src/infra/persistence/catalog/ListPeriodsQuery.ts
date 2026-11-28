@@ -29,7 +29,10 @@ export class ListPeriodsQuery {
         classGroupCount: sql<number>`count(${classGroups.id})`.mapWith(Number),
       })
       .from(academicPeriods)
-      .leftJoin(classGroups, and(eq(classGroups.academicPeriodId, academicPeriods.id), isNull(classGroups.deletedAt)))
+      .leftJoin(
+        classGroups,
+        and(eq(classGroups.academicPeriodId, academicPeriods.id), isNull(classGroups.deletedAt), eq(classGroups.isDemo, false)),
+      )
       .groupBy(academicPeriods.id)
       .orderBy(desc(academicPeriods.startsOn), desc(academicPeriods.id));
 

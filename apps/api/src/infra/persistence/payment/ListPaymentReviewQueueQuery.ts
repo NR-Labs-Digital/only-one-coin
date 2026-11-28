@@ -26,6 +26,7 @@ import {
 } from "@ooc/domain";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { notDemoClassGroup } from "@/infra/persistence/demoRows.js";
 import { laterMonthlyPurchaseModulesSql } from "./monthlyPurchase.js";
 import { OPEN_STATUSES, PAYMENTS_PAGE_SIZE, paymentSearchCondition } from "./ListPaymentsQuery.js";
 import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, type PaymentLotItem } from "./paymentLot.js";
@@ -338,7 +339,12 @@ export class ListPaymentReviewQueueQuery {
           [asc(payments.createdAt), asc(payments.id)]
         : [asc(verdictRank), asc(criticalConfidence(fieldsColumn)), asc(payments.createdAt), asc(payments.id)];
 
-    const conditions: SQL[] = [inArray(payments.status, OPEN_STATUSES), isNull(enrollments.deletedAt)];
+    const conditions: SQL[] = [
+      inArray(payments.status, OPEN_STATUSES),
+      isNull(enrollments.deletedAt),
+      // A demo class group's money (28/11/2026) never reaches Payments.
+      notDemoClassGroup(enrollments.classGroupId),
+    ];
     if (filters.academicPeriodId) conditions.push(eq(classGroups.academicPeriodId, filters.academicPeriodId));
     const search = paymentSearchCondition(filters.q);
     if (search) conditions.push(search);

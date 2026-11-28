@@ -438,6 +438,18 @@ Revê a regra "template só no repositório": a equipe muda o que um e-mail auto
 
 O catálogo e o interruptor de feature flags são coisa de `apps/app` (`apps/app/CLAUDE.md`, seção "Feature flags"). Aqui só vive a ponta que a API precisa garantir: `PUT /feature-flags/:key` é `.owners()` (e-mail do domínio dos donos, nunca papel), `GET /feature-flags/state` é público (sem sessão), e toda troca grava no `audit_log`. Deny-by-default (abaixo) continua valendo mesmo pra rota `.owners()`.
 
+## Contas demo (28/11/2026)
+
+A regra está na raiz (§1, "Contas demo"); o mecanismo:
+
+- **Rotas** (`http/platform/DemoAccessRoutes.ts`), todas `.owners()`, com o usecase repetindo `isOwnerEmail`: `GET /platform/demo-accesses` (os acessos, últimos 200, e os cursos que aceitam demo), `POST /platform/demo-accesses` (`{kind, email, firstName, lastName, courseId}`; 422 `demo_access.student_email_not_gmail` e `demo_access.course_unavailable`, 409 `demo_access.email_in_use`) e `POST /platform/demo-accesses/:id/revoke` (404 `demo_access.not_found`). `audit_log`: `demo_access.created` (`{kind, courseId}`) e `demo_access.revoked` (`{kind}`), nunca o e-mail.
+- **Kit numa transação** (`DrizzleDemoAccessRepository`): a turma (`is_demo`, `in_progress`, 8 semanas a partir de hoje, `enrollment_closes_at` = agora, código da sequence de sempre), a sub-turma do módulo 1 e o aluno demo (passaporte `DEMO…`, nascimento em 2000, `is_demo`) com a matrícula `confirmed` no preço vigente do plano `package` mais recente. O kit do docente põe na sub-turma a ficha demo *por completar* (OOC-103), com o idioma do curso, e três alunos demo com e-mail `@demo.invalid`. A linha de `demo_accesses` (`0084`) guarda quem, qual turma e qual ficha.
+- **A conta vem depois e não é atômica com o kit:** `IssuePortalAccessUseCase` para o aluno, `CreateStaffInviteUseCase` (cargo `teacher`, com a ficha) para o docente, com as permissões do dono (a trava de anti-escalada vale). Se esse passo falha, o kit fica escondido como todo kit, e a lista mostra *Sin activar*, pronto para revogar.
+- **Endereço livre:** `emailInUse` recusa e-mail que já é de alguma conta (`"user"`), convite aberto ou ficha viva de aluno ou docente.
+- **Esconder é filtro de leitura, não escrita:** `infra/persistence/demoRows.ts` (`notDemoClassGroup`/`notDemoStudent`/`notDemoTeacher`, `not exists` pelo id que a consulta já tem) e `is_demo = false` direto onde a tabela já está no `FROM`. Lista nova de staff que lê aluno, docente, turma, matrícula ou pagamento **leva o filtro no mesmo PR**. O registro de notas e a acta filtram só sem `teacherId`: a lista do próprio docente (sempre por docente) mostra a demo. Turma demo nunca é `sellable` nem `movable`.
+- **E-mail que não sai:** `ReservedDomainGuard` (`@ooc/notifications`), dentro da `AllowlistGuard` em todo ambiente, recusa qualquer destinatário em `.invalid` (RFC 2606): os alunos fictícios e o marcador `@retired.invalid` das contas aposentadas. O outbox marca `blocked`, sem retry.
+- **Revogar** (`revoke`): a conta é aposentada como na OOC-136 (`deletedAt`, e-mail trocado por `retiredStaffEmail`, `banned`, sessões e navegadores lembrados apagados), o convite aberto vira `cancelled`, o docente fica `inactive`, a ficha demo troca o e-mail por `revoked-<id>@demo.invalid` (o endereço fica livre para outra demo ou uma conta real) e a turma demo é aposentada. A linha de `demo_accesses` mantém o e-mail original.
+
 ## Restaurar backup (OOC-153, 27/11/2026)
 
 A regra está na raiz (§8, "Área NR Labs"); o mecanismo:

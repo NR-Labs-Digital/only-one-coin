@@ -78,6 +78,8 @@ export class DashboardSummaryQuery {
               and a.metadata->>'to' in ('finished', 'closed')
           ) as ended_at
         from class_groups g
+        -- Demo class groups (28/11/2026) hold nobody's seat.
+        where not g.is_demo
       ),
       seats as (
         select e.student_id, fa.approved_at, ge.ended_at
@@ -146,6 +148,7 @@ export class DashboardSummaryQuery {
       where g.academic_period_id = ${period.id}
         and g.deleted_at is null
         and g.status in ('enrolling', 'in_progress')
+        and not g.is_demo
     `);
     const row = result.rows[0];
     return { taken: Number(row?.taken ?? 0), capacity: Number(row?.capacity ?? 0) };

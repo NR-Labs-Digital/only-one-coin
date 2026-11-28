@@ -310,6 +310,10 @@ export const classGroups = pgTable(
     // enrollments and payments point at it — so it leaves every catalog
     // screen instead, and nothing brings it back. Always retired too.
     erasedAt: timestamp("erased_at", { withTimezone: true }),
+    // A demo class group (28/11/2026): opened by the owners' demo-access tool
+    // so a client can see the portals from the inside. It never sells, and
+    // every list the team works from leaves it out (apps/api, "Contas demo").
+    isDemo: boolean("is_demo").notNull().default(false),
     // The class group this one was copied from when a period was duplicated —
     // the trail, and what stops the same copy from running twice.
     sourceClassGroupId: uuid("source_class_group_id").references(
@@ -399,6 +403,9 @@ export const students = pgTable(
     // the address is dead, not the student. Cleared when the address changes —
     // the flag is about THIS e-mail, never about the person.
     emailInvalidAt: timestamp("email_invalid_at", { withTimezone: true }),
+    // A demo student (28/11/2026): written by the owners' demo-access tool,
+    // left out of every list the team works from.
+    isDemo: boolean("is_demo").notNull().default(false),
     ...softDeletable(),
     // Soft delete only — no DELETE grant on students (CLAUDE.md §6).
   },
@@ -538,6 +545,9 @@ export const teachers = pgTable(
     userId: text("user_id"),
     // The shared Classroom login the teacher uses (OOC-196) — one at a time.
     // Cleared when the teacher leaves the roster.
+    // A demo teacher (28/11/2026): written by the owners' demo-access tool,
+    // left out of every list the team works from.
+    isDemo: boolean("is_demo").notNull().default(false),
     classroomAccountId: uuid("classroom_account_id").references(() => classroomAccounts.id, {
       onDelete: "restrict",
     }),
@@ -2008,6 +2018,39 @@ export const backupRestores = pgTable(
       "backup_restores_discard_check",
       sql`(${table.status} = 'discarded') = (${table.discardedAt} is not null) and (${table.discardedAt} is null) = (${table.discardedBy} is null)`,
     ),
+  ],
+);
+
+// A demo access the owners opened (28/11/2026, apps/api CLAUDE.md, "Contas
+// demo"): one per e-mail asked for, with the rows written for it — a demo
+// class group, and the demo student or teacher inside it — so the NR Labs
+// area can list them and revoke one. Revoking blocks the account and retires
+// the class group; nothing is deleted.
+export const demoAccesses = pgTable(
+  "demo_accesses",
+  {
+    id: uuidPk(),
+    kind: text("kind").notNull(),
+    email: text("email").notNull(),
+    classGroupId: uuid("class_group_id")
+      .notNull()
+      .references(() => classGroups.id, { onDelete: "restrict" }),
+    studentId: uuid("student_id").references(() => students.id, { onDelete: "restrict" }),
+    teacherId: uuid("teacher_id").references(() => teachers.id, { onDelete: "restrict" }),
+    createdBy: text("created_by").notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: text("revoked_by"),
+    ...timestamps(),
+  },
+  (table) => [
+    check("demo_accesses_kind_check", sql`${table.kind} in ('student', 'teacher')`),
+    // A student access points at its student, a teacher access at its teacher.
+    check(
+      "demo_accesses_owner_check",
+      sql`(${table.kind} = 'student' and ${table.studentId} is not null and ${table.teacherId} is null) or (${table.kind} = 'teacher' and ${table.teacherId} is not null and ${table.studentId} is null)`,
+    ),
+    check("demo_accesses_revoke_check", sql`(${table.revokedAt} is null) = (${table.revokedBy} is null)`),
+    index("demo_accesses_created_at_idx").on(table.createdAt),
   ],
 );
 

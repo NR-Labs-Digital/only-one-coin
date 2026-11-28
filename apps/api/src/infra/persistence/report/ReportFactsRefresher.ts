@@ -125,7 +125,9 @@ export class ReportFactsRefresher {
         left join seats on seats.run_id = m.id
         left join money on money.run_id = m.id
         left join low on low.run_id = m.id
-        where seats.run_id is not null or money.run_id is not null or low.run_id is not null
+        -- Demo class groups (28/11/2026) are not the school's figures.
+        where (seats.run_id is not null or money.run_id is not null or low.run_id is not null)
+          and not exists (select 1 from class_groups dg where dg.id = m.class_group_id and dg.is_demo)
       `);
 
       await tx.execute(sql`
@@ -160,6 +162,7 @@ export class ReportFactsRefresher {
         select entries.run_id, entries.month, sum(entries.enrollments), sum(entries.collected_cents)
         from entries
         join class_group_modules m on m.id = entries.run_id
+        where not exists (select 1 from class_groups dg where dg.id = m.class_group_id and dg.is_demo)
         group by entries.run_id, entries.month
       `);
 
@@ -167,7 +170,7 @@ export class ReportFactsRefresher {
         insert into report_class_group_facts (class_group_id, seats_taken, capacity)
         select g.id, g.seats_taken + g.seats_over, g.capacity
         from class_groups g
-        where g.deleted_at is null and g.status <> 'draft'
+        where g.deleted_at is null and g.status <> 'draft' and not g.is_demo
       `);
 
       const durationMs = Date.now() - started;

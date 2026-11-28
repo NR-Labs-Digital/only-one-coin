@@ -38,7 +38,7 @@ export class ListTeacherOptionsQuery {
     const roster = await this.db
       .select({ id: teachers.id, firstName: teachers.firstName, lastName: teachers.lastName })
       .from(teachers)
-      .where(and(eq(teachers.status, "active"), isNull(teachers.deletedAt)))
+      .where(and(eq(teachers.status, "active"), isNull(teachers.deletedAt), eq(teachers.isDemo, false)))
       .orderBy(asc(teachers.lastName), asc(teachers.firstName), asc(teachers.id));
     if (roster.length === 0) return [];
 

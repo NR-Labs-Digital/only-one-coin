@@ -412,7 +412,9 @@
         "classroom_account_updated": "Conta do Classroom editada",
         "classroom_account_retired": "Conta do Classroom tirada da lista",
         "classroom_account_password_viewed": "Senha do Classroom vista",
-        "email_template_published": "Texto de e-mail publicado"
+        "email_template_published": "Texto de e-mail publicado",
+        "demo_access_created": "Conta demo criada",
+        "demo_access_revoked": "Conta demo revogada"
       },
       "field": {
         "first_name": "Nome",
@@ -3029,7 +3031,18 @@
       "backups_database_what": "O banco novo onde o backup ficou, com dados reais de alunos.",
       "backups_database_how": "Apague quando terminar de conferir: dado real não fica parado num banco que ninguém olha.",
       "backups_checks_what": "O que é conferido antes de dar o backup por bom. Basta uma falhar para o banco ser apagado.",
-      "backups_production_count_what": "As linhas da produção agora. O backup é anterior, então pode ter menos, nunca mais, nas tabelas de onde nada é apagado."
+      "backups_production_count_what": "As linhas da produção agora. O backup é anterior, então pode ter menos, nunca mais, nas tabelas de onde nada é apagado.",
+      "demo_access_what": "Um acesso para o cliente ver o portal por dentro e dar a opinião. É criada uma turma demo no curso que você escolher, com a pessoa dentro.",
+      "demo_access_how": "Nada do que é criado aparece nas listas da equipe, e a turma demo nunca é vendida. Chega o e-mail de sempre: o link para criar a senha, ou o convite do docente.",
+      "demo_kind_what": "Qual portal a pessoa vai ver.",
+      "demo_kind_how": "Aluno: entra com uma vaga confirmada na turma demo, sem pagamento. Docente: dá a turma demo, com três alunos fictícios para lançar nota; primeiro completa a ficha.",
+      "demo_email_student_what": "Um Gmail pessoal, como o de qualquer aluno: é o usuário do portal.",
+      "demo_email_teacher_what": "Qualquer e-mail: é o usuário do portal do docente.",
+      "demo_email_how": "Tem que ser um e-mail que ainda não tenha conta na plataforma, nem a do painel.",
+      "demo_course_what": "O curso real em que a turma demo é aberta, com o material e os módulos dele.",
+      "demo_course_how": "Só aparecem os cursos vigentes com um plano de pagamento único com preço.",
+      "demo_state_what": "Ativa: a pessoa já criou a senha ou aceitou o convite. Sem ativar: ainda não. Revogada: não entra mais.",
+      "demo_state_how": "Revogar fecha a conta para sempre e aposenta a turma demo."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
@@ -3928,7 +3941,8 @@
     "platform": {
       "title": "Área NR Labs",
       "locked_title": "Só a equipe da NR Labs",
-      "locked_body": "Aqui se decide quais partes da plataforma existem em produção e se restauram os backups do banco de dados. Só abrem as contas do domínio dos donos da plataforma, seja qual for o cargo."
+      "locked_body": "Aqui se decide quais partes da plataforma existem em produção, se restauram os backups do banco de dados e se criam as contas demo para os clientes verem os portais. Só abrem as contas do domínio dos donos da plataforma, seja qual for o cargo.",
+      "demo_tab": "Contas demo"
     },
     "backups": {
       "title": "Backups",
@@ -4021,6 +4035,56 @@
         "not_configured": "Este ambiente não tem onde restaurar.",
         "failed": "Não foi possível solicitar. Tente de novo.",
         "discard_failed": "Não foi possível apagar o banco. Tente de novo."
+      }
+    },
+    "demo": {
+      "intro": "Uma conta demo deixa um cliente entrar no portal do aluno ou do docente com o próprio e-mail e ver a plataforma por dentro. Tudo o que é criado para ela fica marcado como demo e não aparece nas listas da equipe: alunos, matrículas, pagamentos, docentes, turmas, relatórios nem equipe.",
+      "new_title": "Nova conta demo",
+      "field_kind": "Portal",
+      "kind": {
+        "student": "Aluno",
+        "teacher": "Docente"
+      },
+      "field_first_name": "Nomes",
+      "field_last_name": "Sobrenomes",
+      "field_email": "E-mail",
+      "field_course": "Curso",
+      "email_placeholder_student": "nome@gmail.com",
+      "email_placeholder_teacher": "nome@empresa.com",
+      "create_student": "Criar acesso de aluno",
+      "create_teacher": "Criar acesso de docente",
+      "created_student": "Conta criada. O link para criar a senha foi enviado.",
+      "created_teacher": "Conta criada. O convite do portal do docente foi enviado.",
+      "no_courses_title": "Nenhum curso pode receber uma demo",
+      "no_courses_body": "É preciso um curso vigente com um plano de pagamento único com preço, e um período já iniciado.",
+      "list_title": "Contas demo criadas",
+      "empty_title": "Ainda não há contas demo",
+      "empty_body": "As que você criar aparecem aqui, com o estado.",
+      "col_person": "Pessoa",
+      "col_kind": "Portal",
+      "col_course": "Curso e turma",
+      "col_state": "Estado",
+      "col_created": "Criada",
+      "state": {
+        "active": "Ativa",
+        "waiting": "Sem ativar",
+        "revoked": "Revogada"
+      },
+      "revoke": "Revogar",
+      "revoke_title": "Revogar a conta demo de {name}?",
+      "revoke_body": "A conta deixa de entrar no portal e a turma demo é aposentada. Não se desfaz: para dar acesso de novo, crie outra conta demo.",
+      "revoke_confirm": "Revogar",
+      "cancel": "Cancelar",
+      "revoked": "Conta demo revogada.",
+      "load_error_title": "Não foi possível carregar as contas demo",
+      "load_error_body": "A API não respondeu. Recarregue a página em alguns minutos.",
+      "error": {
+        "not_gmail": "A conta demo de aluno precisa de um Gmail pessoal válido, como a de qualquer aluno.",
+        "email_in_use": "Esse e-mail já tem uma conta, um convite ou uma ficha na plataforma. Use outro.",
+        "course_unavailable": "Esse curso não pode receber uma demo: precisa estar vigente, com um plano de pagamento único com preço, e um período já iniciado.",
+        "invite_refused": "Seu cargo não pode convidar um docente. A ficha demo ficou criada: revogue-a e peça a alguém com essa permissão.",
+        "failed": "Não foi possível criar a conta demo. Tente de novo.",
+        "revoke_failed": "Não foi possível revogar. Tente de novo."
       }
     }
   }

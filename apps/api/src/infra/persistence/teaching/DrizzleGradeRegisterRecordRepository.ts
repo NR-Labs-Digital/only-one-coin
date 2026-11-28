@@ -102,6 +102,9 @@ export class DrizzleGradeRegisterRecordRepository {
     const conditions: SQL[] = [];
     if (filters.academicPeriodId) conditions.push(sql`period.id = ${filters.academicPeriodId}`);
     if (filters.teacherId) conditions.push(sql`${TEACHER_OF} = ${filters.teacherId}`);
+    // The panel's list leaves demo class groups out (28/11/2026); a teacher's
+    // own list (always by teacher) keeps them, so a demo teacher sees theirs.
+    else conditions.push(sql`not cg.is_demo`);
     return this.rows(conditions, passingGrade);
   }
 

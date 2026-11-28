@@ -61,7 +61,7 @@ export class ListCoursesQuery {
         hasPriceInForce: sql<boolean>`exists (select 1 from ${plans} p join ${planPrices} pp on pp.plan_id = p.id where p.course_id = ${courses.id} and p.deleted_at is null and pp.valid_from <= now())`,
       })
       .from(courses)
-      .leftJoin(classGroups, and(eq(classGroups.courseId, courses.id), isNull(classGroups.deletedAt)))
+      .leftJoin(classGroups, and(eq(classGroups.courseId, courses.id), isNull(classGroups.deletedAt), eq(classGroups.isDemo, false)))
       .groupBy(courses.id)
       .orderBy(asc(courses.language), asc(courses.name));
 
