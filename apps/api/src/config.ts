@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { receiptOcrEnvShape } from "./infra/ocr/receiptOcrEnv.js";
 
+/** An optional string where an empty value (a `.env.example` line copied as is) means unset. */
+function optionalString() {
+  return z.preprocess((val) => (val === "" ? undefined : val), z.string().min(1).optional());
+}
+
 export const ConfigSchema = z
   .object({
     // environment
@@ -142,6 +147,30 @@ export const ConfigSchema = z
           .filter(Boolean),
       ),
 
+    // Restoring a backup from the owners' area (OOC-153). Every one of these
+    // is optional, so a deploy never goes down over them: without the bucket
+    // the screen lists nothing, and without a restore target it restores
+    // nothing — it says which. An empty value counts as unset.
+    //
+    // The bucket the deploy writes its pg_dump to (deploy-api.yml). Its keys
+    // default to the API's own Tigris keys above, which may not read it —
+    // then set a read-only pair of its own.
+    BACKUP_BUCKET_NAME: optionalString(),
+    BACKUP_ACCESS_KEY_ID: optionalString(),
+    BACKUP_SECRET_ACCESS_KEY: optionalString(),
+    // Where a backup is restored: a NEW database on a Neon branch kept for
+    // restores (never the production branch — the restore would share its
+    // compute), created and dropped through the Neon API. All four or none.
+    NEON_API_KEY: optionalString(),
+    NEON_PROJECT_ID: optionalString(),
+    NEON_RESTORE_BRANCH_ID: optionalString(),
+    NEON_RESTORE_ROLE: optionalString(),
+    // Local only: a Postgres URL whose role may CREATE/DROP DATABASE, for
+    // trying the restore against compose.yml. Refused in production.
+    BACKUP_RESTORE_ADMIN_URL: optionalString(),
+    // psql 18 (the dump comes from a Postgres 18 server). The image installs it.
+    PSQL_PATH: z.string().min(1).default("psql"),
+
     // Web Push (OOC-51): the VAPID key pair that signs every push, and the
     // contact the push services can reach (`mailto:` or an https URL).
     // Optional like the Brevo key — without them the portal does not offer
@@ -162,6 +191,21 @@ export const ConfigSchema = z
         code: z.ZodIssueCode.custom,
         path: ["VAPID_PUBLIC_KEY"],
         message: "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT go together: set all three or none",
+      });
+    }
+    const neon = [config.NEON_API_KEY, config.NEON_PROJECT_ID, config.NEON_RESTORE_BRANCH_ID, config.NEON_RESTORE_ROLE];
+    if (neon.some(Boolean) && !neon.every(Boolean)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NEON_API_KEY"],
+        message: "NEON_API_KEY, NEON_PROJECT_ID, NEON_RESTORE_BRANCH_ID and NEON_RESTORE_ROLE go together",
+      });
+    }
+    if (config.BACKUP_RESTORE_ADMIN_URL && config.NODE_ENV === "production") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["BACKUP_RESTORE_ADMIN_URL"],
+        message: "is for local restores only; production restores into Neon",
       });
     }
     if (config.BREVO_API_KEY && !config.EMAIL_SENDER_ADDRESS) {

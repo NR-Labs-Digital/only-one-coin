@@ -782,6 +782,49 @@ export type {
 export type { IFeatureFlagOverrideRepository } from "./platform/ports/IFeatureFlagOverrideRepository.js";
 export { NotAPlatformOwnerError, InvalidPlatformSettingError } from "./platform/errors.js";
 export {
+  BACKUP_KEY_PATTERN,
+  BACKUP_CORE_TABLES,
+  BACKUP_RESTORE_CHECKS,
+  BACKUP_RESTORE_FAILURES,
+  BACKUP_RESTORE_STATUSES,
+  OPEN_BACKUP_RESTORE_STATUSES,
+  backupTakenAt,
+  checkRestoredBackup,
+  isBackupKey,
+  restoreDatabaseName,
+  type BackupCoreTable,
+  type BackupFile,
+  type BackupRestoreCheck,
+  type BackupRestoreCheckKey,
+  type BackupRestoreFailure,
+  type BackupRestoreReport,
+  type BackupRestoreStatus,
+  type BackupRestoreView,
+  type RestoredDatabaseInspection,
+} from "./platform/backup/BackupRestore.js";
+export {
+  BackupNotFoundError,
+  BackupRestoreAlreadyOpenError,
+  BackupRestoreConfirmationMismatchError,
+  BackupRestoreNotConfiguredError,
+  BackupRestoreNotDiscardableError,
+  BackupRestoreNotFoundError,
+} from "./platform/backup/errors.js";
+export type { IBackupStore } from "./platform/backup/ports/IBackupStore.js";
+export type { IRestoreTarget } from "./platform/backup/ports/IRestoreTarget.js";
+export { DumpRestoreError, type DumpRestoreFailure, type IDumpRestorer } from "./platform/backup/ports/IDumpRestorer.js";
+export type { ClaimedBackupRestore, IBackupRestoreRepository } from "./platform/backup/ports/IBackupRestoreRepository.js";
+export {
+  BACKUP_RESTORE_STALE_AFTER_MS,
+  DiscardBackupRestoreUseCase,
+  GetBackupsOverviewUseCase,
+  RequestBackupRestoreUseCase,
+  RunNextBackupRestoreUseCase,
+  type BackupRestoreCapabilities,
+  type BackupsOverview,
+  type RunBackupRestoreOutcome,
+} from "./platform/backup/BackupRestoreUseCases.js";
+export {
   PLATFORM_SETTING_BOUNDS,
   PLATFORM_SETTING_COLUMNS,
   PLATFORM_SETTING_KEYS,

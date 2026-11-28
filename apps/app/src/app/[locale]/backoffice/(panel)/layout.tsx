@@ -280,22 +280,25 @@ export default async function BackofficePanelLayout({
               },
             ]
           : []),
-        /* Funcionalidades — which sections of the platform are on the air
-           (CLAUDE.md §5). The only entry in the rail gated by an e-mail domain
-           instead of a cargo: what the platform admits to existing belongs to
-           whoever runs the platform, not to whoever runs the school. And the
-           only one with no flag of its own — see the note in
-           `lib/feature-flags/registry.ts`. */
-        ...(canManageFeatureFlags(staff.email)
-          ? [
-              {
-                key: 'features' as const,
-                href: '/backoffice/features',
-                label: t('nav.features'),
-              },
-            ]
-          : []),
       ],
+    },
+    /* The NR Labs area (OOC-153): Funcionalidades and the database backups.
+       The only group gated by an e-mail domain instead of a cargo — what the
+       platform admits to existing, and restoring its data, belong to whoever
+       runs the platform, not to whoever runs the school. No flag of its own —
+       see the note in `lib/feature-flags/registry.ts`. */
+    {
+      key: 'nrlabs',
+      label: t('nav.group_nrlabs'),
+      items: canManageFeatureFlags(staff.email)
+        ? [
+            {
+              key: 'platform' as const,
+              href: '/backoffice/platform/features',
+              label: t('nav.platform'),
+            },
+          ]
+        : [],
     },
   ]
 

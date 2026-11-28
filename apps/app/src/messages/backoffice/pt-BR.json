@@ -15,7 +15,6 @@
       "reports": "Relatórios",
       "staff": "Equipe",
       "settings": "Configuração",
-      "features": "Funcionalidades",
       "logout": "Sair",
       "soon": "Em breve",
       "hidden_from_others": "Desligada para os demais",
@@ -34,7 +33,9 @@
       "agenda": "Agenda",
       "audit": "Auditoria",
       "grade_records": "Atas de notas",
-      "complaints": "Livro de Reclamações"
+      "complaints": "Livro de Reclamações",
+      "group_nrlabs": "NR Labs",
+      "platform": "Plataforma"
     },
     "role": {
       "master": "Master",
@@ -373,6 +374,10 @@
         "staff_trusted_browsers_forgotten": "Navegadores lembrados esquecidos",
         "platform_setting_updated": "Configuração alterada",
         "feature_flag_changed": "Funcionalidade ligada ou desligada",
+        "backup_restore_requested": "Restauração de backup solicitada",
+        "backup_restore_passed": "Backup restaurado e verificado",
+        "backup_restore_failed": "Restauração de backup falhou",
+        "backup_restore_discarded": "Banco restaurado descartado",
         "document_template_published": "Modelo de documento publicado",
         "audit_log_exported": "Auditoria exportada",
         "language_created": "Idioma criado",
@@ -2251,8 +2256,6 @@
     },
     "features": {
       "title": "Funcionalidades",
-      "locked_title": "Só os donos da plataforma",
-      "locked_body": "Aqui se decide quais partes da plataforma existem em produção. É decisão de quem opera a plataforma, não de quem administra a escola — então só as contas do domínio dos donos abrem esta tela.",
       "total": "{count, plural, one {# funcionalidade} other {# funcionalidades}}",
       "changed_here": "{count, plural, one {# mudada aqui} other {# mudadas aqui}}",
       "state": {
@@ -3020,7 +3023,15 @@
       "admin_team_reset_password_what": "Um link de uso único, válido por 24 horas, para a pessoa definir uma senha nova.",
       "admin_team_reset_password_how": "A plataforma não envia nada: você copia o link e manda para a pessoa. Só ela conhece a senha.",
       "portal_device_what": "O portal se instala como um app na tela inicial e pode avisar neste dispositivo o mesmo que enviamos por e-mail: pagamentos, notas, documentos e lembretes dos seus cursos.",
-      "portal_device_how": "As notificações são ativadas em cada dispositivo e não substituem o e-mail, que continua chegando. Você pode desativá-las quando quiser. No iPhone, primeiro instale o portal e abra pela Tela de Início."
+      "portal_device_how": "As notificações são ativadas em cada dispositivo e não substituem o e-mail, que continua chegando. Você pode desativá-las quando quiser. No iPhone, primeiro instale o portal e abra pela Tela de Início.",
+      "backups_list_what": "Os backups que cada deploy da API guarda, o mais recente primeiro. Cada um é uma cópia da produção naquele momento.",
+      "backups_list_how": "Restaurar não muda a produção: carrega o backup num banco novo para provar que ele volta inteiro. Uma restauração aberta por vez.",
+      "backups_status_what": "Na fila, Restaurando e Verificando: o trabalho ainda está rodando. Verificado: passou em tudo e o banco está guardado. Falhou: parou e o banco foi apagado.",
+      "backups_status_how": "A tela se atualiza sozinha enquanto a restauração avança.",
+      "backups_database_what": "O banco novo onde o backup ficou, com dados reais de alunos.",
+      "backups_database_how": "Apague quando terminar de conferir: dado real não fica parado num banco que ninguém olha.",
+      "backups_checks_what": "O que é conferido antes de dar o backup por bom. Basta uma falhar para o banco ser apagado.",
+      "backups_production_count_what": "As linhas da produção agora. O backup é anterior, então pode ter menos, nunca mais, nas tabelas de onde nada é apagado."
     },
     "payment_over_capacity": {
       "badge": "Acima do limite"
@@ -3915,6 +3926,104 @@
         "passport": "Passaporte"
       },
       "read_only": "Somente leitura: editar e publicar é da administração."
+    },
+    "platform": {
+      "title": "Área NR Labs",
+      "locked_title": "Só a equipe da NR Labs",
+      "locked_body": "Aqui se decide quais partes da plataforma existem em produção e se restauram os backups do banco de dados. Só abrem as contas do domínio dos donos da plataforma, seja qual for o cargo."
+    },
+    "backups": {
+      "title": "Backups",
+      "intro": "Cada deploy da API guarda um backup do banco de produção antes da migration, mantido por 30 dias. Restaurar cria um banco novo e vazio, carrega o backup nele e o confere.",
+      "intro_production": "O banco de produção nunca é tocado. Se alguma verificação falhar, o banco novo é apagado na hora. Trocar a produção para um banco restaurado é um passo manual do runbook, não desta tela.",
+      "not_configured_list": "Este ambiente não tem o bucket de backups configurado: não há nada para listar.",
+      "not_configured_restore": "Este ambiente lista os backups, mas não tem onde restaurá-los (falta configurar o destino na API).",
+      "load_error_title": "Não foi possível ler os backups",
+      "load_error_body": "A API não respondeu. Tente de novo em alguns minutos.",
+      "list_title": "Backups disponíveis",
+      "empty_title": "Nenhum backup no bucket",
+      "empty_body": "Os backups aparecem aqui depois do próximo deploy da API.",
+      "col_taken_at": "Data",
+      "col_name": "Backup",
+      "col_size": "Tamanho",
+      "col_requested_at": "Solicitado",
+      "col_status": "Estado",
+      "col_by": "Por",
+      "col_table": "Tabela",
+      "col_restored": "Restaurado",
+      "col_production": "Produção hoje",
+      "restore": "Restaurar",
+      "restore_blocked": "Há uma restauração aberta. Espere terminar ou descarte o banco dela para restaurar outro backup.",
+      "restore_title": "Restaurar backup",
+      "restore_body": "É criado um banco novo com uma cópia completa de dados reais de alunos. A produção não muda. Se alguma verificação falhar, o banco é apagado sozinho.",
+      "restore_type_label": "Para confirmar, digite o nome do backup: {name}",
+      "restore_confirm": "Restaurar",
+      "cancel": "Cancelar",
+      "queued_toast": "Restauração na fila",
+      "discarded_toast": "Banco restaurado apagado",
+      "current_title": "Última restauração",
+      "requested_by": "Solicitada por {name} · {at}",
+      "removed_account": "Conta removida",
+      "database": "Banco restaurado",
+      "checks_title": "Verificações",
+      "duration": "Levou {seconds, plural, one {# segundo} other {# segundos}}.",
+      "table_missing": "Não existe",
+      "discard": "Apagar banco restaurado",
+      "discard_title": "Apagar o banco restaurado",
+      "discard_body": "O banco {name} é apagado com todos os dados. Não dá para desfazer. O backup continua no bucket e pode ser restaurado de novo.",
+      "discard_confirm": "Apagar",
+      "status": {
+        "queued": "Na fila",
+        "restoring": "Restaurando",
+        "validating": "Verificando",
+        "passed": "Verificado",
+        "failed": "Falhou",
+        "discarded": "Descartado"
+      },
+      "status_body": {
+        "queued": "Esperando o worker pegar. Costuma começar em menos de um minuto.",
+        "restoring": "Carregando o backup no banco novo, numa transação só.",
+        "validating": "Backup carregado. Conferindo o que voltou.",
+        "passed": "O backup voltou completo e passou em todas as verificações. O banco fica guardado até você apagá-lo.",
+        "failed": "A restauração parou e o banco dela foi apagado. A produção segue igual.",
+        "discarded": "O banco restaurado foi apagado."
+      },
+      "failure": {
+        "backup_not_found": "O backup não está mais no bucket.",
+        "target_unavailable": "Não foi possível criar o banco novo.",
+        "dump_corrupt": "O arquivo do backup está danificado ou incompleto.",
+        "restore_failed": "A carga parou num erro e foi desfeita inteira.",
+        "validation_failed": "O backup foi carregado, mas alguma verificação falhou.",
+        "interrupted": "A máquina que rodava a restauração reiniciou no meio.",
+        "timed_out": "Demorou mais do que o permitido.",
+        "unexpected_error": "Erro inesperado."
+      },
+      "check": {
+        "tables_present": "Todas as tabelas principais existem",
+        "tables_not_empty": "Alunos, cursos e bitácora têm dados",
+        "not_ahead_of_production": "Não tem mais alunos, pagamentos nem bitácora que a produção hoje",
+        "migrations_match_repository": "Migrations desta plataforma ({inBackup} de {inRepository})",
+        "append_only_lock": "A bitácora continua protegida contra edição"
+      },
+      "table": {
+        "students": "Alunos",
+        "guardians": "Apoderados",
+        "enrollments": "Matrículas",
+        "payments": "Pagamentos",
+        "class_groups": "Turmas",
+        "courses": "Cursos",
+        "teachers": "Docentes",
+        "grades": "Notas",
+        "audit_log": "Bitácora"
+      },
+      "error": {
+        "mismatch": "O nome digitado não é o do backup.",
+        "open": "Já há uma restauração aberta.",
+        "not_found": "Esse backup não está mais no bucket.",
+        "not_configured": "Este ambiente não tem onde restaurar.",
+        "failed": "Não foi possível solicitar. Tente de novo.",
+        "discard_failed": "Não foi possível apagar o banco. Tente de novo."
+      }
     }
   }
 }

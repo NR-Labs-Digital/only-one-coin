@@ -55,14 +55,29 @@ Não há backup agendado: o do deploy é a política (`CLAUDE.md` §3).
 
 5. **Apagar o banco do ensaio.** No Neon: *Delete database*. Localmente: `drop database ooc_restore_drill`. Dado real não fica parado num banco esquecido.
 
+## Pela tela do backoffice (OOC-153)
+
+A área **NR Labs → Backups** (`/backoffice/platform/backups`, só contas dos domínios dos donos) faz os passos 1 a 3 acima sozinha: cria um banco novo no Neon, restaura o backup escolhido (digitando o nome dele), confere e mostra o relatório. **Se qualquer verificação falhar, o banco novo é apagado na hora** e a produção não é tocada. O que passa fica guardado até alguém clicar em *Eliminar base restaurada* (passo 5). Mecanismo em `apps/api/CLAUDE.md`, "Restaurar backup".
+
+Verificações da tela, além das do script: as tabelas das quais nada se apaga (`students`, `payments`, `audit_log`) não podem ter mais linhas no backup que na produção de agora — mais quer dizer que o arquivo não é backup desta produção.
+
+**Ligar em produção (uma vez, fora do Git):**
+
+1. No Neon, criar um **branch só para restauração** (não usar o de produção: a carga dividiria a compute com o site) e anotar o id dele e o papel dono (`neondb_owner`, normalmente).
+2. Criar uma chave da API do Neon (*Account → API keys*).
+3. `fly secrets set NEON_API_KEY=... NEON_PROJECT_ID=... NEON_RESTORE_BRANCH_ID=... NEON_RESTORE_ROLE=... BACKUP_BUCKET_NAME=only-one-coin-backups`. Se as chaves do Tigris da API não leem o bucket de backups, também `BACKUP_ACCESS_KEY_ID`/`BACKUP_SECRET_ACCESS_KEY` (só leitura).
+
+Sem esses secrets a tela abre e diz que o ambiente não lista ou não restaura — nenhum é obrigatório para o deploy.
+
 ## Restaurar de verdade (incidente)
 
 Este passo a passo prova que o backup volta, mas não troca o banco de produção. Num incidente real, o caminho é restaurar num banco novo como acima, conferir e só então apontar a `DATABASE_URL` da API para ele (`fly secrets set`). Antes disso, avalie o *point-in-time restore* do próprio Neon, que volta minutos e não um deploy inteiro. Esse procedimento ainda não foi ensaiado e é decisão do dono na hora.
 
-A área do backoffice que restaura backup, só para a NR Labs, é a OOC-153 (P4).
+A área do backoffice que restaura backup (OOC-153, seção acima) só restaura num banco novo — a troca da produção continua sendo este passo manual.
 
 ## Histórico de ensaios
 
 | Data | Backup | Onde | Resultado | Quem |
 | --- | --- | --- | --- | --- |
+| 27/11/2026 | dump do `ooc_dev` local, mesmo formato; e o mesmo dump cortado ao meio | Postgres 18 local, pelo worker da OOC-153 (`LocalPostgresRestoreTarget`) | OK: dump inteiro restaurado em ~2 s, 325 alunos, 5 verificações aprovadas; o cortado falhou como `dump_corrupt` e o banco novo foi apagado. Prova o caminho da tela, não o backup de produção nem o Neon. | Claude (OOC-153) |
 | 10/11/2026 | dump do `ooc_dev` local, no mesmo formato do deploy | Postgres 18 local (`ooc_restore_drill`) | OK: 309 alunos, 41 tabelas, 51 migrations, trava da `audit_log` ativa, ~1 s. Recusou banco não vazio e confirmação errada. Prova o script, não o backup de produção. | Claude (OOC-50) |

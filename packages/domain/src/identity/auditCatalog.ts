@@ -265,6 +265,12 @@ export const AUDIT_ACTIONS = {
 
   ...PLATFORM_SETTING_ACTIONS,
   "feature_flag.override": { key: "feature_flag_changed", entity: "platform", subject: "none" },
+  // Restoring a backup into a scratch database (OOC-153): the target is the
+  // restore row; the entry keeps the backup's name and the database's.
+  "backup_restore.requested": { key: "backup_restore_requested", entity: "platform", subject: "none" },
+  "backup_restore.passed": { key: "backup_restore_passed", entity: "platform", subject: "none" },
+  "backup_restore.failed": { key: "backup_restore_failed", entity: "platform", subject: "none" },
+  "backup_restore.discarded": { key: "backup_restore_discarded", entity: "platform", subject: "none" },
   "document_template.published": { key: "document_template_published", entity: "platform", subject: "none" },
   "audit_log.exported": { key: "audit_log_exported", entity: "platform", subject: "none" },
   // The complaints book (OOC-58): the target is the sheet, which has no page in

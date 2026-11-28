@@ -9,8 +9,7 @@ regexes = [
   '''ci-placeholder-secret-at-least-32-chars''',
   '''test-secret-at-least-32-characters-long''',
   '''integration-secret-at-least-32-characters''',
-  # Sample push-subscription `auth` key from the web-push docs, used as a
-  # fixture in apps/api/src/tests/portal-push.test.ts (OOC-51). The history
-  # scan keeps seeing the commit that added it, so it is allowlisted by value.
+  # Web Push test vector (fake browser subscription `keys.auth`) in
+  # apps/api/src/tests/portal-push.test.ts — a public sample value, not a credential.
   '''tBHItJI5svbpez7KI4CCXg''',
 ]

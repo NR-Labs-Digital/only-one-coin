@@ -1958,6 +1958,59 @@ export const featureFlagOverrides = pgTable("feature_flag_overrides", {
   ...timestamps(),
 });
 
+// A backup restored by the owners' own area of the backoffice (OOC-153).
+//
+// The restore never touches the database the platform runs on: every row is
+// a scratch database created for it (a new database on the Neon restore
+// branch), loaded from one `ooc-prod-*.sql.gz` in the backups bucket and then
+// checked. A restore whose checks fail has its database dropped on the spot;
+// one that passes keeps it until an owner discards it. Pointing production at
+// a restored database stays a manual step (docs/RESTAURAR-BACKUP.md).
+//
+// One open restore at a time — queued, running, or passed and not yet
+// discarded — held by the partial unique index on a constant: the restored
+// database is real student data (Ley 29733), and two of them lying around is
+// one more than anybody is watching.
+//
+// `report` holds the checks the worker ran (counts, migrations, the
+// append-only lock) — numbers and check names only, never a row's content.
+// `requested_by` / `discarded_by` point at Better Auth's "user"; the FKs are
+// written by hand in the migration, as for receipt_rereads.requested_by.
+export const backupRestores = pgTable(
+  "backup_restores",
+  {
+    id: uuidPk(),
+    backupKey: text("backup_key").notNull(),
+    databaseName: text("database_name").notNull().unique(),
+    status: text("status").notNull().default("queued"),
+    failureReason: text("failure_reason"),
+    report: jsonb("report"),
+    requestedBy: text("requested_by").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    discardedAt: timestamp("discarded_at", { withTimezone: true }),
+    discardedBy: text("discarded_by"),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("backup_restores_one_open_uidx")
+      .on(sql`(true)`)
+      .where(sql`${table.status} in ('queued', 'restoring', 'validating', 'passed')`),
+    index("backup_restores_created_at_idx").on(table.createdAt),
+    check(
+      "backup_restores_status_check",
+      sql`${table.status} in ('queued', 'restoring', 'validating', 'passed', 'failed', 'discarded')`,
+    ),
+    // A failed restore always says why, and only a failed one does.
+    check("backup_restores_failure_check", sql`(${table.status} = 'failed') = (${table.failureReason} is not null)`),
+    check(
+      "backup_restores_discard_check",
+      sql`(${table.status} = 'discarded') = (${table.discardedAt} is not null) and (${table.discardedAt} is null) = (${table.discardedBy} is null)`,
+    ),
+  ],
+);
+
 // Transactional outbox (apps/api/CLAUDE.md, "Notificações"): the use case that
 // decides a message must go out writes the row in the SAME transaction as the
 // business change that caused it — an enrollment committed without its e-mail,

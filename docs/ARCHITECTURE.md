@@ -495,7 +495,7 @@ inventar uma pelo painel seria inventar uma seção que não existe.
 | Leitura do interruptor (server-only) | `apps/app/src/lib/feature-flags/overrides.ts` |
 | Resolução (server-only) | `apps/app/src/lib/feature-flags/server.ts` |
 | Destravamento interno | `apps/app/src/lib/feature-flags/preview.ts` + `src/app/api/preview/route.ts` |
-| A tela | `apps/app/src/app/[locale]/backoffice/(panel)/features/` |
+| A tela | `apps/app/src/app/[locale]/backoffice/(panel)/platform/features/` (área NR Labs, OOC-153; `(panel)/features` só redireciona) |
 
 **Por que mudou (08/09/2026).** A versão anterior desta seção registrava que
 banco + tela tinham sido adiados: `apps/app` não fala com o banco
