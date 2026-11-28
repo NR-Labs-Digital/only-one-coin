@@ -15,7 +15,7 @@ export const publishDocumentTemplateRoute = RouteBuilder.post("/document-templat
     summary: "Publish a document template draft",
     description: "Creates the next numbered, append-only version from the draft. Refused while the draft has issues.",
   })
-  .can("settings.document_templates")
+  .owners()
   .params(DocumentKindParamsSchema)
   .response(200, z.object({ version: z.number().int(), publishedAt: z.string() }))
   .response(404, ErrorResponseSchema)

@@ -2961,7 +2961,7 @@
       "payment_metric_in_review_what": "Pagos que esperan a una persona en Pagos, de todos los periodos, como la pestaña Abiertos.",
       "payment_metric_decided_what": "Cuenta solo el periodo actual: lo aprobado, lo recaudado o lo rechazado en él.",
       "grade_record_page_what": "Cada fila es un registro de notas que la coordinación confirmó como oficial: un grupo de módulo en una ronda. El acta es el documento con el que se paga al docente.",
-      "grade_record_page_how": "Se descarga en PDF, armado en el momento con el texto de Configuración → Documentos. Cada descarga queda en la bitácora. Aparecen también las aulas ya cerradas.",
+      "grade_record_page_how": "Se descarga en PDF, armado en el momento con el texto publicado del acta. Cada descarga queda en la bitácora. Aparecen también las aulas ya cerradas.",
       "grade_record_counts_what": "Alumnos con nota en este registro: aprobados tienen la nota mínima de Configuración o más; desaprobados, menos; DA no rindieron el examen final.",
       "grade_record_counts_how": "Se cuentan con las notas de hoy: si la supervisión corrige una nota después de oficial, el número cambia y la próxima descarga lo muestra.",
       "grade_record_confirmed_what": "Cuándo y quién confirmó el registro como oficial. «Corregida el» aparece si una nota se corrigió después.",
@@ -3267,7 +3267,7 @@
       "subtitle": "Módulo {module}, el último del curso: aquí se emite el certificado de quien lo concluyó.",
       "subtitle_single": "Último módulo del curso: aquí se emite el certificado de quien lo concluyó.",
       "load_error": "No pudimos cargar los certificados. Recarga la página para intentarlo de nuevo.",
-      "template_missing": "Todavía no hay un texto de certificado publicado. Publícalo en Configuración → Documentos para poder emitir.",
+      "template_missing": "Todavía no hay un texto de certificado publicado. Pide a NR Labs que lo publique para poder emitir.",
       "exam_hint": "Este curso exige el examen de certificación. Marca a quien lo aprobó: sin la marca, el certificado no sale.",
       "empty": "Todavía no hay alumnos con vacante confirmada en este grupo.",
       "col_student": "Alumno",
@@ -3295,7 +3295,7 @@
       "issued_toast": "{count, plural, one {Se emitió # certificado} other {Se emitieron # certificados}}.",
       "error_nothing_to_issue": "Nadie de la lista puede recibir el certificado ahora. Recarga la página para ver la lista actualizada.",
       "error_not_published": "Todavía no hay un texto de certificado publicado.",
-      "error_missing_value": "El texto del certificado imprime un dato que algún alumno no tiene. Revísalo en Configuración → Documentos.",
+      "error_missing_value": "El texto del certificado imprime un dato que algún alumno no tiene. Pide a NR Labs que revise el texto.",
       "error_failed": "No se pudo emitir. Inténtalo de nuevo."
     },
     "academic_status": {
@@ -3572,7 +3572,6 @@
           "read": "Consultar las reglas y las tarifas de la plataforma",
           "edit": "Cambiar las reglas de la plataforma",
           "procedure_prices": "Fijar la tarifa de los trámites",
-          "document_templates": "Editar y publicar los textos de los documentos",
           "feature_flags": "Encender y apagar secciones (Funcionalidades)"
         },
         "team": {
@@ -3663,7 +3662,7 @@
       "corrected_on": "Corregida el {date}",
       "download": "Descargar acta",
       "downloading": "Preparando…",
-      "failure_not_published": "El acta aún no tiene texto publicado. Publícalo en Configuración → Documentos.",
+      "failure_not_published": "El acta aún no tiene texto publicado. Pide a NR Labs que lo publique.",
       "failure_no_teacher": "El grupo de módulo no tiene docente asignado. Asígnalo antes de descargar el acta.",
       "failure_unavailable": "El PDF no está disponible ahora. Inténtalo en unos minutos.",
       "failure_generic": "No se pudo descargar el acta.",
@@ -3943,7 +3942,7 @@
     "platform": {
       "title": "Área NR Labs",
       "locked_title": "Solo el equipo de NR Labs",
-      "locked_body": "Aquí se decide qué partes de la plataforma existen en producción, se restauran los backups de la base de datos y se crean las cuentas demo para que los clientes vean los portales. Lo abren solo las cuentas del dominio de los dueños de la plataforma, sea cual sea el cargo.",
+      "locked_body": "Aquí se decide qué partes de la plataforma existen en producción, se restauran los backups de la base de datos, se editan los textos de los documentos y se crean las cuentas demo para que los clientes vean los portales. Lo abren solo las cuentas del dominio de los dueños de la plataforma, sea cual sea el cargo.",
       "demo_tab": "Cuentas demo"
     },
     "backups": {

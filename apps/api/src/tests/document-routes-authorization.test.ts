@@ -6,12 +6,16 @@ import { container } from "@/container.js";
 import { SESSION_COOKIE_NAME } from "@/infra/auth/betterAuth.js";
 
 /**
- * CI gate §6.5 for document templates (OOC-123): only management edits,
- * previews and publishes a document's text (decision of 23/10/2026). The
- * handler never runs, so no database or WeasyPrint is needed.
+ * CI gate §6.5 for document templates (OOC-123): since 28/11/2026 only the
+ * platform owners edit, preview and publish a document's text — by e-mail
+ * domain, never by cargo, like the rest of the NR Labs area. A `master` or an
+ * `admin` outside the owners' domains is refused. The handler never runs, so
+ * no database or WeasyPrint is needed.
  */
 
 const NEVER: Role[] = [
+  "master",
+  "admin",
   "analyst",
   "enrollment_supervisor",
   "academic_supervisor",
@@ -41,9 +45,9 @@ afterAll(async () => {
   await app.close();
 });
 
-describe("document template routes refuse undeclared roles", () => {
-  it.each(FLAT)("%s %s refuses %s", async (method, url, role) => {
-    const user: AuthenticatedUser = { id: "u1", email: "x@example.com", name: "X", role, twoFactorEnabled: true };
+describe("document template routes are the owners' alone", () => {
+  it.each(FLAT)("%s %s refuses %s outside the owners' domain", async (method, url, role) => {
+    const user: AuthenticatedUser = { id: "u1", email: "x@onlyonecoin.edu.pe", name: "X", role, twoFactorEnabled: true };
     vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
 
     const response = await app.inject({
@@ -54,6 +58,20 @@ describe("document template routes refuse undeclared roles", () => {
     });
 
     expect(response.statusCode).toBe(403);
+  });
+
+  it.each(["x@nrlabsdigital.com", "x@admin.com"])("lets an owner (%s) through whatever the cargo", async (email) => {
+    const user: AuthenticatedUser = { id: "u1", email, name: "X", role: "support", twoFactorEnabled: true };
+    vi.spyOn(container.identity.currentSession, "resolve").mockResolvedValue(user);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/document-templates/unknown_kind",
+      cookies: { [SESSION_COOKIE_NAME]: "token" },
+    });
+
+    // Past the door: the handler answers the unknown kind.
+    expect(response.statusCode).toBe(404);
   });
 });
 

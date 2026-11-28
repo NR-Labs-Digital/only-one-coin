@@ -15,7 +15,7 @@ export const saveDocumentTemplateDraftRoute = RouteBuilder.put("/document-templa
     summary: "Save a document template draft",
     description: "The text is sanitized to what a document may carry. The answer lists the issues to fix before publishing.",
   })
-  .can("settings.document_templates")
+  .owners()
   .params(DocumentKindParamsSchema)
   .body(z.object({ body: DocumentBodySchema }))
   .response(

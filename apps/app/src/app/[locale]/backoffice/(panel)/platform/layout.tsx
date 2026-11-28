@@ -7,8 +7,9 @@ import { SectionTabs } from '@/components/backoffice/section-tabs'
 
 /**
  * The NR Labs area (OOC-153): what only whoever runs the platform opens —
- * Funcionalidades, the database backups and, since 28/11/2026, the demo
- * accounts clients see the portals with. Decided by the e-mail domain, not
+ * Funcionalidades, the database backups and, since 28/11/2026, the text of the
+ * documents the platform prints and the demo accounts clients see the portals
+ * with. Decided by the e-mail domain, not
  * the cargo (`isOwnerEmail`): an `admin` of the institution meets the locked
  * state. The check that counts is `.owners()` on every route in `apps/api`.
  *
@@ -36,6 +37,7 @@ export default async function PlatformLayout({ children }: { children: ReactNode
         tabs={[
           { href: '/backoffice/platform/features', label: t('features.title') },
           { href: '/backoffice/platform/backups', label: t('backups.title') },
+          { href: '/backoffice/platform/documents', label: t('settings.documents_title') },
           { href: '/backoffice/platform/demo', label: t('platform.demo_tab') },
         ]}
       />
