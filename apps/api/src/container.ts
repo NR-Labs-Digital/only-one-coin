@@ -142,6 +142,8 @@ import {
   RetireStaffAccountUseCase,
   SchedulePlanPriceUseCase,
   SetFeatureFlagOverrideUseCase,
+  CreateDemoAccessUseCase,
+  RevokeDemoAccessUseCase,
   GetBackupsOverviewUseCase,
   RequestBackupRestoreUseCase,
   DiscardBackupRestoreUseCase,
@@ -316,6 +318,7 @@ import { DrizzleEmailResendRepository } from "./infra/persistence/notification/D
 import { DrizzleEmailProofRepository } from "./infra/persistence/notification/DrizzleEmailProofRepository.js";
 import { GetPasswordChangedAtQuery } from "./infra/persistence/identity/GetPasswordChangedAtQuery.js";
 import { DrizzleFeatureFlagOverrideRepository } from "./infra/persistence/platform/DrizzleFeatureFlagOverrideRepository.js";
+import { DrizzleDemoAccessRepository } from "@/infra/persistence/platform/DrizzleDemoAccessRepository.js";
 import { DrizzleBackupRestoreRepository } from "./infra/persistence/platform/DrizzleBackupRestoreRepository.js";
 import { createBackupRestoreCapabilities } from "./infra/backup/createBackupRestoreCapabilities.js";
 import { repositoryMigrationStamps } from "./infra/backup/migrationJournal.js";
@@ -547,6 +550,12 @@ export interface AppUseCases {
       request: RequestBackupRestoreUseCase;
       discard: DiscardBackupRestoreUseCase;
       runNext: RunNextBackupRestoreUseCase;
+    };
+    /** The owners' demo accesses (28/11/2026). */
+    demo: {
+      repository: DrizzleDemoAccessRepository;
+      create: CreateDemoAccessUseCase;
+      revoke: RevokeDemoAccessUseCase;
     };
   };
   catalog: {
@@ -1063,6 +1072,13 @@ function buildContainer(): AppContainer {
     issueAccess: new IssuePortalAccessUseCase(portalAccessRepository, portalLinkBuilder, auditLogRepository),
   };
 
+  const demoAccessRepository = new DrizzleDemoAccessRepository(db);
+  const demo = {
+    repository: demoAccessRepository,
+    create: new CreateDemoAccessUseCase(demoAccessRepository, portal.issueAccess, createInvite, auditLogRepository),
+    revoke: new RevokeDemoAccessUseCase(demoAccessRepository, auditLogRepository),
+  };
+
   const receiptValidationRepository = new DrizzleReceiptValidationRepository(db);
   const validateReceipt = new ValidateReceiptUseCase(
     receiptValidationRepository,
@@ -1372,6 +1388,7 @@ function buildContainer(): AppContainer {
       platform: {
         setFeatureFlag,
         backups,
+        demo,
         updateSettings,
       },
       catalog: {

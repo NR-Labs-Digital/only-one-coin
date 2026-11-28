@@ -32,6 +32,8 @@ export class DrizzleCourseEndingRenewalRepository implements ICourseEndingRenewa
           eq(enrollments.seatStatus, "confirmed"),
           isNull(enrollments.deletedAt),
           isNull(classGroups.deletedAt),
+          // A demo class group (28/11/2026) invites nobody to the next course.
+          eq(classGroups.isDemo, false),
           inArray(classGroups.status, ["enrolling", "in_progress"]),
           sql`(${classGroups.endsOn} at time zone 'America/Lima')::date = ${endsOnDay}::date`,
         ),

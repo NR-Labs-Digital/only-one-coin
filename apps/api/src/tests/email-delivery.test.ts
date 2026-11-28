@@ -1,5 +1,6 @@
 import {
   AllowlistGuard,
+  ReservedDomainGuard,
   BrevoNotificationProvider,
   EmailDeliveryError,
   RecipientNotAllowedError,
@@ -126,6 +127,24 @@ describe("AllowlistGuard", () => {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
+
+describe("ReservedDomainGuard", () => {
+  it("refuses an address on .invalid in every environment — demo students, retired accounts", async () => {
+    const inner = new RecordingProvider();
+    const guard = new AllowlistGuard(new ReservedDomainGuard(inner), { enforce: false, allowlist: [] });
+
+    await expect(guard.sendEmail({ ...AN_EMAIL, to: "alumno.1a2b3c4d@demo.invalid" })).rejects.toBeInstanceOf(
+      RecipientNotAllowedError,
+    );
+    await expect(guard.sendEmail({ ...AN_EMAIL, to: "retired-x@retired.INVALID" })).rejects.toBeInstanceOf(
+      RecipientNotAllowedError,
+    );
+    expect(inner.sent).toHaveLength(0);
+
+    await guard.sendEmail(AN_EMAIL);
+    expect(inner.sent).toHaveLength(1);
+  });
+});
 
 describe("BrevoNotificationProvider", () => {
   const config = { apiKey: "xkeysib-test", sender: { email: "avisos@onlyonecoin.edu.pe", name: "Only One Coin" } };

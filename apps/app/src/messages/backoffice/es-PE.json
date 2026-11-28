@@ -412,7 +412,9 @@
         "classroom_account_updated": "Cuenta de Classroom editada",
         "classroom_account_retired": "Cuenta de Classroom quitada de la lista",
         "classroom_account_password_viewed": "Contraseña de Classroom vista",
-        "email_template_published": "Texto de correo publicado"
+        "email_template_published": "Texto de correo publicado",
+        "demo_access_created": "Cuenta demo creada",
+        "demo_access_revoked": "Cuenta demo revocada"
       },
       "field": {
         "first_name": "Nombre",
@@ -3031,7 +3033,18 @@
       "backups_database_what": "La base nueva donde quedó el backup, con datos reales de alumnos.",
       "backups_database_how": "Elimínala cuando termines de revisarla: los datos reales no se quedan en una base que nadie mira.",
       "backups_checks_what": "Lo que se comprueba antes de dar el backup por bueno. Basta que una falle para que la base se elimine.",
-      "backups_production_count_what": "Las filas de producción ahora. El backup es anterior, así que puede tener menos, nunca más, en las tablas de las que no se borra nada."
+      "backups_production_count_what": "Las filas de producción ahora. El backup es anterior, así que puede tener menos, nunca más, en las tablas de las que no se borra nada.",
+      "demo_access_what": "Un acceso para que el cliente vea el portal por dentro y nos dé su opinión. Se crea un aula demo en el curso que elijas, con la persona dentro.",
+      "demo_access_how": "Nada de lo que se crea aparece en las listas del equipo, y el aula demo nunca se vende. Le llega el correo de siempre: el enlace para crear la contraseña, o la invitación del docente.",
+      "demo_kind_what": "Qué portal va a ver la persona.",
+      "demo_kind_how": "Alumno: entra con una vacante confirmada en el aula demo, sin pago. Docente: dicta el aula demo, con tres alumnos ficticios a los que puede poner nota; primero completa su ficha.",
+      "demo_email_student_what": "Un Gmail personal, como el de cualquier alumno: es el usuario del portal.",
+      "demo_email_teacher_what": "Cualquier correo: es el usuario del portal del docente.",
+      "demo_email_how": "Tiene que ser un correo que todavía no tenga cuenta en la plataforma, ni la del panel.",
+      "demo_course_what": "El curso real en el que se abre el aula demo, con su material y sus módulos.",
+      "demo_course_how": "Solo aparecen los cursos vigentes con un plan de pago único con precio.",
+      "demo_state_what": "Activa: la persona ya creó su contraseña o aceptó la invitación. Sin activar: todavía no. Revocada: ya no entra.",
+      "demo_state_how": "Revocar cierra la cuenta para siempre y retira el aula demo."
     },
     "payment_over_capacity": {
       "badge": "Sobrecupo"
@@ -3929,7 +3942,8 @@
     "platform": {
       "title": "Área NR Labs",
       "locked_title": "Solo el equipo de NR Labs",
-      "locked_body": "Aquí se decide qué partes de la plataforma existen en producción, se restauran los backups de la base de datos y se editan los textos de los documentos. Lo abren solo las cuentas del dominio de los dueños de la plataforma, sea cual sea el cargo."
+      "locked_body": "Aquí se decide qué partes de la plataforma existen en producción, se restauran los backups de la base de datos, se editan los textos de los documentos y se crean las cuentas demo para que los clientes vean los portales. Lo abren solo las cuentas del dominio de los dueños de la plataforma, sea cual sea el cargo.",
+      "demo_tab": "Cuentas demo"
     },
     "backups": {
       "title": "Backups",
@@ -4022,6 +4036,56 @@
         "not_configured": "Este entorno no tiene dónde restaurar.",
         "failed": "No se pudo solicitar. Vuelve a intentarlo.",
         "discard_failed": "No se pudo eliminar la base. Vuelve a intentarlo."
+      }
+    },
+    "demo": {
+      "intro": "Una cuenta demo deja que un cliente entre al portal del alumno o del docente con su propio correo y vea la plataforma por dentro. Todo lo que se crea para ella queda marcado como demo y no aparece en las listas del equipo: alumnos, matrículas, pagos, docentes, aulas, reportes ni equipo.",
+      "new_title": "Nueva cuenta demo",
+      "field_kind": "Portal",
+      "kind": {
+        "student": "Alumno",
+        "teacher": "Docente"
+      },
+      "field_first_name": "Nombres",
+      "field_last_name": "Apellidos",
+      "field_email": "Correo",
+      "field_course": "Curso",
+      "email_placeholder_student": "nombre@gmail.com",
+      "email_placeholder_teacher": "nombre@empresa.com",
+      "create_student": "Crear acceso de alumno",
+      "create_teacher": "Crear acceso de docente",
+      "created_student": "Cuenta creada. Le llegó el enlace para crear la contraseña.",
+      "created_teacher": "Cuenta creada. Le llegó la invitación del portal del docente.",
+      "no_courses_title": "Ningún curso puede recibir una demo",
+      "no_courses_body": "Hace falta un curso vigente con un plan de pago único con precio, y un periodo ya iniciado.",
+      "list_title": "Cuentas demo creadas",
+      "empty_title": "Todavía no hay cuentas demo",
+      "empty_body": "Las que crees aparecen aquí, con su estado.",
+      "col_person": "Persona",
+      "col_kind": "Portal",
+      "col_course": "Curso y aula",
+      "col_state": "Estado",
+      "col_created": "Creada",
+      "state": {
+        "active": "Activa",
+        "waiting": "Sin activar",
+        "revoked": "Revocada"
+      },
+      "revoke": "Revocar",
+      "revoke_title": "¿Revocar la cuenta demo de {name}?",
+      "revoke_body": "La cuenta deja de entrar al portal y el aula demo se retira. No se puede deshacer: para volver a darle acceso, crea otra cuenta demo.",
+      "revoke_confirm": "Revocar",
+      "cancel": "Cancelar",
+      "revoked": "Cuenta demo revocada.",
+      "load_error_title": "No se pudieron cargar las cuentas demo",
+      "load_error_body": "La API no respondió. Recarga la página en unos minutos.",
+      "error": {
+        "not_gmail": "La cuenta demo de alumno necesita un Gmail personal válido, como la de cualquier alumno.",
+        "email_in_use": "Ese correo ya tiene una cuenta, una invitación o una ficha en la plataforma. Usa otro.",
+        "course_unavailable": "Ese curso no puede recibir una demo: necesita estar vigente, con un plan de pago único con precio, y un periodo ya iniciado.",
+        "invite_refused": "Tu cargo no puede invitar a un docente. La ficha demo quedó creada: revócala y pide a alguien con ese permiso.",
+        "failed": "No se pudo crear la cuenta demo. Inténtalo de nuevo.",
+        "revoke_failed": "No se pudo revocar. Inténtalo de nuevo."
       }
     }
   }

@@ -24,6 +24,8 @@ import { classGroupIsFull } from "./seatCounters.js";
 export function pendingTeacherClassGroup(now: SQL = sql`now()`): SQL {
   return and(
     isNull(classGroups.deletedAt),
+    // A demo class group (28/11/2026) is nobody's pending work.
+    eq(classGroups.isDemo, false),
     sql`exists (
       select 1 from ${classGroupModules}
       where ${classGroupModules.classGroupId} = ${classGroups.id}

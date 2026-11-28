@@ -412,7 +412,9 @@
         "classroom_account_updated": "Classroom account edited",
         "classroom_account_retired": "Classroom account taken off the list",
         "classroom_account_password_viewed": "Classroom password seen",
-        "email_template_published": "E-mail wording published"
+        "email_template_published": "E-mail wording published",
+        "demo_access_created": "Demo account created",
+        "demo_access_revoked": "Demo account revoked"
       },
       "field": {
         "first_name": "First name",
@@ -3031,7 +3033,18 @@
       "backups_database_what": "The new database holding the backup, with real student data.",
       "backups_database_how": "Delete it once you are done checking: real data does not stay in a database nobody is looking at.",
       "backups_checks_what": "What is checked before the backup is considered good. A single failure deletes the database.",
-      "backups_production_count_what": "Production's rows right now. The backup is older, so it may have fewer, never more, in the tables nothing is ever deleted from."
+      "backups_production_count_what": "Production's rows right now. The backup is older, so it may have fewer, never more, in the tables nothing is ever deleted from.",
+      "demo_access_what": "An access for the client to see the portal from the inside and give feedback. A demo class group opens in the course you pick, with the person inside.",
+      "demo_access_how": "Nothing it creates shows in the team's lists, and the demo class group never sells. The usual e-mail goes out: the link to set a password, or the teacher invite.",
+      "demo_kind_what": "Which portal the person will see.",
+      "demo_kind_how": "Student: gets a confirmed seat in the demo class group, with no payment. Teacher: runs the demo class group, with three fictitious students to grade; they complete their file first.",
+      "demo_email_student_what": "A personal Gmail, like any student's: it is the portal sign-in.",
+      "demo_email_teacher_what": "Any e-mail: it is the teacher portal sign-in.",
+      "demo_email_how": "It must be an address with no account on the platform yet, the panel included.",
+      "demo_course_what": "The real course the demo class group opens in, with its material and modules.",
+      "demo_course_how": "Only live courses with a priced one-off plan are listed.",
+      "demo_state_what": "Active: the person set a password or accepted the invite. Not activated: not yet. Revoked: no longer signs in.",
+      "demo_state_how": "Revoking closes the account for good and retires the demo class group."
     },
     "payment_over_capacity": {
       "badge": "Over capacity"
@@ -3929,7 +3942,8 @@
     "platform": {
       "title": "NR Labs area",
       "locked_title": "NR Labs team only",
-      "locked_body": "This is where what exists in production is decided, the database backups are restored and the document texts are edited. Only accounts on the platform owners' domain open it, whatever their role."
+      "locked_body": "This is where what exists in production is decided, the database backups are restored, the document texts are edited and the demo accounts clients use to see the portals are created. Only accounts on the platform owners' domain open it, whatever their role.",
+      "demo_tab": "Demo accounts"
     },
     "backups": {
       "title": "Backups",
@@ -4022,6 +4036,56 @@
         "not_configured": "This environment has nowhere to restore.",
         "failed": "Could not request it. Try again.",
         "discard_failed": "Could not delete the database. Try again."
+      }
+    },
+    "demo": {
+      "intro": "A demo account lets a client sign in to the student or the teacher portal with their own e-mail and see the platform from the inside. Everything created for it is marked as demo and stays out of the team's lists: students, enrollments, payments, teachers, class groups, reports and team.",
+      "new_title": "New demo account",
+      "field_kind": "Portal",
+      "kind": {
+        "student": "Student",
+        "teacher": "Teacher"
+      },
+      "field_first_name": "First names",
+      "field_last_name": "Last names",
+      "field_email": "E-mail",
+      "field_course": "Course",
+      "email_placeholder_student": "name@gmail.com",
+      "email_placeholder_teacher": "name@company.com",
+      "create_student": "Create student access",
+      "create_teacher": "Create teacher access",
+      "created_student": "Account created. The link to set a password is on its way.",
+      "created_teacher": "Account created. The teacher portal invite is on its way.",
+      "no_courses_title": "No course can host a demo",
+      "no_courses_body": "It takes a live course with a priced one-off plan, and a period already started.",
+      "list_title": "Demo accounts created",
+      "empty_title": "No demo accounts yet",
+      "empty_body": "The ones you create show up here, with their state.",
+      "col_person": "Person",
+      "col_kind": "Portal",
+      "col_course": "Course and class group",
+      "col_state": "State",
+      "col_created": "Created",
+      "state": {
+        "active": "Active",
+        "waiting": "Not activated",
+        "revoked": "Revoked"
+      },
+      "revoke": "Revoke",
+      "revoke_title": "Revoke {name}'s demo account?",
+      "revoke_body": "The account stops signing in to the portal and the demo class group is retired. It cannot be undone: to give access again, create another demo account.",
+      "revoke_confirm": "Revoke",
+      "cancel": "Cancel",
+      "revoked": "Demo account revoked.",
+      "load_error_title": "The demo accounts could not be loaded",
+      "load_error_body": "The API did not answer. Reload the page in a few minutes.",
+      "error": {
+        "not_gmail": "A student demo account needs a valid personal Gmail, like any student's.",
+        "email_in_use": "That e-mail already has an account, an invite or a file on the platform. Use another one.",
+        "course_unavailable": "That course cannot host a demo: it must be live, with a priced one-off plan, and a period already started.",
+        "invite_refused": "Your role cannot invite a teacher. The demo file was created: revoke it and ask someone with that permission.",
+        "failed": "The demo account could not be created. Try again.",
+        "revoke_failed": "It could not be revoked. Try again."
       }
     }
   }

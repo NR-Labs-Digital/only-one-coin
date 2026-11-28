@@ -2,6 +2,7 @@ import { classGroups, courses, enrollments, payments, planPrices, procedureReque
 import type { PaymentMethod, ProcedureKind } from "@ooc/domain";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { notDemoClassGroup } from "@/infra/persistence/demoRows.js";
 import { laterMonthlyPurchaseModulesSql } from "./monthlyPurchase.js";
 import { paymentEnrollmentId } from "./paymentOrigin.js";
 import { loadPaymentLots, lotExpectedExtraCents, lotHasOverCapacity, lotMatches, type PaymentLotItem } from "./paymentLot.js";
@@ -150,7 +151,8 @@ export class ListPaymentsQuery {
     // A retired enrollment takes its payments out of the ledger with it; a
     // retired course or class group does not — they still label the money
     // that was paid on them.
-    const scope = and(isNull(enrollments.deletedAt), ...this.filterConditions(filters));
+    // A demo class group's money (28/11/2026) never reaches Payments.
+    const scope = and(isNull(enrollments.deletedAt), notDemoClassGroup(enrollments.classGroupId), ...this.filterConditions(filters));
     const where = and(scope, ...this.stateConditions(filters));
 
     // The closed tab is read by decision time. `decided_at` is never null on
@@ -322,7 +324,7 @@ export class ListPaymentsQuery {
       .leftJoin(procedureRequests, eq(procedureRequests.id, payments.procedureRequestId))
       .innerJoin(enrollments, eq(enrollments.id, paymentEnrollmentId))
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
-      .where(isNull(enrollments.deletedAt));
+      .where(and(isNull(enrollments.deletedAt), eq(classGroups.isDemo, false)));
 
     const oldestOpenAt = totals?.oldestOpenAt ?? null;
 

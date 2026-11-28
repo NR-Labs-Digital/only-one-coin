@@ -17,6 +17,8 @@ export function sellableClassGroup(now: SQL = sql`now()`): SQL {
   return and(
     eq(classGroups.status, "enrolling"),
     isNull(classGroups.deletedAt),
+    // A demo class group (28/11/2026) never sells.
+    eq(classGroups.isDemo, false),
     or(isNull(classGroups.enrollmentOpensAt), lte(classGroups.enrollmentOpensAt, now)),
     or(isNull(classGroups.enrollmentClosesAt), gt(classGroups.enrollmentClosesAt, now)),
     sql`exists (select 1 from ${academicPeriods} p where p.id = ${classGroups.academicPeriodId} and p.deleted_at is null)`,
@@ -36,6 +38,7 @@ export function movableClassGroup(): SQL {
   return and(
     inArray(classGroups.status, ["enrolling", "in_progress"]),
     isNull(classGroups.deletedAt),
+    eq(classGroups.isDemo, false),
     sql`exists (select 1 from ${academicPeriods} p where p.id = ${classGroups.academicPeriodId} and p.deleted_at is null)`,
     sql`exists (select 1 from ${courses} c where c.id = ${classGroups.courseId} and c.deleted_at is null)`,
   )!;

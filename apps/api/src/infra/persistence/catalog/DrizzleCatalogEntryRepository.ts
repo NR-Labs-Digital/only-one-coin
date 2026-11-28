@@ -7,6 +7,7 @@ import {
 import { academicPeriods, classGroups, courses, enrollments, planPrices, plans } from "@ooc/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { notDemoClassGroup } from "@/infra/persistence/demoRows.js";
 import { isUniqueViolation } from "@/infra/db/isUniqueViolation.js";
 import { COURSE_LANDING_KEY_INDEX } from "./DrizzleCourseRepository.js";
 
@@ -82,7 +83,12 @@ export class DrizzleCatalogEntryRepository implements ICatalogEntryRepository {
    * not something retiring the entry would disturb.
    */
   private async countLiveEnrollments(kind: CatalogEntryKind, id: string): Promise<number> {
-    const standing = and(isNull(enrollments.deletedAt), ne(enrollments.seatStatus, "released"));
+    // A demo class group's seats (28/11/2026) are not enrollments still standing.
+    const standing = and(
+      isNull(enrollments.deletedAt),
+      ne(enrollments.seatStatus, "released"),
+      notDemoClassGroup(enrollments.classGroupId),
+    );
     const count = sql<number>`count(*)`.mapWith(Number);
 
     if (kind === "class_group") {

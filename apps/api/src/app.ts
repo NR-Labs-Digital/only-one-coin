@@ -255,6 +255,11 @@ import {
   getBackupsRoute,
   requestBackupRestoreRoute,
 } from "@/http/platform/BackupRestoreRoutes.js";
+import {
+  createDemoAccessRoute,
+  listDemoAccessesRoute,
+  revokeDemoAccessRoute,
+} from "@/http/platform/DemoAccessRoutes.js";
 import { getPlatformSettingsRoute } from "@/http/platform/GetPlatformSettingsRoute.js";
 import { updatePlatformSettingsRoute } from "@/http/platform/UpdatePlatformSettingsRoute.js";
 import { container } from "@/container.js";
@@ -519,6 +524,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         instance.withTypeProvider<ZodTypeProvider>().route(setFeatureFlagRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getBackupsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(requestBackupRestoreRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(listDemoAccessesRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(createDemoAccessRoute);
+        instance.withTypeProvider<ZodTypeProvider>().route(revokeDemoAccessRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(discardBackupRestoreRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(getPlatformSettingsRoute);
         instance.withTypeProvider<ZodTypeProvider>().route(updatePlatformSettingsRoute);

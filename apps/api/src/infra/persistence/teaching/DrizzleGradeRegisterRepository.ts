@@ -284,6 +284,9 @@ export class DrizzleGradeRegisterRepository implements IGradeRegisterRepository 
     ];
     if (filters.academicPeriodId) where.push(sql`cg.academic_period_id = ${filters.academicPeriodId}`);
     if (filters.teacherId) where.push(sql`run.teacher_id = ${filters.teacherId}`);
+    // Demo class groups (28/11/2026) are not coordination's to review; a
+    // teacher's own list (always by teacher) keeps them, for a demo teacher.
+    else where.push(sql`not cg.is_demo`);
     if (filters.module !== null) where.push(sql`run.module = ${filters.module}`);
     const runs = await runRows(this.db, sql.join(where, sql` and `));
     return (await viewsOf(this.db, runs, hours, now, false))

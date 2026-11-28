@@ -782,6 +782,28 @@ export type {
 export type { IFeatureFlagOverrideRepository } from "./platform/ports/IFeatureFlagOverrideRepository.js";
 export { NotAPlatformOwnerError, InvalidPlatformSettingError } from "./platform/errors.js";
 export {
+  DEMO_ACCESS_KINDS,
+  DEMO_TEACHER_ROSTER_SIZE,
+  DEMO_UNDELIVERABLE_DOMAIN,
+  isUndeliverableDemoAddress,
+  type DemoAccessKind,
+  type DemoAccessView,
+  type DemoCourseOption,
+} from "./platform/demo/DemoAccess.js";
+export type { DemoKit, DemoKitInput, IDemoAccessRepository, RevokedDemoAccess } from "./platform/demo/IDemoAccessRepository.js";
+export {
+  DemoAccessNotFoundError,
+  DemoCourseUnavailableError,
+  DemoEmailInUseError,
+  DemoStudentEmailNotGmailError,
+} from "./platform/demo/errors.js";
+export {
+  CreateDemoAccessUseCase,
+  RevokeDemoAccessUseCase,
+  type CreateDemoAccessInput,
+  type RevokeDemoAccessInput,
+} from "./platform/demo/DemoAccessUseCases.js";
+export {
   BACKUP_KEY_PATTERN,
   BACKUP_CORE_TABLES,
   BACKUP_RESTORE_CHECKS,

@@ -2,6 +2,7 @@ import { academicStatusOf, ENROLLMENT_ORIGINS, type AcademicStatus, type Enrollm
 import { academicPeriods, classGroups, courses, enrollments, paymentCoverage, payments, planPrices, plans, students } from "@ooc/db";
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { notDemoClassGroup } from "@/infra/persistence/demoRows.js";
 import { enrollmentTeacherName } from "@/infra/persistence/catalog/classGroupTeacherName.js";
 import { currentPeriod } from "@/infra/persistence/catalog/currentPeriod.js";
 
@@ -202,6 +203,8 @@ export class ListEnrollmentsQuery {
       // monthly student whose next module is still open is still a student.
       // A frozen one (OOC-84) is too: it paused, it did not leave.
       inArray(enrollments.seatStatus, ["confirmed", "frozen"]),
+      // A demo class group's seats (28/11/2026) are nobody's enrollment.
+      notDemoClassGroup(enrollments.classGroupId),
       ...this.filterConditions(filters, latestPayment),
     );
     const where = and(scope, ...this.stateConditions(filters));
@@ -437,7 +440,7 @@ export class ListEnrollmentsQuery {
       })
       .from(enrollments)
       .innerJoin(classGroups, eq(classGroups.id, enrollments.classGroupId))
-      .where(and(isNull(enrollments.deletedAt), eq(enrollments.seatStatus, "confirmed")));
+      .where(and(isNull(enrollments.deletedAt), eq(enrollments.seatStatus, "confirmed"), eq(classGroups.isDemo, false)));
 
     // The period's total, split by channel — same rows as `total`, so the
     // three add up to it.
@@ -451,6 +454,7 @@ export class ListEnrollmentsQuery {
               isNull(enrollments.deletedAt),
               eq(enrollments.seatStatus, "confirmed"),
               eq(classGroups.academicPeriodId, period.id),
+              eq(classGroups.isDemo, false),
             ),
           )
           .groupBy(enrollments.origin)

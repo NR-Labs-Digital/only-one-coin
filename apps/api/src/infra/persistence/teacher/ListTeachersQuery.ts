@@ -222,7 +222,8 @@ export class ListTeachersQuery {
     const { contractAlertDays } = await this.settings.get();
     const needsContract = sql`(${contract.endsOn} is null or ${this.daysLeft(contract)} <= ${contractAlertDays})`;
 
-    const base: SQL[] = [isNull(teachers.deletedAt)];
+    // A demo teacher (28/11/2026) is never on the team's roster.
+    const base: SQL[] = [isNull(teachers.deletedAt), eq(teachers.isDemo, false)];
     const q = filters.q?.trim();
     if (q) {
       const needle = `%${escapeLike(q)}%`;

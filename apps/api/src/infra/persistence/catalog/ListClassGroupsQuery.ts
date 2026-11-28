@@ -145,6 +145,8 @@ export class ListClassGroupsQuery {
     const conditions: (SQL | undefined)[] = [
       // Erased class groups (23/11/2026) are gone from every catalog screen.
       isNull(classGroups.erasedAt),
+      // So are demo class groups (28/11/2026): the NR Labs area lists them.
+      eq(classGroups.isDemo, false),
       filter.id ? eq(classGroups.id, filter.id) : undefined,
       filter.periodId ? eq(classGroups.academicPeriodId, filter.periodId) : undefined,
       filter.courseId ? eq(classGroups.courseId, filter.courseId) : undefined,

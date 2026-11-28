@@ -240,6 +240,8 @@ export class ListStudentsQuery {
 
     const base: SQL[] = [
       isNull(students.deletedAt),
+      // A demo student (28/11/2026) is never in the team's directory, nor in its export.
+      eq(students.isDemo, false),
       // OOC-55: a student whose only seats are still reserved is settled in Payments.
       sql`not (${confirmed} = 0 and ${reserved} > 0)`,
     ];
@@ -417,6 +419,7 @@ export class ListStudentsQuery {
     const needle = `%${q.trim()}%`;
     const matching = and(
       isNull(students.deletedAt),
+      eq(students.isDemo, false),
       or(ilike(sql`${students.firstName} || ' ' || ${students.lastName}`, needle), ilike(students.nationalId, needle)),
     );
     // Ten rows come back, so only their enrollments are aggregated — not

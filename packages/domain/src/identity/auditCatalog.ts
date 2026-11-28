@@ -271,6 +271,8 @@ export const AUDIT_ACTIONS = {
   "backup_restore.passed": { key: "backup_restore_passed", entity: "platform", subject: "none" },
   "backup_restore.failed": { key: "backup_restore_failed", entity: "platform", subject: "none" },
   "backup_restore.discarded": { key: "backup_restore_discarded", entity: "platform", subject: "none" },
+  "demo_access.created": { key: "demo_access_created", entity: "platform", subject: "none" },
+  "demo_access.revoked": { key: "demo_access_revoked", entity: "platform", subject: "none" },
   "document_template.published": { key: "document_template_published", entity: "platform", subject: "none" },
   "audit_log.exported": { key: "audit_log_exported", entity: "platform", subject: "none" },
   // The complaints book (OOC-58): the target is the sheet, which has no page in

@@ -1,6 +1,7 @@
 import { staffInvites, staffProfiles } from "@ooc/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
+import { notDemoTeacher } from "@/infra/persistence/demoRows.js";
 import { splitName } from "@/infra/identity/splitName.js";
 
 export type StaffStatus = "active" | "invited" | "inactive";
@@ -75,6 +76,8 @@ export class ListStaffQuery {
       left join "staff_profiles" p on p."id" = u."profile_id"
       where u."role" not in ('student', 'guardian')
         and u."deletedAt" is null
+        -- A demo teacher's account (28/11/2026) is not part of the team.
+        and (t."id" is null or not t."is_demo")
     `);
 
     const staffRows: StaffMemberRow[] = usersResult.rows.map((row) => {
@@ -97,7 +100,10 @@ export class ListStaffQuery {
       };
     });
 
-    const inviteRows = await this.db.select().from(staffInvites).where(eq(staffInvites.status, "pending"));
+    const inviteRows = await this.db
+      .select()
+      .from(staffInvites)
+      .where(and(eq(staffInvites.status, "pending"), notDemoTeacher(staffInvites.teacherId)));
     const profileNames = new Map(
       (
         await this.db
