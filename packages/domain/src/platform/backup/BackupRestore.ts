@@ -40,7 +40,7 @@ export const OPEN_BACKUP_RESTORE_STATUSES = ["queued", "restoring", "validating"
 
 /**
  * Why a restore failed — a closed vocabulary the screen translates; never the
- * text psql or Neon wrote, which can echo a row's content.
+ * text psql wrote, which can echo a row's content.
  */
 export const BACKUP_RESTORE_FAILURES = [
   /** The object is gone from the bucket (retention is 30 days). */

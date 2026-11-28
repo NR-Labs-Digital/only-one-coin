@@ -4,7 +4,7 @@ Passo a passo para provar que o backup de produção restaura. Repetir **a cada 
 
 ## O que é o backup
 
-A cada deploy da API, antes da migration, o job `backup-and-migrate` (`.github/workflows/deploy-api.yml`) roda `pg_dump` (cliente 18) contra o Neon de produção e sobe o arquivo para o Tigris:
+A cada deploy da API, antes da migration, o job `backup-and-migrate` (`.github/workflows/deploy-api.yml`) roda `pg_dump` (cliente 18) contra o banco de produção e sobe o arquivo para o Tigris:
 
 - bucket `only-one-coin-backups`, endpoint `https://t3.storage.dev`
 - nome `ooc-prod-AAAAMMDDTHHMMSSZ.sql.gz` (hora UTC), SQL puro em gzip
@@ -18,7 +18,7 @@ Não há backup agendado: o do deploy é a política (`CLAUDE.md` §3).
 
 - **Nunca em staging.** Staging não recebe dado real (`CLAUDE.md` §7). O "Pronto quando" da sessão 55 do `docs/ROADMAP.md` diz "em staging", e isso contradiz a regra; a reescrita espera confirmação do dono.
 - **Nunca em produção.** O script recusa qualquer banco que já tenha tabelas, e produção nunca está vazia.
-- **Opção recomendada:** um banco novo e vazio no projeto do Neon (`sa-east-1`). Um branch do Neon não serve: ele nasce com os dados (ou com o schema) do pai, e o script recusa banco que não está vazio. Outra opção é um Postgres 18 local, como o do `compose.yml`.
+- **Opção recomendada:** um Postgres 18 local, como o do `compose.yml`. Serve também um banco novo e vazio em qualquer servidor Postgres 18 que não seja o de produção. Cópia do banco de produção (branch, snapshot) não serve: nasce com dados ou schema, e o script recusa banco que não está vazio.
 
 ## O que é preciso
 
@@ -28,7 +28,7 @@ Não há backup agendado: o do deploy é a política (`CLAUDE.md` §3).
 
 ## Passo a passo
 
-1. **Criar o banco vazio.** No Neon: *Databases → New database* (por exemplo `ooc_restore_drill`) e copiar a connection string. Localmente: `docker compose exec postgres psql -U ooc -d ooc_dev -c "create database ooc_restore_drill"`.
+1. **Criar o banco vazio** (por exemplo `ooc_restore_drill`). Localmente: `docker compose exec postgres psql -U ooc -d ooc_dev -c "create database ooc_restore_drill"`.
 
 2. **Restaurar o backup mais recente.**
 
@@ -53,25 +53,21 @@ Não há backup agendado: o do deploy é a política (`CLAUDE.md` §3).
 
 4. **Registrar o resultado** na OOC-50, ou no ticket do ensaio do trimestre: data, qual backup (`ooc-prod-...`), tempo de restauração, contagens e quem rodou.
 
-5. **Apagar o banco do ensaio.** No Neon: *Delete database*. Localmente: `drop database ooc_restore_drill`. Dado real não fica parado num banco esquecido.
+5. **Apagar o banco do ensaio.** Localmente: `drop database ooc_restore_drill`. Dado real não fica parado num banco esquecido.
 
 ## Pela tela do backoffice (OOC-153)
 
-A área **NR Labs → Backups** (`/backoffice/platform/backups`, só contas dos domínios dos donos) faz os passos 1 a 3 acima sozinha: cria um banco novo no Neon, restaura o backup escolhido (digitando o nome dele), confere e mostra o relatório. **Se qualquer verificação falhar, o banco novo é apagado na hora** e a produção não é tocada. O que passa fica guardado até alguém clicar em *Eliminar base restaurada* (passo 5). Mecanismo em `apps/api/CLAUDE.md`, "Restaurar backup".
+A área **NR Labs → Backups** (`/backoffice/platform/backups`, só contas dos domínios dos donos) lista os backups do bucket. **Em produção ela não restaura** (28/11/2026): a restauração pela tela criava o banco do ensaio pela API do Neon, e a plataforma vai sair do Neon — o alvo foi retirado e um destino que não dependa de provedor ficou para depois, por falta de recurso agora. Até lá, o ensaio de produção é o passo a passo acima, e a tela diz que o ambiente lista mas não restaura.
 
-Verificações da tela, além das do script: as tabelas das quais nada se apaga (`students`, `payments`, `audit_log`) não podem ter mais linhas no backup que na produção de agora — mais quer dizer que o arquivo não é backup desta produção.
+Localmente (`BACKUP_RESTORE_ADMIN_URL` apontando para o Postgres do `compose.yml`) a tela faz os passos 1 a 3 sozinha: cria um banco novo, restaura o backup escolhido (digitando o nome dele), confere e mostra o relatório. **Se qualquer verificação falhar, o banco novo é apagado na hora.** O que passa fica guardado até alguém clicar em *Eliminar base restaurada* (passo 5). Mecanismo em `apps/api/CLAUDE.md`, "Restaurar backup".
 
-**Ligar em produção (uma vez, fora do Git):**
+Verificações da tela, além das do script: as tabelas das quais nada se apaga (`students`, `payments`, `audit_log`) não podem ter mais linhas no backup que no banco de agora — mais quer dizer que o arquivo não é backup deste banco.
 
-1. No Neon, criar um **branch só para restauração** (não usar o de produção: a carga dividiria a compute com o site) e anotar o id dele e o papel dono (`neondb_owner`, normalmente).
-2. Criar uma chave da API do Neon (*Account → API keys*).
-3. `fly secrets set NEON_API_KEY=... NEON_PROJECT_ID=... NEON_RESTORE_BRANCH_ID=... NEON_RESTORE_ROLE=... BACKUP_BUCKET_NAME=only-one-coin-backups`. Se as chaves do Tigris da API não leem o bucket de backups, também `BACKUP_ACCESS_KEY_ID`/`BACKUP_SECRET_ACCESS_KEY` (só leitura).
-
-Sem esses secrets a tela abre e diz que o ambiente não lista ou não restaura — nenhum é obrigatório para o deploy.
+Para a tela listar em produção basta `fly secrets set BACKUP_BUCKET_NAME=only-one-coin-backups` (e `BACKUP_ACCESS_KEY_ID`/`BACKUP_SECRET_ACCESS_KEY` só leitura, se as chaves do Tigris da API não leem o bucket). Nenhum é obrigatório para o deploy.
 
 ## Restaurar de verdade (incidente)
 
-Este passo a passo prova que o backup volta, mas não troca o banco de produção. Num incidente real, o caminho é restaurar num banco novo como acima, conferir e só então apontar a `DATABASE_URL` da API para ele (`fly secrets set`). Antes disso, avalie o *point-in-time restore* do próprio Neon, que volta minutos e não um deploy inteiro. Esse procedimento ainda não foi ensaiado e é decisão do dono na hora.
+Este passo a passo prova que o backup volta, mas não troca o banco de produção. Num incidente real, o caminho é restaurar num banco novo como acima, conferir e só então apontar a `DATABASE_URL` da API para ele (`fly secrets set`). Enquanto o banco estiver no Neon, o *point-in-time restore* dele volta minutos e não um deploy inteiro, mas o plano é sair do Neon e não contar com ele. Esse procedimento ainda não foi ensaiado e é decisão do dono na hora.
 
 A área do backoffice que restaura backup (OOC-153, seção acima) só restaura num banco novo — a troca da produção continua sendo este passo manual.
 

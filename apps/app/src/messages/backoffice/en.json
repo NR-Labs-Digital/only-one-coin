@@ -3950,7 +3950,7 @@
       "intro": "Every API deploy saves a backup of the production database before the migration, kept for 30 days. Restoring creates a new, empty database, loads the backup into it and checks it.",
       "intro_production": "The production database is never touched. If any check fails, the new database is deleted on the spot. Pointing production at a restored database is a manual runbook step, not this screen.",
       "not_configured_list": "This environment has no backups bucket configured: there is nothing to list.",
-      "not_configured_restore": "This environment lists the backups but has nowhere to restore them (the API's restore target is not configured).",
+      "not_configured_restore": "This environment lists the backups but does not restore them. Restoring in production is deferred: to check a backup, follow the runbook, which downloads the file from the bucket and restores it into an empty database.",
       "load_error_title": "Could not read the backups",
       "load_error_body": "The API did not answer. Try again in a few minutes.",
       "list_title": "Available backups",

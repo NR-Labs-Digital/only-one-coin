@@ -30,7 +30,7 @@ export function startBackupRestoreWorker(
             restoreId: outcome.restoreId,
             reason: outcome.reason,
             // Our own messages (status codes, exit codes, dump line numbers) —
-            // psql's and Neon's text never travels in them.
+            // psql's text never travels in them.
             detail: cause instanceof Error ? cause.message : undefined,
           },
           "backup restore failed; its scratch database was dropped",
