@@ -257,7 +257,7 @@ Decisões do Miguel, **a confirmar com o dono**:
 - **Entidade emissora e redação do certificado** — a moldura imprime a
   S.A.C.; qual entidade emite e se o certificado se diz "válido a nivel
   nacional" ou "sem validade para bacharelado" (`docs/REGRAS-NEGOCIO.md` §11)
-  são do dono. O texto é editável em Configuração → Documentos.
+  são do dono. O texto é editável em área NR Labs → Documentos (só os donos, desde 28/11/2026).
 - **Demais procedimentos pagos** (§2) — confirmar se entram na plataforma e se
   compartilham o fluxo de solicitação com pagamento. A tela de turmas já
   registra três deles (mover de turma, congelar, retirar) como **registro do

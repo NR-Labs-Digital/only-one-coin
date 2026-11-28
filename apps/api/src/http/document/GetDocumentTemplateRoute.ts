@@ -19,7 +19,7 @@ export const getDocumentTemplateRoute = RouteBuilder.get("/document-templates/:k
     summary: "Open a document template in the editor",
     description: "Placeholders, draft (with its issues), the published version and the starter text.",
   })
-  .can("settings.document_templates")
+  .owners()
   .params(DocumentKindParamsSchema)
   .response(
     200,
