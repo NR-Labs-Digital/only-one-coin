@@ -7,6 +7,7 @@ import { Card, SectionTitle } from '@/components/portal/ui'
 import { Icon } from '@/components/portal/icons'
 import { AutoGrid } from '@/components/layout/auto-grid'
 import { ProfilePreferences } from './profile-preferences'
+import { DeviceNotifications } from './device-notifications'
 import { OwnPhoneField } from '@/components/portal/own-phone-field'
 import { HelpHint } from '@/components/backoffice/help-hint'
 
@@ -20,7 +21,9 @@ import { HelpHint } from '@/components/backoffice/help-hint'
  * with the mock.
  *
  * Plus what the student chooses about the portal itself (`ProfilePreferences`):
- * the language. Neither the record nor a contact — a preference, and it lives
+ * the language — and what the student sets on the device in hand
+ * (`DeviceNotifications`, OOC-51): installing the portal, push on or off.
+ * Neither the record nor a contact — a preference, and it lives
  * with the rest of what a person sets about themselves.
  */
 
@@ -159,6 +162,7 @@ export function ProfileView({ student, profileId }: { student: Student; profileI
           )}
         </Card>
         <ProfilePreferences />
+        <DeviceNotifications />
       </AutoGrid>
 
       <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">

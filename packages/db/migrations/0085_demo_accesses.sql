@@ -21,7 +21,8 @@ ALTER TABLE "teachers" ADD COLUMN "is_demo" boolean DEFAULT false NOT NULL;--> s
 ALTER TABLE "demo_accesses" ADD CONSTRAINT "demo_accesses_class_group_id_class_groups_id_fk" FOREIGN KEY ("class_group_id") REFERENCES "public"."class_groups"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "demo_accesses" ADD CONSTRAINT "demo_accesses_student_id_students_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "demo_accesses" ADD CONSTRAINT "demo_accesses_teacher_id_teachers_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."teachers"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "demo_accesses_created_at_idx" ON "demo_accesses" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "demo_accesses_created_at_idx" ON "demo_accesses" USING btree ("created_at");
+--> statement-breakpoint
 -- "user" is Better Auth's table, outside the Drizzle schema: these two foreign
 -- keys are written by hand, as in 0083. Restrict: who opened or revoked a demo
 -- access outlives the account.

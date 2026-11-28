@@ -3,6 +3,7 @@ import { enrollmentFreezeReturns, enrollmentFreezes, enrollments, outbox } from 
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/infra/db/client.js";
 import { DrizzleEnrollmentEmailContextLookup } from "./DrizzleEnrollmentEmailContextLookup.js";
+import { pushStatusFor } from "@/infra/persistence/notification/DrizzleOutboxRepository.js";
 
 /**
  * What the re-engagement tick reads and writes (OOC-84). Months are counted on
@@ -55,6 +56,7 @@ export class DrizzleFreezeReengagementRepository implements IFreezeReengagementR
           locale: email.locale,
           vars: email.vars,
           dedupeKey: email.dedupeKey,
+          pushStatus: pushStatusFor(email.templateKey),
         })),
       )
       .onConflictDoNothing({ target: outbox.dedupeKey })

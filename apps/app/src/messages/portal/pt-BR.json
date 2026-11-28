@@ -326,7 +326,23 @@
         "phone_format": "Escreva um número de celular válido.",
         "too_long": "O número é longo demais.",
         "generic": "Não conseguimos salvar o número. Tente de novo."
-      }
+      },
+      "device_title": "Notificações e app",
+      "install_label": "App neste dispositivo",
+      "install_button": "Instalar app",
+      "install_done": "O portal já está instalado neste dispositivo.",
+      "install_ios": "No iPhone ou iPad: toque em Compartilhar e depois em «Adicionar à Tela de Início».",
+      "install_other": "Abra o menu do navegador e escolha «Instalar app» ou «Adicionar à tela inicial».",
+      "push_label": "Notificações neste dispositivo",
+      "push_loading": "Verificando…",
+      "push_off": "Desativadas neste dispositivo.",
+      "push_on": "Ativadas: os avisos que enviamos por e-mail também chegam aqui.",
+      "push_turn_on": "Ativar notificações",
+      "push_turn_off": "Desativar",
+      "push_denied": "Você bloqueou as notificações deste site. Para ativá-las, permita nas configurações do navegador.",
+      "push_needs_install": "No iPhone, as notificações só chegam com o portal instalado: adicione-o à Tela de Início e abra por lá.",
+      "push_unsupported": "Este navegador não recebe notificações.",
+      "push_error": "Não conseguimos salvar a alteração. Tente de novo."
     },
     "notifications": {
       "title": "Notificações",

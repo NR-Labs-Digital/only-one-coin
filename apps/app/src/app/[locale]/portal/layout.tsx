@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { logout } from '../actions'
 import { selectProfile } from './profile-actions'
@@ -12,6 +13,18 @@ import type { NavGroup } from '@/components/portal/portal-nav'
 import { PortalShell } from '@/components/portal/portal-shell'
 import type { NoticeItem } from '@/components/portal/notifications-bell'
 import { GuardianConsentGate, GuardianConsentNotice } from '@/components/portal/guardian-consent'
+import { PwaRegistrar } from '@/components/portal/pwa'
+
+/**
+ * The portal installs as an app (OOC-51) — only the portal: the manifest is
+ * linked from here, so the backoffice and the teacher's door never offer it.
+ * The manifest and the service worker are static files (`public/`), outside
+ * the middleware. The home-screen icon is `src/app/apple-icon.png`.
+ */
+export const metadata: Metadata = {
+  manifest: '/portal.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default' },
+}
 
 export default async function PortalLayout({
   children,
@@ -147,6 +160,7 @@ export default async function PortalLayout({
       currentProfileId={profileId}
       selectProfileAction={selectProfile}
     >
+      <PwaRegistrar />
       {/* The guardian's consent (OOC-72). The guardian's account opens a
           pending child on the consent text, in place of every screen of that
           profile; the minor's own account only reads a notice — nothing is

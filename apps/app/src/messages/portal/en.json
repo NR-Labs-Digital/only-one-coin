@@ -326,7 +326,23 @@
         "phone_format": "Enter a valid mobile number.",
         "too_long": "The number is too long.",
         "generic": "We couldn't save the number. Please try again."
-      }
+      },
+      "device_title": "Notifications and app",
+      "install_label": "App on this device",
+      "install_button": "Install app",
+      "install_done": "The portal is already installed on this device.",
+      "install_ios": "On iPhone or iPad: tap Share, then “Add to Home Screen”.",
+      "install_other": "Open the browser menu and choose “Install app” or “Add to Home screen”.",
+      "push_label": "Notifications on this device",
+      "push_loading": "Checking…",
+      "push_off": "Off on this device.",
+      "push_on": "On: the notices we e-mail you also arrive here.",
+      "push_turn_on": "Turn on notifications",
+      "push_turn_off": "Turn off",
+      "push_denied": "You blocked notifications for this site. To turn them on, allow them in the browser settings.",
+      "push_needs_install": "On iPhone, notifications only arrive with the portal installed: add it to the Home Screen and open it from there.",
+      "push_unsupported": "This browser does not receive notifications.",
+      "push_error": "We could not save the change. Please try again."
     },
     "notifications": {
       "title": "Notifications",

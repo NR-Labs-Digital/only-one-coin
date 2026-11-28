@@ -96,11 +96,11 @@ export async function deliverOutboxEmail(outboxId: string, deps: DeliverOutboxEm
  * student still has to hear that the payment was approved. The fallback is
  * reported, and the row's version stays null — it is what went out.
  */
-async function wordingFor(
+export async function wordingFor(
   email: OutgoingEmail,
   outboxId: string,
   frozen: EmailCopy | null,
-  deps: DeliverOutboxEmailDeps,
+  deps: Pick<DeliverOutboxEmailDeps, "wording" | "onStaleWording">,
 ): Promise<{ copy: EmailCopy | null; templateVersionId: string | null }> {
   if (frozen) return { copy: frozen, templateVersionId: null };
   if (!isEditableEmailKey(email.templateKey)) return { copy: null, templateVersionId: null };

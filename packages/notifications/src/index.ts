@@ -8,6 +8,7 @@ export {
   LOCALE_CATALOGS,
   TemplateRenderError,
   renderEmail,
+  renderEmailSummary,
   type LocaleCatalog,
   type RenderedEmail,
 } from "./render/renderEmail.js";

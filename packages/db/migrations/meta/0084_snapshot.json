@@ -1,5 +1,5 @@
 {
-  "id": "b4493622-60a3-4e68-9ab6-856eeef63f72",
+  "id": "1c6ccdda-15e2-4910-ba64-5dc87af4de0a",
   "prevId": "c18dc05a-634d-4ac4-920c-2af589790bbe",
   "version": "7",
   "dialect": "postgresql",
@@ -691,13 +691,6 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "is_demo": {
-          "name": "is_demo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "source_class_group_id": {
           "name": "source_class_group_id",
@@ -1648,157 +1641,6 @@
         "courses_total_hours_check": {
           "name": "courses_total_hours_check",
           "value": "\"courses\".\"total_hours\" >= 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.demo_accesses": {
-      "name": "demo_accesses",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "class_group_id": {
-          "name": "class_group_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "teacher_id": {
-          "name": "teacher_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "revoked_at": {
-          "name": "revoked_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "revoked_by": {
-          "name": "revoked_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "demo_accesses_created_at_idx": {
-          "name": "demo_accesses_created_at_idx",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "demo_accesses_class_group_id_class_groups_id_fk": {
-          "name": "demo_accesses_class_group_id_class_groups_id_fk",
-          "tableFrom": "demo_accesses",
-          "tableTo": "class_groups",
-          "columnsFrom": [
-            "class_group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "demo_accesses_student_id_students_id_fk": {
-          "name": "demo_accesses_student_id_students_id_fk",
-          "tableFrom": "demo_accesses",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "demo_accesses_teacher_id_teachers_id_fk": {
-          "name": "demo_accesses_teacher_id_teachers_id_fk",
-          "tableFrom": "demo_accesses",
-          "tableTo": "teachers",
-          "columnsFrom": [
-            "teacher_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "demo_accesses_kind_check": {
-          "name": "demo_accesses_kind_check",
-          "value": "\"demo_accesses\".\"kind\" in ('student', 'teacher')"
-        },
-        "demo_accesses_owner_check": {
-          "name": "demo_accesses_owner_check",
-          "value": "(\"demo_accesses\".\"kind\" = 'student' and \"demo_accesses\".\"student_id\" is not null and \"demo_accesses\".\"teacher_id\" is null) or (\"demo_accesses\".\"kind\" = 'teacher' and \"demo_accesses\".\"teacher_id\" is not null and \"demo_accesses\".\"student_id\" is null)"
-        },
-        "demo_accesses_revoke_check": {
-          "name": "demo_accesses_revoke_check",
-          "value": "(\"demo_accesses\".\"revoked_at\" is null) = (\"demo_accesses\".\"revoked_by\" is null)"
         }
       },
       "isRLSEnabled": false
@@ -4338,6 +4180,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "push_status": {
+          "name": "push_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -4365,6 +4213,22 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_push_pending_created_at_idx": {
+          "name": "outbox_push_pending_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"outbox\".\"push_status\" = 'pending'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4421,6 +4285,10 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
+        "outbox_push_status_check": {
+          "name": "outbox_push_status_check",
+          "value": "\"outbox\".\"push_status\" is null or \"outbox\".\"push_status\" in ('pending', 'sending', 'sent', 'no_device', 'blocked', 'failed')"
+        },
         "outbox_delivery_status_check": {
           "name": "outbox_delivery_status_check",
           "value": "\"outbox\".\"delivery_status\" is null or \"outbox\".\"delivery_status\" in ('delivered', 'soft_bounced', 'hard_bounced', 'blocked', 'unsubscribed')"
@@ -5971,6 +5839,95 @@
       },
       "isRLSEnabled": false
     },
+    "public.push_subscriptions": {
+      "name": "push_subscriptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "p256dh": {
+          "name": "p256dh",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auth": {
+          "name": "auth",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "push_subscriptions_endpoint_uidx": {
+          "name": "push_subscriptions_endpoint_uidx",
+          "columns": [
+            {
+              "expression": "endpoint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "push_subscriptions_user_id_idx": {
+          "name": "push_subscriptions_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.receipt_rereads": {
       "name": "receipt_rereads",
       "schema": "",
@@ -7397,13 +7354,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_demo": {
-          "name": "is_demo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -8028,13 +7978,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "is_demo": {
-          "name": "is_demo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "classroom_account_id": {
           "name": "classroom_account_id",

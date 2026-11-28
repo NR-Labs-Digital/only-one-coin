@@ -29,6 +29,12 @@ const CASES: [string, string, Role][] = [
   ["PATCH", "/api/v1/portal/me/phone", "admin"],
   ["PATCH", "/api/v1/portal/me/phone", "guardian"],
   ["PATCH", "/api/v1/portal/me/phone", "support"],
+  ["GET", "/api/v1/portal/push", "admin"],
+  ["GET", "/api/v1/portal/push", "teacher"],
+  ["PUT", "/api/v1/portal/push/subscription", "admin"],
+  ["PUT", "/api/v1/portal/push/subscription", "guardian"],
+  ["DELETE", "/api/v1/portal/push/subscription", "master"],
+  ["DELETE", "/api/v1/portal/push/subscription", "teacher"],
 ];
 
 let app: FastifyInstance;

@@ -251,3 +251,14 @@ ${button}
 
   return { subject, html, text };
 }
+
+/**
+ * The e-mail's subject and preheader alone, rendered exactly as in the
+ * e-mail — the title and body of the same message sent as a push (OOC-51),
+ * so a push never says something the e-mail does not.
+ */
+export function renderEmailSummary(email: OutgoingEmail): { subject: string; preheader: string } {
+  const copy = email.copy ?? LOCALE_CATALOGS[email.locale].templates[email.templateKey];
+  const values = placeholderValues(email.vars, email.locale, copy);
+  return { subject: interpolate(copy.subject, values, copy), preheader: interpolate(copy.preheader, values, copy) };
+}
