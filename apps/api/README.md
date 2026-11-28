@@ -97,7 +97,7 @@ substituída pelos bounded contexts reais acima.
   ligada), os 5 secrets (`FLY_API_TOKEN`, `DATABASE_URL`,
   `TIGRIS_ACCESS_KEY_ID`, `TIGRIS_SECRET_ACCESS_KEY`, `VERCEL_TOKEN`) já
   setados no repo do GitHub, CI/CD automatizado
-  (`.github/workflows/deploy-api.yml`): a cada push em `main`, backup do Neon
+  (`.github/workflows/deploy-api.yml`): a cada push em `main`, backup do banco
   pro Tigris → migration → `flyctl deploy`, nessa ordem, cada um só roda se
   o anterior passar (`docs/ARCHITECTURE.md` §5.8).
 - **Persistência**: real via Drizzle sobre `@ooc/db` — todo repositório em

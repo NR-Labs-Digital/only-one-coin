@@ -158,15 +158,10 @@ export const ConfigSchema = z
     BACKUP_BUCKET_NAME: optionalString(),
     BACKUP_ACCESS_KEY_ID: optionalString(),
     BACKUP_SECRET_ACCESS_KEY: optionalString(),
-    // Where a backup is restored: a NEW database on a Neon branch kept for
-    // restores (never the production branch — the restore would share its
-    // compute), created and dropped through the Neon API. All four or none.
-    NEON_API_KEY: optionalString(),
-    NEON_PROJECT_ID: optionalString(),
-    NEON_RESTORE_BRANCH_ID: optionalString(),
-    NEON_RESTORE_ROLE: optionalString(),
-    // Local only: a Postgres URL whose role may CREATE/DROP DATABASE, for
-    // trying the restore against compose.yml. Refused in production.
+    // Where a backup is restored — local only: a Postgres URL whose role may
+    // CREATE/DROP DATABASE, for the restore against compose.yml. Refused in
+    // production: restoring there is out of scope for now (28/11/2026), since
+    // the Neon API target was dropped ahead of leaving Neon.
     BACKUP_RESTORE_ADMIN_URL: optionalString(),
     // psql 18 (the dump comes from a Postgres 18 server). The image installs it.
     PSQL_PATH: z.string().min(1).default("psql"),
@@ -193,19 +188,11 @@ export const ConfigSchema = z
         message: "VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT go together: set all three or none",
       });
     }
-    const neon = [config.NEON_API_KEY, config.NEON_PROJECT_ID, config.NEON_RESTORE_BRANCH_ID, config.NEON_RESTORE_ROLE];
-    if (neon.some(Boolean) && !neon.every(Boolean)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["NEON_API_KEY"],
-        message: "NEON_API_KEY, NEON_PROJECT_ID, NEON_RESTORE_BRANCH_ID and NEON_RESTORE_ROLE go together",
-      });
-    }
     if (config.BACKUP_RESTORE_ADMIN_URL && config.NODE_ENV === "production") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["BACKUP_RESTORE_ADMIN_URL"],
-        message: "is for local restores only; production restores into Neon",
+        message: "is for local restores only; production does not restore backups yet",
       });
     }
     if (config.BREVO_API_KEY && !config.EMAIL_SENDER_ADDRESS) {

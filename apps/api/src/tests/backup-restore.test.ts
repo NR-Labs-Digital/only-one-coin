@@ -118,7 +118,7 @@ describe("backup names", () => {
     expect(backupTakenAt("ooc-prod-latest.sql.gz")).toBeNull();
   });
 
-  it("derives a database name Postgres and Neon accept", () => {
+  it("derives a database name Postgres accepts", () => {
     expect(restoreDatabaseName("0195f1d2-3c4b-7a00-8f00-1234567890ab")).toBe("ooc_restore_1234567890ab");
   });
 });

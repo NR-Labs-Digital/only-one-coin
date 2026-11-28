@@ -1971,9 +1971,9 @@ export const featureFlagOverrides = pgTable("feature_flag_overrides", {
 // A backup restored by the owners' own area of the backoffice (OOC-153).
 //
 // The restore never touches the database the platform runs on: every row is
-// a scratch database created for it (a new database on the Neon restore
-// branch), loaded from one `ooc-prod-*.sql.gz` in the backups bucket and then
-// checked. A restore whose checks fail has its database dropped on the spot;
+// a scratch database created for it (local only for now — production does
+// not restore, 28/11/2026), loaded from one `ooc-prod-*.sql.gz` in the
+// backups bucket and then checked. A restore whose checks fail has its database dropped on the spot;
 // one that passes keeps it until an owner discards it. Pointing production at
 // a restored database stays a manual step (docs/RESTAURAR-BACKUP.md).
 //

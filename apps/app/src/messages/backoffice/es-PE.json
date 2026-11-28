@@ -3950,7 +3950,7 @@
       "intro": "Cada despliegue de la API guarda un backup de la base de producción antes de la migración, y se conserva 30 días. Restaurar crea una base nueva y vacía, carga el backup en ella y lo verifica.",
       "intro_production": "La base de producción nunca se toca. Si alguna verificación falla, la base nueva se elimina en el acto. Pasar producción a una base restaurada es un paso manual del runbook, no de esta pantalla.",
       "not_configured_list": "Este entorno no tiene el bucket de backups configurado: no hay nada que listar.",
-      "not_configured_restore": "Este entorno lista los backups, pero no tiene dónde restaurarlos (falta configurar el destino en la API).",
+      "not_configured_restore": "Este entorno lista los backups, pero no restaura. Restaurar en producción quedó para después: para revisar un backup, sigue el paso a paso del runbook, que descarga el archivo del bucket y lo restaura en una base vacía.",
       "load_error_title": "No se pudieron leer los backups",
       "load_error_body": "La API no respondió. Vuelve a intentarlo en unos minutos.",
       "list_title": "Backups disponibles",

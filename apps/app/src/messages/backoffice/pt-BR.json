@@ -3950,7 +3950,7 @@
       "intro": "Cada deploy da API guarda um backup do banco de produção antes da migration, mantido por 30 dias. Restaurar cria um banco novo e vazio, carrega o backup nele e o confere.",
       "intro_production": "O banco de produção nunca é tocado. Se alguma verificação falhar, o banco novo é apagado na hora. Trocar a produção para um banco restaurado é um passo manual do runbook, não desta tela.",
       "not_configured_list": "Este ambiente não tem o bucket de backups configurado: não há nada para listar.",
-      "not_configured_restore": "Este ambiente lista os backups, mas não tem onde restaurá-los (falta configurar o destino na API).",
+      "not_configured_restore": "Este ambiente lista os backups, mas não restaura. Restaurar em produção ficou para depois: para conferir um backup, siga o passo a passo do runbook, que baixa o arquivo do bucket e o restaura num banco vazio.",
       "load_error_title": "Não foi possível ler os backups",
       "load_error_body": "A API não respondeu. Tente de novo em alguns minutos.",
       "list_title": "Backups disponíveis",

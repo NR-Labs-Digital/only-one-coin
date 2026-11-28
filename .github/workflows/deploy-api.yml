@@ -86,7 +86,7 @@ jobs:
 
       # aws-cli já vem no runner. postgresql-client do repo padrão do
       # Ubuntu é pg16 — pg_dump recusa dump de servidor mais novo que ele
-      # mesmo (Neon roda Postgres 18, mesma versão do compose.yml local).
+      # mesmo (produção roda Postgres 18, mesma versão do compose.yml local).
       # Repo oficial da PGDG pra instalar o client 18 de verdade.
       - run: |
           sudo install -d /usr/share/postgresql-common/pgdg
@@ -96,7 +96,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
 
-      - name: Backup do Neon de produção para o Tigris
+      - name: Backup do banco de produção para o Tigris
         run: |
           set -euo pipefail
           FILE="ooc-prod-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
@@ -113,7 +113,7 @@ jobs:
           # Nome do bucket não é segredo — só as credenciais são.
           TIGRIS_BUCKET_NAME: only-one-coin-backups
 
-      - name: Migration contra o Neon de produção
+      - name: Migration contra o banco de produção
         run: pnpm --filter @ooc/db db:migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
